@@ -1,0 +1,231 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.HomeView"
+             x:DataType="vm:HomeViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.baby-card">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="12"/>
+        </Style>
+        <Style Selector="Border.data-cell">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+        <Style Selector="Border.data-cell-orange">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12,12,12,12"/>
+        </Style>
+        <Style Selector="Border.data-cell-blue">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12,12,12,12"/>
+        </Style>
+        <Style Selector="Border.data-cell-brown">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12,12,12,12"/>
+        </Style>
+        <Style Selector="Border.data-cell-green">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12,12,12,12"/>
+        </Style>
+        <Style Selector="Border.ai-status-card">
+            <Setter Property="Background" Value="#F0FFF0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="Margin" Value="12"/>
+        </Style>
+        <Style Selector="Border.quick-panel">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="16,16,0,0"/>
+            <Setter Property="BoxShadow" Value="0 -2 12 0 #10000000"/>
+        </Style>
+        <Style Selector="Border.section-header">
+            <Setter Property="Margin" Value="12,12,12,4"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="0,0,0,8">
+
+            <Border Classes="baby-card">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Width="56" Height="56" CornerRadius="28" Background="{StaticResource WeuiBg1Brush}">
+                        <TextBlock Text="{Binding BabyAvatar}" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <TextBlock Text="{Binding BabyName}" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding BabyAgeText}" FontSize="13" Foreground="#07C160" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Command="{Binding GoStatisticsCommand}" Background="Transparent" BorderThickness="0" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <PathIcon Data="{StaticResource icon-chart}" Width="16" Height="16"/>
+                                <TextBlock Text="统计" FontSize="12" Foreground="{StaticResource WeuiBlueBrush}"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Command="{Binding GoCheckInCommand}" Background="Transparent" BorderThickness="0" Padding="8,6">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <PathIcon Data="{StaticResource icon-checkin}" Width="16" Height="16"/>
+                                <TextBlock Text="签到" FontSize="12" Foreground="{StaticResource WeuiOrangeBrush}"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Margin="12,0" ColumnDefinitions="*,*" RowDefinitions="*,*">
+                <Grid Margin="0,0,4,4">
+                    <DockPanel Classes="data-cell">
+                        <Border DockPanel.Dock="Left" Width="3" CornerRadius="2,0,0,2" Background="{StaticResource WeuiOrangeBrush}" Margin="-12,0,8,0"/>
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource icon-bottle-feed}" Foreground="{StaticResource WeuiGreenBrush}" Width="18" Height="18"/>
+                            <TextBlock Text="距上次喂奶" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding LastFeedAgoText}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding LastFeedSummary}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+                <Grid Grid.Column="1" Margin="4,0,0,4">
+                    <DockPanel Classes="data-cell">
+                        <Border DockPanel.Dock="Left" Width="3" CornerRadius="0,2,2,0" Background="{StaticResource WeuiBlueBrush}" Margin="-12,0,8,0"/>
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource icon-sleep}" Width="18" Height="18"/>
+                            <TextBlock Text="今日已睡" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding SleepTodayText}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
+                            <TextBlock Text="1次" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+                <Grid Grid.Row="1" Margin="0,4,4,0">
+                    <DockPanel Classes="data-cell">
+                        <Border DockPanel.Dock="Left" Width="3" CornerRadius="2,0,0,2" Background="#A1887F" Margin="-12,0,8,0"/>
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource icon-diaper}" Width="18" Height="18"/>
+                            <TextBlock Text="换尿布" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{Binding DiaperTodayText}" FontSize="20" FontWeight="Bold" Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding DiaperDetailText}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+                <Grid Grid.Row="1" Grid.Column="1" Margin="4,4,0,0">
+                    <DockPanel Classes="data-cell">
+                        <Border DockPanel.Dock="Left" Width="3" CornerRadius="0,2,2,0" Background="{StaticResource WeuiGreenBrush}" Margin="-12,0,8,0"/>
+                        <StackPanel>
+                            <PathIcon Data="{StaticResource icon-growth}" Width="18" Height="18"/>
+                            <TextBlock Text="身高体重" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock FontSize="15" FontWeight="Bold" Margin="0,4,0,0">
+                                <Run Text="{Binding LatestHeightText}"/>
+                                <Run Text=" / "/>
+                                <Run Text="{Binding LatestWeightText}"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Grid>
+
+            <Border Classes="ai-status-card">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource icon-sun}" Foreground="#FFC300" Width="24" Height="24"/>
+                        <TextBlock Text="{Binding AiStatusTitle}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding AiStatusSubtitle}" FontSize="14" Foreground="{StaticResource WeuiGreenBrush}" Margin="32,0,0,0"/>
+                    <TextBlock Text="—— 宝宝的变化 ~" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                        <PathIcon Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource WeuiYellowBrush}" Width="14" Height="14"/>
+                        <TextBlock Text="{Binding AiTipText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="weui-card" Margin="12,8,12,0">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                        <PathIcon Grid.Column="0" Data="{StaticResource icon-vaccine}" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="疫苗追踪" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                        <TextBlock Grid.Column="2" Text="{Binding VaccineProgressText}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <Button Grid.Column="3" Content="{Binding IsVaccineExpanded, Converter={x:Static v:HomeView.ExpandTextConverter}}" Classes="weui-btn mini default" Margin="8,0,0,0"
+                                Command="{Binding ToggleVaccinePanelCommand}"/>
+                        <Button Grid.Column="4" Content="补记" Classes="weui-btn mini primary" Margin="6,0,0,0"/>
+                    </Grid>
+                    <ItemsControl IsVisible="{Binding IsVaccineExpanded}" ItemsSource="{Binding VaccineItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{StaticResource WeuiBg1Brush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Grid.Column="0" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="{Binding Category}" FontSize="10" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="13" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding DueText}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="weui-card">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                    <PathIcon Grid.Column="0" Data="{StaticResource icon-activity}" Foreground="{StaticResource WeuiRedBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="活动追踪" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                    <Button Grid.Column="2" Content="详情" Classes="weui-btn mini default" Margin="8,0,0,0"/>
+                    <Button Grid.Column="3" Content="记录" Classes="weui-btn mini primary" Margin="6,0,0,0"/>
+                </Grid>
+            </Border>
+
+            <Border Height="8"/>
+
+        </StackPanel>
+    </ScrollViewer>
+
+    <Border Classes="quick-panel" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+        <StackPanel>
+            <Button Command="{Binding ToggleQuickRecordPanelCommand}" Background="Transparent" BorderThickness="0" Padding="16,10" HorizontalAlignment="Stretch">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <TextBlock Grid.Column="0" Text="快捷记录" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="{Binding IsQuickRecordPanelOpen, Converter={x:Static v:HomeView.ArrowTextConverter}}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+            <ItemsControl IsVisible="{Binding IsQuickRecordPanelOpen}" ItemsSource="{Binding QuickActions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="4"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Background="Transparent" BorderThickness="0" Padding="0,12"
+                                Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).QuickRecordCommand}"
+                                CommandParameter="{Binding Type}"
+                                Click="OnQuickActionClick">
+                            <StackPanel HorizontalAlignment="Center" Spacing="4">
+                                <Border Width="40" Height="40" CornerRadius="20" Background="{StaticResource WeuiBg1Brush}">
+                                    <TextBlock Text="{Binding Icon}" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="{Binding Label}" FontSize="11" Foreground="{StaticResource WeuiFg0Brush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+
+    </Panel>
+</UserControl>

@@ -1,0 +1,192 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.GrowthView"
+             x:DataType="vm:GrowthViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Border.growth-card">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="BorderBrush" Value="#FFAB91"/>
+            <Setter Property="BorderThickness" Value="4,0,0,0"/>
+            <Setter Property="BoxShadow" Value="0 2 12 0 #0A000000"/>
+        </Style>
+        <Style Selector="Border.growth-card-add">
+            <Setter Property="Background" Value="#FAFAFA"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="18,20"/>
+            <Setter Property="BorderBrush" Value="#DDD"/>
+            <Setter Property="BorderThickness" Value="4,0,0,0"/>
+        </Style>
+        <Style Selector="Border.date-badge">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#FFAB91"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="0,5"/>
+            <Setter Property="Width" Value="64"/>
+            <Setter Property="BoxShadow" Value="0 1 6 0 #10000000"/>
+        </Style>
+        <Style Selector="Border.date-badge TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#E65100"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.date-badge-add">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CCC"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="0,3"/>
+            <Setter Property="Width" Value="64"/>
+        </Style>
+        <Style Selector="Border.timeline-dot">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Background" Value="#FFAB91"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="3"/>
+            <Setter Property="BoxShadow" Value="0 1 4 0 #20000000"/>
+        </Style>
+        <Style Selector="Border.timeline-dot-add">
+            <Setter Property="Width" Value="14"/>
+            <Setter Property="Height" Value="14"/>
+            <Setter Property="CornerRadius" Value="7"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#CCC"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                    <StackPanel HorizontalAlignment="Center" Margin="0,40,0,32">
+                        <TextBlock Text="📆" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        <TextBlock Text="成长记录" FontSize="20" FontWeight="Bold" Foreground="#5D4037" HorizontalAlignment="Center"/>
+                        <TextBlock Text="记录宝宝每一个重要时刻" FontSize="12" Foreground="#A1887F" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Milestones}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="32,*" Margin="16,0,16,24">
+                                    <Panel Grid.Column="0">
+                                        <Border Width="2" Background="#FFAB91" HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="0,0,0,0"/>
+                                        <Border Classes="timeline-dot" VerticalAlignment="Top" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                                    </Panel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <Border Classes="date-badge" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                            <TextBlock Text="{Binding DateText}"/>
+                                        </Border>
+                                        <Border Classes="growth-card" PointerPressed="OnMilestoneTap" Tag="{Binding .}">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" Foreground="#4E342E"/>
+                                                <TextBlock Text="{Binding Content}" FontSize="13" Foreground="#8D6E63"
+                                                           Margin="0,6,0,0" TextWrapping="Wrap" LineHeight="20"
+                                                           IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Grid ColumnDefinitions="32,*" Margin="16,0,16,40">
+                        <Panel Grid.Column="0">
+                            <Border Width="2" Background="#EEE" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
+                            <Border Classes="timeline-dot-add" VerticalAlignment="Top" Margin="0,8,0,0" HorizontalAlignment="Center"/>
+                        </Panel>
+                        <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                            <Border Classes="date-badge-add" HorizontalAlignment="Left" Margin="0,0,0,8">
+                                <TextBlock Text="＋" FontSize="22" Foreground="#BBB" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Border Classes="growth-card-add" PointerPressed="OnAddMilestone">
+                                <TextBlock Text="记录成长时刻" FontSize="14" Foreground="#BBB" HorizontalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+
+                    <Border IsVisible="{Binding Milestones.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
+                            Background="#FFF8F5" CornerRadius="14" Padding="24,28" Margin="16,8,16,40"
+                            HorizontalAlignment="Center" MaxWidth="280">
+                        <StackPanel HorizontalAlignment="Center" Spacing="10">
+                            <TextBlock Text="🌱" FontSize="36" HorizontalAlignment="Center"/>
+                            <TextBlock Text="还没有成长记录" FontSize="15" FontWeight="SemiBold" Foreground="#8D6E63" HorizontalAlignment="Center"/>
+                            <TextBlock Text="点击上方「记录成长时刻」" FontSize="12" Foreground="#A1887F" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            <TextBlock Text="添加宝宝的第一个里程碑吧~" FontSize="12" Foreground="#A1887F" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            <Button Content="立即添加" Classes="weui-btn primary" Margin="0,8,0,0"
+                                    Command="{Binding AddMilestoneCommand}"/>
+                        </StackPanel>
+                    </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Panel IsVisible="{Binding MilestoneEdit.IsVisible}">
+            <Border Background="#80000000"/>
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
+                    VerticalAlignment="Bottom" MaxHeight="600">
+                <Grid RowDefinitions="Auto,Auto,Auto">
+                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding MilestoneEdit.SheetTitle}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
+                                    Background="Transparent" BorderThickness="0"
+                                    Command="{Binding MilestoneEdit.CloseCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <Border Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="标题" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                                    <TextBox Text="{Binding MilestoneEdit.Title}" PlaceholderText="如：第一次翻身、第一次叫妈妈..."
+                                             CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="详细内容（选填）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                                    <TextBox Text="{Binding MilestoneEdit.Content}" PlaceholderText="记录这个美好时刻的细节..."
+                                             CornerRadius="8" Background="#F5F5F5" Padding="12,8"
+                                             AcceptsReturn="True" TextWrapping="Wrap" Height="100"/>
+                                </StackPanel>
+                            </Border>
+                            <Border>
+                                <StackPanel>
+                                    <TextBlock Text="日期" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                                    <DatePicker SelectedDate="{Binding MilestoneEdit.RecordDate}" HorizontalAlignment="Stretch"/>
+                                </StackPanel>
+                            </Border>
+                            <TextBlock Text="{Binding MilestoneEdit.ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                                       Margin="0,8" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Button Grid.Column="0" Content="保存" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                                    Command="{Binding MilestoneEdit.SaveCommand}"/>
+                            <Button Grid.Column="1" Content="删除" Classes="weui-btn warn" Margin="8,0,0,0"
+                                    Command="{Binding MilestoneEdit.DeleteCommand}"
+                                    IsVisible="{Binding MilestoneEdit.SheetTitle, Converter={x:Static v:GrowthView.IsEditingConverter}}"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+        </Panel>
+
+    </Panel>
+</UserControl>

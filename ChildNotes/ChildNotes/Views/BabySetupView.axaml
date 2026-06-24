@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.BabySetupView"
+             x:DataType="vm:BabySetupViewModel">
+
+    <UserControl.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,40%">
+            <GradientStop Offset="0" Color="#E8F9EF"/>
+            <GradientStop Offset="1" Color="#F5F5F5"/>
+        </LinearGradientBrush>
+    </UserControl.Background>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Border Background="White" CornerRadius="16" Padding="30,36" Margin="30,60,30,30"
+                BoxShadow="0 8 40 0 #0F000000" VerticalAlignment="Center" MaxWidth="360">
+            <StackPanel>
+
+                <TextBlock Text="🍼" FontSize="44" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                <TextBlock Text="{Binding Title}" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                <TextBlock Text="请先添加宝宝信息，再开始记录吧" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,28"/>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <TextBlock Text="性别" FontSize="15" Width="60" VerticalAlignment="Center"/>
+                    <Button Content="👦 男宝" Classes="gender-btn"
+                            Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsBoyConverter}}"
+                            Click="OnBoyTap"/>
+                    <Button Content="👧 女宝" Classes="gender-btn" Margin="12,0,0,0"
+                            Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsGirlConverter}}"
+                            Click="OnGirlTap"/>
+                </StackPanel>
+
+                <Border BorderBrush="#F0F0F0" BorderThickness="0,1" Margin="0,0,0,0"/>
+                <StackPanel Orientation="Horizontal" Height="48" Margin="0,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="姓名" FontSize="15" Width="60" VerticalAlignment="Center"/>
+                    <TextBox Text="{Binding Name}" PlaceholderText="请输入宝宝姓名或小名" BorderThickness="0"
+                             Background="Transparent" FontSize="15" VerticalContentAlignment="Center"/>
+                </StackPanel>
+                <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+
+                <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
+                    <TextBlock Text="生日" FontSize="15" Width="60" VerticalAlignment="Center"/>
+                    <DatePicker SelectedDate="{Binding BirthDate}" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+                <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                           Margin="0,8" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                <Button Content="开始记录" Classes="weui-btn primary" CornerRadius="24"
+                        Command="{Binding SaveCommand}" Margin="0,28,0,0" HorizontalAlignment="Stretch"/>
+
+                <Button Content="稍后再说" Background="Transparent" BorderThickness="0"
+                        Foreground="#BBBBBB" FontSize="14" Margin="0,16,0,0"
+                        Command="{Binding SkipCommand}" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+
+    <UserControl.Styles>
+        <Style Selector="Button.gender-btn">
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="18,8"/>
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+        <Style Selector="Button.gender-btn.active">
+            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </UserControl.Styles>
+</UserControl>

@@ -1,0 +1,59 @@
+{
+  "name": "ChildNotes WeUI Design Spec",
+  "viewportWidth": 390,
+  "viewportHeight": 844,
+  "colorTolerance": 8.0,
+  "sizeTolerancePx": 1.5,
+  "sizeToleranceRatio": 0.04,
+  "colors": {
+    "bg0": { "hex": "#EDEDED", "role": "页面底色" },
+    "bg1": { "hex": "#F7F7F7", "role": "次级底色" },
+    "bg2": { "hex": "#FFFFFF", "role": "卡片底色" },
+    "fg0": { "hex": "#000000", "role": "主文字" },
+    "fg1": { "hex": "#000000", "role": "次文字(56%)", "alpha": 140 },
+    "fg2": { "hex": "#000000", "role": "辅助文字(30%)", "alpha": 77 },
+    "green": { "hex": "#07C160", "role": "主色/成功" },
+    "red": { "hex": "#FA5151", "role": "警告/危险" },
+    "orange": { "hex": "#FA9D3B", "role": "提示橙" },
+    "yellow": { "hex": "#FFC300", "role": "高亮黄" },
+    "blue": { "hex": "#10AEFF", "role": "链接蓝" },
+    "purple": { "hex": "#6467F0", "role": "紫色" },
+    "separator": { "hex": "#000000", "role": "分隔线(10%)", "alpha": 26 }
+  },
+  "spacing": {
+    "cardMargin": 12,
+    "cardPadding": 14,
+    "cellPaddingX": 14,
+    "cellPaddingY": 12,
+    "sectionTitleMarginX": 16,
+    "chipPaddingX": 12,
+    "chipPaddingY": 5,
+    "btnPaddingX": 16,
+    "btnPaddingY": 12,
+    "tabBarHeight": 56
+  },
+  "typography": {
+    "fontFamily": "Segoe UI",
+    "titleFontSize": 18,
+    "sectionTitleFontSize": 15,
+    "bodyFontSize": 15,
+    "captionFontSize": 13,
+    "smallFontSize": 11,
+    "tabIconFontSize": 22,
+    "tabTextFontSize": 10
+  },
+  "controlSizes": {
+    "cardCornerRadius": 8,
+    "btnCornerRadius": 6,
+    "chipCornerRadius": 14,
+    "avatarSmall": 56,
+    "avatarLarge": 84,
+    "minTouchTarget": 44,
+    "miniBtnFontSize": 12
+  },
+  "layout": {
+    "minEdgeMargin": 12,
+    "maxContentWidth": 390,
+    "tabBarExpectedAtBottom": 0
+  }
+}
