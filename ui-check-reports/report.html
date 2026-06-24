@@ -1,0 +1,1131 @@
+﻿<!DOCTYPE html><html lang='zh-CN'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>UI 设计规范合规性报告</title>
+<style>
+:root{--err:#e74c3c;--warn:#e67e22;--info:#3498db;--ok:#27ae60;--bg:#f5f6f8;--card:#fff;--ink:#1a1a1a;--muted:#888}
+*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+header{background:linear-gradient(135deg,#07C160,#10AEFF);color:#fff;padding:32px 24px}
+header h1{margin:0 0 8px;font-size:24px}header p{margin:0;opacity:.9}
+.wrap{max-width:1200px;margin:0 auto;padding:24px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+.stat{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stat .n{font-size:32px;font-weight:700}.stat .l{color:var(--muted);font-size:13px;margin-top:4px}
+.screen{background:var(--card);border-radius:12px;margin-bottom:24px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.screen-h{padding:16px 20px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.screen-h h2{margin:0;font-size:18px}.score{font-weight:700;font-size:20px}
+.score.good{color:var(--ok)}.score.mid{color:var(--warn)}.score.bad{color:var(--err)}
+.imgs{display:flex;gap:16px;padding:20px;flex-wrap:wrap;background:#fafafa}
+.imgs figure{margin:0}.imgs img{width:200px;border:1px solid #ddd;border-radius:8px}.imgs figcaption{text-align:center;font-size:12px;color:var(--muted);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+th{background:#fafafa;font-weight:600;white-space:nowrap}
+.sev{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;color:#fff}
+.sev.Error{background:var(--err)}.sev.Warn{background:var(--warn)}.sev.Info{background:var(--info)}
+.cat{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:#eef;color:#556}
+tr:hover{background:#f9f9f9}.sug{color:#444}.dev{font-family:monospace;font-size:12px;color:var(--err)}
+.ai-block{background:#f0fff0;border:1px solid #b7e4b7;border-radius:8px;padding:16px;margin:16px 20px;font-size:13px;white-space:pre-wrap;font-family:monospace}
+</style></head><body>
+<header><h1>UI 设计规范合规性报告</h1>
+<p>规范: WeUI Design Spec · 生成时间: 2026-06-24 17:08:02 · 总体合规分: 56.1%</p></header>
+<div class='wrap'>
+<div class='summary'>
+<div class='stat'><div class='n'>5</div><div class='l'>检测界面数</div></div>
+<div class='stat'><div class='n'>74</div><div class='l'>违规项总数</div></div>
+<div class='stat'><div class='n'>18</div><div class='l'>严重错误</div></div>
+<div class='stat'><div class='n'>28</div><div class='l'>警告</div></div>
+<div class='stat'><div class='n'>56.1%</div><div class='l'>总体合规分</div></div>
+</div>
+<div class='screen'>
+<div class='screen-h'>
+<h2>Login</h2>
+<div>元素 52 · 违规 12 · <span class='score bad'>56.0%</span></div>
+</div>
+<div class='imgs'>
+<figure><img src='ui-check-reports\Login.png'><figcaption>原始截图</figcaption></figure>
+<figure><img src='ui-check-reports\Login_annotated.png'><figcaption>标注对比</figcaption></figure>
+</div>
+<div class='ai-block'>
+# Login 自动化样式调整指令 (供 AI 系统使用)
+合规分: 56.0% | 违规: 12 (错误 4/警告 0/提示 8)
+以下为按优先级排序的修改项:
+  [字体样式] 共 2 项:
+    1. TextBlock "👶" @ (13,10) 58x65
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 44.0px | 偏差: +22px
+       建议: 最接近的规范字号为 22px，建议对齐。
+    2. TextBlock "成长记录" @ (13,100) 104x35
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 26.0px | 偏差: +4px
+       建议: 最接近的规范字号为 22px，建议对齐。
+  [布局结构] 共 6 项:
+    3. TextBlock "账号" @ (4,0) 298x18
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=4.0px | 偏差: -8px
+       建议: 为元素增加左右 Margin ≥ 12。
+    4. Border @ (1,1) 300x30
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=1.0px | 偏差: -11px
+       建议: 为元素增加左右 Margin ≥ 12。
+    5. DockPanel #PART_InnerDockPanel @ (10,6) 284x19
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=10.0px | 偏差: -2px
+       建议: 为元素增加左右 Margin ≥ 12。
+    6. TextBlock "密码" @ (4,70) 298x18
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=4.0px | 偏差: -8px
+       建议: 为元素增加左右 Margin ≥ 12。
+    7. Border @ (1,1) 300x30
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=1.0px | 偏差: -11px
+       建议: 为元素增加左右 Margin ≥ 12。
+    8. DockPanel #PART_InnerDockPanel @ (10,6) 284x19
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=10.0px | 偏差: -2px
+       建议: 为元素增加左右 Margin ≥ 12。
+  [颜色方案] 共 4 项:
+    9. Border @ (23,0) 84x84
+       规则: 背景色渲染与声明值一致 | 期望: #07C160FF | 实际: #EDEDEDFF | 偏差: 273.3 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    10. Border @ (24,277) 342x290
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #EDF6E6FF | 偏差: 32.1 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    11. Button .weui-btn.primary "登 录" @ (0,148) 302x44
+       规则: 背景色渲染与声明值一致 | 期望: #07C160FF | 实际: #E2E7DEFF | 偏差: 255.5 (容差 8)
+       建议: 渲染色与声明背景色偏差过大，检查父级透明度/叠加或样式未生效。
+    12. Button .weui-btn.default "没有账号？去注册" @ (0,204) 302x46
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #E4E6E7FF | 偏差: 43.9 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+
+</div>
+<table><thead><tr><th>级别</th><th>类别</th><th>元素</th><th>位置</th><th>规则</th><th>期望</th><th>实际</th><th>偏差</th><th>修改建议</th></tr></thead><tbody>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;👶&quot;</td>
+<td>(13,10) 58x65</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>44.0px</td>
+<td class='dev'>+22px</td>
+<td class='sug'>最接近的规范字号为 22px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;成长记录&quot;</td>
+<td>(13,100) 104x35</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>26.0px</td>
+<td class='dev'>+4px</td>
+<td class='sug'>最接近的规范字号为 22px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>TextBlock &quot;账号&quot;</td>
+<td>(4,0) 298x18</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=4.0px</td>
+<td class='dev'>-8px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(1,1) 300x30</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=1.0px</td>
+<td class='dev'>-11px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>DockPanel #PART_InnerDockPanel</td>
+<td>(10,6) 284x19</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=10.0px</td>
+<td class='dev'>-2px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>TextBlock &quot;密码&quot;</td>
+<td>(4,70) 298x18</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=4.0px</td>
+<td class='dev'>-8px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(1,1) 300x30</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=1.0px</td>
+<td class='dev'>-11px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>DockPanel #PART_InnerDockPanel</td>
+<td>(10,6) 284x19</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=10.0px</td>
+<td class='dev'>-2px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(23,0) 84x84</td>
+<td>背景色渲染与声明值一致</td>
+<td>#07C160FF</td>
+<td>#EDEDEDFF</td>
+<td class='dev'>273.3 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(24,277) 342x290</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#EDF6E6FF</td>
+<td class='dev'>32.1 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.primary &quot;登 录&quot;</td>
+<td>(0,148) 302x44</td>
+<td>背景色渲染与声明值一致</td>
+<td>#07C160FF</td>
+<td>#E2E7DEFF</td>
+<td class='dev'>255.5 (容差 8)</td>
+<td class='sug'>渲染色与声明背景色偏差过大，检查父级透明度/叠加或样式未生效。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.default &quot;没有账号？去注册&quot;</td>
+<td>(0,204) 302x46</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#E4E6E7FF</td>
+<td class='dev'>43.9 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+</tbody></table></div>
+<div class='screen'>
+<div class='screen-h'>
+<h2>Home</h2>
+<div>元素 136 · 违规 32 · <span class='score bad'>0.0%</span></div>
+</div>
+<div class='imgs'>
+<figure><img src='ui-check-reports\Home.png'><figcaption>原始截图</figcaption></figure>
+<figure><img src='ui-check-reports\Home_annotated.png'><figcaption>标注对比</figcaption></figure>
+</div>
+<div class='ai-block'>
+# Home 自动化样式调整指令 (供 AI 系统使用)
+合规分: 0.0% | 违规: 32 (错误 10/警告 19/提示 3)
+以下为按优先级排序的修改项:
+  [字体样式] 共 3 项:
+    1. TextBlock "--" @ (0,39) 179x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    2. TextBlock "0小时0分钟" @ (0,39) 179x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    3. TextBlock "0次" @ (0,39) 179x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+  [颜色方案] 共 13 项:
+    4. Border .baby-card @ (12,12) 366x88
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F9F8F7FF | 偏差: 12.2 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    5. Border .ai-status-card @ (12,298) 366x138
+       规则: 背景色渲染与声明值一致 | 期望: #F0FFF0FF | 实际: #EBFAE9FF | 偏差: 9.9 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    6. Border .weui-card @ (12,456) 366x58
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F6FAF0FF | 偏差: 18.2 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    7. Button .weui-btn.mini.default "展开" @ (234,0) 50x30
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F7F7F7FF | 偏差: 13.9 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    8. Border .weui-card @ (12,522) 366x58
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F3F8EFFF | 偏差: 21.2 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    9. Button .weui-btn.mini.default "详情" @ (234,0) 50x30
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F7F7F7FF | 偏差: 13.9 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    10. Border .quick-panel @ (0,803) 390x41
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F5F5F5FF | 偏差: 17.3 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    11. Border @ (-12,0) 3x83
+       规则: 背景色渲染与声明值一致 | 期望: #FA9D3BFF | 实际: #EDEDEDFF | 偏差: 195.6 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    ... 及其余 5 项
+  [控件尺寸] 共 12 项:
+    12. Border .baby-card @ (12,12) 366x88
+       规则: 卡片圆角应符合规范 | 期望: 8px | 实际: 12px | 偏差: +4px
+       建议: 将 CornerRadius 调整为 8。
+    13. Button @ (0,0) 60x29
+       规则: 按钮圆角应符合规范 | 期望: 6px | 实际: 3px | 偏差: -3px
+       建议: 将 CornerRadius 调整为 6。
+    14. Button @ (0,0) 60x29
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 60x29px | 偏差: WΔ+16 HΔ-15
+       建议: 增大 Padding 使点击区域达到 44x44。
+    15. Button @ (68,0) 60x29
+       规则: 按钮圆角应符合规范 | 期望: 6px | 实际: 3px | 偏差: -3px
+       建议: 将 CornerRadius 调整为 6。
+    16. Button @ (68,0) 60x29
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 60x29px | 偏差: WΔ+16 HΔ-15
+       建议: 增大 Padding 使点击区域达到 44x44。
+    17. Border .ai-status-card @ (12,298) 366x138
+       规则: 卡片圆角应符合规范 | 期望: 8px | 实际: 12px | 偏差: +4px
+       建议: 将 CornerRadius 调整为 8。
+    18. Button .weui-btn.mini.default "展开" @ (234,0) 50x30
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 50x30px | 偏差: WΔ+6 HΔ-14
+       建议: 增大 Padding 使点击区域达到 44x44。
+    19. Button .weui-btn.mini.primary "补记" @ (290,1) 48x28
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 48x28px | 偏差: WΔ+4 HΔ-16
+       建议: 增大 Padding 使点击区域达到 44x44。
+    ... 及其余 4 项
+  [布局结构] 共 4 项:
+    20. Border @ (-12,0) 3x83
+       规则: 元素不应溢出可视区域 | 期望: 在视口内 | 实际: (-12,0,-9,83) | 偏差: 溢出
+       建议: 检查布局约束或 ScrollViewer 是否禁用了水平滚动。
+    21. Border @ (-12,0) 3x83
+       规则: 元素不应溢出可视区域 | 期望: 在视口内 | 实际: (-12,0,-9,83) | 偏差: 溢出
+       建议: 检查布局约束或 ScrollViewer 是否禁用了水平滚动。
+    22. Border @ (-12,0) 3x83
+       规则: 元素不应溢出可视区域 | 期望: 在视口内 | 实际: (-12,0,-9,83) | 偏差: 溢出
+       建议: 检查布局约束或 ScrollViewer 是否禁用了水平滚动。
+    23. Border @ (-12,0) 3x83
+       规则: 元素不应溢出可视区域 | 期望: 在视口内 | 实际: (-12,0,-9,83) | 偏差: 溢出
+       建议: 检查布局约束或 ScrollViewer 是否禁用了水平滚动。
+
+</div>
+<table><thead><tr><th>级别</th><th>类别</th><th>元素</th><th>位置</th><th>规则</th><th>期望</th><th>实际</th><th>偏差</th><th>修改建议</th></tr></thead><tbody>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;--&quot;</td>
+<td>(0,39) 179x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;0小时0分钟&quot;</td>
+<td>(0,39) 179x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;0次&quot;</td>
+<td>(0,39) 179x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border .baby-card</td>
+<td>(12,12) 366x88</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F9F8F7FF</td>
+<td class='dev'>12.2 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Border .baby-card</td>
+<td>(12,12) 366x88</td>
+<td>卡片圆角应符合规范</td>
+<td>8px</td>
+<td>12px</td>
+<td class='dev'>+4px</td>
+<td class='sug'>将 CornerRadius 调整为 8。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(0,0) 60x29</td>
+<td>按钮圆角应符合规范</td>
+<td>6px</td>
+<td>3px</td>
+<td class='dev'>-3px</td>
+<td class='sug'>将 CornerRadius 调整为 6。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(0,0) 60x29</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>60x29px</td>
+<td class='dev'>WΔ+16 HΔ-15</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(68,0) 60x29</td>
+<td>按钮圆角应符合规范</td>
+<td>6px</td>
+<td>3px</td>
+<td class='dev'>-3px</td>
+<td class='sug'>将 CornerRadius 调整为 6。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(68,0) 60x29</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>60x29px</td>
+<td class='dev'>WΔ+16 HΔ-15</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border .ai-status-card</td>
+<td>(12,298) 366x138</td>
+<td>背景色渲染与声明值一致</td>
+<td>#F0FFF0FF</td>
+<td>#EBFAE9FF</td>
+<td class='dev'>9.9 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Border .ai-status-card</td>
+<td>(12,298) 366x138</td>
+<td>卡片圆角应符合规范</td>
+<td>8px</td>
+<td>12px</td>
+<td class='dev'>+4px</td>
+<td class='sug'>将 CornerRadius 调整为 8。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border .weui-card</td>
+<td>(12,456) 366x58</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F6FAF0FF</td>
+<td class='dev'>18.2 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.mini.default &quot;展开&quot;</td>
+<td>(234,0) 50x30</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F7F7F7FF</td>
+<td class='dev'>13.9 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button .weui-btn.mini.default &quot;展开&quot;</td>
+<td>(234,0) 50x30</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>50x30px</td>
+<td class='dev'>WΔ+6 HΔ-14</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button .weui-btn.mini.primary &quot;补记&quot;</td>
+<td>(290,1) 48x28</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>48x28px</td>
+<td class='dev'>WΔ+4 HΔ-16</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border .weui-card</td>
+<td>(12,522) 366x58</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F3F8EFFF</td>
+<td class='dev'>21.2 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.mini.default &quot;详情&quot;</td>
+<td>(234,0) 50x30</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F7F7F7FF</td>
+<td class='dev'>13.9 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button .weui-btn.mini.default &quot;详情&quot;</td>
+<td>(234,0) 50x30</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>50x30px</td>
+<td class='dev'>WΔ+6 HΔ-14</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button .weui-btn.mini.primary &quot;记录&quot;</td>
+<td>(290,1) 48x28</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>48x28px</td>
+<td class='dev'>WΔ+4 HΔ-16</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border .quick-panel</td>
+<td>(0,803) 390x41</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F5F5F5FF</td>
+<td class='dev'>17.3 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(0,0) 390x41</td>
+<td>按钮圆角应符合规范</td>
+<td>6px</td>
+<td>3px</td>
+<td class='dev'>-3px</td>
+<td class='sug'>将 CornerRadius 调整为 6。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button</td>
+<td>(0,0) 390x41</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>390x41px</td>
+<td class='dev'>WΔ+346 HΔ-3</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FA9D3BFF</td>
+<td>#EDEDEDFF</td>
+<td class='dev'>195.6 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>背景色渲染与声明值一致</td>
+<td>#10AEFFFF</td>
+<td>#EDEDEDFF</td>
+<td class='dev'>230.5 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>背景色渲染与声明值一致</td>
+<td>#A1887FFF</td>
+<td>#EDEDEDFF</td>
+<td class='dev'>167.6 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>背景色渲染与声明值一致</td>
+<td>#07C160FF</td>
+<td>#EDEDEDFF</td>
+<td class='dev'>273.3 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.mini.primary &quot;补记&quot;</td>
+<td>(290,1) 48x28</td>
+<td>背景色渲染与声明值一致</td>
+<td>#07C160FF</td>
+<td>#F7F7F7FF</td>
+<td class='dev'>288.6 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.mini.primary &quot;记录&quot;</td>
+<td>(290,1) 48x28</td>
+<td>背景色渲染与声明值一致</td>
+<td>#07C160FF</td>
+<td>#F7F7F7FF</td>
+<td class='dev'>288.6 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>元素不应溢出可视区域</td>
+<td>在视口内</td>
+<td>(-12,0,-9,83)</td>
+<td class='dev'>溢出</td>
+<td class='sug'>检查布局约束或 ScrollViewer 是否禁用了水平滚动。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>元素不应溢出可视区域</td>
+<td>在视口内</td>
+<td>(-12,0,-9,83)</td>
+<td class='dev'>溢出</td>
+<td class='sug'>检查布局约束或 ScrollViewer 是否禁用了水平滚动。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>元素不应溢出可视区域</td>
+<td>在视口内</td>
+<td>(-12,0,-9,83)</td>
+<td class='dev'>溢出</td>
+<td class='sug'>检查布局约束或 ScrollViewer 是否禁用了水平滚动。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Border</td>
+<td>(-12,0) 3x83</td>
+<td>元素不应溢出可视区域</td>
+<td>在视口内</td>
+<td>(-12,0,-9,83)</td>
+<td class='dev'>溢出</td>
+<td class='sug'>检查布局约束或 ScrollViewer 是否禁用了水平滚动。</td>
+</tr>
+</tbody></table></div>
+<div class='screen'>
+<div class='screen-h'>
+<h2>Feeding</h2>
+<div>元素 20 · 违规 6 · <span class='score mid'>84.5%</span></div>
+</div>
+<div class='imgs'>
+<figure><img src='ui-check-reports\Feeding.png'><figcaption>原始截图</figcaption></figure>
+<figure><img src='ui-check-reports\Feeding_annotated.png'><figcaption>标注对比</figcaption></figure>
+</div>
+<div class='ai-block'>
+# Feeding 自动化样式调整指令 (供 AI 系统使用)
+合规分: 84.5% | 违规: 6 (错误 0/警告 5/提示 1)
+以下为按优先级排序的修改项:
+  [布局结构] 共 1 项:
+    1. Grid @ (8,12) 374x35
+       规则: 通栏元素应保留最小边距 | 期望: ≥12px | 实际: X=8.0px | 偏差: -4px
+       建议: 为元素增加左右 Margin ≥ 12。
+  [颜色方案] 共 1 项:
+    2. Border @ (0,0) 390x59
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F9F9F9FF | 偏差: 10.4 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+  [控件尺寸] 共 4 项:
+    3. Button "‹" @ (0,0) 40x35
+       规则: 按钮圆角应符合规范 | 期望: 6px | 实际: 3px | 偏差: -3px
+       建议: 将 CornerRadius 调整为 6。
+    4. Button "‹" @ (0,0) 40x35
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 40x35px | 偏差: WΔ-4 HΔ-9
+       建议: 增大 Padding 使点击区域达到 44x44。
+    5. Button "›" @ (334,0) 40x35
+       规则: 按钮圆角应符合规范 | 期望: 6px | 实际: 3px | 偏差: -3px
+       建议: 将 CornerRadius 调整为 6。
+    6. Button "›" @ (334,0) 40x35
+       规则: 可点击区域不小于最小触控目标 | 期望: 44x44px | 实际: 40x35px | 偏差: WΔ-4 HΔ-9
+       建议: 增大 Padding 使点击区域达到 44x44。
+
+</div>
+<table><thead><tr><th>级别</th><th>类别</th><th>元素</th><th>位置</th><th>规则</th><th>期望</th><th>实际</th><th>偏差</th><th>修改建议</th></tr></thead><tbody>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>布局结构</span></td>
+<td>Grid</td>
+<td>(8,12) 374x35</td>
+<td>通栏元素应保留最小边距</td>
+<td>≥12px</td>
+<td>X=8.0px</td>
+<td class='dev'>-4px</td>
+<td class='sug'>为元素增加左右 Margin ≥ 12。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(0,0) 390x59</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F9F9F9FF</td>
+<td class='dev'>10.4 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button &quot;‹&quot;</td>
+<td>(0,0) 40x35</td>
+<td>按钮圆角应符合规范</td>
+<td>6px</td>
+<td>3px</td>
+<td class='dev'>-3px</td>
+<td class='sug'>将 CornerRadius 调整为 6。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button &quot;‹&quot;</td>
+<td>(0,0) 40x35</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>40x35px</td>
+<td class='dev'>WΔ-4 HΔ-9</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button &quot;›&quot;</td>
+<td>(334,0) 40x35</td>
+<td>按钮圆角应符合规范</td>
+<td>6px</td>
+<td>3px</td>
+<td class='dev'>-3px</td>
+<td class='sug'>将 CornerRadius 调整为 6。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>控件尺寸</span></td>
+<td>Button &quot;›&quot;</td>
+<td>(334,0) 40x35</td>
+<td>可点击区域不小于最小触控目标</td>
+<td>44x44px</td>
+<td>40x35px</td>
+<td class='dev'>WΔ-4 HΔ-9</td>
+<td class='sug'>增大 Padding 使点击区域达到 44x44。</td>
+</tr>
+</tbody></table></div>
+<div class='screen'>
+<div class='screen-h'>
+<h2>Growth</h2>
+<div>元素 20 · 违规 3 · <span class='score mid'>89.0%</span></div>
+</div>
+<div class='imgs'>
+<figure><img src='ui-check-reports\Growth.png'><figcaption>原始截图</figcaption></figure>
+<figure><img src='ui-check-reports\Growth_annotated.png'><figcaption>标注对比</figcaption></figure>
+</div>
+<div class='ai-block'>
+# Growth 自动化样式调整指令 (供 AI 系统使用)
+合规分: 89.0% | 违规: 3 (错误 1/警告 0/提示 2)
+以下为按优先级排序的修改项:
+  [字体样式] 共 2 项:
+    1. TextBlock "📆" @ (40,0) 53x59
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 40.0px | 偏差: +18px
+       建议: 最接近的规范字号为 22px，建议对齐。
+    2. TextBlock "成长记录" @ (26,67) 80x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+  [颜色方案] 共 1 项:
+    3. Border @ (15,0) 2x107
+       规则: 背景色渲染与声明值一致 | 期望: #EEEEEEFF | 实际: #FFFFFFFF | 偏差: 29.4 (容差 8)
+       建议: 渲染色接近规范 卡片底色(#FFFFFF)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+
+</div>
+<table><thead><tr><th>级别</th><th>类别</th><th>元素</th><th>位置</th><th>规则</th><th>期望</th><th>实际</th><th>偏差</th><th>修改建议</th></tr></thead><tbody>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;📆&quot;</td>
+<td>(40,0) 53x59</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>40.0px</td>
+<td class='dev'>+18px</td>
+<td class='sug'>最接近的规范字号为 22px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;成长记录&quot;</td>
+<td>(26,67) 80x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(15,0) 2x107</td>
+<td>背景色渲染与声明值一致</td>
+<td>#EEEEEEFF</td>
+<td>#FFFFFFFF</td>
+<td class='dev'>29.4 (容差 8)</td>
+<td class='sug'>渲染色接近规范 卡片底色(#FFFFFF)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+</tbody></table></div>
+<div class='screen'>
+<div class='screen-h'>
+<h2>Mine</h2>
+<div>元素 64 · 违规 21 · <span class='score bad'>51.0%</span></div>
+</div>
+<div class='imgs'>
+<figure><img src='ui-check-reports\Mine.png'><figcaption>原始截图</figcaption></figure>
+<figure><img src='ui-check-reports\Mine_annotated.png'><figcaption>标注对比</figcaption></figure>
+</div>
+<div class='ai-block'>
+# Mine 自动化样式调整指令 (供 AI 系统使用)
+合规分: 51.0% | 违规: 21 (错误 3/警告 4/提示 14)
+以下为按优先级排序的修改项:
+  [字体样式] 共 14 项:
+    1. TextBlock "👤" @ (11,6) 38x47
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 32.0px | 偏差: +10px
+       建议: 最接近的规范字号为 22px，建议对齐。
+    2. TextBlock "›" @ (342,14) 8x32
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 24.0px | 偏差: +2px
+       建议: 最接近的规范字号为 22px，建议对齐。
+    3. TextBlock "👶" @ (0,0) 27x30
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    4. TextBlock "›" @ (331,2) 7x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    5. TextBlock "📝" @ (0,0) 28x30
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    6. TextBlock "›" @ (331,2) 7x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    7. TextBlock "👪" @ (0,0) 29x30
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    8. TextBlock "›" @ (331,2) 7x27
+       规则: 字号应取规范档位之一 | 期望: 档位: 10/11/12/13/15/18/22 | 实际: 20.0px | 偏差: +2px
+       建议: 最接近的规范字号为 18px，建议对齐。
+    ... 及其余 6 项
+  [颜色方案] 共 7 项:
+    9. MineView @ (0,0) 390x844
+       规则: 背景色渲染与声明值一致 | 期望: #EDEDEDFF | 实际: #F7F7F7FF | 偏差: 17.3 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    10. Border @ (0,0) 390x108
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F4F3F3FF | 偏差: 20.2 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    11. Border @ (12,157) 366x164
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #F8F8F8FF | 偏差: 12.1 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    12. Border @ (12,366) 366x161
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #FBFAF9FF | 偏差: 8.8 (容差 8)
+       建议: 渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    13. Border @ (0,0) 60x60
+       规则: 背景色渲染与声明值一致 | 期望: #F7F7F7FF | 实际: #E9E9E9FF | 偏差: 24.2 (容差 8)
+       建议: 渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    14. Border @ (0,2) 24x24
+       规则: 背景色渲染与声明值一致 | 期望: #10AEFFFF | 实际: #FFFFFFFF | 偏差: 252.4 (容差 8)
+       建议: 渲染色接近规范 卡片底色(#FFFFFF)，若有意为之可忽略；否则检查样式覆盖或资源绑定。
+    15. Button .weui-btn.default "退出登录" @ (24,646) 94x46
+       规则: 背景色渲染与声明值一致 | 期望: #FFFFFFFF | 实际: #E0E0E6FF | 偏差: 50.5 (容差 8)
+       建议: 渲染色与声明背景色偏差过大，检查父级透明度/叠加或样式未生效。
+
+</div>
+<table><thead><tr><th>级别</th><th>类别</th><th>元素</th><th>位置</th><th>规则</th><th>期望</th><th>实际</th><th>偏差</th><th>修改建议</th></tr></thead><tbody>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;👤&quot;</td>
+<td>(11,6) 38x47</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>32.0px</td>
+<td class='dev'>+10px</td>
+<td class='sug'>最接近的规范字号为 22px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(342,14) 8x32</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>24.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 22px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;👶&quot;</td>
+<td>(0,0) 27x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,2) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;📝&quot;</td>
+<td>(0,0) 28x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,2) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;👪&quot;</td>
+<td>(0,0) 29x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,2) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,0) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;📊&quot;</td>
+<td>(0,0) 27x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,2) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;🎁&quot;</td>
+<td>(0,0) 25x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;›&quot;</td>
+<td>(331,2) 7x27</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Info'>Info</span></td>
+<td><span class='cat'>字体样式</span></td>
+<td>TextBlock &quot;ℹ️&quot;</td>
+<td>(0,0) 28x30</td>
+<td>字号应取规范档位之一</td>
+<td>档位: 10/11/12/13/15/18/22</td>
+<td>20.0px</td>
+<td class='dev'>+2px</td>
+<td class='sug'>最接近的规范字号为 18px，建议对齐。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>MineView</td>
+<td>(0,0) 390x844</td>
+<td>背景色渲染与声明值一致</td>
+<td>#EDEDEDFF</td>
+<td>#F7F7F7FF</td>
+<td class='dev'>17.3 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(0,0) 390x108</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F4F3F3FF</td>
+<td class='dev'>20.2 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(12,157) 366x164</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#F8F8F8FF</td>
+<td class='dev'>12.1 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Warn'>Warn</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(12,366) 366x161</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#FBFAF9FF</td>
+<td class='dev'>8.8 (容差 8)</td>
+<td class='sug'>渲染色接近规范 次级底色(#F7F7F7)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(0,0) 60x60</td>
+<td>背景色渲染与声明值一致</td>
+<td>#F7F7F7FF</td>
+<td>#E9E9E9FF</td>
+<td class='dev'>24.2 (容差 8)</td>
+<td class='sug'>渲染色接近规范 页面底色(#EDEDED)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Border</td>
+<td>(0,2) 24x24</td>
+<td>背景色渲染与声明值一致</td>
+<td>#10AEFFFF</td>
+<td>#FFFFFFFF</td>
+<td class='dev'>252.4 (容差 8)</td>
+<td class='sug'>渲染色接近规范 卡片底色(#FFFFFF)，若有意为之可忽略；否则检查样式覆盖或资源绑定。</td>
+</tr>
+<tr>
+<td><span class='sev Error'>Error</span></td>
+<td><span class='cat'>颜色方案</span></td>
+<td>Button .weui-btn.default &quot;退出登录&quot;</td>
+<td>(24,646) 94x46</td>
+<td>背景色渲染与声明值一致</td>
+<td>#FFFFFFFF</td>
+<td>#E0E0E6FF</td>
+<td class='dev'>50.5 (容差 8)</td>
+<td class='sug'>渲染色与声明背景色偏差过大，检查父级透明度/叠加或样式未生效。</td>
+</tr>
+</tbody></table></div>
+</div></body></html>

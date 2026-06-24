@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.PointsView"
+             x:DataType="vm:PointsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.timeline-item">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="0,10"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+        </Style>
+        <Style Selector="Border.timeline-item.signed">
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+        </Style>
+        <Style Selector="Border.timeline-item.today">
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.timeline-item TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+        </Style>
+        <Style Selector="Border.timeline-item.signed TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,28" CornerRadius="0,0,20,20">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="您的积分" FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock Text="分" FontSize="16" Foreground="#CCFFFFFF" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
+                        </StackPanel>
+                        <TextBlock FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,8,0,0">
+                            <Run Text="累计获得 "/><Run Text="{Binding TotalEarned}"/><Run Text=" 分 · 已使用 "/><Run Text="{Binding TotalSpent}"/><Run Text=" 分"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="weui-card" Margin="12,-16,12,8">
+                    <StackPanel>
+                        <TextBlock Text="连续签到" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                        <ItemsControl ItemsSource="{Binding Timeline}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="42" Classes="timeline-item"
+                                            Classes.signed="{Binding Signed}"
+                                            Classes.today="{Binding Today}">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding Label}" FontSize="10" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding DisplayReward}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Button Content="{Binding SignButtonText}" Classes="weui-btn primary"
+                                Command="{Binding SignInCommand}" IsEnabled="{Binding !TodaySigned}"
+                                Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
+                        <TextBlock Text="{Binding ContinuousDays, StringFormat=您已连续签到 \{0\} 天}" FontSize="12"
+                                   Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section-title">
+                    <TextBlock Text="任务赚积分"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <ItemsControl ItemsSource="{Binding Tasks}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>
+                                        <TextBlock Text="{Binding Desc}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Background="#E8F9EF" CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding RewardText}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" FontWeight="SemiBold"/>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+            <Button Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
+        </Border>
+
+        <Border Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="20" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="14"/>
+        </Border>
+    </Grid>
+</UserControl>

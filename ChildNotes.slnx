@@ -1,0 +1,11 @@
+<Solution>
+  <Project Path="ChildNotes.Android/ChildNotes.Android.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="ChildNotes.Desktop/ChildNotes.Desktop.csproj" />
+  <Project Path="ChildNotes.iOS/ChildNotes.iOS.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="ChildNotes/ChildNotes.csproj" />
+  <Project Path="ChildNotes.UiDesignCheck/ChildNotes.UiDesignCheck.csproj" />
+</Solution>

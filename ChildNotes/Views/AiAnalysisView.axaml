@@ -1,0 +1,190 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.AiAnalysisView"
+             x:DataType="vm:AiAnalysisViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.record-card">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16,14"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000"/>
+        </Style>
+        <Style Selector="Border.config-field">
+            <Setter Property="Background" Value="#F7FBF8"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,20,20">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="宝宝喂养分析" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding BabyName, StringFormat=当前宝宝：\{0\}}" FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Panel IsVisible="{Binding !ShowDetail}" Margin="0,-12,0,0">
+                    <StackPanel>
+
+                        <Border Background="White" CornerRadius="16" Margin="12,4" Padding="18,16">
+                            <StackPanel>
+                                <TextBlock Text="分析说明" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                <TextBlock Text="基于所选连续 7 天记录生成喂养、睡眠、健康和成长建议。" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="White" CornerRadius="16" Margin="12,8" Padding="18,16">
+                            <StackPanel>
+                                <Grid ColumnDefinitions="*,Auto,*" Margin="0,0,0,8">
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="开始日期" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
+                                        <DatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="至" VerticalAlignment="Bottom" Margin="8,0" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="结束日期" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
+                                        <DatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch"/>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Text="{Binding RangeTip}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="{Binding GenerateButtonText}" Classes="weui-btn primary" CornerRadius="16" Padding="0,14"
+                                Command="{Binding GenerateCommand}" IsEnabled="{Binding CanGenerate}"
+                                Margin="12,4" HorizontalAlignment="Stretch"/>
+
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                                   Margin="12,8" TextWrapping="Wrap"
+                                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                        <Border Classes="section-title" Margin="16,16,16,4">
+                            <TextBlock Text="分析记录"/>
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding Records}" Margin="12,4">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="record-card" PointerPressed="OnRecordTap" Tag="{Binding Id}">
+                                        <StackPanel>
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding CreatedAtLabel}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="1" Text="›" FontSize="18" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                            </Grid>
+                                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="{Binding DataQualityTip}" FontSize="11" Foreground="{StaticResource WeuiOrangeBrush}" Margin="0,2,0,0"
+                                                       IsVisible="{Binding DataQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                            <TextBlock Text="{Binding Preview}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Panel IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Margin="0,40,0,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                                <TextBlock Text="暂无分析记录" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                <TextBlock Text="选择连续 7 天范围，点击上方按钮生成分析" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center" Margin="20,0"/>
+                            </StackPanel>
+                        </Panel>
+
+                    </StackPanel>
+                </Panel>
+
+                <Panel IsVisible="{Binding ShowDetail}" Margin="0,-12,0,0">
+                    <StackPanel>
+                        <Border Background="White" CornerRadius="16" Margin="12,4" Padding="18,16">
+                            <StackPanel Margin="0,0,0,8">
+                                <TextBlock Text="{Binding DetailRangeLabel}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成时间：\{0\}}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0"/>
+                                <TextBlock Text="{Binding DetailQualityTip}" FontSize="12" Foreground="{StaticResource WeuiOrangeBrush}" Margin="0,4,0,0"
+                                           IsVisible="{Binding DetailQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="White" CornerRadius="16" Margin="12,4" Padding="18,16">
+                            <TextBlock Text="{Binding DetailText}" FontSize="14" TextWrapping="Wrap" LineHeight="22"/>
+                        </Border>
+
+                        <Button Content="返回列表" Classes="weui-btn default" CornerRadius="16" Padding="0,12"
+                                Command="{Binding BackToListCommand}" Margin="12,8" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Panel>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <Button Grid.Column="0" Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
+                <Button Grid.Column="1" Content="⚙ 配置" Classes="weui-btn default" Margin="8,0,0,0" Command="{Binding OpenConfigCommand}"/>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="20" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="14"/>
+        </Border>
+
+        <Panel Grid.Row="0" IsVisible="{Binding ShowConfigSheet}">
+            <Border Background="#66000000" ZIndex="10"/>
+            <Border Background="White" CornerRadius="24,24,0,0" Padding="24,24,24,30"
+                    VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
+                    <StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                            <TextBlock Grid.Column="0" Text="大模型配置" FontSize="18" FontWeight="Bold" Foreground="#222"/>
+                            <TextBlock Grid.Column="1" Text="✕" FontSize="20" Foreground="#BBB" PointerPressed="OnCloseConfig"/>
+                        </Grid>
+                        <TextBlock Text="配置 OpenAI 兼容的大模型 API，支持 OpenAI、DeepSeek、通义千问、Moonshot 等" FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="API 地址" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <Border Classes="config-field">
+                            <TextBox Text="{Binding ConfigApiBaseUrl}" PlaceholderText="https://api.openai.com" BorderThickness="0" Background="Transparent"/>
+                        </Border>
+
+                        <TextBlock Text="API Key" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <Border Classes="config-field">
+                            <TextBox Text="{Binding ConfigApiKey}" PlaceholderText="sk-..." BorderThickness="0" Background="Transparent" PasswordChar="*"/>
+                        </Border>
+
+                        <TextBlock Text="模型名称" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <Border Classes="config-field">
+                            <TextBox Text="{Binding ConfigModelName}" PlaceholderText="gpt-4o-mini" BorderThickness="0" Background="Transparent"/>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="温度" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="0" Maximum="2" Value="{Binding ConfigTemperature}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="最大 Token 数" FontSize="14" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="512" Maximum="8192" Value="{Binding ConfigMaxTokens}" TickFrequency="256" IsSnapToTickEnabled="True" Margin="0,0,0,16"/>
+
+                        <Button Content="保存配置" Classes="weui-btn primary" CornerRadius="16" Padding="0,14"
+                                Command="{Binding SaveConfigCommand}" HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Panel>
+
+    </Grid>
+</UserControl>

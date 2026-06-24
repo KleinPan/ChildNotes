@@ -1,0 +1,546 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.RecordSheetView"
+             x:DataType="vm:RecordSheetViewModel"
+             IsVisible="{Binding IsVisible}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.form-section">
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+        <Style Selector="TextBlock.form-label">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="Border.type-tab">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="0,8"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+        </Style>
+        <Style Selector="Border.type-tab.active">
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+        </Style>
+        <Style Selector="Border.type-tab TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.type-tab.active TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="Border.type-card">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="0,12"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.type-card.active">
+            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+        </Style>
+        <Style Selector="TextBox.form-input">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Padding" Value="12,8"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <Border Background="#80000000" IsVisible="{Binding IsVisible}"/>
+
+        <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
+                VerticalAlignment="Bottom" MaxHeight="600" IsVisible="{Binding IsVisible}">
+
+            <Grid RowDefinitions="Auto,*,Auto">
+                <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
+                                Background="Transparent" BorderThickness="0"
+                                Command="{Binding CloseCommand}"/>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsFeedConverter}}">
+                            <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Classes="type-tab"
+                                        Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:RecordSheetView.IsBottleConverter}}"
+                                        PointerPressed="OnFeedBottle">
+                                    <TextBlock Text="🍼 配方奶"/>
+                                </Border>
+                                <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                        Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:RecordSheetView.IsBreastConverter}}"
+                                        PointerPressed="OnFeedBreast">
+                                    <TextBlock Text="🤱 亲喂"/>
+                                </Border>
+                                <Border Grid.Column="2" Classes="type-tab"
+                                        Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:RecordSheetView.IsExpressedConverter}}"
+                                        PointerPressed="OnFeedExpressed">
+                                    <TextBlock Text="🍶 瓶喂母乳"/>
+                                </Border>
+                            </Grid>
+
+                            <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:RecordSheetView.IsBreastConverter}}">
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="← 左侧时长（分钟）"/>
+                                        <TextBox Classes="form-input" Text="{Binding FeedForm.LeftDurationText}" PlaceholderText="0" KeyboardNavigation.IsTabStop="True"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="→ 右侧时长（分钟）"/>
+                                        <TextBox Classes="form-input" Text="{Binding FeedForm.RightDurationText}" PlaceholderText="0"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:RecordSheetView.IsNotBreastConverter}}">
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="奶量（ml）"/>
+                                        <TextBox Classes="form-input" Text="{Binding FeedForm.AmountText}" PlaceholderText="请输入奶量"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding FeedForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsDiaperConverter}}">
+                            <Grid ColumnDefinitions="*,*,*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Classes="type-card"
+                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:RecordSheetView.IsWetConverter}}"
+                                        PointerPressed="OnDiaperWet">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="💧" FontSize="24" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="嘘嘘" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Classes="type-card" Margin="8,0"
+                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:RecordSheetView.IsDirtyConverter}}"
+                                        PointerPressed="OnDiaperDirty">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="💩" FontSize="24" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="便便" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="2" Classes="type-card"
+                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:RecordSheetView.IsBothConverter}}"
+                                        PointerPressed="OnDiaperBoth">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="💧💩" FontSize="20" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="都有" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="3" Classes="type-card" Margin="8,0,0,0"
+                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:RecordSheetView.IsDryConverter}}"
+                                        PointerPressed="OnDiaperDry">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="✅" FontSize="24" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="干爽" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding DiaperForm.SelectedConsistency}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding DiaperForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsSleepConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="开始时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding SleepForm.StartTimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="结束时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding SleepForm.EndTimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsTempConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="体温（℃）"/>
+                                    <TextBox Classes="form-input" Text="{Binding TemperatureForm.TemperatureText}" PlaceholderText="输入体温"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section" Background="#FFF0F0" CornerRadius="8" Padding="10"
+                                    IsVisible="{Binding TemperatureForm.IsFeverWarning}">
+                                <TextBlock Text="⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪" FontSize="12" Foreground="{StaticResource WeuiRedBrush}"/>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding TemperatureForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding TemperatureForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsGrowthConverter}}">
+                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="0,16">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="📏" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        <TextBlock Text="身高" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding GrowthForm.HeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
+                                            <TextBlock Text="cm" FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="0,16" Margin="12,0,0,0">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="⚖️" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                                        <TextBlock Text="体重" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <TextBox Text="{Binding GrowthForm.WeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
+                                            <TextBlock Text="kg" FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding GrowthForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsSupplementConverter}}">
+                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Classes="type-tab"
+                                        Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:RecordSheetView.IsMedicineConverter}}"
+                                        PointerPressed="OnSuppMedicine">
+                                    <TextBlock Text="💊 用药"/>
+                                </Border>
+                                <Border Grid.Column="1" Classes="type-tab" Margin="12,0,0,0"
+                                        Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:RecordSheetView.IsNutritionConverter}}"
+                                        PointerPressed="OnSuppNutrition">
+                                    <TextBlock Text="🥗 营养"/>
+                                </Border>
+                            </Grid>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="名称"/>
+                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Name}" PlaceholderText="如：维生素D、退烧药..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="剂量（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Dose}" PlaceholderText="如：1滴、5ml..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsPumpConverter}}">
+                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="12,10">
+                                    <StackPanel>
+                                        <TextBlock Text="左侧时长（分钟）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                        <TextBox Classes="form-input" Text="{Binding PumpForm.LeftDurationText}" PlaceholderText="0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="12,10" Margin="8,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="右侧时长（分钟）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                        <TextBox Classes="form-input" Text="{Binding PumpForm.RightDurationText}" PlaceholderText="0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
+                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="12,10">
+                                    <StackPanel>
+                                        <TextBlock Text="左侧奶量（ml）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                        <TextBox Classes="form-input" Text="{Binding PumpForm.LeftAmountText}" PlaceholderText="0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="12,10" Margin="8,0,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="右侧奶量（ml）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                        <TextBox Classes="form-input" Text="{Binding PumpForm.RightAmountText}" PlaceholderText="0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="总奶量（ml，选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding PumpForm.TotalAmountText}" PlaceholderText="不填则自动计算"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding PumpForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding PumpForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsComplementaryConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="食物名称"/>
+                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.FoodName}" PlaceholderText="如：南瓜泥、米粉..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="质地"/>
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <Border Grid.Column="0" Classes="type-tab"
+                                                Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:RecordSheetView.IsPureeConverter}}"
+                                                PointerPressed="OnTexturePuree">
+                                            <TextBlock Text="泥糊"/>
+                                        </Border>
+                                        <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                                Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:RecordSheetView.IsMashedConverter}}"
+                                                PointerPressed="OnTextureMashed">
+                                            <TextBlock Text="碎末"/>
+                                        </Border>
+                                        <Border Grid.Column="2" Classes="type-tab"
+                                                Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:RecordSheetView.IsLumpyConverter}}"
+                                                PointerPressed="OnTextureLumpy">
+                                            <TextBlock Text="小块"/>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="食量（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.AmountText}" PlaceholderText="如：2勺、半碗..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="反应"/>
+                                    <Grid ColumnDefinitions="*,*,*,*">
+                                        <Border Grid.Column="0" Classes="type-tab"
+                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:RecordSheetView.IsNoneReactionConverter}}"
+                                                PointerPressed="OnReactionNone">
+                                            <TextBlock Text="无"/>
+                                        </Border>
+                                        <Border Grid.Column="1" Classes="type-tab" Margin="6,0"
+                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:RecordSheetView.IsAllergyConverter}}"
+                                                PointerPressed="OnReactionAllergy">
+                                            <TextBlock Text="过敏"/>
+                                        </Border>
+                                        <Border Grid.Column="2" Classes="type-tab"
+                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:RecordSheetView.IsVomitReactionConverter}}"
+                                                PointerPressed="OnReactionVomit">
+                                            <TextBlock Text="呕吐"/>
+                                        </Border>
+                                        <Border Grid.Column="3" Classes="type-tab" Margin="6,0,0,0"
+                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:RecordSheetView.IsDiarrheaReactionConverter}}"
+                                                PointerPressed="OnReactionDiarrhea">
+                                            <TextBlock Text="腹泻"/>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsAbnormalConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="体温（℃，选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.TemperatureText}" PlaceholderText="如有发热请填写"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="症状（可多选）"/>
+                                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
+                                        <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="10" Padding="12,10">
+                                            <CheckBox Content="发烧" IsChecked="{Binding AbnormalForm.HasFever}"/>
+                                        </Border>
+                                        <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="10" Padding="12,10" Margin="8,0,0,0">
+                                            <CheckBox Content="腹泻" IsChecked="{Binding AbnormalForm.HasDiarrhea}"/>
+                                        </Border>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,*">
+                                        <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="10" Padding="12,10">
+                                            <CheckBox Content="呕吐" IsChecked="{Binding AbnormalForm.HasVomit}"/>
+                                        </Border>
+                                        <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="10" Padding="12,10" Margin="8,0,0,0">
+                                            <CheckBox Content="咳嗽" IsChecked="{Binding AbnormalForm.HasCough}"/>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="是否用药"/>
+                                    <CheckBox Content="已服用药物" IsChecked="{Binding AbnormalForm.HasMedicine}"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsVaccineConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="疫苗名称"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.Name}" PlaceholderText="如：乙肝疫苗、卡介苗..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="下一针名称（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.NextName}" PlaceholderText="如：百白破..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="下一针日期（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.NextDateText}" PlaceholderText="如：2026-07-01"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsActivityConverter}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="活动名称"/>
+                                    <TextBox Classes="form-input" Text="{Binding ActivityForm.Name}" PlaceholderText="如：翻身练习、户外散步..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="活动类型"/>
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <Border Grid.Column="0" Classes="type-tab"
+                                                Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:RecordSheetView.IsPlayConverter}}"
+                                                PointerPressed="OnCategoryPlay">
+                                            <TextBlock Text="游戏"/>
+                                        </Border>
+                                        <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                                Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:RecordSheetView.IsOutdoorConverter}}"
+                                                PointerPressed="OnCategoryOutdoor">
+                                            <TextBlock Text="户外"/>
+                                        </Border>
+                                        <Border Grid.Column="2" Classes="type-tab"
+                                                Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:RecordSheetView.IsExerciseConverter}}"
+                                                PointerPressed="OnCategoryExercise">
+                                            <TextBlock Text="运动"/>
+                                        </Border>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding ActivityForm.DurationText}" PlaceholderText="0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录时间"/>
+                                    <TextBox Classes="form-input" Text="{Binding ActivityForm.TimeText}" PlaceholderText="HH:mm"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                                   Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                    <Button Content="保存记录" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                            Command="{Binding SaveCommand}"/>
+                </Border>
+            </Grid>
+        </Border>
+    </Panel>
+</UserControl>

@@ -1,0 +1,112 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ChildNotes.Styles.WeUIStyles">
+
+    <Style Selector="TextBlock">
+        <Setter Property="FontFamily" Value="Segoe UI, -apple-system, BlinkMacSystemFont, Roboto, sans-serif" />
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
+    </Style>
+
+    <Style Selector="Border.weui-card">
+        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="Margin" Value="12,8" />
+    </Style>
+
+    <Style Selector="Border.weui-cell">
+        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
+        <Setter Property="Padding" Value="14,12" />
+        <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />
+    </Style>
+
+    <Style Selector="Button.weui-btn">
+        <Setter Property="CornerRadius" Value="{StaticResource WeuiBtnRadius}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.weui-btn.primary">
+        <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.weui-btn.primary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#06AD56" />
+    </Style>
+
+    <Style Selector="Button.weui-btn.warn">
+        <Setter Property="Background" Value="{StaticResource WeuiRedBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Button.weui-btn.default">
+        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <Style Selector="Button.weui-btn.mini">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+    <Style Selector="Border.tab-bar">
+        <Setter Property="Background" Value="White" />
+        <Setter Property="BorderBrush" Value="#F0F0F0" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="BoxShadow" Value="0 -2 12 0 #0A000000" />
+    </Style>
+
+    <Style Selector="Button.tab-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0,8" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="MinHeight" Value="52" />
+    </Style>
+    <Style Selector="Button.tab-item TextBlock.tab-icon">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tab-item TextBlock.tab-text">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="#999999" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tab-item.active TextBlock.tab-text">
+        <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+
+    <Style Selector="Border.chip">
+        <Setter Property="CornerRadius" Value="14" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+        <Setter Property="Margin" Value="0,0,8,0" />
+    </Style>
+    <Style Selector="Border.chip.active">
+        <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+    </Style>
+    <Style Selector="Border.chip TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+    </Style>
+    <Style Selector="Border.chip.active TextBlock">
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="Border.section-title">
+        <Setter Property="Margin" Value="16,12,16,4" />
+    </Style>
+    <Style Selector="Border.section-title TextBlock">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
+    </Style>
+</Styles>

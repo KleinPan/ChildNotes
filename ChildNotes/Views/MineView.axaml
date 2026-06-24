@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.MineView"
+             x:DataType="vm:MineViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+
+            <Border Background="{StaticResource WeuiBg2Brush}" Padding="20,24" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Border Grid.Column="0" Width="60" Height="60" CornerRadius="30" Background="{StaticResource WeuiBg1Brush}">
+                        <TextBlock Text="👤" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
+                        <TextBlock Text="{Binding NickName}" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding RoleText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <TextBlock Grid.Column="2" Text="›" FontSize="24" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <Border Classes="section-title">
+                <TextBlock Text="宝宝"/>
+            </Border>
+
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <StackPanel>
+                    <Grid Margin="14,12" PointerPressed="OnAddBabyTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="👶" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="添加宝宝" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="{Binding BabyCount, StringFormat=\{0\}个宝宝}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Grid Margin="14,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="📝" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="宝宝信息" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="查看" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Grid Margin="14,12" PointerPressed="OnFamilyTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="👪" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="家人管理" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="section-title">
+                <TextBlock Text="工具"/>
+            </Border>
+
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <StackPanel>
+                    <Grid Margin="14,12" PointerPressed="OnAiAnalysisTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6" Background="{StaticResource WeuiBlueBrush}">
+                            <TextBlock Text="析" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="宝宝喂养分析" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                        <TextBlock Grid.Column="2" Text="最近一周" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Grid Margin="14,12" PointerPressed="OnStatisticsTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="📊" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="统计分析" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Grid Margin="14,12" PointerPressed="OnPointsTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🎁" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="积分任务" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="section-title">
+                <TextBlock Text="设置"/>
+            </Border>
+
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Grid Margin="14,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="ℹ️" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Grid.Column="1" Text="关于" FontSize="15" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="v1.0.0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <Button Content="退出登录" Classes="weui-btn default" Margin="24,16" Command="{Binding LogoutCommand}"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,226 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.FeedingView"
+             x:DataType="vm:FeedingViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.delete-btn">
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Background" Value="#FAEDED"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiRedBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" Padding="8,12" Margin="0,0,0,8">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Button Grid.Column="0" Content="‹" FontSize="22" Padding="16,4"
+                                Background="Transparent" BorderThickness="0"
+                                Command="{Binding PrevDayCommand}"/>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayDate}" FontSize="15" FontWeight="Medium" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="›" FontSize="22" Padding="16,4"
+                                Background="Transparent" BorderThickness="0"
+                                Command="{Binding NextDayCommand}"/>
+                    </Grid>
+                </Border>
+
+                <Button Content="回到今天" Classes="weui-btn default mini" HorizontalAlignment="Center"
+                        Margin="0,0,0,8" Command="{Binding GoTodayCommand}"
+                        IsVisible="{Binding !IsToday}"/>
+
+                <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <StackPanel Spacing="8">
+                        <StackPanel IsVisible="{Binding DayStats.FeedCount}" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🍼" FontSize="15"/>
+                            <TextBlock FontSize="13">
+                                <Run Text="喂奶"/><Run Text="{Binding DayStats.FeedCount}"/><Run Text="次 · 奶量"/><Run Text="{Binding DayStats.TotalMilk}"/><Run Text="ml"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding DayStats.BreastCount}" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🤱" FontSize="15"/>
+                            <TextBlock FontSize="13">
+                                <Run Text="亲喂"/><Run Text="{Binding DayStats.BreastCount}"/><Run Text="次"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding DayStats.DiaperCount}" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="💩" FontSize="15"/>
+                            <TextBlock FontSize="13">
+                                <Run Text="{Binding DayStats.DiaperCount}"/><Run Text="次尿布 · 便"/><Run Text="{Binding DayStats.DirtyDiaperCount}"/><Run Text=" · 尿"/><Run Text="{Binding DayStats.WetDiaperCount}"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding DayStats.SupplementCount}" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="💊" FontSize="15"/>
+                            <TextBlock FontSize="13">
+                                <Run Text="补给"/><Run Text="{Binding DayStats.SupplementCount}"/><Run Text="次"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding DayStats.SleepTotalMin}" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="😴" FontSize="15"/>
+                            <TextBlock FontSize="13">
+                                <Run Text="睡眠"/><Run Text="{Binding DayStats.SleepTotalMin}"/><Run Text="分钟"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section-title">
+                    <TextBlock Text="记录列表"/>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Records}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="weui-card" Margin="12,4"
+                                    PointerPressed="OnRecordTap" Tag="{Binding .}">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TitleText}" FontSize="15" FontWeight="Medium"/>
+                                        <TextBlock Text="{Binding SubText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding TimeText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <Border Grid.Column="3" Width="28" Height="28" CornerRadius="14" Background="#F5F5F5"
+                                            VerticalAlignment="Center" PointerPressed="OnDeleteTap" Tag="{Binding .}">
+                                        <TextBlock Text="🗑" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <TextBlock Text="当天暂无记录" FontSize="13" Foreground="{StaticResource WeuiFg2Brush}"
+                           HorizontalAlignment="Center" Margin="0,40"
+                           IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="20" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="14"/>
+        </Border>
+
+        <Panel IsVisible="{Binding ShowDeleteConfirm}">
+            <Border Background="#66000000"/>
+            <Border Background="White" CornerRadius="16" Padding="28,24" MaxWidth="300"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="确认删除" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="确定要删除这条记录吗？" FontSize="14" Foreground="#666" TextAlignment="Center" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding DeleteItemTitle}" FontSize="13" Foreground="#999" TextAlignment="Center" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="20" Padding="24,8"
+                                Command="{Binding CancelDeleteCommand}"/>
+                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="20" Padding="24,8"
+                                Command="{Binding ConfirmDeleteCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+
+        <Panel IsVisible="{Binding RecordEdit.IsVisible}">
+            <Border Background="#80000000"/>
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
+                    VerticalAlignment="Bottom" MaxHeight="600">
+                <Grid RowDefinitions="Auto,Auto,Auto">
+                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding RecordEdit.SheetTitle}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
+                                    Background="Transparent" BorderThickness="0"
+                                    Command="{Binding RecordEdit.CloseCommand}"/>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsFeedConverter}}">
+                                <TextBlock Text="奶量（ml）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.FeedForm.AmountText}" PlaceholderText="0" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsSleepConverter}}">
+                                <TextBlock Text="时长（分钟）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.SleepForm.DurationText}" PlaceholderText="0" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsTempConverter}}">
+                                <TextBlock Text="体温（℃）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.TemperatureForm.TemperatureText}" PlaceholderText="36.5" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsGrowthConverter}}">
+                                <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
+                                    <Border Grid.Column="0" Background="#F5F5F5" CornerRadius="8" Padding="12,8">
+                                        <StackPanel>
+                                            <TextBlock Text="身高（cm）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding RecordEdit.GrowthForm.HeightText}" BorderThickness="0" Background="Transparent"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Grid.Column="1" Background="#F5F5F5" CornerRadius="8" Padding="12,8" Margin="8,0,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="体重（kg）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
+                                            <TextBox Text="{Binding RecordEdit.GrowthForm.WeightText}" BorderThickness="0" Background="Transparent"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsPumpConverter}}">
+                                <TextBlock Text="总奶量（ml）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.PumpForm.TotalAmountText}" PlaceholderText="0" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsVaccineConverter}}">
+                                <TextBlock Text="疫苗名称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.VaccineForm.Name}" PlaceholderText="疫苗名称" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+                            <StackPanel IsVisible="{Binding RecordEdit.ActiveType, Converter={x:Static v:FeedingView.IsActivityConverter}}">
+                                <TextBlock Text="活动名称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.ActivityForm.Name}" PlaceholderText="活动名称" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                                <TextBlock Text="时长（分钟）" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,8,0,6"/>
+                                <TextBox Text="{Binding RecordEdit.ActivityForm.DurationText}" PlaceholderText="0" CornerRadius="8" Background="#F5F5F5" Padding="12,8"/>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding RecordEdit.ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                                       IsVisible="{Binding RecordEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                        <Button Content="保存" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                                Command="{Binding RecordEdit.SaveCommand}"/>
+                    </Border>
+                </Grid>
+            </Border>
+        </Panel>
+
+        <Panel IsVisible="{Binding RecordEdit.ShowDeleteConfirm}">
+            <Border Background="#66000000"/>
+            <Border Background="White" CornerRadius="16" Padding="28,24" MaxWidth="300"
+                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="确认删除" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="确定要删除这条记录吗？" FontSize="14" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="20" Padding="24,8"
+                                Command="{Binding RecordEdit.CancelDeleteCommand}"/>
+                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="20" Padding="24,8"
+                                Command="{Binding RecordEdit.ConfirmDeleteCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Panel>
+
+    </Panel>
+</UserControl>

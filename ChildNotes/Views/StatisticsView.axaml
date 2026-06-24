@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.StatisticsView"
+             x:DataType="vm:StatisticsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.stat-chip">
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+        </Style>
+        <Style Selector="Border.stat-chip.active">
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+        </Style>
+        <Style Selector="Border.stat-chip TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+        </Style>
+        <Style Selector="Border.stat-chip.active TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Background="{StaticResource WeuiBg2Brush}" Padding="16,16,16,12">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="统计分析" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CurrentTypeLabel}"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <ItemsControl ItemsSource="{Binding TypeOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="stat-chip"
+                                        Classes.active="{Binding IsSelected}"
+                                        PointerPressed="OnTypeTap">
+                                    <TextBlock Text="{Binding Label}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <ItemsControl ItemsSource="{Binding RangeOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="stat-chip"
+                                        Classes.active="{Binding IsSelected}"
+                                        PointerPressed="OnRangeTap">
+                                    <TextBlock Text="{Binding Label}"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8" Padding="16,16" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <Grid ColumnDefinitions="*,*,*">
+                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                            <TextBlock Text="总计" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding AverageLabel}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding AverageText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                            <TextBlock Text="最高" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding MaxText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,16" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <StackPanel>
+                        <TextBlock Text="趋势图" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="180">
+                            <ItemsControl ItemsSource="{Binding ChartBars}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Width="34" HorizontalAlignment="Center" VerticalAlignment="Bottom" Spacing="4">
+                                            <TextBlock Text="{Binding ValueText}" FontSize="9" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                                            <Border Height="{Binding HeightPct}" MinHeight="2" CornerRadius="3,3,0,0"
+                                                    Background="{Binding BarColor}" VerticalAlignment="Bottom"/>
+                                            <TextBlock Text="{Binding Label}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="2" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+            <Button Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
+        </Border>
+    </Grid>
+</UserControl>

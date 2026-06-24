@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:views="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.MainShellView"
+             x:DataType="vm:MainShellViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Button.tab-item TextBlock.tab-text">
+            <Setter Property="Foreground" Value="#999999"/>
+        </Style>
+        <Style Selector="Button.tab-item.active TextBlock.tab-text">
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="*,Auto">
+
+        <ContentControl Grid.Row="0" Content="{Binding CurrentTab}" IsTabStop="False"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding RecordSheet}" IsTabStop="False"
+                        IsVisible="{Binding IsRecordSheetOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding BabySetup}" IsTabStop="False"
+                        IsVisible="{Binding IsBabySetupOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding Statistics}" IsTabStop="False"
+                        IsVisible="{Binding IsStatisticsOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding Points}" IsTabStop="False"
+                        IsVisible="{Binding IsPointsOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding Family}" IsTabStop="False"
+                        IsVisible="{Binding IsFamilyOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding AiAnalysis}" IsTabStop="False"
+                        IsVisible="{Binding IsAiAnalysisOpen}"/>
+
+        <Border Grid.Row="1" Classes="tab-bar">
+            <Grid ColumnDefinitions="*,*,*,*">
+                <Button Grid.Column="0" Classes="tab-item"
+                        Classes.active="{Binding IsHomeSelected}"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="home">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                        <PathIcon Data="{StaticResource icon-home}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="首页" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Classes="tab-item"
+                        Classes.active="{Binding IsFeedingSelected}"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="feeding">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                        <PathIcon Data="{StaticResource icon-feed}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="喂养" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Classes="tab-item"
+                        Classes.active="{Binding IsGrowthSelected}"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="growth">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                        <PathIcon Data="{StaticResource icon-growth}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="成长" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="3" Classes="tab-item"
+                        Classes.active="{Binding IsMineSelected}"
+                        Command="{Binding SwitchTabCommand}" CommandParameter="mine">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
+                        <PathIcon Data="{StaticResource icon-mine}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="我的" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
