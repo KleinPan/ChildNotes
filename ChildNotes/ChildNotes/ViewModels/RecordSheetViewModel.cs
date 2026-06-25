@@ -52,6 +52,58 @@ public partial class RecordSheetViewModel : ViewModelBase
         };
         ErrorMessage = string.Empty;
         IsVisible = true;
+        // 疫苗类型需要加载时间轴
+        if (type == RecordType.Vaccine)
+        {
+            VaccineForm.Load();
+        }
+    }
+
+    /// <summary>疫苗专用：标记某剂次为「已打」并保存</summary>
+    public bool MarkVaccineDone(VaccinePlanView plan)
+    {
+        var dto = VaccineForm.MarkDone(plan);
+        if (dto is null) return false;
+        try
+        {
+            _recordService.AddVaccine(dto);
+            VaccineForm.Load(); // 刷新时间轴状态
+            Saved?.Invoke();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"保存失败：{ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>疫苗专用：标记某剂次为「跳过」并保存</summary>
+    public bool MarkVaccineSkipped(VaccinePlanView plan)
+    {
+        var dto = VaccineForm.MarkSkipped(plan);
+        if (dto is null) return false;
+        try
+        {
+            _recordService.AddVaccine(dto);
+            VaccineForm.Load();
+            Saved?.Invoke();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"保存失败：{ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>疫苗专用：添加自定义疫苗到时间轴</summary>
+    public (bool Ok, string Error) AddCustomVaccine()
+    {
+        var (ok, error) = VaccineForm.AddCustomVaccine();
+        if (!ok) ErrorMessage = error;
+        else ErrorMessage = string.Empty;
+        return (ok, error);
     }
 
     [RelayCommand]

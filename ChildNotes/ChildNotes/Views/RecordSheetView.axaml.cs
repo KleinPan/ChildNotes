@@ -3,6 +3,7 @@ using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using ChildNotes.Models;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 using System.Globalization;
 
@@ -25,6 +26,7 @@ public partial class RecordSheetView : UserControl
     public static readonly IValueConverter IsComplementaryConverter = new EqualsConverter(RecordType.Complementary);
     public static readonly IValueConverter IsAbnormalConverter = new EqualsConverter(RecordType.Abnormal);
     public static readonly IValueConverter IsVaccineConverter = new EqualsConverter(RecordType.Vaccine);
+    public static readonly IValueConverter IsNotVaccineConverter = new NotEqualsConverter(RecordType.Vaccine);
     public static readonly IValueConverter IsActivityConverter = new EqualsConverter(RecordType.Activity);
 
     public static readonly IValueConverter IsBottleConverter = new EqualsConverter("bottle");
@@ -51,6 +53,26 @@ public partial class RecordSheetView : UserControl
     public static readonly IValueConverter IsPlayConverter = new EqualsConverter("play");
     public static readonly IValueConverter IsOutdoorConverter = new EqualsConverter("outdoor");
     public static readonly IValueConverter IsExerciseConverter = new EqualsConverter("exercise");
+
+    // 疫苗自定义类型分段
+    public static readonly IValueConverter IsCustomFreeConverter = new EqualsConverter("free");
+    public static readonly IValueConverter IsCustomPaidConverter = new EqualsConverter("paid");
+
+    // 疫苗时间轴状态
+    public static readonly IValueConverter IsStatusDoneConverter = new EqualsConverter(VaccineDoseStatus.Done);
+    public static readonly IValueConverter IsStatusSkippedConverter = new EqualsConverter(VaccineDoseStatus.Skipped);
+    public static readonly IValueConverter IsStatusReplacedConverter = new EqualsConverter(VaccineDoseStatus.Replaced);
+    public static readonly IValueConverter IsStatusOverdueConverter = new EqualsConverter(VaccineDoseStatus.Overdue);
+    public static readonly IValueConverter IsStatusDueConverter = new EqualsConverter(VaccineDoseStatus.Due);
+    public static readonly IValueConverter IsStatusSoonConverter = new EqualsConverter(VaccineDoseStatus.Soon);
+    public static readonly IValueConverter IsStatusPendingConverter = new EqualsConverter(VaccineDoseStatus.Pending);
+
+    // 通用：非 null 转换器（用于 SelectedPlan 可见性）
+    public static readonly IValueConverter IsNotNullConverter = new FuncValueConverter<object?, bool>(o => o is not null);
+
+    // 疫苗折叠按钮文案：true→收起，false→+ 添加
+    public static readonly IValueConverter VaccineToggleTextConverter = new FuncValueConverter<bool, string>(
+        isExpanded => isExpanded ? "收起" : "+ 添加");
 
     private void OnFeedBottle(object sender, PointerPressedEventArgs e) => SwitchFeed("bottle");
     private void OnFeedBreast(object sender, PointerPressedEventArgs e) => SwitchFeed("breast");
@@ -82,4 +104,52 @@ public partial class RecordSheetView : UserControl
     private void OnCategoryOutdoor(object sender, PointerPressedEventArgs e) => SwitchCategory("outdoor");
     private void OnCategoryExercise(object sender, PointerPressedEventArgs e) => SwitchCategory("exercise");
     private void SwitchCategory(string c) { if (DataContext is RecordSheetViewModel vm) vm.ActivityForm.SelectCategory(c); }
+
+    // ===== 疫苗时间轴相关 =====
+    private void OnVaccineDoseClick(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.VaccineForm.SelectDose(plan);
+        }
+    }
+
+    private void OnVaccineMarkDone(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.MarkVaccineDone(plan);
+        }
+    }
+
+    private void OnVaccineSkip(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.MarkVaccineSkipped(plan);
+        }
+    }
+
+    private void OnVaccineToggleCustomForm(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is RecordSheetViewModel vm)
+        {
+            vm.VaccineForm.ToggleCustomVaccineFormCommand.Execute(null);
+        }
+    }
+
+    private void OnCustomCategoryFree(object sender, PointerPressedEventArgs e) => SwitchCustomCategory("free");
+    private void OnCustomCategoryPaid(object sender, PointerPressedEventArgs e) => SwitchCustomCategory("paid");
+    private void SwitchCustomCategory(string c)
+    {
+        if (DataContext is RecordSheetViewModel vm) vm.VaccineForm.SwitchCustomCategoryCommand.Execute(c);
+    }
+
+    private void OnAddCustomVaccine(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is RecordSheetViewModel vm)
+        {
+            vm.AddCustomVaccine();
+        }
+    }
 }

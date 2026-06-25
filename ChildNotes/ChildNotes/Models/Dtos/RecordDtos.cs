@@ -101,6 +101,26 @@ public sealed class VaccineRecordDto : BaseRecordDto
     public string? NextName { get; set; }
     public string? NextDate { get; set; }
     public string? Note { get; set; }
+    /// <summary>疫苗目录 Id（如 hepb、bcg），自定义疫苗为 null</summary>
+    public string? VaccineId { get; set; }
+    /// <summary>剂次 Id（如 dose1），自定义疫苗为 null</summary>
+    public string? DoseId { get; set; }
+    /// <summary>免费 free / 自费 paid</summary>
+    public string? Category { get; set; }
+    /// <summary>剂次标签（如 第1剂、1剂）</summary>
+    public string? DoseLabel { get; set; }
+    /// <summary>状态：done 已打 / skipped 已跳过</summary>
+    public string? Status { get; set; }
+    /// <summary>是否跳过</summary>
+    public bool? Skipped { get; set; }
+    /// <summary>跳过原因</summary>
+    public string? SkippedReason { get; set; }
+    /// <summary>推荐接种日期文本（如 2026-07-01）</summary>
+    public string? RecommendedDate { get; set; }
+    /// <summary>是否自定义疫苗</summary>
+    public bool? Custom { get; set; }
+    /// <summary>预防疾病</summary>
+    public string? Disease { get; set; }
 }
 
 public sealed class ActivityRecordDto : BaseRecordDto

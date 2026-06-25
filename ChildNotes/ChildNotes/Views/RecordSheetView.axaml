@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:ctrl="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -50,6 +51,99 @@
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Background" Value="#F5F5F5"/>
             <Setter Property="Padding" Value="12,8"/>
+        </Style>
+        <!-- 疫苗时间轴样式 -->
+        <Style Selector="Border.vf-entry">
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="14,12"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="0,0,0,12"/>
+        </Style>
+        <Style Selector="Border.vf-card">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Border.vf-card.done">
+            <Setter Property="Background" Value="#EDFDF5"/>
+            <Setter Property="BorderBrush" Value="#9EE6C1"/>
+        </Style>
+        <Style Selector="Border.vf-card.skipped">
+            <Setter Property="Background" Value="#F7F8FA"/>
+            <Setter Property="BorderBrush" Value="#D0D5DD"/>
+        </Style>
+        <Style Selector="Border.vf-card.replaced">
+            <Setter Property="Background" Value="#EDFDF5"/>
+            <Setter Property="BorderBrush" Value="#9EE6C1"/>
+        </Style>
+        <Style Selector="Border.vf-card.overdue">
+            <Setter Property="Background" Value="#FFF4ED"/>
+            <Setter Property="BorderBrush" Value="#FFBF9B"/>
+        </Style>
+        <Style Selector="Border.vf-card.due">
+            <Setter Property="Background" Value="#FFFBE8"/>
+            <Setter Property="BorderBrush" Value="#F4D35E"/>
+        </Style>
+        <Style Selector="Border.vf-card.soon">
+            <Setter Property="Background" Value="#FFFBE8"/>
+            <Setter Property="BorderBrush" Value="#F4D35E"/>
+        </Style>
+        <Style Selector="Border.vf-card.pending">
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+        </Style>
+        <Style Selector="Panel.vf-axis">
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Margin" Value="0,8,0,0"/>
+        </Style>
+        <Style Selector="Border.vf-dot">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.vf-segment">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.vf-segment.active">
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
+        </Style>
+        <Style Selector="Border.vf-segment TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.vf-segment.active TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+        <Style Selector="Button.vf-mark">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.vf-skip">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#FA9D3B"/>
+            <Setter Property="BorderBrush" Value="#FA9D3B"/>
+            <Setter Property="BorderThickness" Value="1"/>
         </Style>
     </UserControl.Styles>
 
@@ -456,36 +550,213 @@
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsVaccineConverter}}">
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="疫苗名称"/>
-                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.Name}" PlaceholderText="如：乙肝疫苗、卡介苗..."/>
-                                </StackPanel>
+                            <!-- A. 添加自定义疫苗入口 -->
+                            <Border Classes="vf-entry" PointerPressed="OnVaccineToggleCustomForm">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="添加自定义疫苗" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock Text="添加后会进入当前宝宝的疫苗时间线" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Background="#EEF8FF" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding VaccineForm.ShowCustomVaccineForm, Converter={x:Static v:RecordSheetView.VaccineToggleTextConverter}}"
+                                                   FontSize="12" Foreground="#0675B8"/>
+                                    </Border>
+                                </Grid>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="下一针名称（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.NextName}" PlaceholderText="如：百白破..."/>
-                                </StackPanel>
+
+                            <!-- B. 自定义疫苗表单（折叠） -->
+                            <StackPanel IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Margin="0,0,0,12" Spacing="10">
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="疫苗名称"/>
+                                        <TextBox Classes="form-input" Text="{Binding VaccineForm.CustomVaccineName}" PlaceholderText="如：流感疫苗加强针"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="类型"/>
+                                        <Grid ColumnDefinitions="*,*">
+                                            <Border Grid.Column="0" Classes="vf-segment" Margin="0,0,4,0"
+                                                    Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:RecordSheetView.IsCustomFreeConverter}}"
+                                                    PointerPressed="OnCustomCategoryFree">
+                                                <TextBlock Text="免费疫苗"/>
+                                            </Border>
+                                            <Border Grid.Column="1" Classes="vf-segment" Margin="4,0,0,0"
+                                                    Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:RecordSheetView.IsCustomPaidConverter}}"
+                                                    PointerPressed="OnCustomCategoryPaid">
+                                                <TextBlock Text="自费疫苗"/>
+                                            </Border>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="接种时间"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox Grid.Column="0" Classes="form-input" Margin="0,0,8,0"
+                                                     Text="{Binding VaccineForm.CustomVaccineAgeValue}" PlaceholderText="数值"/>
+                                            <ComboBox Grid.Column="1" MinWidth="100"
+                                                      SelectedIndex="{Binding VaccineForm.CustomVaccineAgeUnitIndex}"
+                                                      ItemsSource="{Binding VaccineForm.CustomVaccineAgeUnits}"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="form-section">
+                                    <StackPanel>
+                                        <TextBlock Classes="form-label" Text="预防疾病"/>
+                                        <TextBox Classes="form-input" Text="{Binding VaccineForm.CustomVaccineDisease}" PlaceholderText="可不填"/>
+                                    </StackPanel>
+                                </Border>
+                                <Button Content="加入时间线" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                                        Click="OnAddCustomVaccine"/>
+                            </StackPanel>
+
+                            <!-- C. 已选剂次卡片 -->
+                            <Border Classes="vf-entry" Background="#EEF8FF" BorderBrush="#BFE8FF"
+                                    IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}"
+                                    Margin="0,0,0,12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="2">
+                                        <TextBlock Text="已选择" FontSize="11" Foreground="#0675B8"/>
+                                        <TextBlock Text="{Binding VaccineForm.SelectedPlan.Name}" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}">
+                                            <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}"/>
+                                            <Run Text=" · "/>
+                                            <Run Text="{Binding VaccineForm.SelectedPlan.RecommendedDateText}"/>
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding VaccineForm.SelectedPlan.StatusText}" FontSize="11" Foreground="#0675B8"/>
+                                    </Border>
+                                </Grid>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="下一针日期（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.NextDateText}" PlaceholderText="如：2026-07-01"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.Note}" PlaceholderText="补充说明..."/>
-                                </StackPanel>
-                            </Border>
+
+                            <!-- D. 记录时间（用于已打/跳过） -->
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.TimeText}" PlaceholderText="HH:mm"/>
+                                    <TextBox Classes="form-input" Text="{Binding VaccineForm.RecordTimeText}" PlaceholderText="YYYY-MM-DD HH:mm"/>
                                 </StackPanel>
                             </Border>
+
+                            <!-- E. 时间轴表头 -->
+                            <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,4">
+                                <Border Grid.Column="0" Background="#EEF8FF" CornerRadius="6" Padding="8,6">
+                                    <TextBlock Text="免费疫苗" FontSize="12" Foreground="#0675B8" HorizontalAlignment="Center" FontWeight="Medium"/>
+                                </Border>
+                                <Border Grid.Column="1" Background="#F3F4F6" CornerRadius="6" Padding="8,6" Margin="4,0">
+                                    <TextBlock Text="时间" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                                </Border>
+                                <Border Grid.Column="2" Background="#FFF7ED" CornerRadius="6" Padding="8,6">
+                                    <TextBlock Text="自费疫苗" FontSize="12" Foreground="#B45309" HorizontalAlignment="Center" FontWeight="Medium"/>
+                                </Border>
+                            </Grid>
+
+                            <!-- F. 时间轴分组 -->
+                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0">
+                                            <!-- 左：免费疫苗 -->
+                                            <StackPanel Grid.Column="0" Spacing="4">
+                                                <ItemsControl ItemsSource="{Binding FreeDoses}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Classes="vf-card" Classes.done="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusDoneConverter}}"
+                                                                    Classes.skipped="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusSkippedConverter}}"
+                                                                    Classes.replaced="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusReplacedConverter}}"
+                                                                    Classes.overdue="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusOverdueConverter}}"
+                                                                    Classes.due="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusDueConverter}}"
+                                                                    Classes.soon="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusSoonConverter}}"
+                                                                    Classes.pending="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusPendingConverter}}"
+                                                                    PointerPressed="OnVaccineDoseClick">
+                                                                <StackPanel Spacing="2">
+                                                                    <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
+                                                                        <Run Text="{Binding DoseLabel}"/>
+                                                                        <Run Text=" · "/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排'}"/>
+                                                                    </TextBlock>
+                                                                    <TextBlock Text="{Binding Disease}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                                                                                    IsVisible="{Binding !Handled}">
+                                                                            <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
+                                                                            <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="暂无" FontSize="11" Foreground="{StaticResource WeuiFg3Brush}"
+                                                           HorizontalAlignment="Center" IsVisible="{Binding !HasFree}"/>
+                                            </StackPanel>
+
+                                            <!-- 中：时间轴节点（连贯竖线 + 圆点 + 标签） -->
+                                            <Panel Grid.Column="1" Width="60">
+                                                <ctrl:TimelineAxisItem HorizontalAlignment="Center"
+                                                                       LineBrush="#E5E7EB" LineWidth="2"
+                                                                       DotSize="0" HalfSpacing="6"/>
+                                                <StackPanel HorizontalAlignment="Center" Spacing="4" Margin="0,0,0,0">
+                                                    <Border Classes="vf-dot"/>
+                                                    <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Medium" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding DateText}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
+                                                    <TextBlock FontSize="9" Foreground="{StaticResource WeuiFg3Brush}" HorizontalAlignment="Center">
+                                                        <Run Text="{Binding HandledCount}"/>
+                                                        <Run Text="/"/>
+                                                        <Run Text="{Binding TotalCount}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Panel>
+
+                                            <!-- 右：自费疫苗 -->
+                                            <StackPanel Grid.Column="2" Spacing="4">
+                                                <ItemsControl ItemsSource="{Binding PaidDoses}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Classes="vf-card" Classes.done="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusDoneConverter}}"
+                                                                    Classes.skipped="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusSkippedConverter}}"
+                                                                    Classes.replaced="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusReplacedConverter}}"
+                                                                    Classes.overdue="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusOverdueConverter}}"
+                                                                    Classes.due="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusDueConverter}}"
+                                                                    Classes.soon="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusSoonConverter}}"
+                                                                    Classes.pending="{Binding StatusClass, Converter={x:Static v:RecordSheetView.IsStatusPendingConverter}}"
+                                                                    PointerPressed="OnVaccineDoseClick">
+                                                                <StackPanel Spacing="2">
+                                                                    <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
+                                                                        <Run Text="{Binding DoseLabel}"/>
+                                                                        <Run Text=" · "/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排'}"/>
+                                                                    </TextBlock>
+                                                                    <TextBlock Text="{Binding Disease}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                                                                                    IsVisible="{Binding !Handled}">
+                                                                            <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
+                                                                            <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                </StackPanel>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="暂无" FontSize="11" Foreground="{StaticResource WeuiFg3Brush}"
+                                                           HorizontalAlignment="Center" IsVisible="{Binding !HasPaid}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsActivityConverter}}">
@@ -536,7 +807,8 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0"
+                        IsVisible="{Binding ActiveType, Converter={x:Static v:RecordSheetView.IsNotVaccineConverter}}">
                     <Button Content="保存记录" Classes="weui-btn primary" HorizontalAlignment="Stretch"
                             Command="{Binding SaveCommand}"/>
                 </Border>
