@@ -55,6 +55,55 @@ public static class ScreenCapturer
         return new MineView { DataContext = vm };
     }
 
+    public static Control CreateStatisticsScreen()
+    {
+        var vm = new StatisticsViewModel();
+        vm.Load();
+        return new StatisticsView { DataContext = vm };
+    }
+
+    public static Control CreateAiAnalysisScreen()
+    {
+        var vm = new AiAnalysisViewModel();
+        vm.Load();
+        return new AiAnalysisView { DataContext = vm };
+    }
+
+    public static Control CreateFamilyScreen()
+    {
+        var vm = new FamilyViewModel();
+        vm.Load();
+        return new FamilyView { DataContext = vm };
+    }
+
+    public static Control CreatePointsScreen()
+    {
+        try
+        {
+            var vm = new PointsViewModel();
+            vm.Load();
+            return new PointsView { DataContext = vm };
+        }
+        catch (Exception)
+        {
+            var vm = new PointsViewModel();
+            return new PointsView { DataContext = vm };
+        }
+    }
+
+    public static Control CreateBabySetupScreen()
+    {
+        var vm = new BabySetupViewModel();
+        return new BabySetupView { DataContext = vm };
+    }
+
+    public static Control CreateMainShellScreen()
+    {
+        var vm = new MainShellViewModel();
+        vm.ActivateHome();
+        return new MainShellView { DataContext = vm };
+    }
+
     public static CapturedScreen Capture(Control content, string name, int width, int height)
     {
         var window = new Window

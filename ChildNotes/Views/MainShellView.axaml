@@ -10,8 +10,14 @@
              Background="{StaticResource WeuiBg0Brush}">
 
     <UserControl.Styles>
+        <Style Selector="Button.tab-item PathIcon">
+            <Setter Property="Foreground" Value="#999999"/>
+        </Style>
         <Style Selector="Button.tab-item TextBlock.tab-text">
             <Setter Property="Foreground" Value="#999999"/>
+        </Style>
+        <Style Selector="Button.tab-item.active PathIcon">
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
         </Style>
         <Style Selector="Button.tab-item.active TextBlock.tab-text">
             <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
@@ -47,7 +53,8 @@
                         Classes.active="{Binding IsHomeSelected}"
                         Command="{Binding SwitchTabCommand}" CommandParameter="home">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                        <PathIcon Data="{StaticResource icon-home}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <!-- 原版 tabBar emoji 图标 40rpx≈20px -->
+                        <TextBlock Text="🏠" FontSize="20" HorizontalAlignment="Center"/>
                         <TextBlock Classes="tab-text" Text="首页" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
@@ -55,7 +62,7 @@
                         Classes.active="{Binding IsFeedingSelected}"
                         Command="{Binding SwitchTabCommand}" CommandParameter="feeding">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                        <PathIcon Data="{StaticResource icon-feed}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Text="🍼" FontSize="20" HorizontalAlignment="Center"/>
                         <TextBlock Classes="tab-text" Text="喂养" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
@@ -63,7 +70,7 @@
                         Classes.active="{Binding IsGrowthSelected}"
                         Command="{Binding SwitchTabCommand}" CommandParameter="growth">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                        <PathIcon Data="{StaticResource icon-growth}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Text="📏" FontSize="20" HorizontalAlignment="Center"/>
                         <TextBlock Classes="tab-text" Text="成长" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
@@ -71,7 +78,7 @@
                         Classes.active="{Binding IsMineSelected}"
                         Command="{Binding SwitchTabCommand}" CommandParameter="mine">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                        <PathIcon Data="{StaticResource icon-mine}" Width="22" Height="22" HorizontalAlignment="Center"/>
+                        <TextBlock Text="👤" FontSize="20" HorizontalAlignment="Center"/>
                         <TextBlock Classes="tab-text" Text="我的" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>

@@ -31,6 +31,8 @@ public partial class MainShellViewModel : ViewModelBase
     public GrowthViewModel Growth { get; }
     public MineViewModel Mine { get; }
 
+    public event Action? LogoutRequested;
+
     public MainShellViewModel()
     {
         Home = new HomeViewModel();
@@ -41,6 +43,8 @@ public partial class MainShellViewModel : ViewModelBase
 
         Home.StatisticsRequested += OpenStatistics;
         Home.CheckInRequested += OpenPoints;
+        Home.QuickRecordRequested += OpenQuickRecord;
+        Mine.LogoutRequested += OnLogout;
 
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
@@ -121,6 +125,19 @@ public partial class MainShellViewModel : ViewModelBase
         IsBabySetupOpen = true;
     }
 
+    public void OpenBabyInfo()
+    {
+        var currentBaby = ServiceProvider.Instance.AppState.CurrentBaby;
+        if (currentBaby is not null)
+        {
+            OpenBabyEdit(currentBaby);
+        }
+        else
+        {
+            OpenBabySetup();
+        }
+    }
+
     public void OpenStatistics()
     {
         Statistics.Load();
@@ -150,12 +167,36 @@ public partial class MainShellViewModel : ViewModelBase
         IsRecordSheetOpen = false;
         Home.Refresh();
         if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
+        // 刷新统计页，避免数据不同步
+        Statistics.Load();
     }
 
     private void OnBabySetupCompleted()
     {
         IsBabySetupOpen = false;
         Home.Refresh();
+    }
+
+    private void OnLogout()
+    {
+        // 关闭所有弹层
+        IsRecordSheetOpen = false;
+        IsBabySetupOpen = false;
+        IsStatisticsOpen = false;
+        IsPointsOpen = false;
+        IsFamilyOpen = false;
+        IsAiAnalysisOpen = false;
+        LogoutRequested?.Invoke();
+    }
+
+    public void ActivateHomeAfterLogin()
+    {
+        IsHomeSelected = true;
+        IsFeedingSelected = false;
+        IsGrowthSelected = false;
+        IsMineSelected = false;
+        CurrentTab = Home;
+        Home.Activate();
     }
 }
 

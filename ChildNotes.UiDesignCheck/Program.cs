@@ -39,6 +39,12 @@ internal static class Program
             ("Feeding", ScreenCapturer.CreateFeedingScreen),
             ("Growth", ScreenCapturer.CreateGrowthScreen),
             ("Mine", ScreenCapturer.CreateMineScreen),
+            ("Statistics", ScreenCapturer.CreateStatisticsScreen),
+            ("AiAnalysis", ScreenCapturer.CreateAiAnalysisScreen),
+            ("Family", ScreenCapturer.CreateFamilyScreen),
+            ("Points", ScreenCapturer.CreatePointsScreen),
+            ("BabySetup", ScreenCapturer.CreateBabySetupScreen),
+            ("MainShell", ScreenCapturer.CreateMainShellScreen),
         };
 
         var compliance = new ComplianceReport

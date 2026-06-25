@@ -136,7 +136,7 @@ public sealed class RecordRepository
         cmd.Parameters.AddWithValue("@ds", (object?)rec.DurationSec ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lds", (object?)rec.LeftDurationSec ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@rds", (object?)rec.RightDurationSec ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@af", (object?)(rec.AbnormalFlag.HasValue && rec.AbnormalFlag.Value ? 1 : 0) ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@af", rec.AbnormalFlag.HasValue ? (rec.AbnormalFlag.Value ? 1 : 0) : (object)DBNull.Value);
         cmd.Parameters.AddWithValue("@tv", (object?)rec.TemperatureValue ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@hc", (object?)rec.HeightCm ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@wk", (object?)rec.WeightKg ?? DBNull.Value);

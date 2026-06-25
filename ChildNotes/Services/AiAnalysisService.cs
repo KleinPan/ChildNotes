@@ -165,19 +165,20 @@ public sealed class AiAnalysisService
         return r.RecordType switch
         {
             RecordType.Feed => r.RecordSubType == "breast"
-                ? $"喂养-亲喂 左{r.LeftDurationSec / 60}分 右{r.RightDurationSec / 60}分"
-                : $"喂养-瓶喂 {r.AmountMl}ml",
+                ? $"喂养-亲喂 左{(r.LeftDurationSec ?? 0) / 60}分 右{(r.RightDurationSec ?? 0) / 60}分"
+                : $"喂养-瓶喂 {r.AmountMl ?? 0}ml",
             RecordType.Diaper => $"尿布-{r.RecordSubType}",
-            RecordType.Sleep => $"睡眠 {r.DurationSec / 60}分钟",
+            RecordType.Sleep => $"睡眠 {(r.DurationSec ?? 0) / 60}分钟",
             RecordType.Temperature => $"体温 {r.TemperatureValue}℃{(r.AbnormalFlag == true ? "(发热)" : "")}",
             RecordType.Growth => $"生长 身高{r.HeightCm}cm 体重{r.WeightKg}kg",
             RecordType.Supplement => $"补充-{r.RecordSubType}",
-            RecordType.Pump => $"吸奶 {r.AmountMl}ml",
+            RecordType.Pump => $"吸奶 {r.AmountMl ?? 0}ml",
             RecordType.Complementary => "辅食",
             RecordType.Abnormal => $"异常-{r.RecordSubType}",
-            RecordType.Activity => $"活动-{r.RecordSubType} {r.DurationSec / 60}分钟",
+            RecordType.Activity => $"活动-{r.RecordSubType} {(r.DurationSec ?? 0) / 60}分钟",
             RecordType.Vaccine => "疫苗",
             RecordType.Milestone => "里程碑",
+            RecordType.MaternalFood => $"妈妈饮食-{r.RecordSubType}",
             _ => r.RecordType,
         };
     }

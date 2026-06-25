@@ -8,9 +8,14 @@ namespace ChildNotes.Services;
 public sealed class AuthService
 {
     private readonly UserRepository _users;
+    private readonly AppState _state;
     public AppUser? CurrentUser { get; private set; }
 
-    public AuthService(UserRepository users) => _users = users;
+    public AuthService(UserRepository users, AppState state)
+    {
+        _users = users;
+        _state = state;
+    }
 
     public bool IsLoggedIn => CurrentUser is not null;
 
@@ -47,7 +52,11 @@ public sealed class AuthService
         return LoginResult.Ok(user);
     }
 
-    public void Logout() => CurrentUser = null;
+    public void Logout()
+    {
+        CurrentUser = null;
+        _state.Clear();
+    }
 
     public void UpdateProfile(string nickName, string avatarUrl, int gender)
     {

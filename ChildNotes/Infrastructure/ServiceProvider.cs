@@ -37,12 +37,12 @@ public sealed class ServiceProvider
         var imageDir = Path.Combine(appDir, "images");
 
         AppState = new AppState();
-        AuthService = new AuthService(new UserRepository(DbFactory));
+        AuthService = new AuthService(new UserRepository(DbFactory), AppState);
         BabyService = new BabyService(new BabyRepository(DbFactory), AppState);
         RecordService = new RecordService(new RecordRepository(DbFactory), AppState);
         StatisticsService = new StatisticsService(RecordService);
         PointsRepository = new PointsRepository(DbFactory);
-        PointsService = new PointsService(PointsRepository, AppState);
+        PointsService = new PointsService(PointsRepository, RecordService, AppState);
         MilestoneRepository = new MilestoneRepository(DbFactory);
         UploadService = new UploadService(imageDir);
         AiAnalysisRepository = new AiAnalysisRepository(DbFactory);

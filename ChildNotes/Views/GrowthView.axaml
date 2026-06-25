@@ -11,16 +11,16 @@
     <UserControl.Styles>
         <Style Selector="Border.growth-card">
             <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="18,16"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
             <Setter Property="BorderBrush" Value="#FFAB91"/>
             <Setter Property="BorderThickness" Value="4,0,0,0"/>
             <Setter Property="BoxShadow" Value="0 2 12 0 #0A000000"/>
         </Style>
         <Style Selector="Border.growth-card-add">
             <Setter Property="Background" Value="#FAFAFA"/>
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="18,20"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="14"/>
             <Setter Property="BorderBrush" Value="#DDD"/>
             <Setter Property="BorderThickness" Value="4,0,0,0"/>
         </Style>
@@ -72,7 +72,7 @@
 
                     <StackPanel HorizontalAlignment="Center" Margin="0,40,0,32">
                         <TextBlock Text="📆" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="成长记录" FontSize="20" FontWeight="Bold" Foreground="#5D4037" HorizontalAlignment="Center"/>
+                        <TextBlock Text="成长记录" FontSize="18" FontWeight="Bold" Foreground="#5D4037" HorizontalAlignment="Center"/>
                         <TextBlock Text="记录宝宝每一个重要时刻" FontSize="12" Foreground="#A1887F" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                     </StackPanel>
 
@@ -90,7 +90,7 @@
                                         </Border>
                                         <Border Classes="growth-card" PointerPressed="OnMilestoneTap" Tag="{Binding .}">
                                             <StackPanel>
-                                                <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" Foreground="#4E342E"/>
+                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" Foreground="#4E342E"/>
                                                 <TextBlock Text="{Binding Content}" FontSize="13" Foreground="#8D6E63"
                                                            Margin="0,6,0,0" TextWrapping="Wrap" LineHeight="20"
                                                            IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -112,13 +112,13 @@
                                 <TextBlock Text="＋" FontSize="22" Foreground="#BBB" HorizontalAlignment="Center"/>
                             </Border>
                             <Border Classes="growth-card-add" PointerPressed="OnAddMilestone">
-                                <TextBlock Text="记录成长时刻" FontSize="14" Foreground="#BBB" HorizontalAlignment="Center"/>
+                                <TextBlock Text="记录成长时刻" FontSize="13" Foreground="#BBB" HorizontalAlignment="Center"/>
                             </Border>
                         </StackPanel>
                     </Grid>
 
                     <Border IsVisible="{Binding Milestones.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
-                            Background="#FFF8F5" CornerRadius="14" Padding="24,28" Margin="16,8,16,40"
+                            Background="#FFF8F5" CornerRadius="8" Padding="24,28" Margin="16,8,16,40"
                             HorizontalAlignment="Center" MaxWidth="280">
                         <StackPanel HorizontalAlignment="Center" Spacing="10">
                             <TextBlock Text="🌱" FontSize="36" HorizontalAlignment="Center"/>
@@ -135,12 +135,12 @@
 
         <Panel IsVisible="{Binding MilestoneEdit.IsVisible}">
             <Border Background="#80000000"/>
-            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8,8,0,0"
                     VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,Auto,Auto">
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{Binding MilestoneEdit.SheetTitle}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{Binding MilestoneEdit.SheetTitle}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
                                     Background="Transparent" BorderThickness="0"
                                     Command="{Binding MilestoneEdit.CloseCommand}"/>

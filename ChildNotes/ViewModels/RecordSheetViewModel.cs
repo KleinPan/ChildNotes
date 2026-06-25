@@ -27,6 +27,7 @@ public partial class RecordSheetViewModel : ViewModelBase
     public AbnormalFormViewModel AbnormalForm { get; } = new();
     public VaccineFormViewModel VaccineForm { get; } = new();
     public ActivityFormViewModel ActivityForm { get; } = new();
+    public MaternalFoodFormViewModel MaternalFoodForm { get; } = new();
 
     public event Action? Saved;
 
@@ -46,6 +47,7 @@ public partial class RecordSheetViewModel : ViewModelBase
             RecordType.Abnormal => "记录异常",
             RecordType.Vaccine => "记录疫苗",
             RecordType.Activity => "记录活动",
+            RecordType.MaternalFood => "记录妈妈饮食",
             _ => "记录",
         };
         ErrorMessage = string.Empty;
@@ -110,13 +112,17 @@ public partial class RecordSheetViewModel : ViewModelBase
                     if (!ActivityForm.Validate(out var actErr)) { ErrorMessage = actErr; return; }
                     _recordService.AddActivity(ActivityForm.BuildDto());
                     break;
+                case RecordType.MaternalFood:
+                    if (!MaternalFoodForm.Validate(out var mfErr)) { ErrorMessage = mfErr; return; }
+                    _recordService.AddMaternalFood(MaternalFoodForm.BuildDto());
+                    break;
             }
             IsVisible = false;
             Saved?.Invoke();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ErrorMessage = "保存失败，请重试";
+            ErrorMessage = $"保存失败：{ex.Message}";
         }
     }
 }

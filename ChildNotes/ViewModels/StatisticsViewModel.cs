@@ -67,10 +67,10 @@ public partial class StatisticsViewModel : ViewModelBase
         var today = DateTime.Today;
         return SelectedRange switch
         {
-            "day" => (new DateTime(today.Year, today.Month, 1), today),
+            "day" => (today, today),
             "threeDays" => (today.AddDays(-2), today),
             "week" => (today.AddDays(-6), today),
-            "month" => (new DateTime(today.Year, 1, 1), today),
+            "month" => (new DateTime(today.Year, today.Month, 1), today),
             "range" => (today.AddDays(-13), today),
             _ => (today.AddDays(-6), today),
         };
@@ -79,12 +79,13 @@ public partial class StatisticsViewModel : ViewModelBase
     private void Rebuild()
     {
         var (start, end) = GetRange();
+        var today = DateTime.Today;
         RangeLabel = SelectedRange switch
         {
-            "day" => $"{start:yyyy年M月}",
+            "day" => $"{today:yyyy年M月d日}",
             "threeDays" => "最近3天",
             "week" => "最近一周",
-            "month" => $"{start:yyyy年}",
+            "month" => $"{start:yyyy年M月}",
             "range" => $"{start:MM-dd} 至 {end:MM-dd}",
             _ => "最近一周",
         };

@@ -21,6 +21,7 @@ public sealed class ElementInfo
     public string? BackgroundHex { get; set; }
     public string? ForegroundHex { get; set; }
     public string? BorderBrushHex { get; set; }
+    public double BorderThickness { get; set; }
     public double? CornerRadius { get; set; }
     public double? FontSize { get; set; }
     public string? FontWeight { get; set; }
@@ -37,17 +38,20 @@ public static class VisualTreeExtractor
 {
     public static ElementInfo Extract(Control root)
     {
-        return Build(root);
+        return Build(root, root);
     }
 
-    private static ElementInfo Build(Control control)
+    private static ElementInfo Build(Control control, Control root)
     {
+        var topLeft = control.TranslatePoint(new Point(0, 0), root) ?? new Point(0, 0);
+        var bounds = new Rect(topLeft.X, topLeft.Y, control.Bounds.Width, control.Bounds.Height);
+
         var info = new ElementInfo
         {
             Type = control.GetType().Name,
             Name = control.Name,
             Classes = control.Classes.Count > 0 ? string.Join(" ", control.Classes) : null,
-            Bounds = control.Bounds,
+            Bounds = bounds,
             IsVisible = control.IsVisible,
             Opacity = control.Opacity,
         };
@@ -70,6 +74,7 @@ public static class VisualTreeExtractor
             info.BackgroundHex ??= BrushToHex(tc.Background);
             info.ForegroundHex ??= BrushToHex(tc.Foreground);
             info.BorderBrushHex ??= BrushToHex(tc.BorderBrush);
+            info.BorderThickness = tc.BorderThickness.Top;
             info.FontSize ??= tc.FontSize;
             info.FontWeight ??= tc.FontWeight.ToString();
             info.FontFamily ??= tc.FontFamily?.Name;
@@ -81,6 +86,7 @@ public static class VisualTreeExtractor
         {
             info.BackgroundHex ??= BrushToHex(border.Background);
             info.BorderBrushHex ??= BrushToHex(border.BorderBrush);
+            info.BorderThickness = Math.Max(border.BorderThickness.Top, border.BorderThickness.Left);
             info.CornerRadius ??= border.CornerRadius.TopLeft;
             info.Padding ??= border.Padding;
         }
@@ -88,7 +94,7 @@ public static class VisualTreeExtractor
 
         foreach (var child in control.GetVisualChildren().OfType<Control>())
         {
-            info.Children.Add(Build(child));
+            info.Children.Add(Build(child, root));
         }
 
         return info;

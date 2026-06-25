@@ -6,13 +6,15 @@ namespace ChildNotes.Services;
 public sealed class PointsService
 {
     private readonly PointsRepository _repo;
+    private readonly RecordService _recordService;
     private readonly AppState _state;
 
     private static readonly int[] SignInRewards = { 1, 2, 3, 5, 7, 10, 15 };
 
-    public PointsService(PointsRepository repo, AppState state)
+    public PointsService(PointsRepository repo, RecordService recordService, AppState state)
     {
         _repo = repo;
+        _recordService = recordService;
         _state = state;
     }
 
@@ -95,7 +97,31 @@ public sealed class PointsService
             new("weekly_growth", "每周成长", "记录一次身高体重", 20),
         };
 
-        var completed = _repo.GetRecentSignIns(_state.UserId, 0);
+        // 查询今日记录，判断任务完成状态
+        var todayRecords = _state.CurrentBabyId.HasValue
+            ? _recordService.GetByDate(DateTime.Today)
+            : new List<ChildRecord>();
+
+        var hasRecord = todayRecords.Count > 0;
+        var hasFeed = todayRecords.Any(r => r.RecordType == RecordType.Feed);
+        var hasDiaper = todayRecords.Any(r => r.RecordType == RecordType.Diaper);
+
+        // 每周成长：查询最近 7 天是否有成长记录
+        var weekAgo = DateTime.Today.AddDays(-6);
+        var growthRecords = _recordService.GetByDateRange(weekAgo, DateTime.Today);
+        var hasGrowthThisWeek = growthRecords.Any(r => r.RecordType == RecordType.Growth);
+
+        foreach (var t in tasks)
+        {
+            t.IsCompleted = t.Code switch
+            {
+                "daily_record" => hasRecord,
+                "daily_feed" => hasFeed,
+                "daily_diaper" => hasDiaper,
+                "weekly_growth" => hasGrowthThisWeek,
+                _ => false,
+            };
+        }
         return tasks;
     }
 
@@ -104,14 +130,13 @@ public sealed class PointsService
         if (signIns.Count == 0) return 0;
         var sorted = signIns.OrderByDescending(s => s.SignDate).ToList();
         var today = DateTime.Today;
+        // 今天已签到：直接返回连续天数
         if (sorted[0].SignDate.Date == today)
         {
             return sorted[0].ContinuousDays;
         }
-        if (sorted[0].SignDate.Date == today.AddDays(-1))
-        {
-            return sorted[0].ContinuousDays;
-        }
+        // 昨天签到但今天未签：连续已断，返回 0
+        // （保留昨天记录的 ContinuousDays 仅作历史参考，当前连续天数应为 0）
         return 0;
     }
 }
@@ -144,6 +169,7 @@ public sealed class TaskItem
     public string Name { get; }
     public string Desc { get; }
     public int Reward { get; }
+    public bool IsCompleted { get; set; }
 
     public TaskItem(string code, string name, string desc, int reward)
     {
