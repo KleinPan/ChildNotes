@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:ctrl="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -80,10 +81,10 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="32,*" Margin="16,0,16,24">
-                                    <Panel Grid.Column="0">
-                                        <Border Width="2" Background="#FFAB91" HorizontalAlignment="Center" VerticalAlignment="Stretch" Margin="0,0,0,0"/>
-                                        <Border Classes="timeline-dot" VerticalAlignment="Top" Margin="0,8,0,0" HorizontalAlignment="Center"/>
-                                    </Panel>
+                                    <ctrl:TimelineAxisItem Grid.Column="0"
+                                                           LineBrush="#FFAB91" LineWidth="2"
+                                                           DotBrush="#FFAB91" DotBorderBrush="White" DotBorderThickness="3"
+                                                           DotSize="14" HalfSpacing="12" DotTopMargin="8"/>
                                     <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                         <Border Classes="date-badge" HorizontalAlignment="Left" Margin="0,0,0,8">
                                             <TextBlock Text="{Binding DateText}"/>
@@ -103,10 +104,10 @@
                     </ItemsControl>
 
                     <Grid ColumnDefinitions="32,*" Margin="16,0,16,40">
-                        <Panel Grid.Column="0">
-                            <Border Width="2" Background="#EEE" HorizontalAlignment="Center" VerticalAlignment="Stretch"/>
-                            <Border Classes="timeline-dot-add" VerticalAlignment="Top" Margin="0,8,0,0" HorizontalAlignment="Center"/>
-                        </Panel>
+                        <ctrl:TimelineAxisItem Grid.Column="0"
+                                               LineBrush="#EEE" LineWidth="2"
+                                               DotBrush="White" DotBorderBrush="#CCC" DotBorderThickness="2"
+                                               DotSize="14" HalfSpacing="20" DotTopMargin="8"/>
                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
                             <Border Classes="date-badge-add" HorizontalAlignment="Left" Margin="0,0,0,8">
                                 <TextBlock Text="＋" FontSize="22" Foreground="#BBB" HorizontalAlignment="Center"/>

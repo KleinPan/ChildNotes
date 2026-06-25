@@ -210,7 +210,8 @@
                         <TextBlock Grid.Column="2" Text="{Binding VaccineProgressText}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                         <Button Grid.Column="3" Content="{Binding IsVaccineExpanded, Converter={x:Static v:HomeView.ExpandTextConverter}}" Classes="tracker-btn-outline" Margin="8,0,0,0"
                                 Command="{Binding ToggleVaccinePanelCommand}"/>
-                        <Button Grid.Column="4" Content="补记" Classes="tracker-btn-primary" Margin="6,0,0,0"/>
+                        <Button Grid.Column="4" Content="补记" Classes="tracker-btn-primary" Margin="6,0,0,0"
+                                Command="{Binding QuickRecordCommand}" CommandParameter="vaccine"/>
                     </Grid>
                     <ItemsControl IsVisible="{Binding IsVaccineExpanded}" ItemsSource="{Binding VaccineItems}">
                         <ItemsControl.ItemTemplate>
@@ -235,7 +236,8 @@
                     <PathIcon Grid.Column="0" Data="{StaticResource icon-activity}" Foreground="{StaticResource WeuiRedBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="活动追踪" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"/>
                     <Button Grid.Column="2" Content="详情" Classes="tracker-btn-outline" Margin="8,0,0,0"/>
-                    <Button Grid.Column="3" Content="记录" Classes="tracker-btn-primary" Margin="6,0,0,0"/>
+                    <Button Grid.Column="3" Content="记录" Classes="tracker-btn-primary" Margin="6,0,0,0"
+                            Command="{Binding QuickRecordCommand}" CommandParameter="activity"/>
                 </Grid>
             </Border>
 
