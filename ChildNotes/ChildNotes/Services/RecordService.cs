@@ -22,9 +22,9 @@ public sealed class RecordService
         rec.RecordSubType = dto.Type;
         if (dto.Type == FeedType.Breast)
         {
-            rec.LeftDurationSec = dto.LeftDurationSec ?? (dto.LeftDuration * 60);
-            rec.RightDurationSec = dto.RightDurationSec ?? (dto.RightDuration * 60);
-            rec.DurationSec = rec.LeftDurationSec + rec.RightDurationSec;
+            rec.LeftDurationSec = dto.LeftDurationSec ?? ((dto.LeftDuration ?? 0) * 60);
+            rec.RightDurationSec = dto.RightDurationSec ?? ((dto.RightDuration ?? 0) * 60);
+            rec.DurationSec = (rec.LeftDurationSec ?? 0) + (rec.RightDurationSec ?? 0);
         }
         else
         {
@@ -48,7 +48,7 @@ public sealed class RecordService
     public long AddSleep(SleepRecordDto dto)
     {
         var rec = NewRecord(RecordType.Sleep, dto.Time);
-        rec.DurationSec = dto.Duration * 60;
+        rec.DurationSec = (dto.Duration ?? 0) * 60;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         return rec.Id;
@@ -58,7 +58,8 @@ public sealed class RecordService
     {
         var rec = _repo.FindById(recordId);
         if (rec is null || rec.RecordType != RecordType.Sleep) return;
-        var dto = rec.GetPayload<SleepRecordDto>()!;
+        var dto = rec.GetPayload<SleepRecordDto>();
+        if (dto is null) return;
         var end = DateTime.Now;
         dto.EndTime = end.ToString("O");
         dto.Duration = (int)(end - rec.RecordTime).TotalMinutes;
@@ -100,9 +101,9 @@ public sealed class RecordService
     {
         var rec = NewRecord(RecordType.Pump, dto.Time);
         rec.AmountMl = dto.TotalAmount;
-        rec.LeftDurationSec = dto.LeftDuration * 60;
-        rec.RightDurationSec = dto.RightDuration * 60;
-        rec.DurationSec = rec.LeftDurationSec + rec.RightDurationSec;
+        rec.LeftDurationSec = (dto.LeftDuration ?? 0) * 60;
+        rec.RightDurationSec = (dto.RightDuration ?? 0) * 60;
+        rec.DurationSec = (rec.LeftDurationSec ?? 0) + (rec.RightDurationSec ?? 0);
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         return rec.Id;
@@ -147,7 +148,18 @@ public sealed class RecordService
     {
         var rec = NewRecord(RecordType.Activity, dto.Time);
         rec.RecordSubType = dto.Category;
-        rec.DurationSec = dto.Duration * 60;
+        rec.DurationSec = (dto.Duration ?? 0) * 60;
+        rec.PayloadJson = JsonSerializer.Serialize(dto);
+        rec.Id = _repo.Insert(rec);
+        return rec.Id;
+    }
+
+    public long AddMaternalFood(MaternalFoodRecordDto dto)
+    {
+        var rec = NewRecord(RecordType.MaternalFood, dto.Time);
+        rec.RecordSubType = dto.MealType;
+        if (!string.IsNullOrEmpty(dto.SuspicionLevel) && dto.SuspicionLevel != "none")
+            rec.AbnormalFlag = true;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         return rec.Id;

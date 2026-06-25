@@ -14,7 +14,7 @@ public sealed class DesignSpec
     public ControlSizeRules ControlSizes { get; set; } = new();
     public LayoutRules Layout { get; set; } = new();
 
-    public double ColorTolerance { get; set; } = 8.0;
+    public double ColorTolerance { get; set; } = 16.0;
     public double SizeTolerancePx { get; set; } = 1.5;
     public double SizeToleranceRatio { get; set; } = 0.04;
 }
@@ -95,6 +95,19 @@ public sealed class TypographyRules
     public double SmallFontSize { get; set; } = 11;
     public double TabIconFontSize { get; set; } = 22;
     public double TabTextFontSize { get; set; } = 10;
+    public double DisplayFontSize { get; set; } = 40;
+
+    public IEnumerable<double> AllTiers()
+    {
+        yield return TabTextFontSize;
+        yield return SmallFontSize;
+        yield return CaptionFontSize;
+        yield return BodyFontSize;
+        yield return SectionTitleFontSize;
+        yield return TitleFontSize;
+        yield return TabIconFontSize;
+        yield return DisplayFontSize;
+    }
 }
 
 public sealed class ControlSizeRules

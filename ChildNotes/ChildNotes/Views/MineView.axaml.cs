@@ -40,6 +40,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenFamily();
     }
 
+    private void OnBabyInfoTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenBabyInfo();
+    }
+
     private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenAiAnalysis();

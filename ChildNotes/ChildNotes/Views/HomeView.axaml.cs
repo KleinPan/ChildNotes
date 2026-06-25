@@ -16,8 +16,9 @@ public partial class HomeView : UserControl
     public static readonly IValueConverter ExpandTextConverter = new FuncValueConverter<bool, string>(
         isExpanded => isExpanded ? "收起" : "展开");
 
+    // 箭头方向：展开时▼（向下，表示已展开/点击收起），收起时▲（向上，表示可向上展开）
     public static readonly IValueConverter ArrowTextConverter = new FuncValueConverter<bool, string>(
-        isOpen => isOpen ? "▲ 收起" : "▼ 展开");
+        isOpen => isOpen ? "▼" : "▲");
 
     private void OnQuickActionClick(object? sender, RoutedEventArgs e)
     {

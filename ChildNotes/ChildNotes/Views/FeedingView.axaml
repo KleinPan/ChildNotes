@@ -11,7 +11,7 @@
 
     <UserControl.Styles>
         <Style Selector="Button.delete-btn">
-            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="16,6"/>
             <Setter Property="Background" Value="#FAEDED"/>
             <Setter Property="Foreground" Value="{StaticResource WeuiRedBrush}"/>
@@ -24,22 +24,28 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" Padding="8,12" Margin="0,0,0,8">
+                <!-- 原版 date-bar: 白底，底部 1px 边框 -->
+                <Border Background="White" Padding="12,12" Margin="0,0,0,8" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Button Grid.Column="0" Content="‹" FontSize="22" Padding="16,4"
+                        <!-- 原版 date-nav: 72rpx≈36px 圆形，绿色箭头 -->
+                        <Button Grid.Column="0" Content="‹" FontSize="24" Foreground="#07C160" Padding="0" Width="36" Height="36" CornerRadius="18"
                                 Background="Transparent" BorderThickness="0"
                                 Command="{Binding PrevDayCommand}"/>
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DisplayDate}" FontSize="15" FontWeight="Medium" HorizontalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding DisplayDate}" FontSize="17" FontWeight="Bold" Foreground="#333333" VerticalAlignment="Center"/>
+                            <TextBlock Text="📅" FontSize="12" Opacity="0.5" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <Button Grid.Column="2" Content="›" FontSize="22" Padding="16,4"
+                        <Button Grid.Column="2" Content="›" FontSize="24" Foreground="#07C160" Padding="0" Width="36" Height="36" CornerRadius="18"
                                 Background="Transparent" BorderThickness="0"
                                 Command="{Binding NextDayCommand}"/>
                     </Grid>
                 </Border>
 
-                <Button Content="回到今天" Classes="weui-btn default mini" HorizontalAlignment="Center"
-                        Margin="0,0,0,8" Command="{Binding GoTodayCommand}"
+                <!-- 原版 today-btn: 浅绿底，绿色文字 -->
+                <Button Content="回到今天" FontSize="13" Foreground="#07C160" Background="#E8F9EF" BorderThickness="0"
+                        Padding="0,8" Margin="0,0,0,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        CornerRadius="0"
+                        Command="{Binding GoTodayCommand}"
                         IsVisible="{Binding !IsToday}"/>
 
                 <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -84,15 +90,23 @@
                 <ItemsControl ItemsSource="{Binding Records}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Classes="weui-card" Margin="12,4"
+                            <!-- 原版 record-card: 白底，16rpx≈8px 圆角，24rpx≈12px padding，弱阴影 -->
+                            <Border Background="White" CornerRadius="8" Padding="12" Margin="12,4"
+                                    BoxShadow="0 1 4 0 #08000000"
                                     PointerPressed="OnRecordTap" Tag="{Binding .}">
-                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                    <TextBlock Grid.Column="0" Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding TitleText}" FontSize="15" FontWeight="Medium"/>
-                                        <TextBlock Text="{Binding SubText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                    <!-- 原版 card-left: 时间在左侧 -->
+                                    <TextBlock Grid.Column="0" Text="{Binding TimeText}" FontSize="12" Foreground="#999999" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <!-- 原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底 -->
+                                    <Border Grid.Column="1" Width="30" Height="30" CornerRadius="8" Background="#F9F9F9" Margin="0,0,8,0">
+                                        <TextBlock Text="{Binding Icon}" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <!-- 原版 card-body: 标题 + 描述 -->
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding TitleText}" FontSize="14" FontWeight="Medium" Foreground="#333333"/>
+                                        <TextBlock Text="{Binding SubText}" FontSize="12" Foreground="#999999" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="2" Text="{Binding TimeText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <!-- 删除按钮 -->
                                     <Border Grid.Column="3" Width="28" Height="28" CornerRadius="14" Background="#F5F5F5"
                                             VerticalAlignment="Center" PointerPressed="OnDeleteTap" Tag="{Binding .}">
                                         <TextBlock Text="🗑" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -111,22 +125,22 @@
         </ScrollViewer>
 
         <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="#CC000000" CornerRadius="20" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="14"/>
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
         </Border>
 
         <Panel IsVisible="{Binding ShowDeleteConfirm}">
             <Border Background="#66000000"/>
-            <Border Background="White" CornerRadius="16" Padding="28,24" MaxWidth="300"
+            <Border Background="White" CornerRadius="8" Padding="28,24" MaxWidth="300"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="确认删除" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                    <TextBlock Text="确定要删除这条记录吗？" FontSize="14" Foreground="#666" TextAlignment="Center" Margin="0,0,0,4"/>
+                    <TextBlock Text="确认删除" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="确定要删除这条记录吗？" FontSize="13" Foreground="#666" TextAlignment="Center" Margin="0,0,0,4"/>
                     <TextBlock Text="{Binding DeleteItemTitle}" FontSize="13" Foreground="#999" TextAlignment="Center" Margin="0,0,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                        <Button Content="取消" Classes="weui-btn default" CornerRadius="20" Padding="24,8"
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="6" Padding="24,8"
                                 Command="{Binding CancelDeleteCommand}"/>
-                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="20" Padding="24,8"
+                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="6" Padding="24,8"
                                 Command="{Binding ConfirmDeleteCommand}"/>
                     </StackPanel>
                 </StackPanel>
@@ -135,12 +149,13 @@
 
         <Panel IsVisible="{Binding RecordEdit.IsVisible}">
             <Border Background="#80000000"/>
+            <!-- 原版 record-drawer: 32rpx≈16px 顶部圆角 -->
             <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
                     VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,Auto,Auto">
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{Binding RecordEdit.SheetTitle}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{Binding RecordEdit.SheetTitle}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                             <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
                                     Background="Transparent" BorderThickness="0"
                                     Command="{Binding RecordEdit.CloseCommand}"/>
@@ -207,15 +222,15 @@
 
         <Panel IsVisible="{Binding RecordEdit.ShowDeleteConfirm}">
             <Border Background="#66000000"/>
-            <Border Background="White" CornerRadius="16" Padding="28,24" MaxWidth="300"
+            <Border Background="White" CornerRadius="8" Padding="28,24" MaxWidth="300"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="确认删除" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                    <TextBlock Text="确定要删除这条记录吗？" FontSize="14" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
+                    <TextBlock Text="确认删除" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="确定要删除这条记录吗？" FontSize="13" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                        <Button Content="取消" Classes="weui-btn default" CornerRadius="20" Padding="24,8"
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="6" Padding="24,8"
                                 Command="{Binding RecordEdit.CancelDeleteCommand}"/>
-                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="20" Padding="24,8"
+                        <Button Content="确认删除" Classes="weui-btn warn" CornerRadius="6" Padding="24,8"
                                 Command="{Binding RecordEdit.ConfirmDeleteCommand}"/>
                     </StackPanel>
                 </StackPanel>

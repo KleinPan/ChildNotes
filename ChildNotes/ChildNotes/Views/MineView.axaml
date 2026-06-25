@@ -11,13 +11,14 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel>
 
-            <Border Background="{StaticResource WeuiBg2Brush}" Padding="20,24" Margin="0,0,0,8">
+            <Border Background="{StaticResource WeuiBg2Brush}" Padding="14,16" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Grid.Column="0" Width="60" Height="60" CornerRadius="30" Background="{StaticResource WeuiBg1Brush}">
-                        <TextBlock Text="👤" FontSize="32" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <!-- 原版头像: 绿色渐变背景 -->
+                    <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="{StaticResource AvatarGradientBrush}">
+                        <TextBlock Text="👤" FontSize="28" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                        <TextBlock Text="{Binding NickName}" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding NickName}" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A"/>
                         <TextBlock Text="{Binding RoleText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
                     </StackPanel>
                     <TextBlock Grid.Column="2" Text="›" FontSize="24" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
@@ -43,7 +44,7 @@
                         <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                     </Grid>
                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
-                    <Grid Margin="14,12">
+                    <Grid Margin="14,12" PointerPressed="OnBabyInfoTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -131,7 +132,11 @@
                 </Grid>
             </Border>
 
-            <Button Content="退出登录" Classes="weui-btn default" Margin="24,16" Command="{Binding LogoutCommand}"/>
+            <!-- 原版退出登录: 白底红字 -->
+            <Button Content="退出登录" Classes="weui-btn default" Margin="12,16" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Command="{Binding LogoutCommand}"
+                    Foreground="{StaticResource WeuiRedBrush}"/>
 
         </StackPanel>
     </ScrollViewer>

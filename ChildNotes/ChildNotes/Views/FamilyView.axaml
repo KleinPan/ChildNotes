@@ -75,7 +75,7 @@
         <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,20,20">
+                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="家人管理" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding BabyName, StringFormat=当前宝宝：\{0\}}" FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,6,0,0"
@@ -88,7 +88,7 @@
                         <TextBlock Text="👪" FontSize="56" HorizontalAlignment="Center" Margin="0,0,0,16"/>
                         <TextBlock Text="还没有宝宝" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                         <TextBlock Text="添加宝宝后，可以在这里管理家人信息" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center" Margin="20,0"/>
-                        <Button Content="去添加宝宝" Classes="weui-btn primary" CornerRadius="24" Padding="40,10"
+                        <Button Content="去添加宝宝" Classes="weui-btn primary" CornerRadius="6" Padding="40,12"
                                 Command="{Binding GoAddBabyCommand}" Margin="0,24,0,0" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Panel>
@@ -96,7 +96,7 @@
                 <Panel IsVisible="{Binding HasBaby}" Margin="0,-12,0,0">
                     <StackPanel>
 
-                        <Border Background="White" CornerRadius="16" Margin="12,4" Padding="0,0" BoxShadow="0 2 14 0 #08000000">
+                        <Border Background="White" CornerRadius="8" Margin="12,4" Padding="0,0" BoxShadow="0 2 14 0 #08000000">
                             <ItemsControl ItemsSource="{Binding Members}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -133,7 +133,7 @@
                         </Border>
 
                         <Border Margin="12,24,12,0" HorizontalAlignment="Stretch">
-                            <Button Content="+ 添加家人" Classes="weui-btn primary" CornerRadius="16" Padding="0,14"
+                            <Button Content="+ 添加家人" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
                                     Command="{Binding OpenAddSheetCommand}" HorizontalAlignment="Stretch"/>
                         </Border>
                         <TextBlock Text="添加家人成员，方便多人一起记录宝宝成长" FontSize="12" Foreground="#999" HorizontalAlignment="Center" Margin="0,12,0,0"/>
@@ -149,13 +149,13 @@
         </Border>
 
         <Border Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="#CC000000" CornerRadius="20" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="14"/>
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
         </Border>
 
         <Panel Grid.Row="0" IsVisible="{Binding ShowAddSheet}">
             <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="24,24,0,0" Padding="24,24,24,30"
+            <Border Background="White" CornerRadius="8,8,0,0" Padding="24,24,24,30"
                     VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
                 <StackPanel>
@@ -187,7 +187,7 @@
                     <TextBox Text="{Binding NewNickName}" PlaceholderText="如：奶奶、张阿姨"
                              CornerRadius="10" BorderBrush="#E0E0E0" Padding="12,8"/>
 
-                    <Button Content="确认添加" Classes="weui-btn primary" CornerRadius="16" Padding="0,14"
+                    <Button Content="确认添加" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
                             Command="{Binding ConfirmAddCommand}" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
                 </ScrollViewer>
@@ -196,7 +196,7 @@
 
         <Panel Grid.Row="0" IsVisible="{Binding ShowRoleSheet}">
             <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="24,24,0,0" Padding="24,24,24,30"
+            <Border Background="White" CornerRadius="8,8,0,0" Padding="24,24,24,30"
                     VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
                 <StackPanel>
@@ -223,7 +223,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Button Content="确认修改" Classes="weui-btn primary" CornerRadius="16" Padding="0,14"
+                    <Button Content="确认修改" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
                             Command="{Binding ConfirmRoleCommand}" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
                 </StackPanel>
                 </ScrollViewer>
@@ -232,15 +232,15 @@
 
         <Panel Grid.Row="0" IsVisible="{Binding ShowRemoveConfirm}">
             <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="16" Padding="28,24" MaxWidth="300"
+            <Border Background="White" CornerRadius="8" Padding="28,24" MaxWidth="300"
                     HorizontalAlignment="Center" VerticalAlignment="Center" ZIndex="11">
                 <StackPanel>
-                    <TextBlock Text="确认移除" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                    <TextBlock Text="{Binding RemovingRoleName, StringFormat=确定要移除家人「\{0\}」吗？}" FontSize="14" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
+                    <TextBlock Text="确认移除" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                    <TextBlock Text="{Binding RemovingRoleName, StringFormat=确定要移除家人「\{0\}」吗？}" FontSize="13" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                        <Button Content="取消" Classes="weui-btn default" CornerRadius="20" Padding="24,8"
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="6" Padding="24,8"
                                 Command="{Binding CloseRemoveConfirmCommand}"/>
-                        <Button Content="确认移除" Classes="weui-btn warn" CornerRadius="20" Padding="24,8"
+                        <Button Content="确认移除" Classes="weui-btn warn" CornerRadius="6" Padding="24,8"
                                 Command="{Binding ConfirmRemoveCommand}"/>
                     </StackPanel>
                 </StackPanel>

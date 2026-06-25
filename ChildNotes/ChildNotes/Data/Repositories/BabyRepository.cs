@@ -121,7 +121,7 @@ public sealed class BabyRepository
         cmd.ExecuteNonQuery();
     }
 
-    public void EnsureOwnerMember(long babyId, long userId)
+    public void EnsureOwnerMember(long babyId, long userId, string roleCode = "father", string roleName = "爸爸")
     {
         using var conn = _factory.Create();
         using var cmd = conn.CreateCommand();
@@ -135,8 +135,8 @@ public sealed class BabyRepository
             {
                 BabyId = babyId,
                 UserId = userId,
-                RoleCode = "father",
-                RoleName = "爸爸",
+                RoleCode = roleCode,
+                RoleName = roleName,
                 IsOwner = true,
                 Status = "active",
             };

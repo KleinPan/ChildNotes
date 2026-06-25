@@ -41,16 +41,22 @@ public sealed class PointsRepository
 
     public void AddPoints(long userId, int delta)
     {
-        var p = GetOrCreate(userId);
-        p.Points += delta;
-        if (delta > 0) p.TotalEarned += delta;
-        else p.TotalSpent += -delta;
+        // 先确保记录存在
+        GetOrCreate(userId);
+
         using var conn = _factory.Create();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE user_points SET points=@p, total_earned=@te, total_spent=@ts, updated_at=@t WHERE user_id=@uid";
-        cmd.Parameters.AddWithValue("@p", p.Points);
-        cmd.Parameters.AddWithValue("@te", p.TotalEarned);
-        cmd.Parameters.AddWithValue("@ts", p.TotalSpent);
+        // 原子操作：避免先读后写造成的并发积分丢失
+        if (delta > 0)
+        {
+            cmd.CommandText = "UPDATE user_points SET points = points + @d, total_earned = total_earned + @d, updated_at=@t WHERE user_id=@uid";
+        }
+        else
+        {
+            cmd.CommandText = "UPDATE user_points SET points = points + @d, total_spent = total_spent + @neg, updated_at=@t WHERE user_id=@uid";
+        }
+        cmd.Parameters.AddWithValue("@d", delta);
+        cmd.Parameters.AddWithValue("@neg", -delta);
         cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("O"));
         cmd.Parameters.AddWithValue("@uid", userId);
         cmd.ExecuteNonQuery();

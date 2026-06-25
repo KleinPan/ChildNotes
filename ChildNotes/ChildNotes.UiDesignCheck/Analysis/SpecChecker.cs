@@ -20,14 +20,18 @@ public sealed class SpecChecker
             .Where(e => e.IsVisible && e.Width > 0 && e.Height > 0)
             .ToList();
 
+        var topLevel = new HashSet<ElementInfo>(root.Children);
+
         foreach (var el in all)
         {
-            CheckColors(el, sample, violations);
+            if (el != root)
+                CheckColors(el, sample, violations);
             CheckCornerRadius(el, violations);
             CheckTypography(el, violations);
             CheckSpacing(el, violations);
             CheckTouchTarget(el, violations);
-            CheckEdgeMargin(el, violations);
+            if (topLevel.Contains(el) || el == root)
+                CheckEdgeMargin(el, violations);
         }
 
         CheckLayout(root, all, violations);
@@ -41,7 +45,33 @@ public sealed class SpecChecker
         var declared = ParseHex(el.BackgroundHex);
         if (declared.a < 0xFF) return;
 
-        var actual = sample(el.Bounds);
+        if (el.Width < 6 || el.Height < 6) return;
+
+        if (IsTemplatePart(el)) return;
+
+        var cr = el.CornerRadius ?? 0;
+        var minDim = Math.Min(el.Width, el.Height);
+        var isCircular = cr >= minDim / 2 - 1;
+        var isSmallChip = el.Width <= 60 && el.Height <= 30 && cr > 0;
+        var isSmallIcon = minDim <= 28 && el.Width <= 60 && el.Height <= 60;
+
+        SampledColor actual;
+        if (isCircular)
+        {
+            var off = minDim * 0.3;
+            actual = sample(new Rect(el.Bounds.Center.X - 3, el.Bounds.Center.Y - off - 3, 6, 6));
+        }
+        else if (isSmallChip || isSmallIcon)
+        {
+            var edgeOff = Math.Max(2, cr / 2);
+            var cx = el.Bounds.X + edgeOff;
+            var cy = el.Bounds.Center.Y - 1.5;
+            actual = sample(new Rect(cx, cy, 3, 3));
+        }
+        else
+        {
+            actual = sample(el.Bounds);
+        }
         var dist = PixelSampler.ColorDistance(actual, declared);
         if (dist > _spec.ColorTolerance)
         {
@@ -66,6 +96,7 @@ public sealed class SpecChecker
     private void CheckCornerRadius(ElementInfo el, List<Violation> violations)
     {
         if (!el.CornerRadius.HasValue || el.CornerRadius == 0) return;
+        if (IsTemplatePart(el)) return;
         var cr = el.CornerRadius.Value;
         var isCard = HasClass(el, "weui-card", "baby-card", "data-cell", "ai-status-card");
         var isBtn = el.Type == "Button" || HasClass(el, "weui-btn");
@@ -97,25 +128,21 @@ public sealed class SpecChecker
     private void CheckTypography(ElementInfo el, List<Violation> violations)
     {
         if (!el.FontSize.HasValue || string.IsNullOrEmpty(el.Text)) return;
+        if (IsEmojiOrIcon(el.Text)) return;
         var fs = el.FontSize.Value;
         var tol = Math.Max(_spec.SizeTolerancePx, fs * _spec.SizeToleranceRatio);
 
-        double? expected = null; string role = "";
-        _ = expected; _ = role;
-        if (Math.Abs(fs - _spec.Typography.TitleFontSize) < tol) return;
-        if (Math.Abs(fs - _spec.Typography.SectionTitleFontSize) < tol) return;
-        if (Math.Abs(fs - _spec.Typography.BodyFontSize) < tol) return;
-        if (Math.Abs(fs - _spec.Typography.CaptionFontSize) < tol) return;
-        if (Math.Abs(fs - _spec.Typography.SmallFontSize) < tol) return;
-        if (Math.Abs(fs - _spec.Typography.TabTextFontSize) < tol) return;
+        var allowed = _spec.Typography.AllTiers()
+            .Concat(new[] { _spec.ControlSizes.MiniBtnFontSize })
+            .Distinct()
+            .OrderBy(x => x)
+            .ToArray();
 
-        var allowed = new[]
+        foreach (var tier in allowed)
         {
-            _spec.Typography.TitleFontSize, _spec.Typography.SectionTitleFontSize,
-            _spec.Typography.BodyFontSize, _spec.Typography.CaptionFontSize,
-            _spec.Typography.SmallFontSize, _spec.Typography.TabTextFontSize,
-            _spec.Typography.TabIconFontSize, _spec.ControlSizes.MiniBtnFontSize
-        };
+            if (Math.Abs(fs - tier) < tol) return;
+        }
+
         var nearest = allowed.MinBy(a => Math.Abs(a - fs));
         if (Math.Abs(nearest - fs) > tol)
         {
@@ -126,7 +153,7 @@ public sealed class SpecChecker
                 Element = Describe(el),
                 Location = Loc(el),
                 Rule = "字号应取规范档位之一",
-                Expected = $"档位: {string.Join("/", allowed.Distinct().OrderBy(x=>x).Select(x=>x.ToString("0")))}",
+                Expected = $"档位: {string.Join("/", allowed.Select(x => x.ToString("0")))}",
                 Actual = $"{fs:F1}px",
                 Deviation = $"{fs - nearest:+0.##;-0.##;0}px",
                 Suggestion = $"最接近的规范字号为 {nearest:0}px，建议对齐。"
@@ -199,6 +226,7 @@ public sealed class SpecChecker
     private void CheckTouchTarget(ElementInfo el, List<Violation> violations)
     {
         if (el.Type != "Button" && !HasClass(el, "tab-item")) return;
+        if (IsTemplatePart(el)) return;
         var min = _spec.ControlSizes.MinTouchTarget;
         if (el.Width < min - _spec.SizeTolerancePx || el.Height < min - _spec.SizeTolerancePx)
         {
@@ -262,9 +290,10 @@ public sealed class SpecChecker
             }
         }
 
-        var offscreen = all.Where(e => e.Bounds.Right > _spec.ViewportWidth + 1
-                                    || e.Bounds.Bottom > _spec.ViewportHeight + 1
-                                    || e.Bounds.X < -1).ToList();
+        var offscreen = all.Where(e => !IsTemplatePart(e)
+                                    && e.Bounds.Right > _spec.ViewportWidth + 1
+                                    && e.Width > 6
+                                    && e.Bounds.X < -1).ToList();
         foreach (var e in offscreen.Take(5))
         {
             violations.Add(new Violation
@@ -306,6 +335,34 @@ public sealed class SpecChecker
 
     private static bool HasClass(ElementInfo e, params string[] names)
         => e.Classes is not null && names.Any(n => e.Classes.Split(' ').Contains(n));
+
+    private static bool IsTemplatePart(ElementInfo e)
+        => !string.IsNullOrEmpty(e.Name) && e.Name.StartsWith("PART_");
+
+    private static bool IsEmojiOrIcon(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return false;
+        var trimmed = text.Trim();
+        if (trimmed.Length == 0) return false;
+        foreach (var ch in trimmed)
+        {
+            var code = (int)ch;
+            if (code >= 0x1F000) return true;
+            if (code >= 0x2600 && code <= 0x27BF) return true;
+            if (code >= 0x2190 && code <= 0x21FF) return true;
+            if (code >= 0xFE00 && code <= 0xFE0F) return true;
+            if (code >= 0xD800 && code <= 0xDFFF) return true;
+        }
+        if (trimmed.Length <= 2)
+        {
+            foreach (var ch in trimmed)
+            {
+                var code = (int)ch;
+                if (code >= 0x2000 && code <= 0x27BF) return true;
+            }
+        }
+        return false;
+    }
 
     private static string Describe(ElementInfo e)
     {

@@ -27,6 +27,8 @@
     <SolidColorBrush x:Key="WeuiOrangeBrush" Color="#FA9D3B" />
     <SolidColorBrush x:Key="WeuiYellowBrush" Color="#FFC300" />
     <SolidColorBrush x:Key="WeuiGreenBrush" Color="#07C160" />
+    <SolidColorBrush x:Key="WeuiGreenDarkBrush" Color="#06AD56" />
+    <SolidColorBrush x:Key="WeuiGreenLightBrush" Color="#E8F9EF" />
     <SolidColorBrush x:Key="WeuiBlueBrush" Color="#10AEFF" />
     <SolidColorBrush x:Key="WeuiIndigoBrush" Color="#1485EE" />
     <SolidColorBrush x:Key="WeuiPurpleBrush" Color="#6467F0" />
@@ -35,6 +37,34 @@
     <SolidColorBrush x:Key="WeuiBgColorActiveBrush" Color="#ECECEC" />
     <SolidColorBrush x:Key="WeuiSeparatorBrush" Color="#1A000000" />
 
+    <!-- 原版 baby-status-bar 统计卡片左边框色 -->
+    <SolidColorBrush x:Key="FeedAccentBrush" Color="#FF8A3D" />
+    <SolidColorBrush x:Key="SleepAccentBrush" Color="#6B8CFF" />
+    <SolidColorBrush x:Key="DiaperAccentBrush" Color="#F7B731" />
+    <SolidColorBrush x:Key="GrowthAccentBrush" Color="#00A0A0" />
+
+    <!-- 原版快捷记录图标背景色 -->
+    <SolidColorBrush x:Key="QuickFeedBgBrush" Color="#FFF0E6" />
+    <SolidColorBrush x:Key="QuickDiaperBgBrush" Color="#FFF8E1" />
+    <SolidColorBrush x:Key="QuickSleepBgBrush" Color="#E8F0FE" />
+    <SolidColorBrush x:Key="QuickTemperatureBgBrush" Color="#FFE8E8" />
+    <SolidColorBrush x:Key="QuickSupplementBgBrush" Color="#F3E5F5" />
+    <SolidColorBrush x:Key="QuickPumpBgBrush" Color="#E8F5E9" />
+    <SolidColorBrush x:Key="QuickCompBgBrush" Color="#FFF3E0" />
+    <SolidColorBrush x:Key="QuickMaternalFoodBgBrush" Color="#F2F7E8" />
+    <SolidColorBrush x:Key="QuickGrowthBgBrush" Color="#E0F2F1" />
+
+    <!-- 原版统计区底色 -->
+    <SolidColorBrush x:Key="StatsAreaBgBrush" Color="#F9FAFB" />
+    <SolidColorBrush x:Key="StatsSplitBrush" Color="#E8E8E8" />
+
+    <!-- 原版 AI 状态卡渐变背景（近似单色） -->
+    <SolidColorBrush x:Key="AiStatusBgBrush" Color="#F0FFF0" />
+
+    <!-- 原版头像渐变（近似单色，绿主色） -->
+    <SolidColorBrush x:Key="AvatarGradientBrush" Color="#07C160" />
+
     <CornerRadius x:Key="WeuiCardRadius">8</CornerRadius>
     <CornerRadius x:Key="WeuiBtnRadius">6</CornerRadius>
+    <CornerRadius x:Key="WeuiSheetRadius">16,16,0,0</CornerRadius>
 </ResourceDictionary>

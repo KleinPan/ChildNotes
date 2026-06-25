@@ -63,6 +63,23 @@ public sealed class BabyService
     public void AddMember(string roleCode, string roleName, string nickName)
     {
         if (_state.CurrentBaby is null) return;
+
+        // 检查当前用户是否已是成员（owner 或其他角色）
+        var existingMembers = _repo.GetMembers(_state.CurrentBaby.Id);
+        var myMembership = existingMembers.FirstOrDefault(m => m.UserId == _state.UserId);
+
+        if (myMembership is not null)
+        {
+            // 当前用户已是成员：如果新角色与当前不同，且不是 owner，则更新角色
+            // owner 不允许通过 AddMember 修改角色
+            if (!myMembership.IsOwner && myMembership.RoleCode != roleCode)
+            {
+                _repo.UpdateMemberRole(myMembership.Id, roleCode, roleName);
+            }
+            return;
+        }
+
+        // 当前用户还不是成员，直接添加
         var member = new BabyMember
         {
             BabyId = _state.CurrentBaby.Id,
@@ -88,7 +105,14 @@ public sealed class BabyService
     public void EnsureOwnerMember()
     {
         if (_state.CurrentBaby is null) return;
-        _repo.EnsureOwnerMember(_state.CurrentBaby.Id, _state.UserId);
+        // 根据当前用户性别推断角色，避免硬编码 "father"
+        var (roleCode, roleName) = _state.User?.Gender switch
+        {
+            1 => ("father", "爸爸"),
+            2 => ("mother", "妈妈"),
+            _ => ("father", "爸爸"),
+        };
+        _repo.EnsureOwnerMember(_state.CurrentBaby.Id, _state.UserId, roleCode, roleName);
     }
 
     public string GetGrowthStageText()

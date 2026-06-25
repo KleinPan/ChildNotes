@@ -35,28 +35,48 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _aiTipText = "洗澡水温37~38℃最适合，用手肘试温";
 
     [ObservableProperty] private ObservableCollection<VaccineItem> _vaccineItems = new();
-    [ObservableProperty] private string _vaccineProgressText = "0/57";
+    [ObservableProperty] private string _vaccineProgressText = "0/0";
     [ObservableProperty] private bool _isVaccineExpanded;
 
     [ObservableProperty] private bool _isQuickRecordPanelOpen;
 
     public ObservableCollection<QuickActionItem> QuickActions { get; } = new();
+    /// <summary>当前可见的快捷记录项（收起时仅前 3 个，展开时全部）</summary>
+    public ObservableCollection<QuickActionItem> VisibleQuickActions { get; } = new();
 
     public event Action? StatisticsRequested;
     public event Action? CheckInRequested;
+    public event Action<string>? QuickRecordRequested;
 
     public HomeViewModel()
     {
-        QuickActions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed));
-        QuickActions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper));
-        QuickActions.Add(new QuickActionItem("😴", "睡眠", RecordType.Sleep));
-        QuickActions.Add(new QuickActionItem("🌡️", "体温", RecordType.Temperature));
-        QuickActions.Add(new QuickActionItem("💊", "补药用药", RecordType.Supplement));
-        QuickActions.Add(new QuickActionItem("🥛", "吸奶", RecordType.Pump));
-        QuickActions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary));
-        QuickActions.Add(new QuickActionItem("🍱", "妈妈饮食", RecordType.MaternalFood));
-        QuickActions.Add(new QuickActionItem("📏", "成长", RecordType.Growth));
+        // 对齐原版 quick-actions 的 emoji + 背景色
+        QuickActions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed, "#FFF0E6"));
+        QuickActions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper, "#FFF8E1"));
+        QuickActions.Add(new QuickActionItem("🌙", "睡眠", RecordType.Sleep, "#E8F0FE"));
+        QuickActions.Add(new QuickActionItem("🌡️", "体温", RecordType.Temperature, "#FFE8E8"));
+        QuickActions.Add(new QuickActionItem("💊", "补给用药", RecordType.Supplement, "#F3E5F5"));
+        QuickActions.Add(new QuickActionItem("🍶", "吸奶", RecordType.Pump, "#E8F5E9"));
+        QuickActions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary, "#FFF3E0"));
+        QuickActions.Add(new QuickActionItem("🍽️", "妈妈饮食", RecordType.MaternalFood, "#F2F7E8"));
+        QuickActions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
+
+        // 默认显示第一行（前 3 个）
+        RefreshVisibleQuickActions();
     }
+
+    /// <summary>根据展开状态刷新可见的快捷记录项</summary>
+    private void RefreshVisibleQuickActions()
+    {
+        VisibleQuickActions.Clear();
+        var items = IsQuickRecordPanelOpen
+            ? QuickActions.AsEnumerable()
+            : QuickActions.Take(3);
+        foreach (var item in items)
+            VisibleQuickActions.Add(item);
+    }
+
+    partial void OnIsQuickRecordPanelOpenChanged(bool value) => RefreshVisibleQuickActions();
 
     public void Activate()
     {
@@ -83,7 +103,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             LatestHeightText = "--cm";
             LatestWeightText = "--kg";
             VaccineItems.Clear();
-            VaccineProgressText = "0/57";
+            VaccineProgressText = "0/0";
             return;
         }
 
@@ -222,34 +242,47 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     private void RefreshVaccines()
     {
         VaccineItems.Clear();
-        var vaccines = _recordService.GetByType(RecordType.Vaccine, 20);
+        var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
 
-        var vaccineNames = new[]
-        {
-            ("乙肝疫苗（第1针）", "出生"),
-            ("卡介苗", "出生"),
-            ("乙肝疫苗（第2针）", "1月龄"),
-            ("脊灰疫苗（第1针）", "2月龄"),
-            ("百白破（第1针）", "3月龄"),
-            ("肺炎13价（第1针）", "2月龄"),
-            ("轮状病毒（第1剂）", "2月龄"),
-            ("五联/百白破（第2针）", "4月龄"),
-            ("脊灰疫苗（第2针）", "3月龄"),
-        };
-
-        var completedSet = new HashSet<string>(vaccines.Select(v =>
+        // 已接种的疫苗名称集合（规范化：去除空格、括号、针→剂）
+        var completedSet = new HashSet<string>(vaccineRecords.Select(v =>
         {
             try { return v.GetPayload<VaccineRecordDto>()?.Name ?? ""; } catch { return ""; }
-        }).Where(n => !string.IsNullOrEmpty(n)));
+        }).Where(n => !string.IsNullOrEmpty(n)).Select(NormalizeVaccineName));
 
-        foreach (var (name, category) in vaccineNames)
+        var birthDate = ServiceProvider.Instance.AppState.CurrentBaby?.BirthDate;
+        var today = DateTime.Today;
+
+        foreach (var (name, ageLabel, dueDays) in VaccineCatalog.FlattenDoses())
         {
-            var done = completedSet.Contains(name);
-            VaccineItems.Add(new VaccineItem(name, category, done ? 0 : -1, done));
+            var done = completedSet.Contains(NormalizeVaccineName(name));
+            int daysLater;
+            if (done)
+            {
+                daysLater = 0;
+            }
+            else if (birthDate.HasValue && dueDays.HasValue)
+            {
+                var recommendedDate = birthDate.Value.AddDays(dueDays.Value).Date;
+                daysLater = (int)(today - recommendedDate).TotalDays;
+            }
+            else
+            {
+                daysLater = -1; // 未知出生日期或无推荐日，标记为待安排
+            }
+            VaccineItems.Add(new VaccineItem(name, ageLabel, daysLater, done));
         }
 
         var doneCount = VaccineItems.Count(v => v.IsDone);
         VaccineProgressText = $"{doneCount}/{VaccineItems.Count}";
+    }
+
+    private static string NormalizeVaccineName(string s)
+    {
+        if (string.IsNullOrEmpty(s)) return string.Empty;
+        return System.Text.RegularExpressions.Regex.Replace(s, @"\s+", "")
+            .Replace("针", "剂")
+            .ToLowerInvariant();
     }
 
     private static string FormatAge(DateTime birth)
@@ -274,6 +307,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [RelayCommand]
     private void QuickRecord(string type)
     {
+        QuickRecordRequested?.Invoke(type);
     }
 
     [RelayCommand]
@@ -306,9 +340,11 @@ public sealed class QuickActionItem
     public string Icon { get; }
     public string Label { get; }
     public string Type { get; }
-    public QuickActionItem(string icon, string label, string type)
+    /// <summary>图标背景色（对齐原版 quick-actions 配色）</summary>
+    public string IconBg { get; }
+    public QuickActionItem(string icon, string label, string type, string iconBg = "#F7F7F7")
     {
-        Icon = icon; Label = label; Type = type;
+        Icon = icon; Label = label; Type = type; IconBg = iconBg;
     }
 }
 
@@ -318,7 +354,15 @@ public sealed class VaccineItem
     public string Category { get; }
     public int DaysLater { get; }
     public bool IsDone { get; }
-    public string DueText => IsDone ? "已完成" : (DaysLater >= 0 ? $"逾期{DaysLater}天" : Category);
+    public string DueText => IsDone
+        ? "已完成"
+        : DaysLater > 0
+            ? $"逾期{DaysLater}天"
+            : DaysLater == 0
+                ? "今天可打"
+                : DaysLater == -1
+                    ? Category
+                    : $"{-DaysLater}天后";
     public VaccineItem(string name, string category, int daysLater, bool isDone)
     {
         Name = name; Category = category; DaysLater = daysLater; IsDone = isDone;

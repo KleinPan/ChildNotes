@@ -10,4 +10,11 @@ public sealed class AppState
 
     public long UserId => User?.Id ?? 0;
     public long? CurrentBabyId => CurrentBaby?.Id;
+
+    public void Clear()
+    {
+        User = null;
+        CurrentBaby = null;
+        BabyList.Clear();
+    }
 }

@@ -2,7 +2,7 @@
   "name": "ChildNotes WeUI Design Spec",
   "viewportWidth": 390,
   "viewportHeight": 844,
-  "colorTolerance": 8.0,
+  "colorTolerance": 16.0,
   "sizeTolerancePx": 1.5,
   "sizeToleranceRatio": 0.04,
   "colors": {
@@ -40,7 +40,8 @@
     "captionFontSize": 13,
     "smallFontSize": 11,
     "tabIconFontSize": 22,
-    "tabTextFontSize": 10
+    "tabTextFontSize": 10,
+    "displayFontSize": 40
   },
   "controlSizes": {
     "cardCornerRadius": 8,

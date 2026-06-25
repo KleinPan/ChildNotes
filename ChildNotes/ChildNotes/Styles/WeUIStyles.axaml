@@ -12,12 +12,30 @@
         <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />
         <Setter Property="Padding" Value="14" />
         <Setter Property="Margin" Value="12,8" />
+        <!-- 原版阴影: 0 2rpx 16rpx rgba(0,0,0,0.04) -->
+        <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000" />
     </Style>
 
     <Style Selector="Border.weui-cell">
         <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
         <Setter Property="Padding" Value="14,12" />
         <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />
+    </Style>
+
+    <!-- 原版 baby-status-bar 统计区 mini-card -->
+    <Style Selector="Border.mini-card">
+        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="Margin" Value="0,0,0,7" />
+        <Setter Property="BoxShadow" Value="0 0 0 1 #08000000" />
+    </Style>
+
+    <!-- 原版快捷记录按钮项 -->
+    <Style Selector="Border.quick-action-bg">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="CornerRadius" Value="9" />
     </Style>
 
     <Style Selector="Button.weui-btn">
@@ -53,31 +71,39 @@
     <Style Selector="Button.weui-btn.mini">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="12,6" />
+        <Setter Property="MinHeight" Value="44" />
     </Style>
 
     <Style Selector="Border.tab-bar">
         <Setter Property="Background" Value="White" />
         <Setter Property="BorderBrush" Value="#F0F0F0" />
         <Setter Property="BorderThickness" Value="0,1,0,0" />
-        <Setter Property="BoxShadow" Value="0 -2 12 0 #0A000000" />
+        <!-- 原版阴影: 0 -2rpx 12rpx rgba(0,0,0,0.04) -->
+        <Setter Property="BoxShadow" Value="0 -1 6 0 #0A000000" />
     </Style>
 
     <Style Selector="Button.tab-item">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0,8" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="0,6" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="MinHeight" Value="52" />
+        <!-- 原版 tabBar 高度 100rpx ≈ 50px -->
+        <Setter Property="MinHeight" Value="50" />
     </Style>
-    <Style Selector="Button.tab-item TextBlock.tab-icon">
-        <Setter Property="FontSize" Value="22" />
-        <Setter Property="HorizontalAlignment" Value="Center" />
+    <Style Selector="Button.tab-item PathIcon">
+        <Setter Property="Foreground" Value="#999999" />
     </Style>
     <Style Selector="Button.tab-item TextBlock.tab-text">
         <Setter Property="FontSize" Value="10" />
         <Setter Property="Foreground" Value="#999999" />
         <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.tab-item.active PathIcon">
+        <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />
     </Style>
     <Style Selector="Button.tab-item.active TextBlock.tab-text">
         <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />

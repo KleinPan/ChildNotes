@@ -19,6 +19,8 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 
     public ObservableCollection<Baby> BabyList { get; } = new();
 
+    public event Action? LogoutRequested;
+
     public void Activate()
     {
         var user = _auth.CurrentUser;
@@ -35,5 +37,6 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     private void Logout()
     {
         _auth.Logout();
+        LogoutRequested?.Invoke();
     }
 }
