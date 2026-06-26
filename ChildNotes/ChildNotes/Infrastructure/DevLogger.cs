@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text;
+using Avalonia.Threading;
 
 namespace ChildNotes.Infrastructure;
 
@@ -9,7 +10,7 @@ namespace ChildNotes.Infrastructure;
 /// </summary>
 public static class DevLogger
 {
-    private const int MaxLines = 300;
+    private const int MaxLines = 500;
 
     public sealed class LogEntry
     {
@@ -26,12 +27,29 @@ public static class DevLogger
     public static void Log(string tag, string message)
     {
         var entry = new LogEntry { Time = DateTime.Now, Tag = tag, Message = message };
+        // 始终先输出到 Debug，确保即使 UI 线程出问题也能在 logcat 看到
         System.Diagnostics.Debug.WriteLine(entry.Full);
 
-        if (_entries.Count >= MaxLines)
-            _entries.RemoveAt(0);
-        _entries.Add(entry);
-        Logged?.Invoke(entry);
+        // 确保 ObservableCollection 在 UI 线程修改，否则安卓会崩
+        if (Dispatcher.UIThread.CheckAccess())
+            AddEntry(entry);
+        else
+            Dispatcher.UIThread.Post(() => AddEntry(entry));
+    }
+
+    private static void AddEntry(LogEntry entry)
+    {
+        try
+        {
+            if (_entries.Count >= MaxLines)
+                _entries.RemoveAt(0);
+            _entries.Add(entry);
+            Logged?.Invoke(entry);
+        }
+        catch
+        {
+            // 浮层本身出问题不影响主流程
+        }
     }
 
     public static void Log(string tag, Exception ex)
@@ -50,6 +68,9 @@ public static class DevLogger
 
     public static void Clear()
     {
-        _entries.Clear();
+        if (Dispatcher.UIThread.CheckAccess())
+            _entries.Clear();
+        else
+            Dispatcher.UIThread.Post(() => _entries.Clear());
     }
 }

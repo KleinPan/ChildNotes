@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
@@ -11,16 +12,25 @@ public sealed class UserRepository
 
     public AppUser? FindByUsername(string username)
     {
+        DevLogger.Log("UserRepo", $"FindByUsername: '{username}'");
         using var conn = _factory.Create();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at FROM app_user WHERE username = @u";
         cmd.Parameters.AddWithValue("@u", username);
         using var r = cmd.ExecuteReader();
-        return r.Read() ? MapUser(r) : null;
+        if (!r.Read())
+        {
+            DevLogger.Log("UserRepo", "FindByUsername: not found");
+            return null;
+        }
+        var user = MapUser(r);
+        DevLogger.Log("UserRepo", $"FindByUsername: found id={user.Id}");
+        return user;
     }
 
     public AppUser? FindById(long id)
     {
+        DevLogger.Log("UserRepo", $"FindById: {id}");
         using var conn = _factory.Create();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at FROM app_user WHERE id = @i";
@@ -31,6 +41,7 @@ public sealed class UserRepository
 
     public long Insert(AppUser user)
     {
+        DevLogger.Log("UserRepo", $"Insert: username={user.Username}");
         using var conn = _factory.Create();
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"INSERT INTO app_user (username, password_hash, nick_name, avatar_url, gender, created_at, updated_at)
@@ -41,7 +52,9 @@ public sealed class UserRepository
         cmd.Parameters.AddWithValue("@a", user.AvatarUrl);
         cmd.Parameters.AddWithValue("@g", user.Gender);
         cmd.Parameters.AddWithValue("@c", DateTime.UtcNow.ToString("O"));
-        return (long)cmd.ExecuteScalar()!;
+        var id = (long)cmd.ExecuteScalar()!;
+        DevLogger.Log("UserRepo", $"Insert done: id={id}");
+        return id;
     }
 
     public void UpdateProfile(AppUser user)

@@ -118,32 +118,31 @@ public partial class App : Application
             _shellView = new MainShellView { DataContext = _shellVm };
             DevLogger.Log("App", "MainShellView created");
 
-            // 用 Dispatcher.Post 异步设置 MainView，避免在命令调用栈里同步渲染导致时序问题
-            Dispatcher.UIThread.Post(() =>
+            // 同步设置 MainView（之前用 Post 但日志显示回调里赋值后无后续，疑似 Post 在安卓上回调丢失）
+            DevLogger.Log("App", "Setting MainView (sync) begin");
+            try
             {
-                DevLogger.Log("App", "Post: setting MainView begin");
-                try
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                    && desktop.MainWindow is not null)
                 {
-                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                        && desktop.MainWindow is not null)
-                    {
-                        desktop.MainWindow.Content = _shellView;
-                        DevLogger.Log("App", "Set MainWindow.Content = shellView");
-                    }
-                    else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
-                    {
-                        single.MainView = _shellView;
-                        DevLogger.Log("App", "Set single.MainView = shellView");
-                    }
-                    DevLogger.Log("App", "Post: setting MainView done");
+                    desktop.MainWindow.Content = _shellView;
+                    DevLogger.Log("App", "Set MainWindow.Content = shellView");
                 }
-                catch (Exception ex)
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
                 {
-                    DevLogger.Log("App", "Post EXCEPTION");
-                    DevLogger.Log("App", ex);
-                    throw;
+                    DevLogger.Log("App", "About to assign single.MainView");
+                    single.MainView = _shellView;
+                    DevLogger.Log("App", "single.MainView assigned, checking value");
+                    DevLogger.Log("App", $"single.MainView is now: {single.MainView?.GetType().Name ?? "null"}");
                 }
-            });
+                DevLogger.Log("App", "Setting MainView done");
+            }
+            catch (Exception ex)
+            {
+                DevLogger.Log("App", "Setting MainView EXCEPTION");
+                DevLogger.Log("App", ex);
+                throw;
+            }
 
             // 解绑登录事件，避免重复触发
             if (_loginVm is not null)

@@ -1,4 +1,5 @@
 using ChildNotes.Data.Repositories;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Services;
@@ -16,16 +17,26 @@ public sealed class BabyService
 
     public List<Baby> LoadBabyList()
     {
-        _state.BabyList = _repo.GetByUser(_state.UserId);
-        if (_state.BabyList.Count > 0)
+        DevLogger.Log("Baby", $"LoadBabyList start, userId={_state.UserId}");
+        try
         {
-            _state.CurrentBaby ??= _state.BabyList[0];
+            _state.BabyList = _repo.GetByUser(_state.UserId);
+            DevLogger.Log("Baby", $"LoadBabyList: count={_state.BabyList.Count}");
+            if (_state.BabyList.Count > 0)
+            {
+                _state.CurrentBaby ??= _state.BabyList[0];
+            }
+            else
+            {
+                _state.CurrentBaby = null;
+            }
+            return _state.BabyList;
         }
-        else
+        catch (Exception ex)
         {
-            _state.CurrentBaby = null;
+            DevLogger.Log("Baby", ex);
+            throw;
         }
-        return _state.BabyList;
     }
 
     public Baby AddBaby(string name, string gender, DateTime? birthDate, string avatar = "")
