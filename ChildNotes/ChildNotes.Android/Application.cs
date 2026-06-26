@@ -22,9 +22,10 @@ namespace ChildNotes.Android
             return base.CustomizeAppBuilder(builder)
                 .With(new FontManagerOptions
                 {
+                    DefaultFamilyName = "avares://ChildNotes/Assets/Fonts/wqy-microhei.ttc#WenQuanYi Micro Hei",
                     FontFallbacks = new[]
                     {
-                        new FontFallback { FontFamily = new FontFamily("Noto Sans CJK SC") },
+                        new FontFallback { FontFamily = new FontFamily("avares://ChildNotes/Assets/Fonts/wqy-microhei.ttc#WenQuanYi Micro Hei") },
                         new FontFallback { FontFamily = new FontFamily("sans-serif") }
                     }
                 });

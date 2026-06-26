@@ -22,11 +22,11 @@ sealed class Program
 #endif
             .With(new FontManagerOptions
             {
+                DefaultFamilyName = "avares://ChildNotes/Assets/Fonts/wqy-microhei.ttc#WenQuanYi Micro Hei",
                 FontFallbacks = new[]
                 {
+                    new FontFallback { FontFamily = new FontFamily("avares://ChildNotes/Assets/Fonts/wqy-microhei.ttc#WenQuanYi Micro Hei") },
                     new FontFallback { FontFamily = new FontFamily("Microsoft YaHei") },
-                    new FontFallback { FontFamily = new FontFamily("PingFang SC") },
-                    new FontFallback { FontFamily = new FontFamily("Noto Sans CJK SC") },
                     new FontFallback { FontFamily = new FontFamily("sans-serif") }
                 }
             })
