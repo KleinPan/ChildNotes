@@ -43,7 +43,8 @@ public partial class LoginViewModel : ViewModelBase
                 DevLogger.Log("Login", "BindUserToState done");
                 ServiceProvider.Instance.BabyService.LoadBabyList();
                 DevLogger.Log("Login", "LoadBabyList done");
-                DevLogger.Log("Login", "Invoking LoginSucceeded");
+                var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
+                DevLogger.Log("Login", $"Invoking LoginSucceeded, subscribers={subscribers}");
                 LoginSucceeded?.Invoke();
                 DevLogger.Log("Login", "LoginSucceeded invoked");
             }
