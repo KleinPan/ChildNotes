@@ -1,7 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
 	<uses-permission android:name="android.permission.INTERNET" />
-	<application android:label="ChildNotes" android:icon="@drawable/Icon" />
-	<!-- AdjustResize: 键盘弹出时窗口自动缩小，弹层内容不会被遮挡 -->
-	<activity android:name="com.CompanyName.ChildNotes.MainActivity" android:windowSoftInputMode="adjustResize" />
+	<!-- application 节点必须包含所有 activity 子节点；
+	     icon 统一小写避免 Linux/Mac 构建失败 -->
+	<application android:label="ChildNotes" android:icon="@drawable/icon">
+		<!-- MainActivity 由 C# [Activity] 特性自动生成 <activity> 节点，
+		     windowSoftInputMode=adjustResize 通过 C# 特性无法稳定设置（.NET 10 Android 枚举绑定变化），
+		     故在此显式声明。android:name 必须与 ApplicationId 匹配，.NET Android 会做包名映射 -->
+		<activity
+			android:name="com.CompanyName.ChildNotes.MainActivity"
+			android:windowSoftInputMode="adjustResize"
+			android:exported="true" />
+	</application>
 </manifest>

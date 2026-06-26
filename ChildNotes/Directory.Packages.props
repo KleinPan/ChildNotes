@@ -22,7 +22,5 @@
 
         <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
         <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
-
-        <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.15" />
     </ItemGroup>
 </Project>

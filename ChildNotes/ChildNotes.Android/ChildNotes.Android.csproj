@@ -2,7 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0-android</TargetFramework>
-    <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
+    <!-- .NET 10 for Android 最低支持 API 24（Android 7.0），设为 23 会触发 XA1022 警告 -->
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
     <ApplicationId>com.CompanyName.ChildNotes</ApplicationId>
     <ApplicationVersion>1</ApplicationVersion>
@@ -19,7 +20,8 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />
-    <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" />
+    <!-- 移除 Xamarin.AndroidX.Core.SplashScreen：从未在 C# 代码中调用 InstallSplashScreen，
+         styles.xml 的 windowSplashScreen* 属性是 Android 12+ 原生支持，不需要此包 -->
   </ItemGroup>
 
   <ItemGroup>
