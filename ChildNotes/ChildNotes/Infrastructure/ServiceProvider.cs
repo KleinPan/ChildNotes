@@ -25,10 +25,12 @@ public sealed class ServiceProvider
 
     private ServiceProvider()
     {
+        DevLogger.Log("DI", "ServiceProvider ctor start");
         var appDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "ChildNotes");
         Directory.CreateDirectory(appDir);
+        DevLogger.Log("DI", $"appDir={appDir}");
 
         var dbPath = Path.Combine(appDir, "childnotes.db");
         DbFactory = new DbConnectionFactory(dbPath);
@@ -48,10 +50,12 @@ public sealed class ServiceProvider
         AiAnalysisRepository = new AiAnalysisRepository(DbFactory);
         LlmClient = new LlmClient();
         AiAnalysisService = new AiAnalysisService(AiAnalysisRepository, RecordService, BabyService, AppState, LlmClient);
+        DevLogger.Log("DI", "ServiceProvider ctor done");
     }
 
     public void BindUserToState()
     {
         AppState.User = AuthService.CurrentUser;
+        DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Username}, id={AppState.User?.Id}");
     }
 }

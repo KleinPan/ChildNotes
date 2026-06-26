@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:ctrl="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -8,64 +9,69 @@
              x:DataType="vm:LoginViewModel"
              Background="{StaticResource WeuiBg0Brush}">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <Grid RowDefinitions="*,Auto,*">
+    <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <Grid RowDefinitions="*,Auto,*">
 
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
-                <Border Width="84" Height="84" CornerRadius="42" Background="{StaticResource WeuiGreenBrush}"
-                        HorizontalAlignment="Center" Margin="0,0,0,16">
-                    <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <TextBlock Text="成长记录" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                <TextBlock Text="记录宝宝成长的每一天" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
-                           HorizontalAlignment="Center" Margin="0,6,0,0"/>
-            </StackPanel>
-
-            <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}"
-                    Margin="12,0" Padding="14">
-                <StackPanel>
-                    <TextBlock Text="账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
-                               IsVisible="{Binding !IsRegisterMode}"/>
-                    <TextBlock Text="设置账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
-                               IsVisible="{Binding IsRegisterMode}"/>
-                    <TextBox Text="{Binding Username}" PlaceholderText="请输入用户名" CornerRadius="6"
-                             Margin="0,0,0,12"/>
-
-                    <TextBlock Text="密码" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
-                    <TextBox Text="{Binding Password}" PlaceholderText="请输入密码" PasswordChar="●" CornerRadius="6"
-                             Margin="0,0,0,12"/>
-
-                    <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
-                        <TextBlock Text="昵称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
-                        <TextBox Text="{Binding NickName}" PlaceholderText="请输入昵称（选填）" CornerRadius="6"/>
-                    </StackPanel>
-
-                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}"
-                               FontSize="13" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-                    <Button Content="登 录" Classes="weui-btn primary"
-                            Command="{Binding SubmitCommand}"
-                            IsVisible="{Binding !IsRegisterMode}"
-                            Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-                    <Button Content="注 册" Classes="weui-btn primary"
-                            Command="{Binding SubmitCommand}"
-                            IsVisible="{Binding IsRegisterMode}"
-                            Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-
-                    <Button Content="没有账号？去注册" Classes="weui-btn default"
-                            Command="{Binding ToggleModeCommand}"
-                            IsVisible="{Binding !IsRegisterMode}"
-                            HorizontalAlignment="Stretch"/>
-                    <Button Content="已有账号？去登录" Classes="weui-btn default"
-                            Command="{Binding ToggleModeCommand}"
-                            IsVisible="{Binding IsRegisterMode}"
-                            HorizontalAlignment="Stretch"/>
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
+                    <Border Width="84" Height="84" CornerRadius="42" Background="{StaticResource WeuiGreenBrush}"
+                            HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="成长记录" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="记录宝宝成长的每一天" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                               HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
-            </Border>
 
-            <TextBlock Grid.Row="2" Text="本地离线版 · 数据存储于本设备"
-                       FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24,0,0"/>
-        </Grid>
-    </ScrollViewer>
+                <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}"
+                        Margin="12,0" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                                   IsVisible="{Binding !IsRegisterMode}"/>
+                        <TextBlock Text="设置账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                                   IsVisible="{Binding IsRegisterMode}"/>
+                        <TextBox Text="{Binding Username}" PlaceholderText="请输入用户名" CornerRadius="6"
+                                 Margin="0,0,0,12"/>
+
+                        <TextBlock Text="密码" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                        <TextBox Text="{Binding Password}" PlaceholderText="请输入密码" PasswordChar="●" CornerRadius="6"
+                                 Margin="0,0,0,12"/>
+
+                        <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
+                            <TextBlock Text="昵称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding NickName}" PlaceholderText="请输入昵称（选填）" CornerRadius="6"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}"
+                                   FontSize="13" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                        <Button Content="登 录" Classes="weui-btn primary"
+                                Command="{Binding SubmitCommand}"
+                                IsVisible="{Binding !IsRegisterMode}"
+                                Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
+                        <Button Content="注 册" Classes="weui-btn primary"
+                                Command="{Binding SubmitCommand}"
+                                IsVisible="{Binding IsRegisterMode}"
+                                Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
+
+                        <Button Content="没有账号？去注册" Classes="weui-btn default"
+                                Command="{Binding ToggleModeCommand}"
+                                IsVisible="{Binding !IsRegisterMode}"
+                                HorizontalAlignment="Stretch"/>
+                        <Button Content="已有账号？去登录" Classes="weui-btn default"
+                                Command="{Binding ToggleModeCommand}"
+                                IsVisible="{Binding IsRegisterMode}"
+                                HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Grid.Row="2" Text="本地离线版 · 数据存储于本设备"
+                           FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24,0,0"/>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- 开发阶段日志浮层（最上层覆盖） -->
+        <ctrl:DevLogOverlay/>
+    </Grid>
 </UserControl>

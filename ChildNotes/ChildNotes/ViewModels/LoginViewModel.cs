@@ -30,20 +30,22 @@ public partial class LoginViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         try
         {
-            System.Diagnostics.Debug.WriteLine($"[Login] Mode={IsRegisterMode}, User='{Username}', PwdLen={Password?.Length ?? 0}, Nick='{NickName}'");
+            DevLogger.Log("Login", $"Submit start: Mode={IsRegisterMode}, User='{Username}', PwdLen={Password?.Length ?? 0}, Nick='{NickName}'");
             var result = IsRegisterMode
                 ? _auth.Register(Username, Password, NickName)
                 : _auth.Login(Username, Password);
 
-            System.Diagnostics.Debug.WriteLine($"[Login] Result: Success={result.Success}, Msg='{result.Message}'");
+            DevLogger.Log("Login", $"Result: Success={result.Success}, Msg='{result.Message}', UserId={result.User?.Id}");
 
             if (result.Success)
             {
                 ServiceProvider.Instance.BindUserToState();
+                DevLogger.Log("Login", "BindUserToState done");
                 ServiceProvider.Instance.BabyService.LoadBabyList();
-                System.Diagnostics.Debug.WriteLine("[Login] Invoking LoginSucceeded");
+                DevLogger.Log("Login", "LoadBabyList done");
+                DevLogger.Log("Login", "Invoking LoginSucceeded");
                 LoginSucceeded?.Invoke();
-                System.Diagnostics.Debug.WriteLine("[Login] LoginSucceeded invoked");
+                DevLogger.Log("Login", "LoginSucceeded invoked");
             }
             else
             {
@@ -52,7 +54,7 @@ public partial class LoginViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[Login] Exception: {ex}");
+            DevLogger.Log("Login", ex);
             // 避免被 App.axaml.cs 的全局 UnhandledException 处理器静默吞掉，
             // 让用户在登录页直接看到完整错误（含类型/消息/内层异常），便于安卓真机排查
             var detail = ex.ToString();

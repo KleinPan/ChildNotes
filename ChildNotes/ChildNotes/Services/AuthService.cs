@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ChildNotes.Data.Repositories;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Services;
@@ -21,14 +22,26 @@ public sealed class AuthService
 
     public LoginResult Register(string username, string password, string nickName)
     {
+        DevLogger.Log("Auth", $"Register start: user='{username}', nick='{nickName}'");
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return LoginResult.Fail("用户名和密码不能为空");
+            return Fail("用户名和密码不能为空");
         if (username.Length < 3)
-            return LoginResult.Fail("用户名至少 3 个字符");
+            return Fail("用户名至少 3 个字符");
         if (password.Length < 6)
-            return LoginResult.Fail("密码至少 6 个字符");
-        if (_users.FindByUsername(username) is not null)
-            return LoginResult.Fail("用户名已存在");
+            return Fail("密码至少 6 个字符");
+
+        try
+        {
+            var existing = _users.FindByUsername(username);
+            DevLogger.Log("Auth", $"FindByUsername returned: {(existing is null ? "null" : existing.Username + "(id=" + existing.Id + ")")}");
+            if (existing is not null)
+                return Fail("用户名已存在");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", ex);
+            throw;
+        }
 
         var user = new AppUser
         {
@@ -36,20 +49,66 @@ public sealed class AuthService
             PasswordHash = HashPassword(password),
             NickName = string.IsNullOrWhiteSpace(nickName) ? username : nickName,
         };
-        user.Id = _users.Insert(user);
+        try
+        {
+            user.Id = _users.Insert(user);
+            DevLogger.Log("Auth", $"Insert success: new id={user.Id}");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", ex);
+            throw;
+        }
         CurrentUser = user;
+        DevLogger.Log("Auth", $"Register success: user={username}, id={user.Id}");
         return LoginResult.Ok(user);
     }
 
     public LoginResult Login(string username, string password)
     {
-        var user = _users.FindByUsername(username);
+        DevLogger.Log("Auth", $"Login start: user='{username}'");
+        AppUser? user;
+        try
+        {
+            user = _users.FindByUsername(username);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", ex);
+            throw;
+        }
+
         if (user is null)
-            return LoginResult.Fail("用户不存在");
-        if (!VerifyPassword(password, user.PasswordHash))
-            return LoginResult.Fail("密码错误");
+        {
+            DevLogger.Log("Auth", "Login fail: user not found");
+            return Fail("用户不存在");
+        }
+        DevLogger.Log("Auth", $"User found: id={user.Id}, hashLen={user.PasswordHash?.Length ?? 0}");
+
+        bool ok;
+        try
+        {
+            ok = VerifyPassword(password, user.PasswordHash);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", ex);
+            throw;
+        }
+        if (!ok)
+        {
+            DevLogger.Log("Auth", "Login fail: password mismatch");
+            return Fail("密码错误");
+        }
         CurrentUser = user;
+        DevLogger.Log("Auth", $"Login success: user={username}, id={user.Id}");
         return LoginResult.Ok(user);
+    }
+
+    private static LoginResult Fail(string msg)
+    {
+        DevLogger.Log("Auth", "Fail: " + msg);
+        return LoginResult.Fail(msg);
     }
 
     public void Logout()

@@ -1,3 +1,4 @@
+using ChildNotes.Infrastructure;
 using Microsoft.Data.Sqlite;
 
 namespace ChildNotes.Data;
@@ -6,7 +7,9 @@ public static class DbInitializer
 {
     public static void Initialize(DbConnectionFactory factory)
     {
+        DevLogger.Log("DB", "DbInitializer.Initialize start");
         using var conn = factory.Create();
+        DevLogger.Log("DB", "DbInitializer got connection");
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS app_user (
@@ -173,6 +176,8 @@ CREATE INDEX IF NOT EXISTS idx_child_record_baby_date
         conn.ExecuteNonQuery(@"
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_baby
     ON ai_analysis_record (baby_id, range_start_date, range_end_date);");
+
+        DevLogger.Log("DB", "DbInitializer.Initialize done");
     }
 }
 
