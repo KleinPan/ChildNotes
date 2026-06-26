@@ -2,6 +2,7 @@
 using Android.Runtime;
 using Avalonia;
 using Avalonia.Android;
+using Avalonia.Media;
 using SQLitePCL;
 
 namespace ChildNotes.Android
@@ -18,7 +19,16 @@ namespace ChildNotes.Android
             // Android 上必须在任何 Microsoft.Data.Sqlite 操作之前初始化原生库 e_sqlite3，
             // 否则打开连接会抛 "Unable to load DLL 'e_sqlite3'"，登录/注册看似无反应。
             Batteries_V2.Init();
-            return base.CustomizeAppBuilder(builder);
+            return base.CustomizeAppBuilder(builder)
+                .With(new FontManagerOptions
+                {
+                    DefaultFamilyName = "'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', Roboto, sans-serif",
+                    FontFallbacks = new[]
+                    {
+                        new FontFallback { FontFamily = new FontFamily("Noto Sans CJK SC") },
+                        new FontFallback { FontFamily = new FontFamily("sans-serif") }
+                    }
+                });
         }
     }
 }

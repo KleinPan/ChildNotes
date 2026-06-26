@@ -1,5 +1,6 @@
 ﻿using System;
 using Avalonia;
+using Avalonia.Media;
 
 namespace ChildNotes.Desktop;
 
@@ -19,5 +20,16 @@ sealed class Program
 #if DEBUG
             .WithDeveloperTools()
 #endif
+            .With(new FontManagerOptions
+            {
+                DefaultFamilyName = "Segoe UI, 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', Roboto, sans-serif",
+                FontFallbacks = new[]
+                {
+                    new FontFallback { FontFamily = new FontFamily("Microsoft YaHei") },
+                    new FontFallback { FontFamily = new FontFamily("PingFang SC") },
+                    new FontFallback { FontFamily = new FontFamily("Noto Sans CJK SC") },
+                    new FontFallback { FontFamily = new FontFamily("sans-serif") }
+                }
+            })
             .LogToTrace();
 }
