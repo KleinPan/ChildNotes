@@ -118,8 +118,15 @@ public partial class App : Application
             _shellView = new MainShellView { DataContext = _shellVm };
             DevLogger.Log("App", "MainShellView created");
 
-            // 同步设置 MainView（之前用 Post 但日志显示回调里赋值后无后续，疑似 Post 在安卓上回调丢失）
-            DevLogger.Log("App", "Setting MainView (sync) begin");
+            // 先清空旧视图引用，避免安卓上旧视图阻止新视图挂载到视觉树
+            if (_loginVm is not null)
+            {
+                _loginVm.LoginSucceeded -= OnLoginSucceeded;
+                _loginVm = null;
+            }
+            _loginView = null;
+
+            DevLogger.Log("App", "Setting MainView begin");
             try
             {
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
@@ -132,8 +139,25 @@ public partial class App : Application
                 {
                     DevLogger.Log("App", "About to assign single.MainView");
                     single.MainView = _shellView;
-                    DevLogger.Log("App", "single.MainView assigned, checking value");
-                    DevLogger.Log("App", $"single.MainView is now: {single.MainView?.GetType().Name ?? "null"}");
+                    DevLogger.Log("App", $"single.MainView assigned: {single.MainView?.GetType().Name ?? "null"}");
+
+                    // 安卓上赋值后可能不立即触发视觉树更新，强制刷新
+                    _shellView.InvalidateMeasure();
+                    _shellView.InvalidateArrange();
+                    DevLogger.Log("App", "Invalidated measure+arrange");
+
+                    // 延迟一帧验证视觉树是否已挂载
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        DevLogger.Log("App", $"Post-check: Parent={_shellView?.Parent?.GetType().Name ?? "null"}, VisualRoot={_shellView?.GetVisualRoot()?.GetType().Name ?? "null"}, IsVisible={_shellView?.IsVisible}");
+                        // 如果还没挂载，再试一次强制布局
+                        if (_shellView?.Parent is null)
+                        {
+                            DevLogger.Log("App", "Post-check: still no parent! Trying force update...");
+                            _shellView.UpdateLayout();
+                            DevLogger.Log("App", $"Post-check after UpdateLayout: Parent={_shellView?.Parent?.GetType().Name ?? "null"}");
+                        }
+                    });
                 }
                 DevLogger.Log("App", "Setting MainView done");
             }
@@ -144,13 +168,6 @@ public partial class App : Application
                 throw;
             }
 
-            // 解绑登录事件，避免重复触发
-            if (_loginVm is not null)
-            {
-                _loginVm.LoginSucceeded -= OnLoginSucceeded;
-                _loginVm = null;
-            }
-            _loginView = null;
             DevLogger.Log("App", "OnLoginSucceeded done");
         }
         catch (Exception ex)
