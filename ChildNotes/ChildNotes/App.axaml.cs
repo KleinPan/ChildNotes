@@ -149,7 +149,7 @@ public partial class App : Application
                     // 延迟一帧验证视觉树是否已挂载
                     Dispatcher.UIThread.Post(() =>
                     {
-                        DevLogger.Log("App", $"Post-check: Parent={_shellView?.Parent?.GetType().Name ?? "null"}, VisualRoot={_shellView?.GetVisualRoot()?.GetType().Name ?? "null"}, IsVisible={_shellView?.IsVisible}");
+                        DevLogger.Log("App", $"Post-check: Parent={_shellView?.Parent?.GetType().Name ?? "null"}, IsVisible={_shellView?.IsVisible}");
                         // 如果还没挂载，再试一次强制布局
                         if (_shellView?.Parent is null)
                         {
