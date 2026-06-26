@@ -10,8 +10,7 @@ namespace ChildNotes.Android;
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@drawable/icon",
     MainLauncher = true,
-    // AdjustResize: 键盘弹出时窗口自动缩小，弹层内容不会被遮挡
-    WindowSoftInputMode = global::Android.Views.WindowManagerFlags.SoftInputAdjustResize,
+    // windowSoftInputMode=adjustResize 在 AndroidManifest.xml 中设置（C# 枚举绑定在 .NET 10 Android 变化频繁，XML 更稳定）
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity
 {
