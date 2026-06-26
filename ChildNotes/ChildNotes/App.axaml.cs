@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using ChildNotes.ViewModels;
 using ChildNotes.Views;
+using SQLitePCL;
 
 namespace ChildNotes;
 
@@ -26,6 +27,11 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
+        // 初始化 SQLitePCLRaw（注册 e_sqlite3 原生库 provider）。
+        // 必须在 ServiceProvider 首次被访问（即 ShowLogin 内 new LoginViewModel()）之前完成，
+        // 否则 Microsoft.Data.Sqlite 打开连接会失败，登录/注册表面无反应。
+        Batteries_V2.Init();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

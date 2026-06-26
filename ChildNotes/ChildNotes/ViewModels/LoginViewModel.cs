@@ -28,19 +28,28 @@ public partial class LoginViewModel : ViewModelBase
     private void Submit()
     {
         ErrorMessage = string.Empty;
-        var result = IsRegisterMode
-            ? _auth.Register(Username, Password, NickName)
-            : _auth.Login(Username, Password);
+        try
+        {
+            var result = IsRegisterMode
+                ? _auth.Register(Username, Password, NickName)
+                : _auth.Login(Username, Password);
 
-        if (result.Success)
-        {
-            ServiceProvider.Instance.BindUserToState();
-            ServiceProvider.Instance.BabyService.LoadBabyList();
-            LoginSucceeded?.Invoke();
+            if (result.Success)
+            {
+                ServiceProvider.Instance.BindUserToState();
+                ServiceProvider.Instance.BabyService.LoadBabyList();
+                LoginSucceeded?.Invoke();
+            }
+            else
+            {
+                ErrorMessage = result.Message;
+            }
         }
-        else
+        catch (Exception ex)
         {
-            ErrorMessage = result.Message;
+            // 避免被 App.axaml.cs 的全局 UnhandledException 处理器静默吞掉，
+            // 让用户在登录页直接看到错误（例如 SQLite 原生库未初始化等）
+            ErrorMessage = "操作失败：" + ex.Message;
         }
     }
 }

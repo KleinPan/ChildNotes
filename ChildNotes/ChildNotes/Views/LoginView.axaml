@@ -26,7 +26,7 @@
                 <StackPanel>
                     <TextBlock Text="账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
                                IsVisible="{Binding !IsRegisterMode}"/>
-                    <TextBlock Text="设置昵称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                    <TextBlock Text="设置账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
                                IsVisible="{Binding IsRegisterMode}"/>
                     <TextBox Text="{Binding Username}" PlaceholderText="请输入用户名" CornerRadius="6"
                              Margin="0,0,0,12"/>

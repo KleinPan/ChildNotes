@@ -2,6 +2,7 @@
 using Android.Runtime;
 using Avalonia;
 using Avalonia.Android;
+using SQLitePCL;
 
 namespace ChildNotes.Android
 {
@@ -14,8 +15,10 @@ namespace ChildNotes.Android
 
         protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
         {
-            return base.CustomizeAppBuilder(builder)
-            .WithInterFont();
+            // Android 上必须在任何 Microsoft.Data.Sqlite 操作之前初始化原生库 e_sqlite3，
+            // 否则打开连接会抛 "Unable to load DLL 'e_sqlite3'"，登录/注册看似无反应。
+            Batteries_V2.Init();
+            return base.CustomizeAppBuilder(builder);
         }
     }
 }
