@@ -20,7 +20,6 @@ public partial class AppDelegate : AvaloniaAppDelegate<App>
         return base.CustomizeAppBuilder(builder)
             .With(new FontManagerOptions
             {
-                DefaultFamilyName = "'PingFang SC', 'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif",
                 FontFallbacks = new[]
                 {
                     new FontFallback { FontFamily = new FontFamily("PingFang SC") },

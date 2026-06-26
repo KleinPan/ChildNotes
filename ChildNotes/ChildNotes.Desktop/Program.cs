@@ -22,7 +22,6 @@ sealed class Program
 #endif
             .With(new FontManagerOptions
             {
-                DefaultFamilyName = "Segoe UI, 'Microsoft YaHei', 'PingFang SC', 'Noto Sans CJK SC', Roboto, sans-serif",
                 FontFallbacks = new[]
                 {
                     new FontFallback { FontFamily = new FontFamily("Microsoft YaHei") },

@@ -3,14 +3,7 @@
         x:Class="ChildNotes.Styles.WeUIStyles">
 
     <Style Selector="TextBlock">
-        <Setter Property="FontFamily" Value="Segoe UI, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', Roboto, sans-serif" />
         <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
-    </Style>
-    <Style Selector="TextBox">
-        <Setter Property="FontFamily" Value="Segoe UI, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', Roboto, sans-serif" />
-    </Style>
-    <Style Selector="Button">
-        <Setter Property="FontFamily" Value="Segoe UI, -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', Roboto, sans-serif" />
     </Style>
 
     <Style Selector="Border.weui-card">

@@ -22,7 +22,6 @@ namespace ChildNotes.Android
             return base.CustomizeAppBuilder(builder)
                 .With(new FontManagerOptions
                 {
-                    DefaultFamilyName = "'Noto Sans CJK SC', 'PingFang SC', 'Microsoft YaHei', Roboto, sans-serif",
                     FontFallbacks = new[]
                     {
                         new FontFallback { FontFamily = new FontFamily("Noto Sans CJK SC") },
