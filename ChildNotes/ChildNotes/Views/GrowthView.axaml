@@ -168,7 +168,7 @@
                             <Border>
                                 <StackPanel>
                                     <TextBlock Text="日期" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
-                                    <DatePicker SelectedDate="{Binding MilestoneEdit.RecordDate}" HorizontalAlignment="Stretch"/>
+                                    <CalendarDatePicker SelectedDate="{Binding MilestoneEdit.RecordDate}" HorizontalAlignment="Stretch" FontSize="13"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock Text="{Binding MilestoneEdit.ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"

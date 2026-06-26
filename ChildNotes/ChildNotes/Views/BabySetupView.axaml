@@ -38,7 +38,7 @@
 
                 <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
                     <TextBlock Text="生日" FontSize="15" Width="60" VerticalAlignment="Center"/>
-                    <DatePicker SelectedDate="{Binding BirthDate}" HorizontalAlignment="Stretch"/>
+                    <CalendarDatePicker SelectedDate="{Binding BirthDate}" PlaceholderText="请选择宝宝生日" HorizontalAlignment="Stretch" FontSize="15"/>
                 </StackPanel>
                 <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
 
