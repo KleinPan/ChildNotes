@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using ChildNotes.Controls;
 using ChildNotes.Infrastructure;
 using ChildNotes.ViewModels;
 using ChildNotes.Views;
@@ -17,6 +18,9 @@ public partial class App : Application
     private MainShellViewModel? _shellVm;
     private LoginView? _loginView;
     private MainShellView? _shellView;
+    /// <summary>安卓端根容器：始终作为 ISingleViewApplicationLifetime.MainView 的唯一宿主，
+    /// 通过切换 Content 避免替换 MainView 导致视觉树丢失。</summary>
+    private RootContainer? _rootContainer;
 
     public override void Initialize()
     {
@@ -34,9 +38,6 @@ public partial class App : Application
         DevLogger.Log("App", "OnFrameworkInitializationCompleted start");
         try
         {
-            // 初始化 SQLitePCLRaw（注册 e_sqlite3 原生库 provider）。
-            // 必须在 ServiceProvider 首次被访问（即 ShowLogin 内 new LoginViewModel()）之前完成，
-            // 否则 Microsoft.Data.Sqlite 打开连接会失败，登录/注册表面无反应。
             Batteries_V2.Init();
             DevLogger.Log("App", "Batteries_V2.Init done");
 
@@ -80,10 +81,19 @@ public partial class App : Application
             switch (host)
             {
                 case MainWindow window:
+                    // 桌面端：直接设置 Content（每次切换都替换，桌面端没问题）
                     window.Content = _loginView;
                     break;
                 case ISingleViewApplicationLifetime single:
-                    single.MainView = _loginView;
+                    // 安卓/iOS 端：使用 RootContainer 容器模式
+                    // 只在首次创建时设置 single.MainView，之后只切换容器内部 Content
+                    if (_rootContainer is null)
+                    {
+                        _rootContainer = new RootContainer();
+                        single.MainView = _rootContainer;
+                        DevLogger.Log("App", "RootContainer set as single.MainView");
+                    }
+                    _rootContainer.SetContent(_loginView);
                     break;
             }
             DevLogger.Log("App", "ShowLogin done");
@@ -118,7 +128,7 @@ public partial class App : Application
             _shellView = new MainShellView { DataContext = _shellVm };
             DevLogger.Log("App", "MainShellView created");
 
-            // 先清空旧视图引用，避免安卓上旧视图阻止新视图挂载到视觉树
+            // 解绑登录事件
             if (_loginVm is not null)
             {
                 _loginVm.LoginSucceeded -= OnLoginSucceeded;
@@ -126,53 +136,42 @@ public partial class App : Application
             }
             _loginView = null;
 
-            DevLogger.Log("App", "Setting MainView begin");
-            try
-            {
-                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                    && desktop.MainWindow is not null)
-                {
-                    desktop.MainWindow.Content = _shellView;
-                    DevLogger.Log("App", "Set MainWindow.Content = shellView");
-                }
-                else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
-                {
-                    DevLogger.Log("App", "About to assign single.MainView");
-                    single.MainView = _shellView;
-                    DevLogger.Log("App", $"single.MainView assigned: {single.MainView?.GetType().Name ?? "null"}");
-
-                    // 安卓上赋值后可能不立即触发视觉树更新，强制刷新
-                    _shellView.InvalidateMeasure();
-                    _shellView.InvalidateArrange();
-                    DevLogger.Log("App", "Invalidated measure+arrange");
-
-                    // 延迟一帧验证视觉树是否已挂载
-                    Dispatcher.UIThread.Post(() =>
-                    {
-                        DevLogger.Log("App", $"Post-check: Parent={_shellView?.Parent?.GetType().Name ?? "null"}, IsVisible={_shellView?.IsVisible}");
-                        // 如果还没挂载，再试一次强制布局
-                        if (_shellView?.Parent is null)
-                        {
-                            DevLogger.Log("App", "Post-check: still no parent! Trying force update...");
-                            _shellView.UpdateLayout();
-                            DevLogger.Log("App", $"Post-check after UpdateLayout: Parent={_shellView?.Parent?.GetType().Name ?? "null"}");
-                        }
-                    });
-                }
-                DevLogger.Log("App", "Setting MainView done");
-            }
-            catch (Exception ex)
-            {
-                DevLogger.Log("App", "Setting MainView EXCEPTION");
-                DevLogger.Log("App", ex);
-                throw;
-            }
+            // 切换视图到主界面
+            SwitchToMainView();
 
             DevLogger.Log("App", "OnLoginSucceeded done");
         }
         catch (Exception ex)
         {
             DevLogger.Log("App", "OnLoginSucceeded EXCEPTION");
+            DevLogger.Log("App", ex);
+            throw;
+        }
+    }
+
+    /// <summary>切换到主界面（区分桌面/移动端）</summary>
+    private void SwitchToMainView()
+    {
+        DevLogger.Log("App", "SwitchToMainView begin");
+        try
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                && desktop.MainWindow is not null)
+            {
+                desktop.MainWindow.Content = _shellView;
+                DevLogger.Log("App", "Set MainWindow.Content = shellView");
+            }
+            else if (_rootContainer is not null)
+            {
+                // 安卓/iOS：只切容器内容，不碰 single.MainView
+                _rootContainer.SetContent(_shellView);
+                DevLogger.Log("App", "RootContainer.SetContent(shellView)");
+            }
+            DevLogger.Log("App", "SwitchToMainView done");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("App", "SwitchToMainView EXCEPTION");
             DevLogger.Log("App", ex);
             throw;
         }
@@ -219,7 +218,6 @@ public partial class App : Application
 
     private static void LogException(Exception? ex, string source)
     {
-        // 同时写入 DevLogger 浮层和 Debug 输出，便于在 Android 真机无 adb 时排查
         if (ex is null)
         {
             DevLogger.Log("EX:" + source, "exception object is null");
