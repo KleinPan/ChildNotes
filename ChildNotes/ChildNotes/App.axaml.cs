@@ -12,6 +12,7 @@ namespace ChildNotes;
 
 public partial class App : Application
 {
+    private static App? _current;
     private LoginViewModel? _loginVm;
     private MainShellViewModel? _shellVm;
     private LoginView? _loginView;
@@ -29,6 +30,7 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        _current = this;
         DevLogger.Log("App", "OnFrameworkInitializationCompleted start");
         try
         {
@@ -91,6 +93,16 @@ public partial class App : Application
             DevLogger.Log("App", ex);
             throw;
         }
+    }
+
+    /// <summary>
+    /// 供 LoginViewModel 直接调用，绕过事件订阅可能丢失的问题（安卓 Activity 重建等场景）。
+    /// 通过 _current 单例引用访问，确保无论哪个 LoginViewModel 实例都能切到主界面。
+    /// </summary>
+    public static void RaiseLoginSucceeded()
+    {
+        DevLogger.Log("App", "RaiseLoginSucceeded called");
+        _current?.OnLoginSucceeded();
     }
 
     private void OnLoginSucceeded()

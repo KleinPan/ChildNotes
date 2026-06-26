@@ -44,7 +44,10 @@ public partial class LoginViewModel : ViewModelBase
                 ServiceProvider.Instance.BabyService.LoadBabyList();
                 DevLogger.Log("Login", "LoadBabyList done");
                 var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
-                DevLogger.Log("Login", $"Invoking LoginSucceeded, subscribers={subscribers}");
+                DevLogger.Log("Login", $"LoginSucceeded subscribers={subscribers}");
+                // 直接调用 App 静态方法，绕过事件订阅可能丢失的问题（安卓 Activity 重建）
+                App.RaiseLoginSucceeded();
+                // 兼容备份：如果 App 的订阅还在，也触发事件
                 LoginSucceeded?.Invoke();
                 DevLogger.Log("Login", "LoginSucceeded invoked");
             }
