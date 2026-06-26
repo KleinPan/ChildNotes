@@ -118,17 +118,32 @@ public partial class App : Application
             _shellView = new MainShellView { DataContext = _shellVm };
             DevLogger.Log("App", "MainShellView created");
 
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                && desktop.MainWindow is not null)
+            // 用 Dispatcher.Post 异步设置 MainView，避免在命令调用栈里同步渲染导致时序问题
+            Dispatcher.UIThread.Post(() =>
             {
-                desktop.MainWindow.Content = _shellView;
-                DevLogger.Log("App", "Set MainWindow.Content = shellView");
-            }
-            else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
-            {
-                single.MainView = _shellView;
-                DevLogger.Log("App", "Set single.MainView = shellView");
-            }
+                DevLogger.Log("App", "Post: setting MainView begin");
+                try
+                {
+                    if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                        && desktop.MainWindow is not null)
+                    {
+                        desktop.MainWindow.Content = _shellView;
+                        DevLogger.Log("App", "Set MainWindow.Content = shellView");
+                    }
+                    else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
+                    {
+                        single.MainView = _shellView;
+                        DevLogger.Log("App", "Set single.MainView = shellView");
+                    }
+                    DevLogger.Log("App", "Post: setting MainView done");
+                }
+                catch (Exception ex)
+                {
+                    DevLogger.Log("App", "Post EXCEPTION");
+                    DevLogger.Log("App", ex);
+                    throw;
+                }
+            });
 
             // 解绑登录事件，避免重复触发
             if (_loginVm is not null)
@@ -176,7 +191,8 @@ public partial class App : Application
     private static void OnUiThreadUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs e)
     {
         LogException(e.Exception, "UIThread");
-        e.Handled = true;
+        // 开发阶段：不标记 Handled，让异常直接暴露便于排查（默认会崩溃，但能看到完整堆栈）
+        // 上线前改为 e.Handled = true;
     }
 
     private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)

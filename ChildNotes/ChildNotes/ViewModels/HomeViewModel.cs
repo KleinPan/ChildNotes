@@ -80,14 +80,26 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
     public void Activate()
     {
-        Refresh();
+        DevLogger.Log("Home", "Activate start");
+        try
+        {
+            Refresh();
+            DevLogger.Log("Home", "Activate done");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Home", ex);
+            throw;
+        }
     }
 
     public void Refresh()
     {
+        DevLogger.Log("Home", "Refresh start");
         var baby = _babyService.LoadBabyList().FirstOrDefault(b => b.Id == ServiceProvider.Instance.AppState.CurrentBabyId)
                    ?? ServiceProvider.Instance.AppState.CurrentBaby;
         ServiceProvider.Instance.AppState.CurrentBaby = baby;
+        DevLogger.Log("Home", $"Refresh: baby={(baby is null ? "null" : baby.Name)}");
 
         if (baby is null)
         {
