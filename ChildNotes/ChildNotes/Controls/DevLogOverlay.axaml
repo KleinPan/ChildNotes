@@ -14,7 +14,7 @@
                 HorizontalAlignment="Right"
                 VerticalAlignment="Top"
                 Margin="0,8,8,0"
-                Background="#E0333"
+                Background="#EE0333"
                 Foreground="White"
                 CornerRadius="4"
                 ZIndex="1000"
