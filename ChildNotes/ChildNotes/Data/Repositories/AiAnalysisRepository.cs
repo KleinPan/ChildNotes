@@ -114,12 +114,12 @@ public sealed class AiAnalysisRepository
         UserId = r.GetInt64(1),
         BabyId = r.GetInt64(2),
         BabyName = r.IsDBNull(3) ? string.Empty : r.GetString(3),
-        RangeStartDate = DateTime.Parse(r.GetString(4)),
-        RangeEndDate = DateTime.Parse(r.GetString(5)),
+        RangeStartDate = DateTimeExtensions.ParseDb(r.GetString(4)),
+        RangeEndDate = DateTimeExtensions.ParseDb(r.GetString(5)),
         AnalysisText = r.GetString(6),
         DataQualityTip = r.IsDBNull(7) ? string.Empty : r.GetString(7),
         Model = r.IsDBNull(8) ? string.Empty : r.GetString(8),
-        CreatedAt = DateTime.Parse(r.GetString(9)),
-        UpdatedAt = DateTime.Parse(r.GetString(10)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(9)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(10)),
     };
 }

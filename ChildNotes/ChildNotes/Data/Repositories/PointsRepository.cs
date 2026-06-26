@@ -25,8 +25,8 @@ public sealed class PointsRepository
                 Points = r.GetInt32(2),
                 TotalEarned = r.GetInt32(3),
                 TotalSpent = r.GetInt32(4),
-                CreatedAt = DateTime.Parse(r.GetString(5)),
-                UpdatedAt = DateTime.Parse(r.GetString(6)),
+                CreatedAt = DateTimeExtensions.ParseDb(r.GetString(5)),
+                UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
             };
         }
         r.Close();
@@ -75,10 +75,10 @@ public sealed class PointsRepository
         {
             Id = r.GetInt64(0),
             UserId = r.GetInt64(1),
-            SignDate = DateTime.Parse(r.GetString(2)),
+            SignDate = DateTimeExtensions.ParseDb(r.GetString(2)),
             ContinuousDays = r.GetInt32(3),
             Reward = r.GetInt32(4),
-            CreatedAt = DateTime.Parse(r.GetString(5)),
+            CreatedAt = DateTimeExtensions.ParseDb(r.GetString(5)),
         };
     }
 
@@ -97,10 +97,10 @@ public sealed class PointsRepository
             {
                 Id = r.GetInt64(0),
                 UserId = r.GetInt64(1),
-                SignDate = DateTime.Parse(r.GetString(2)),
+                SignDate = DateTimeExtensions.ParseDb(r.GetString(2)),
                 ContinuousDays = r.GetInt32(3),
                 Reward = r.GetInt32(4),
-                CreatedAt = DateTime.Parse(r.GetString(5)),
+                CreatedAt = DateTimeExtensions.ParseDb(r.GetString(5)),
             });
         }
         return list;

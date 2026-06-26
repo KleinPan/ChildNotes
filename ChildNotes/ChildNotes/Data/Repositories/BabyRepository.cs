@@ -79,9 +79,9 @@ public sealed class BabyRepository
         Name = r.GetString(2),
         Avatar = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         Gender = r.IsDBNull(4) ? string.Empty : r.GetString(4),
-        BirthDate = r.IsDBNull(5) ? null : DateTime.Parse(r.GetString(5)),
-        CreatedAt = DateTime.Parse(r.GetString(6)),
-        UpdatedAt = DateTime.Parse(r.GetString(7)),
+        BirthDate = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
     };
 
     public void InsertMember(BabyMember member)
@@ -153,7 +153,7 @@ public sealed class BabyRepository
         RoleName = r.GetString(4),
         IsOwner = r.GetInt32(5) == 1,
         Status = r.GetString(6),
-        CreatedAt = DateTime.Parse(r.GetString(7)),
-        UpdatedAt = DateTime.Parse(r.GetString(8)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
     };
 }

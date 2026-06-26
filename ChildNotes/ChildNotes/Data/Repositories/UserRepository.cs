@@ -65,7 +65,7 @@ public sealed class UserRepository
         NickName = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         AvatarUrl = r.IsDBNull(4) ? string.Empty : r.GetString(4),
         Gender = r.IsDBNull(5) ? 0 : r.GetInt32(5),
-        CreatedAt = DateTime.Parse(r.GetString(6)),
-        UpdatedAt = DateTime.Parse(r.GetString(7)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
     };
 }

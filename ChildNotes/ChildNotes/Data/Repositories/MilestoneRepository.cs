@@ -72,9 +72,9 @@ public sealed class MilestoneRepository
         BabyId = r.IsDBNull(2) ? null : r.GetInt64(2),
         Title = r.GetString(3),
         Content = r.IsDBNull(4) ? null : r.GetString(4),
-        RecordDate = DateTime.Parse(r.GetString(5)),
+        RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),
         PhotosJson = r.IsDBNull(6) ? "[]" : r.GetString(6),
-        CreatedAt = DateTime.Parse(r.GetString(7)),
-        UpdatedAt = DateTime.Parse(r.GetString(8)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
     };
 }

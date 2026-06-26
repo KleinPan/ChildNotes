@@ -151,8 +151,8 @@ public sealed class RecordRepository
         BabyId = r.IsDBNull(2) ? null : r.GetInt64(2),
         RecordType = r.GetString(3),
         RecordSubType = r.IsDBNull(4) ? null : r.GetString(4),
-        RecordDate = DateTime.Parse(r.GetString(5)),
-        RecordTime = DateTime.Parse(r.GetString(6)),
+        RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),
+        RecordTime = DateTimeExtensions.ParseDb(r.GetString(6)),
         AmountMl = r.IsDBNull(7) ? null : r.GetInt32(7),
         DurationSec = r.IsDBNull(8) ? null : r.GetInt32(8),
         LeftDurationSec = r.IsDBNull(9) ? null : r.GetInt32(9),
@@ -162,7 +162,7 @@ public sealed class RecordRepository
         HeightCm = r.IsDBNull(13) ? null : r.GetDecimal(13),
         WeightKg = r.IsDBNull(14) ? null : r.GetDecimal(14),
         PayloadJson = r.GetString(15),
-        CreatedAt = DateTime.Parse(r.GetString(16)),
-        UpdatedAt = DateTime.Parse(r.GetString(17)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(16)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(17)),
     };
 }
