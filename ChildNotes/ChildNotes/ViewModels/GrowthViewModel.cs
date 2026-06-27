@@ -29,7 +29,12 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
     {
         var state = ServiceProvider.Instance.AppState;
         Milestones.Clear();
-        var list = _milestoneRepo.GetAll(state.UserId, state.CurrentBabyId);
+        // 仓库返回 DESC（最新在前）。此处按日期升序展示，
+        // 让最新记录显示在时间轴底部，与小程序端展示逻辑一致。
+        var list = _milestoneRepo.GetAll(state.UserId, state.CurrentBabyId)
+                               .OrderBy(x => x.RecordDate)
+                               .ThenBy(x => x.Id)
+                               .ToList();
         foreach (var m in list)
         {
             Milestones.Add(new MilestoneDisplayItem(m));

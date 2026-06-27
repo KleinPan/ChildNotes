@@ -1,7 +1,9 @@
 using System.Text.Json;
 using ChildNotes.Data.Repositories;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Models.Dtos;
+using ChildNotes.Services.Sync;
 
 namespace ChildNotes.Services;
 
@@ -32,6 +34,7 @@ public sealed class RecordService
         }
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -42,6 +45,7 @@ public sealed class RecordService
         rec.AbnormalFlag = dto.Abnormal;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -51,6 +55,7 @@ public sealed class RecordService
         rec.DurationSec = (dto.Duration ?? 0) * 60;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -66,6 +71,7 @@ public sealed class RecordService
         rec.DurationSec = dto.Duration * 60;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         _repo.Update(rec);
+        NotifySync();
     }
 
     public long AddTemperature(TemperatureRecordDto dto)
@@ -75,6 +81,7 @@ public sealed class RecordService
         rec.AbnormalFlag = dto.IsAbnormal;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -85,6 +92,7 @@ public sealed class RecordService
         rec.WeightKg = dto.Weight;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -94,6 +102,7 @@ public sealed class RecordService
         rec.RecordSubType = dto.Type;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -106,6 +115,7 @@ public sealed class RecordService
         rec.DurationSec = (rec.LeftDurationSec ?? 0) + (rec.RightDurationSec ?? 0);
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -115,6 +125,7 @@ public sealed class RecordService
         rec.AbnormalFlag = dto.Abnormal;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -133,6 +144,7 @@ public sealed class RecordService
             rec.RecordSubType = "medicine";
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -141,6 +153,7 @@ public sealed class RecordService
         var rec = NewRecord(RecordType.Vaccine, dto.Time);
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -151,6 +164,7 @@ public sealed class RecordService
         rec.DurationSec = (dto.Duration ?? 0) * 60;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -162,6 +176,7 @@ public sealed class RecordService
             rec.AbnormalFlag = true;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
+        NotifySync();
         return rec.Id;
     }
 
@@ -170,15 +185,16 @@ public sealed class RecordService
         var rec = NewRecord(resolvedType, DateTime.Now.ToString("O"));
         rec.PayloadJson = "{}";
         _repo.Insert(rec);
+        NotifySync();
     }
 
     public List<ChildRecord> GetByDate(DateTime date) => _repo.GetByDate(_state.UserId, _state.CurrentBabyId, date);
     public List<ChildRecord> GetByDateRange(DateTime start, DateTime end) => _repo.GetByDateRange(_state.UserId, _state.CurrentBabyId, start, end);
     public ChildRecord? GetLatest(string type) => _repo.GetLatest(_state.UserId, _state.CurrentBabyId, type);
     public List<ChildRecord> GetByType(string type, int limit = 100) => _repo.GetByType(_state.UserId, _state.CurrentBabyId, type, limit);
-    public void Delete(long id) => _repo.SoftDelete(id);
+    public void Delete(long id) { _repo.SoftDelete(id); NotifySync(); }
     public ChildRecord? GetById(long id) => _repo.FindById(id);
-    public void Update(ChildRecord rec) => _repo.Update(rec);
+    public void Update(ChildRecord rec) { _repo.Update(rec); NotifySync(); }
 
     private ChildRecord NewRecord(string type, string timeStr)
     {
@@ -197,5 +213,18 @@ public sealed class RecordService
     {
         if (string.IsNullOrEmpty(timeStr)) return DateTime.Now;
         return DateTime.TryParse(timeStr, out var t) ? t : DateTime.Now;
+    }
+
+    /// <summary>触发防抖同步（写入后自动同步到 WebDAV）。</summary>
+    private static void NotifySync()
+    {
+        try
+        {
+            ServiceProvider.Instance.SyncTrigger.TriggerAfterWrite();
+        }
+        catch
+        {
+            // 同步触发失败不影响主流程
+        }
     }
 }

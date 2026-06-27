@@ -139,6 +139,9 @@ public partial class App : Application
             // 切换视图到主界面
             SwitchToMainView();
 
+            // 登录成功后触发启动同步（延迟几秒，避免与 UI 初始化抢资源）
+            ServiceProvider.Instance.SyncTrigger.TriggerStartupSync();
+
             DevLogger.Log("App", "OnLoginSucceeded done");
         }
         catch (Exception ex)

@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
-using ChildNotes.Models;
 
 namespace ChildNotes.ViewModels;
 
@@ -18,6 +17,8 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private QuickMenuViewModel _quickMenu;
     [ObservableProperty] private bool _isBabySetupOpen;
     [ObservableProperty] private BabySetupViewModel _babySetup;
+    [ObservableProperty] private bool _isBabyManagerOpen;
+    [ObservableProperty] private BabyManagerViewModel _babyManager;
     [ObservableProperty] private bool _isStatisticsOpen;
     [ObservableProperty] private StatisticsViewModel _statistics;
     [ObservableProperty] private bool _isPointsOpen;
@@ -26,6 +27,8 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private FamilyViewModel _family;
     [ObservableProperty] private bool _isAiAnalysisOpen;
     [ObservableProperty] private AiAnalysisViewModel _aiAnalysis;
+    [ObservableProperty] private bool _isSyncSettingsOpen;
+    [ObservableProperty] private SyncSettingsViewModel _syncSettings;
 
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
@@ -56,6 +59,10 @@ public partial class MainShellViewModel : ViewModelBase
         _babySetup = new BabySetupViewModel();
         _babySetup.Completed += OnBabySetupCompleted;
 
+        _babyManager = new BabyManagerViewModel();
+        _babyManager.BackRequested += () => IsBabyManagerOpen = false;
+        _babyManager.BabyChanged += OnBabyChanged;
+
         _statistics = new StatisticsViewModel();
         _statistics.BackRequested += () => IsStatisticsOpen = false;
 
@@ -72,6 +79,9 @@ public partial class MainShellViewModel : ViewModelBase
 
         _aiAnalysis = new AiAnalysisViewModel();
         _aiAnalysis.BackRequested += () => IsAiAnalysisOpen = false;
+
+        _syncSettings = new SyncSettingsViewModel();
+        _syncSettings.BackRequested += () => IsSyncSettingsOpen = false;
     }
 
     [RelayCommand]
@@ -80,11 +90,14 @@ public partial class MainShellViewModel : ViewModelBase
         IsRecordSheetOpen = false;
         if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
         if (QuickMenu.IsCardOpen) QuickMenu.CloseCardCommand.Execute(null);
+        // 加号按钮仅首页可见：切走时隐藏，回首页时显示
+        QuickMenu.IsFabVisible = tab == "home";
         IsBabySetupOpen = false;
         IsStatisticsOpen = false;
         IsPointsOpen = false;
         IsFamilyOpen = false;
         IsAiAnalysisOpen = false;
+        IsSyncSettingsOpen = false;
 
         IsHomeSelected = tab == "home";
         IsFeedingSelected = tab == "feeding";
@@ -121,27 +134,14 @@ public partial class MainShellViewModel : ViewModelBase
 
     public void OpenBabySetup()
     {
-        BabySetup.InitForAdd();
+        BabySetup.Reset();
         IsBabySetupOpen = true;
     }
 
-    public void OpenBabyEdit(Baby baby)
+    public void OpenBabyManager()
     {
-        BabySetup.InitForEdit(baby);
-        IsBabySetupOpen = true;
-    }
-
-    public void OpenBabyInfo()
-    {
-        var currentBaby = ServiceProvider.Instance.AppState.CurrentBaby;
-        if (currentBaby is not null)
-        {
-            OpenBabyEdit(currentBaby);
-        }
-        else
-        {
-            OpenBabySetup();
-        }
+        BabyManager.Load();
+        IsBabyManagerOpen = true;
     }
 
     public void OpenStatistics()
@@ -168,6 +168,12 @@ public partial class MainShellViewModel : ViewModelBase
         IsAiAnalysisOpen = true;
     }
 
+    public void OpenSyncSettings()
+    {
+        SyncSettings.Activate();
+        IsSyncSettingsOpen = true;
+    }
+
     private void OnRecordSaved()
     {
         IsRecordSheetOpen = false;
@@ -183,6 +189,12 @@ public partial class MainShellViewModel : ViewModelBase
         Home.Refresh();
     }
 
+    private void OnBabyChanged()
+    {
+        Home.Refresh();
+        if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
+    }
+
     private void OnLogout()
     {
         // 关闭所有弹层
@@ -194,6 +206,8 @@ public partial class MainShellViewModel : ViewModelBase
         IsPointsOpen = false;
         IsFamilyOpen = false;
         IsAiAnalysisOpen = false;
+        IsSyncSettingsOpen = false;
+        IsBabyManagerOpen = false;
         LogoutRequested?.Invoke();
     }
 
@@ -204,6 +218,7 @@ public partial class MainShellViewModel : ViewModelBase
         IsGrowthSelected = false;
         IsMineSelected = false;
         CurrentTab = Home;
+        QuickMenu.IsFabVisible = true;
         Home.Activate();
     }
 }

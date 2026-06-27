@@ -23,12 +23,18 @@ public partial class MilestoneEditViewModel : ViewModelBase
 
     public event Action? Saved;
 
+    partial void OnRecordDateChanged(DateTimeOffset value)
+    {
+        // Semi DatePicker 双向绑定已处理显示，此处无需额外逻辑
+    }
+
     public void InitForAdd()
     {
         _editingId = 0;
         Title = string.Empty;
         Content = string.Empty;
-        RecordDate = DateTimeOffset.Now;
+        var localDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
+        RecordDate = new DateTimeOffset(localDate);
         SheetTitle = "添加成长时刻";
         ErrorMessage = string.Empty;
     }
@@ -38,7 +44,8 @@ public partial class MilestoneEditViewModel : ViewModelBase
         _editingId = m.Id;
         Title = m.Title;
         Content = m.Content ?? string.Empty;
-        RecordDate = new DateTimeOffset(m.RecordDate);
+        var localDate = DateTime.SpecifyKind(m.RecordDate.Date, DateTimeKind.Local);
+        RecordDate = new DateTimeOffset(localDate);
         SheetTitle = "编辑成长时刻";
         ErrorMessage = string.Empty;
     }
@@ -60,6 +67,11 @@ public partial class MilestoneEditViewModel : ViewModelBase
             ErrorMessage = "请输入标题";
             return;
         }
+        if (RecordDate.LocalDateTime.Date > DateTime.Today)
+        {
+            ErrorMessage = "日期不能晚于今天";
+            return;
+        }
 
         var m = new Milestone
         {
@@ -68,7 +80,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
             BabyId = _state.CurrentBabyId,
             Title = Title.Trim(),
             Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
-            RecordDate = RecordDate.Date,
+            RecordDate = RecordDate.LocalDateTime.Date,
             PhotosJson = "[]",
         };
 

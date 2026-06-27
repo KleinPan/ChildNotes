@@ -1,0 +1,157 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.SyncSettingsView"
+             x:DataType="vm:SyncSettingsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶部导航栏 -->
+        <Border Grid.Row="0" Background="{StaticResource WeuiBg2Brush}" Padding="14,16">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <TextBlock Grid.Column="0" Text="‹ 返回" FontSize="16" Foreground="{StaticResource WeuiBlueBrush}"
+                           PointerPressed="OnBackTap" VerticalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="数据同步" FontSize="17" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- 内容区 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 状态卡片 -->
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,12">
+                    <StackPanel Margin="14,14" Spacing="6">
+                        <TextBlock Text="{Binding LastSyncText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        <TextBlock Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}"
+                                   TextWrapping="Wrap" IsVisible="{Binding StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- WebDAV 配置 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="WebDAV 配置"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="服务器" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ServerUrl}" PlaceholderText="https://dav.jianguoyun.com/dav/"
+                                     BorderThickness="0" Background="Transparent" FontSize="14"
+                                     VerticalContentAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="账号" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding Username}" PlaceholderText="坚果云账号邮箱"
+                                     BorderThickness="0" Background="Transparent" FontSize="14"
+                                     VerticalContentAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="密码" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding Password}" PlaceholderText="应用专用密码（非登录密码）"
+                                     PasswordChar="*"
+                                     BorderThickness="0" Background="Transparent" FontSize="14"
+                                     VerticalContentAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="远程路径" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding RemotePath}" PlaceholderText="/ChildNotes/"
+                                     BorderThickness="0" Background="Transparent" FontSize="14"
+                                     VerticalContentAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 开关 -->
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="启用同步" FontSize="15"/>
+                                <TextBlock Text="关闭后不会自动上传或拉取数据" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="自动同步" FontSize="15"/>
+                                <TextBlock Text="启动时和写入记录后自动同步" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoSync}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 操作按钮 -->
+                <StackPanel Margin="12,16" Spacing="10">
+                    <Button Content="保存配置" Classes="weui-btn primary" Command="{Binding SaveCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Content="测试连接" Classes="weui-btn default" Command="{Binding TestConnectionCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            IsEnabled="{Binding !IsTesting}"/>
+                    <Button Content="立即同步" Classes="weui-btn default" Command="{Binding SyncNowCommand}"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            IsEnabled="{Binding !IsSyncing}"
+                            Foreground="{StaticResource WeuiGreenBrush}"/>
+                </StackPanel>
+
+                <!-- 说明 -->
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,0,12,20">
+                    <StackPanel Margin="14,14" Spacing="6">
+                        <TextBlock Text="使用说明" FontSize="14" FontWeight="Bold" Foreground="#333"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}">
+                            1. 坚果云用户：账号填邮箱，密码填"应用专用密码"（登录网页版后在"安全选项"中生成）
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}">
+                            2. 家人共享：3 人使用同一 WebDAV 账号即可，数据自动合并
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}">
+                            3. 冲突策略：低频场景下用"最后写入胜"，双方都有改动时以 updated_at 较新者为准
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}">
+                            4. 图片也会同步，新设备首次同步会自动拉取所有图片
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

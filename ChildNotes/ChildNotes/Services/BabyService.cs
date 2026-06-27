@@ -60,6 +60,19 @@ public sealed class BabyService
         _repo.Update(baby);
         var idx = _state.BabyList.FindIndex(b => b.Id == baby.Id);
         if (idx >= 0) _state.BabyList[idx] = baby;
+        if (_state.CurrentBaby?.Id == baby.Id) _state.CurrentBaby = baby;
+    }
+
+    public void DeleteBaby(long babyId)
+    {
+        _repo.Delete(babyId);
+        var idx = _state.BabyList.FindIndex(b => b.Id == babyId);
+        if (idx < 0) return;
+        _state.BabyList.RemoveAt(idx);
+        if (_state.CurrentBaby?.Id == babyId)
+        {
+            _state.CurrentBaby = _state.BabyList.Count > 0 ? _state.BabyList[0] : null;
+        }
     }
 
     public void SwitchBaby(long babyId)

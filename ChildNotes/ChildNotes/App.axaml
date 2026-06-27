@@ -1,6 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:ChildNotes"
+             xmlns:semi="https://irihi.tech/semi"
              x:Class="ChildNotes.App"
              RequestedThemeVariant="Light">
 
@@ -20,5 +21,6 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://ChildNotes/Styles/WeUIStyles.axaml"/>
+        <semi:SemiTheme Locale="zh-CN"/>
     </Application.Styles>
 </Application>

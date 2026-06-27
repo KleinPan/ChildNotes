@@ -18,6 +18,26 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="12"/>
         </Style>
+        <!-- 日期切换箭头按钮：圆形 36×36，启用态 WeuiGreen(#07C160)，
+             禁用态使用设计系统 Text Disabled 色 #BDBDBD，
+             并清除 Avalonia 默认 disabled overlay，避免变灰蒙蒙的难看效果 -->
+        <Style Selector="Button.date-nav">
+            <Setter Property="Foreground" Value="#07C160"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.date-nav:disabled">
+            <Setter Property="Foreground" Value="#BDBDBD"/>
+        </Style>
+        <Style Selector="Button.date-nav:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <!-- 箭头字符 ‹ › (U+2039/U+203A) 字形重心偏下，
+             通过底部 padding 将内容上移，使其视觉居中于圆形按钮 -->
+        <Style Selector="Button.date-nav /template/ ContentPresenter">
+            <Setter Property="Padding" Value="0,0,0,3"/>
+        </Style>
     </UserControl.Styles>
 
     <Panel>
@@ -26,17 +46,25 @@
 
                 <!-- 原版 date-bar: 白底，底部 1px 边框 -->
                 <Border Background="White" Padding="12,12" Margin="0,0,0,8" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
-                    <Grid ColumnDefinitions="Auto,*,Auto">
-                        <!-- 原版 date-nav: 72rpx≈36px 圆形，绿色箭头 -->
-                        <Button Grid.Column="0" Content="‹" FontSize="24" Foreground="#07C160" Padding="0" Width="36" Height="36" CornerRadius="18"
+                    <Grid ColumnDefinitions="*,Auto,*">
+                        <!-- 原版 date-nav: 72rpx≈36px 圆形，48rpx≈24px 绿色箭头，font-weight:300，flex 居中 -->
+                        <Button Grid.Column="0" Classes="date-nav" Content="‹" FontSize="24" FontWeight="Light"
+                                Padding="0" Width="36" Height="36" CornerRadius="18"
                                 Background="Transparent" BorderThickness="0"
+                                HorizontalAlignment="Right"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                 Command="{Binding PrevDayCommand}"/>
-                        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
+                        <!-- 原版 date-display: padding 0 20rpx，提供箭头与日期的间距 -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6" Margin="10,0">
                             <TextBlock Text="{Binding DisplayDate}" FontSize="17" FontWeight="Bold" Foreground="#333333" VerticalAlignment="Center"/>
                             <TextBlock Text="📅" FontSize="12" Opacity="0.5" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <Button Grid.Column="2" Content="›" FontSize="24" Foreground="#07C160" Padding="0" Width="36" Height="36" CornerRadius="18"
+                        <Button Grid.Column="2" Classes="date-nav" Content="›" FontSize="24" FontWeight="Light"
+                                Padding="0" Width="36" Height="36" CornerRadius="18"
                                 Background="Transparent" BorderThickness="0"
+                                HorizontalAlignment="Left"
+                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                IsEnabled="{Binding IsNextDayEnabled}"
                                 Command="{Binding NextDayCommand}"/>
                     </Grid>
                 </Border>

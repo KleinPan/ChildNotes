@@ -36,6 +36,9 @@
         <ContentControl Grid.Row="0" Content="{Binding BabySetup}" IsTabStop="False"
                         IsVisible="{Binding IsBabySetupOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding BabyManager}" IsTabStop="False"
+                        IsVisible="{Binding IsBabyManagerOpen}"/>
+
         <ContentControl Grid.Row="0" Content="{Binding Statistics}" IsTabStop="False"
                         IsVisible="{Binding IsStatisticsOpen}"/>
 
@@ -47,6 +50,9 @@
 
         <ContentControl Grid.Row="0" Content="{Binding AiAnalysis}" IsTabStop="False"
                         IsVisible="{Binding IsAiAnalysisOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding SyncSettings}" IsTabStop="False"
+                        IsVisible="{Binding IsSyncSettingsOpen}"/>
 
         <!-- 快捷记录：右下角悬浮 + 按钮 + 扇形菜单 + 居中卡片表单（跨行覆盖，+ 按钮始终可见） -->
         <ContentControl Grid.RowSpan="2" Content="{Binding QuickMenu}" IsTabStop="False"/>

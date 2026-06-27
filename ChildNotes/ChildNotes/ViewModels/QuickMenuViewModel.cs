@@ -14,6 +14,8 @@ public partial class QuickMenuViewModel : ViewModelBase
     [ObservableProperty] private bool _isMenuOpen;
     [ObservableProperty] private bool _isCardOpen;
     [ObservableProperty] private string _cardTitle = string.Empty;
+    // 加号按钮仅首页可见，由 MainShellViewModel.SwitchTab 同步
+    [ObservableProperty] private bool _isFabVisible = true;
 
     /// <summary>复用主壳层的 RecordSheet 实例（表单状态 + 保存逻辑）</summary>
     public RecordSheetViewModel RecordSheet { get; }

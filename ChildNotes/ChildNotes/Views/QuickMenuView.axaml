@@ -7,7 +7,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.QuickMenuView"
              x:DataType="vm:QuickMenuViewModel"
-             Background="Transparent">
+             Background="{x:Null}">
 
     <UserControl.Styles>
         <!-- PopupBox 菜单项：横向排列「圆形图标 + 文字标签」 -->
@@ -79,8 +79,9 @@
         <!-- 居中卡片表单 -->
         <v:QuickRecordCardView IsVisible="{Binding IsCardOpen}"/>
 
-        <!-- 悬浮 + 按钮（始终可见，最顶层）：用 Border 承载阴影，Button 透明覆盖 -->
+        <!-- 悬浮 + 按钮（仅首页可见，最顶层）：用 Border 承载阴影，Button 透明覆盖 -->
         <Border Classes="fab-main"
+                IsVisible="{Binding IsFabVisible}"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Margin="0,0,16,72">

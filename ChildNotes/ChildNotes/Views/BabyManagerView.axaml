@@ -1,0 +1,189 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:m="using:ChildNotes.Models"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.BabyManagerView"
+             x:DataType="vm:BabyManagerViewModel"
+             Background="#80000000">
+
+    <UserControl.Styles>
+        <Style Selector="Button.gender-btn">
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="18,10"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+        <Style Selector="Button.gender-btn.active">
+            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.gender-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F0F0F0"/>
+        </Style>
+        <Style Selector="Button.gender-btn.active:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#E8F9EF"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid>
+        <!-- 列表面板（对齐小程序 mine 页"宝宝信息" sheet） -->
+        <Border Background="{StaticResource WeuiBg0Brush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Grid RowDefinitions="Auto,*,Auto">
+
+                <!-- 顶部标题栏 -->
+                <Border Grid.Row="0" Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8"
+                        PointerPressed="OnBackTapped">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Grid.Column="0" Text="‹" FontSize="22" Foreground="White" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="宝宝管理" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text=" " FontSize="22"/>
+                    </Grid>
+                </Border>
+
+                <!-- 列表 / 空态 -->
+                <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="0,12">
+                    <StackPanel>
+                        <!-- 空态 -->
+                        <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="20,40"
+                                IsVisible="{Binding !HasBaby}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                <TextBlock Text="🍼" FontSize="48" HorizontalAlignment="Center"/>
+                                <TextBlock Text="还没有宝宝信息" FontSize="16" FontWeight="SemiBold" Foreground="#222" HorizontalAlignment="Center"/>
+                                <TextBlock Text="先添加宝宝后，就能在这里查看和修改。" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 列表 -->
+                        <ItemsControl ItemsSource="{Binding BabyList}" IsVisible="{Binding HasBaby}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="m:Baby">
+                                    <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="14,12"
+                                            PointerPressed="OnBabyItemTapped">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="#E8F9EF" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding GenderEmoji}"
+                                                           FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
+                                                <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <Border Grid.Column="2" Background="#1A07C160" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
+                                                    IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
+                                                <TextBlock Text="当前" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 底部添加按钮 -->
+                <Border Grid.Row="2" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Padding="16,12">
+                    <Button Content="+ 添加宝宝" Classes="weui-btn primary" CornerRadius="24"
+                            HorizontalAlignment="Stretch" MinHeight="48"
+                            Click="OnAddTapped"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 编辑/添加表单（对齐小程序 baby editor sheet） -->
+        <Border Background="#80000000" IsVisible="{Binding IsEditorOpen}">
+            <Border Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- 标题栏 -->
+                    <Border Grid.Row="0" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1" Padding="20,16">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Column="0" Text="取消" FontSize="15" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"
+                                       PointerPressed="OnCancelEditorTapped"/>
+                            <TextBlock Grid.Column="1" Text="{Binding EditorTitle}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="保存" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"
+                                       PointerPressed="OnSaveTapped"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 表单内容 -->
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16" Margin="20,16,20,24">
+                            <!-- 性别选择 -->
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
+                                <TextBlock Text="性别" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <Button Content="👦 男宝" Classes="gender-btn"
+                                        Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsBoyConverter}}"
+                                        Click="OnBoyTap"/>
+                                <Button Content="👧 女宝" Classes="gender-btn" Margin="10,0,0,0"
+                                        Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsGirlConverter}}"
+                                        Click="OnGirlTap"/>
+                            </StackPanel>
+
+                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+
+                            <!-- 姓名 -->
+                            <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
+                                <TextBlock Text="姓名" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <TextBox Text="{Binding Name}" PlaceholderText="请输入宝宝姓名或小名" MaxLength="20"
+                                         BorderThickness="0" Background="Transparent" FontSize="15"
+                                         VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+
+                            <!-- 出生日期 -->
+                            <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
+                                <TextBlock Text="生日" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <CalendarDatePicker SelectedDate="{Binding BirthDate}"
+                                                    PlaceholderText="请选择出生日期"
+                                                    HorizontalAlignment="Stretch" FontSize="15"/>
+                            </StackPanel>
+
+                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+
+                            <!-- 错误提示 -->
+                            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                            <!-- 删除按钮（仅编辑模式） -->
+                            <Button Content="删除此宝宝" Classes="weui-btn warn" CornerRadius="24"
+                                    IsVisible="{Binding IsEditing}"
+                                    HorizontalAlignment="Stretch" MinHeight="44" Margin="0,16,0,0"
+                                    Click="OnDeleteTapped"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- 删除确认对话框 -->
+        <Border Background="#B3000000" IsVisible="{Binding IsDeleteConfirmOpen}">
+            <Border Background="White" CornerRadius="12" Padding="24,20" MaxWidth="280" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="删除宝宝" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" TextAlignment="Center" TextWrapping="Wrap">
+                        <Run Text="确定要删除"/>
+                        <Run Text="{Binding DeleteConfirmName}" FontWeight="Bold"/>
+                        <Run Text="吗？相关记录将保留，但宝宝信息将无法恢复。"/>
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                        <Button Content="取消" Classes="weui-btn default" CornerRadius="24" MinWidth="100" MinHeight="40"
+                                Command="{Binding CloseDeleteConfirmCommand}"/>
+                        <Button Content="删除" Classes="weui-btn warn" CornerRadius="24" MinWidth="100" MinHeight="40"
+                                Command="{Binding ConfirmDeleteCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

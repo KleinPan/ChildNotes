@@ -16,6 +16,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _displayDate = string.Empty;
     [ObservableProperty] private DayStats? _dayStats;
     [ObservableProperty] private bool _isToday = true;
+    [ObservableProperty] private bool _isNextDayEnabled;
     [ObservableProperty] private bool _showDeleteConfirm;
     [ObservableProperty] private string _deleteItemTitle = string.Empty;
     [ObservableProperty] private string _toastMessage = string.Empty;
@@ -41,6 +42,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     {
         DisplayDate = SelectedDate.ToString("M月d日") + " " + GetWeekday(SelectedDate);
         IsToday = SelectedDate.Date == DateTime.Today;
+        IsNextDayEnabled = SelectedDate.Date < DateTime.Today;
         DayStats = _statsService.GetDayStats(SelectedDate);
 
         Records.Clear();

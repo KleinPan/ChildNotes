@@ -25,9 +25,17 @@ public partial class GrowthView : UserControl
 
     private void OnMilestoneTap(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Border border && border.Tag is MilestoneDisplayItem item && DataContext is GrowthViewModel vm)
+        if (sender is Border border && DataContext is GrowthViewModel vm)
         {
-            vm.EditMilestone(item);
+            if (border.DataContext is MilestoneDisplayItem item)
+            {
+                vm.EditMilestone(item);
+                return;
+            }
+            if (border.Tag is MilestoneDisplayItem tagItem)
+            {
+                vm.EditMilestone(tagItem);
+            }
         }
     }
 }

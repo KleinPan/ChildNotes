@@ -12,17 +12,9 @@ public partial class MineView : UserControl
         InitializeComponent();
     }
 
-    private void OnAddBabyTap(object? sender, PointerPressedEventArgs e)
+    private void OnBabyManagerTap(object? sender, PointerPressedEventArgs e)
     {
-        var shell = this.FindAncestorOfType<UserControl>();
-        while (shell is not null && shell.DataContext is not MainShellViewModel)
-        {
-            shell = shell.FindAncestorOfType<UserControl>();
-        }
-        if (shell?.DataContext is MainShellViewModel vm)
-        {
-            vm.OpenBabySetup();
-        }
+        if (FindShell() is { } vm) vm.OpenBabyManager();
     }
 
     private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
@@ -40,14 +32,14 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenFamily();
     }
 
-    private void OnBabyInfoTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenBabyInfo();
-    }
-
     private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenAiAnalysis();
+    }
+
+    private void OnSyncSettingsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenSyncSettings();
     }
 
     private MainShellViewModel? FindShell()

@@ -6,6 +6,11 @@
         <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
     </Style>
 
+    <!-- 去掉所有 Button 在按下/悬停时出现的阴影（Fluent 主题默认会有 elevation 投影） -->
+    <Style Selector="Button /template/ ContentPresenter">
+        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+    </Style>
+
     <Style Selector="Border.weui-card">
         <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
         <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />

@@ -2,6 +2,7 @@ using System.IO;
 using ChildNotes.Data;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Services;
+using ChildNotes.Services.Sync;
 
 namespace ChildNotes.Infrastructure;
 
@@ -22,6 +23,9 @@ public sealed class ServiceProvider
     public AiAnalysisRepository AiAnalysisRepository { get; }
     public LlmClient LlmClient { get; }
     public AiAnalysisService AiAnalysisService { get; }
+    public WebDavConfigRepository WebDavConfigRepository { get; }
+    public SyncService SyncService { get; }
+    public SyncTrigger SyncTrigger { get; }
 
     private ServiceProvider()
     {
@@ -50,6 +54,10 @@ public sealed class ServiceProvider
         AiAnalysisRepository = new AiAnalysisRepository(DbFactory);
         LlmClient = new LlmClient();
         AiAnalysisService = new AiAnalysisService(AiAnalysisRepository, RecordService, BabyService, AppState, LlmClient);
+
+        WebDavConfigRepository = new WebDavConfigRepository(DbFactory);
+        SyncService = new SyncService(DbFactory, WebDavConfigRepository, dbPath, imageDir);
+        SyncTrigger = new SyncTrigger(SyncService);
         DevLogger.Log("DI", "ServiceProvider ctor done");
     }
 

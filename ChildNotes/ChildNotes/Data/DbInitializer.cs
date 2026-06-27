@@ -177,7 +177,77 @@ CREATE INDEX IF NOT EXISTS idx_child_record_baby_date
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_baby
     ON ai_analysis_record (baby_id, range_start_date, range_end_date);");
 
+        // ===== 同步相关表 =====
+        // WebDAV 配置表（单行，id=1）
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS webdav_config (
+    id INTEGER PRIMARY KEY,
+    server_url TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL,
+    remote_path TEXT NOT NULL DEFAULT '/ChildNotes/',
+    enabled INTEGER NOT NULL DEFAULT 0,
+    auto_sync INTEGER NOT NULL DEFAULT 1,
+    last_sync_at TEXT,
+    last_sync_status TEXT,
+    updated_at TEXT NOT NULL
+);");
+
+        // 同步状态表（记录每次同步的元信息）
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS sync_state (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sync_type TEXT NOT NULL,
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    status TEXT NOT NULL,
+    detail TEXT,
+    db_pushed INTEGER NOT NULL DEFAULT 0,
+    db_pulled INTEGER NOT NULL DEFAULT 0,
+    images_pushed INTEGER NOT NULL DEFAULT 0,
+    images_pulled INTEGER NOT NULL DEFAULT 0
+);");
+
+        // ===== 为业务表添加同步字段（增量迁移，幂等执行）=====
+        // 注：SQLite 不支持 ADD COLUMN IF NOT EXISTS，需先查 PRAGMA table_info
+        AddColumnIfNotExists(conn, "child_record", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfNotExists(conn, "child_record", "device_id", "TEXT");
+        AddColumnIfNotExists(conn, "child_record", "synced_at", "TEXT");
+
+        AddColumnIfNotExists(conn, "milestone", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfNotExists(conn, "milestone", "device_id", "TEXT");
+        AddColumnIfNotExists(conn, "milestone", "synced_at", "TEXT");
+
+        AddColumnIfNotExists(conn, "baby", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfNotExists(conn, "baby", "device_id", "TEXT");
+        AddColumnIfNotExists(conn, "baby", "synced_at", "TEXT");
+
+        AddColumnIfNotExists(conn, "baby_member", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfNotExists(conn, "baby_member", "device_id", "TEXT");
+
+        AddColumnIfNotExists(conn, "ai_analysis_record", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
+        AddColumnIfNotExists(conn, "ai_analysis_record", "device_id", "TEXT");
+        AddColumnIfNotExists(conn, "ai_analysis_record", "synced_at", "TEXT");
+
         DevLogger.Log("DB", "DbInitializer.Initialize done");
+    }
+
+    /// <summary>
+    /// 幂等地为指定表添加列。若列已存在则跳过。
+    /// </summary>
+    private static void AddColumnIfNotExists(SqliteConnection conn, string table, string column, string definition)
+    {
+        using var check = conn.CreateCommand();
+        check.CommandText = $"PRAGMA table_info({table});";
+        using var reader = check.ExecuteReader();
+        while (reader.Read())
+        {
+            if (reader.GetString(1) == column) return; // 已存在，跳过
+        }
+        using var alter = conn.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
+        alter.ExecuteNonQuery();
+        DevLogger.Log("DB", $"Migrated: {table}.{column} added");
     }
 }
 

@@ -60,6 +60,15 @@ public sealed class BabyRepository
         cmd.ExecuteNonQuery();
     }
 
+    public void Delete(long id)
+    {
+        using var conn = _factory.Create();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "DELETE FROM baby WHERE id=@i";
+        cmd.Parameters.AddWithValue("@i", id);
+        cmd.ExecuteNonQuery();
+    }
+
     public List<BabyMember> GetMembers(long babyId)
     {
         var list = new List<BabyMember>();

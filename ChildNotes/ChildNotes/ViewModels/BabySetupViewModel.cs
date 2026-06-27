@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
-using ChildNotes.Models;
 using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
@@ -10,35 +9,22 @@ public partial class BabySetupViewModel : ViewModelBase
 {
     private readonly BabyService _babyService = ServiceProvider.Instance.BabyService;
 
-    [ObservableProperty] private string _name = string.Empty;
+    // 字段顺序对齐小程序 baby-setup: gender / name / birthDate
     [ObservableProperty] private string _gender = "boy";
-    [ObservableProperty] private DateTimeOffset? _birthDate;
+    [ObservableProperty] private string _name = string.Empty;
+    [ObservableProperty] private DateTime? _birthDate;
+    [ObservableProperty] private bool _saving;
     [ObservableProperty] private string _errorMessage = string.Empty;
-    [ObservableProperty] private bool _isEditing;
-    [ObservableProperty] private long _editingId;
-    [ObservableProperty] private string _title = "添加宝宝";
 
     public event Action? Completed;
 
-    public void InitForAdd()
+    public void Reset()
     {
-        IsEditing = false;
-        Title = "添加宝宝";
-        Name = string.Empty;
         Gender = "boy";
+        Name = string.Empty;
         BirthDate = null;
         ErrorMessage = string.Empty;
-    }
-
-    public void InitForEdit(Baby baby)
-    {
-        IsEditing = true;
-        Title = "编辑宝宝";
-        EditingId = baby.Id;
-        Name = baby.Name;
-        Gender = baby.Gender;
-        BirthDate = baby.BirthDate.HasValue ? new DateTimeOffset(baby.BirthDate.Value) : null;
-        ErrorMessage = string.Empty;
+        Saving = false;
     }
 
     public void SelectGender(string gender) => Gender = gender;
@@ -58,23 +44,16 @@ public partial class BabySetupViewModel : ViewModelBase
             return;
         }
 
-        var birth = BirthDate.Value.Date;
-        if (IsEditing)
+        Saving = true;
+        try
         {
-            var baby = ServiceProvider.Instance.AppState.BabyList.FirstOrDefault(b => b.Id == EditingId);
-            if (baby is not null)
-            {
-                baby.Name = Name.Trim();
-                baby.Gender = Gender;
-                baby.BirthDate = birth;
-                _babyService.UpdateBaby(baby);
-            }
+            _babyService.AddBaby(Name.Trim(), Gender, BirthDate.Value.Date);
+            Completed?.Invoke();
         }
-        else
+        finally
         {
-            _babyService.AddBaby(Name.Trim(), Gender, birth);
+            Saving = false;
         }
-        Completed?.Invoke();
     }
 
     [RelayCommand]
