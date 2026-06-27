@@ -1,0 +1,99 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.QuickMenuView"
+             x:DataType="vm:QuickMenuViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <!-- PopupBox 菜单项：横向排列「圆形图标 + 文字标签」 -->
+        <Style Selector="Button.popup-item">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="Button.popup-item Border.popup-icon">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="CornerRadius" Value="18"/>
+        </Style>
+        <Style Selector="Button.popup-item TextBlock.popup-emoji">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.popup-item TextBlock.popup-label">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#1A1A1A"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="10,0,4,0"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+
+        <!-- 悬浮 + 按钮（Border 承载阴影 + 透明 Button） -->
+        <Style Selector="Border.fab-main">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+            <Setter Property="CornerRadius" Value="28"/>
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BoxShadow" Value="0 4 12 0 #4D07C160"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- 遮罩层：仅在菜单或卡片打开时拦截事件 -->
+        <Border Background="#80000000"
+                IsVisible="{Binding IsMenuOpen}"
+                PointerPressed="OnMaskPressed"/>
+
+        <!-- PopupBox 菜单：从 + 按钮正上方垂直堆叠弹出，右对齐与 + 按钮对齐 -->
+        <StackPanel IsVisible="{Binding IsMenuOpen}"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,16,140">
+            <ItemsControl ItemsSource="{Binding Actions}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:QuickActionItem">
+                        <Button Classes="popup-item"
+                                Command="{Binding $parent[ItemsControl].((vm:QuickMenuViewModel)DataContext).SelectCommand}"
+                                CommandParameter="{Binding Type}">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Classes="popup-icon" Background="{Binding IconBg}">
+                                    <TextBlock Classes="popup-emoji" Text="{Binding Icon}"/>
+                                </Border>
+                                <TextBlock Classes="popup-label" Text="{Binding Label}"/>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- 居中卡片表单 -->
+        <v:QuickRecordCardView IsVisible="{Binding IsCardOpen}"/>
+
+        <!-- 悬浮 + 按钮（始终可见，最顶层）：用 Border 承载阴影，Button 透明覆盖 -->
+        <Border Classes="fab-main"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Bottom"
+                Margin="0,0,16,72">
+            <Button Background="Transparent" BorderThickness="0" Padding="0"
+                    CornerRadius="28"
+                    Command="{Binding ToggleMenuCommand}"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center">
+                <TextBlock Text="{Binding IsMenuOpen, Converter={x:Static v:QuickMenuView.FabIconConverter}}"
+                           FontSize="30" Foreground="White" FontWeight="Bold"/>
+            </Button>
+        </Border>
+    </Panel>
+</UserControl>

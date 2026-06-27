@@ -38,45 +38,13 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _vaccineProgressText = "0/0";
     [ObservableProperty] private bool _isVaccineExpanded;
 
-    [ObservableProperty] private bool _isQuickRecordPanelOpen;
-
-    public ObservableCollection<QuickActionItem> QuickActions { get; } = new();
-    /// <summary>当前可见的快捷记录项（收起时仅前 3 个，展开时全部）</summary>
-    public ObservableCollection<QuickActionItem> VisibleQuickActions { get; } = new();
-
     public event Action? StatisticsRequested;
     public event Action? CheckInRequested;
     public event Action<string>? QuickRecordRequested;
 
     public HomeViewModel()
     {
-        // 对齐原版 quick-actions 的 emoji + 背景色
-        QuickActions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed, "#FFF0E6"));
-        QuickActions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper, "#FFF8E1"));
-        QuickActions.Add(new QuickActionItem("🌙", "睡眠", RecordType.Sleep, "#E8F0FE"));
-        QuickActions.Add(new QuickActionItem("🌡️", "体温", RecordType.Temperature, "#FFE8E8"));
-        QuickActions.Add(new QuickActionItem("💊", "补给用药", RecordType.Supplement, "#F3E5F5"));
-        QuickActions.Add(new QuickActionItem("🍶", "吸奶", RecordType.Pump, "#E8F5E9"));
-        QuickActions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary, "#FFF3E0"));
-        QuickActions.Add(new QuickActionItem("🍽️", "妈妈饮食", RecordType.MaternalFood, "#F2F7E8"));
-        QuickActions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
-
-        // 默认显示第一行（前 3 个）
-        RefreshVisibleQuickActions();
     }
-
-    /// <summary>根据展开状态刷新可见的快捷记录项</summary>
-    private void RefreshVisibleQuickActions()
-    {
-        VisibleQuickActions.Clear();
-        var items = IsQuickRecordPanelOpen
-            ? QuickActions.AsEnumerable()
-            : QuickActions.Take(3);
-        foreach (var item in items)
-            VisibleQuickActions.Add(item);
-    }
-
-    partial void OnIsQuickRecordPanelOpenChanged(bool value) => RefreshVisibleQuickActions();
 
     public void Activate()
     {
@@ -323,12 +291,6 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     }
 
     [RelayCommand]
-    private void ToggleQuickRecordPanel()
-    {
-        IsQuickRecordPanelOpen = !IsQuickRecordPanelOpen;
-    }
-
-    [RelayCommand]
     private void ToggleVaccinePanel()
     {
         IsVaccineExpanded = !IsVaccineExpanded;
@@ -354,9 +316,14 @@ public sealed class QuickActionItem
     public string Type { get; }
     /// <summary>图标背景色（对齐原版 quick-actions 配色）</summary>
     public string IconBg { get; }
-    public QuickActionItem(string icon, string label, string type, string iconBg = "#F7F7F7")
+    /// <summary>扇形菜单中的水平偏移（相对 + 按钮中心，px）</summary>
+    public double OffsetX { get; }
+    /// <summary>扇形菜单中的垂直偏移（相对 + 按钮中心，px）</summary>
+    public double OffsetY { get; }
+    public QuickActionItem(string icon, string label, string type, string iconBg = "#F7F7F7", double offsetX = 0, double offsetY = 0)
     {
         Icon = icon; Label = label; Type = type; IconBg = iconBg;
+        OffsetX = offsetX; OffsetY = offsetY;
     }
 }
 

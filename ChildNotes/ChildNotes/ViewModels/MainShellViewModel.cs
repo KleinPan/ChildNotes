@@ -15,6 +15,7 @@ public partial class MainShellViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isRecordSheetOpen;
     [ObservableProperty] private RecordSheetViewModel _recordSheet;
+    [ObservableProperty] private QuickMenuViewModel _quickMenu;
     [ObservableProperty] private bool _isBabySetupOpen;
     [ObservableProperty] private BabySetupViewModel _babySetup;
     [ObservableProperty] private bool _isStatisticsOpen;
@@ -49,6 +50,9 @@ public partial class MainShellViewModel : ViewModelBase
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
 
+        _quickMenu = new QuickMenuViewModel(_recordSheet);
+        _quickMenu.Saved += OnRecordSaved;
+
         _babySetup = new BabySetupViewModel();
         _babySetup.Completed += OnBabySetupCompleted;
 
@@ -74,6 +78,8 @@ public partial class MainShellViewModel : ViewModelBase
     private void SwitchTab(string tab)
     {
         IsRecordSheetOpen = false;
+        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
+        if (QuickMenu.IsCardOpen) QuickMenu.CloseCardCommand.Execute(null);
         IsBabySetupOpen = false;
         IsStatisticsOpen = false;
         IsPointsOpen = false;
@@ -181,6 +187,8 @@ public partial class MainShellViewModel : ViewModelBase
     {
         // 关闭所有弹层
         IsRecordSheetOpen = false;
+        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
+        if (QuickMenu.IsCardOpen) QuickMenu.CloseCardCommand.Execute(null);
         IsBabySetupOpen = false;
         IsStatisticsOpen = false;
         IsPointsOpen = false;

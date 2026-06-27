@@ -35,28 +35,6 @@
             <Setter Property="Margin" Value="12,8"/>
             <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000"/>
         </Style>
-        <Style Selector="Border.quick-panel">
-            <Setter Property="Background" Value="White"/>
-            <!-- 原版 record-drawer 圆角 32rpx ≈ 16px -->
-            <Setter Property="CornerRadius" Value="16,16,0,0"/>
-            <!-- 原版顶部阴影: 0 -4rpx 30rpx rgba(0,0,0,0.08) -->
-            <Setter Property="BoxShadow" Value="0 -2 15 0 #14000000"/>
-        </Style>
-        <Style Selector="Border.quick-handle">
-            <!-- 原版 pull-tab 凸型拉手 -->
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="CornerRadius" Value="24"/>
-            <Setter Property="Padding" Value="24,9"/>
-            <Setter Property="Margin" Value="0,-8,0,8"/>
-            <Setter Property="BoxShadow" Value="0 3 10 0 #1F000000, 0 1 3 0 #10000000"/>
-        </Style>
-        <Style Selector="Border.quick-item">
-            <!-- 原版 action-item: bg-1 底，16rpx 圆角 -->
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12,3"/>
-            <Setter Property="Margin" Value="3"/>
-        </Style>
         <Style Selector="Border.section-header">
             <Setter Property="Margin" Value="12,12,12,4"/>
         </Style>
@@ -241,51 +219,10 @@
                 </Grid>
             </Border>
 
-            <Border Height="8"/>
+            <Border Height="16"/>
 
         </StackPanel>
     </ScrollViewer>
-
-    <Border Classes="quick-panel" VerticalAlignment="Bottom" HorizontalAlignment="Stretch">
-        <StackPanel>
-            <!-- 原版 panel-pull 凸型拉手 -->
-            <Border Classes="quick-handle" HorizontalAlignment="Center">
-                <Button Command="{Binding ToggleQuickRecordPanelCommand}" Background="Transparent" BorderThickness="0" Padding="0">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="快捷记录" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"/>
-                        <!-- 箭头：展开时▼（点击收起），收起时▲（点击展开更多） -->
-                        <TextBlock Text="{Binding IsQuickRecordPanelOpen, Converter={x:Static v:HomeView.ArrowTextConverter}}" FontSize="12" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding IsQuickRecordPanelOpen, Converter={x:Static v:HomeView.ExpandTextConverter}}" FontSize="12" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-            </Border>
-            <!-- 原版 actions-grid: 默认显示第一行（3 项），展开显示全部 9 项 -->
-            <ItemsControl ItemsSource="{Binding VisibleQuickActions}" Padding="12,0,12,12">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="3"/>
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Button Background="Transparent" BorderThickness="0" CornerRadius="8" Padding="0,8"
-                                HorizontalContentAlignment="Center" HorizontalAlignment="Stretch"
-                                Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).QuickRecordCommand}"
-                                CommandParameter="{Binding Type}"
-                                Click="OnQuickActionClick">
-                            <StackPanel HorizontalAlignment="Center" Spacing="5">
-                                <!-- 原版 action-icon: 72rpx≈36px，18rpx≈9px 圆角 -->
-                                <Border Width="36" Height="36" CornerRadius="9" Background="{Binding IconBg}">
-                                    <TextBlock Text="{Binding Icon}" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <TextBlock Text="{Binding Label}" FontSize="11" Foreground="#1A1A1A" FontWeight="Medium" HorizontalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </StackPanel>
-    </Border>
 
     </Panel>
 </UserControl>
