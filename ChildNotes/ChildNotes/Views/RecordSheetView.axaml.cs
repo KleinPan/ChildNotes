@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
@@ -15,48 +14,15 @@ namespace ChildNotes.Views;
 public partial class RecordSheetView : UserControl
 {
     private const double DefaultMaxHeight = 600;
-    // 软键盘弹出时为底部抽屉预留的上方可见高度比例（占屏幕高度）。
-    // 安卓软键盘通常约占屏幕 40-55%，这里保守预留 55% 给抽屉显示。
-    private const double KeyboardVisibleRatio = 0.55;
 
-    // 上一次 Layout 的可视区高度，用于检测 adjustResize 是否真的让 ClientSize 变小
-    private double _lastViewHeight = -1;
-    // 当前是否有 TextBox 处于焦点状态（用于 Layout 重测时判断是否要保持键盘规避）
+    // 当前是否有 TextBox 处于焦点状态（用于判断是否要保持键盘规避）
     private bool _textBoxFocused;
-
-    // ===== 性能测量：弹出响应时间 =====
-    // 记录 IsVisible 从 false→true 的时间戳，用于计算弹出响应延迟
-    private Stopwatch? _openStopwatch;
-    private bool _wasVisible;
-    // 首次 Layout 完成后停止计时（标记是否已记录过本次打开的渲染完成时间）
-    private bool _openRenderRecorded;
 
     public RecordSheetView()
     {
         InitializeComponent();
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
-        PropertyChanged += OnRecordSheetPropertyChanged;
-    }
-
-    private void OnRecordSheetPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        // 监听 IsVisible 变化：从 false→true 时启动计时器，记录弹出响应时间
-        if (e.Property == IsVisibleProperty)
-        {
-            var nowVisible = (bool)e.NewValue!;
-            if (nowVisible && !_wasVisible)
-            {
-                _openStopwatch = Stopwatch.StartNew();
-                _openRenderRecorded = false;
-                DevLogger.Log("SheetPerf", "IsVisible false→true: open stopwatch started");
-            }
-            else if (!nowVisible && _wasVisible)
-            {
-                _openStopwatch = null;
-            }
-            _wasVisible = nowVisible;
-        }
     }
 
     // 通用：非 null 转换器（用于 SelectedPlan 可见性）
@@ -87,56 +53,32 @@ public partial class RecordSheetView : UserControl
         // 监听整个控件的 GotFocus/LostFocus（冒泡），判断焦点是否落在 TextBox 上
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
-        // 监听 TopLevel 尺寸变化：adjustResize 触发 ContentView resize 时会回调此事件，
-        // 这比 GotFocus 时机更准确（GotFocus 时 ClientSize 可能尚未更新）
-        if (TopLevel.GetTopLevel(this) is { } tl)
-        {
-            tl.LayoutUpdated += OnLayoutUpdated;
-        }
-        DevLogger.Log("SheetView", "Attached: GotFocus/LostFocus/LayoutUpdated listeners added");
+        // 订阅安卓原生键盘高度变化事件（由 ViewTreeObserver 驱动）
+        KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+        DevLogger.Log("SheetView", "Attached: GotFocus/LostFocus/KeyboardHeight listeners added");
     }
 
     private void OnDetached(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
     {
         RemoveHandler(InputElement.GotFocusEvent, OnGotFocus);
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
-        if (TopLevel.GetTopLevel(this) is { } tl)
-        {
-            tl.LayoutUpdated -= OnLayoutUpdated;
-        }
+        KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
     }
 
-    private void OnLayoutUpdated(object? sender, EventArgs e)
+    /// <summary>
+    /// 安卓原生键盘高度变化回调。
+    /// 当 ViewTreeObserver 检测到键盘弹出/收起时触发，
+    /// 使用真实键盘高度重新计算抽屉 MaxHeight。
+    /// </summary>
+    private void OnKeyboardHeightChanged(double keyboardHeightLp)
     {
-        // 每次布局更新都记录 ClientSize 变化，便于排查 adjustResize 是否真的让可视区缩小
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
-        var viewHeight = topLevel.ClientSize.Height;
-
-        // 性能测量：抽屉可见且首次 Layout 完成后，记录从 IsVisible→true 到首帧渲染的耗时
-        if (_openStopwatch is not null && !_openRenderRecorded && IsVisible)
+        // 仅在 TextBox 持有焦点时响应键盘高度变化
+        if (_textBoxFocused && IsVisible)
         {
-            _openStopwatch.Stop();
-            _openRenderRecorded = true;
-            DevLogger.Log("SheetPerf",
-                $"Open→first layout | elapsed={_openStopwatch.ElapsedMilliseconds}ms | viewH={viewHeight:F0}");
-            _openStopwatch = null;
+            RecalcMaxHeight(reason: $"NativeKeyboard height={keyboardHeightLp:F0}lp");
         }
-
-        if (Math.Abs(viewHeight - _lastViewHeight) > 0.5)
-        {
-            DevLogger.Log("SheetView",
-                $"LayoutUpdated | viewH={viewHeight:F0} (prev={_lastViewHeight:F0}) | textBoxFocused={_textBoxFocused} | SheetMaxH={SheetRoot?.MaxHeight:F0}");
-            _lastViewHeight = viewHeight;
-
-            // 若 TextBox 仍持有焦点且 ClientSize 已变小（键盘已弹出），重新计算 MaxHeight
-            if (_textBoxFocused && SheetRoot is not null)
-            {
-                // 直接调用 AdjustForKeyboard 重算，避免 GotFocus 早于 resize 时计算错误
-                AdjustForKeyboard(active: true, reason: "LayoutUpdated while TextBox focused");
-            }
-        }
+        DevLogger.Log("SheetView", $"OnKeyboardHeightChanged | height={keyboardHeightLp:F0}lp | focused={_textBoxFocused}");
     }
 
     private void OnGotFocus(object? sender, RoutedEventArgs e)
@@ -145,9 +87,9 @@ public partial class RecordSheetView : UserControl
         if (e.Source is TextBox tb)
         {
             _textBoxFocused = true;
-            AdjustForKeyboard(active: true, reason: $"TextBox focused: {(tb.Name ?? tb.Text ?? "<empty>")}");
+            RecalcMaxHeight(reason: $"TextBox focused: {(tb.Name ?? tb.Text ?? "<empty>")}");
             // 焦点变化后给 ScrollViewer 一帧时间重算，再滚动到当前 TextBox
-            DispatcherTimer.RunOnce(() => ScrollFocusedIntoView(tb), TimeSpan.FromMilliseconds(50));
+            DispatcherTimer.RunOnce(() => ScrollFocusedIntoView(tb), TimeSpan.FromMilliseconds(80));
         }
     }
 
@@ -162,37 +104,56 @@ public partial class RecordSheetView : UserControl
             {
                 if (!_textBoxFocused)
                 {
-                    AdjustForKeyboard(active: false, reason: "TextBox lost focus (deferred)");
+                    RestoreDefaultMaxHeight(reason: "TextBox lost focus (deferred)");
                 }
             }, TimeSpan.FromMilliseconds(150));
         }
     }
 
-    private void AdjustForKeyboard(bool active, string reason)
+    /// <summary>
+    /// 根据安卓原生键盘高度 + 屏幕可用高度，重新计算抽屉 MaxHeight。
+    /// 优先使用 <see cref="KeyboardHeightProvider.CurrentHeight"/>（安卓原生值）；
+    /// 若尚未收到原生回调（桌面端或键盘还没弹起），回退到屏幕高度的 50% 作为保守估计。
+    /// </summary>
+    private void RecalcMaxHeight(string reason)
     {
         if (SheetRoot is null) return;
         var topLevel = TopLevel.GetTopLevel(this);
         if (topLevel is null) return;
 
-        // 获取可视区域高度（安卓上为 Activity ContentView 高度，键盘弹出时会缩小）
         var viewHeight = topLevel.ClientSize.Height;
         if (viewHeight <= 0) return;
 
         double newMax;
-        if (active)
+        var kbHeight = KeyboardHeightProvider.CurrentHeight;
+
+        if (kbHeight > 0)
         {
-            // 键盘激活：抽屉最大高度限制为可视区的 55%，避免底部被键盘遮住
-            newMax = Math.Max(280, viewHeight * KeyboardVisibleRatio);
+            // 有原生键盘高度：屏幕总高 - 键盘高度 - 少量底部间距
+            newMax = Math.Max(280, viewHeight - kbHeight - 16);
         }
         else
         {
-            newMax = DefaultMaxHeight;
+            // 无原生数据（桌面端 或 键盘还未弹起）：保守估计键盘占 50%
+            newMax = Math.Max(280, viewHeight * 0.50);
         }
 
         var oldMax = SheetRoot.MaxHeight;
         SheetRoot.MaxHeight = newMax;
 
-        DevLogger.Log("SheetView", $"Keyboard {(active ? "ACTIVE" : "INACTIVE")} | reason={reason} | viewH={viewHeight:F0} | MaxHeight {oldMax:F0}->{newMax:F0} | ScrollExt={ContentScroll?.Extent.Height:F0} Viewport={ContentScroll?.Viewport.Height:F0} Offset={ContentScroll?.Offset.Y:F0}");
+        DevLogger.Log("SheetView",
+            $"RecalcMaxHeight | {reason} | viewH={viewHeight:F0} | kbH={kbHeight:F0}lp | " +
+            $"MaxHeight {oldMax:F0}->{newMax:F0} | " +
+            $"Ext={ContentScroll?.Extent.Height:F0} Vp={ContentScroll?.Viewport.Height:F0} Off={ContentScroll?.Offset.Y:F0}");
+    }
+
+    /// <summary>恢复默认 MaxHeight。</summary>
+    private void RestoreDefaultMaxHeight(string reason)
+    {
+        if (SheetRoot is null) return;
+        var oldMax = SheetRoot.MaxHeight;
+        SheetRoot.MaxHeight = DefaultMaxHeight;
+        DevLogger.Log("SheetView", $"RestoreDefault | {reason} | MaxHeight {oldMax:F0}->{DefaultMaxHeight}");
     }
 
     /// <summary>

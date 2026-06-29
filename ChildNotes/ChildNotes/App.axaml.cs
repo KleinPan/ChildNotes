@@ -270,6 +270,16 @@ public partial class App : Application
         return _shellVm?.HandleSystemBack() ?? false;
     }
 
+    /// <summary>
+    /// 安卓端原生键盘高度变化回调（由 MainActivity 通过 ViewTreeObserver 驱动）。
+    /// 高度单位为安卓物理像素（px），键盘隐藏时为 0。
+    /// 桌面端永远不会调用此方法。
+    /// </summary>
+    public void OnAndroidKeyboardHeightChanged(int heightPx)
+    {
+        KeyboardHeightProvider.UpdateAndroidHeight(heightPx);
+    }
+
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
         LogException(e.ExceptionObject as Exception, "AppDomain");

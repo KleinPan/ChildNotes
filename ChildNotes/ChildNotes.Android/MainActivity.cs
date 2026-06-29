@@ -1,7 +1,9 @@
 ﻿﻿using Android.App;
 using Android.Content.PM;
+using Android.OS;
 using Avalonia;
 using Avalonia.Android;
+using ChildNotes.Android.Services;
 
 namespace ChildNotes.Android;
 
@@ -24,4 +26,29 @@ public class MainActivity : AvaloniaMainActivity
         base.OnBackPressed(); // 无弹层，交由系统处理
     }
 #pragma warning restore CS0672
+
+    protected override void OnCreate(Bundle? savedInstanceState)
+    {
+        base.OnCreate(savedInstanceState);
+        // 启动原生键盘高度监听，通过回调通知 Avalonia 层
+        KeyboardHeightService.StartObserving(this);
+        KeyboardHeightService.OnKeyboardHeightChanged = OnKeyboardHeightChanged;
+    }
+
+    protected override void OnDestroy()
+    {
+        KeyboardHeightService.StopObserving();
+        base.OnDestroy();
+    }
+
+    private void OnKeyboardHeightChanged(int heightPx)
+    {
+        // 通过 Avalonia UI 线程分发到共享层的键盘高度服务
+        var app = Avalonia.Application.Current as App;
+        app?.Dispatcher?.Post(() =>
+        {
+            if (app is not null)
+                app.OnAndroidKeyboardHeightChanged(heightPx);
+        });
+    }
 }
