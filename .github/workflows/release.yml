@@ -149,7 +149,10 @@ jobs:
         run: |
           # 针对真机架构 ios-arm64，禁用代码签名产出未签名 .app
           # 用户后续需用开发者证书重签后才能安装到设备
-          # .NET 10 iOS SDK 要求 PublishTrimmed=true，禁用实际 trimming 用 MtouchLink=None
+          # .NET 10 iOS SDK 强制要求 PublishTrimmed=true；
+          # 用 MtouchLink=None 跳过 Xamarin.iOS linker，
+          # 再用 TrimMode=copy 让 ILLink 仅复制程序集不做裁剪分析（避免在 macOS runner 上超时，
+          # 也避免 reflection-based JSON 序列化被裁剪后运行时失败）。
           dotnet publish ChildNotes.iOS/ChildNotes.iOS.csproj \
             -c Release \
             -f net10.0-ios \
@@ -159,6 +162,7 @@ jobs:
             -p:CodesignEntitlements= \
             -p:PublishTrimmed=true \
             -p:MtouchLink=None \
+            -p:TrimMode=copy \
             -o ../artifacts/ios
 
       - name: Archive iOS app
