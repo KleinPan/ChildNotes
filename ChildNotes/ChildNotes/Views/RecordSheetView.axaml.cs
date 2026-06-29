@@ -120,18 +120,22 @@ public partial class RecordSheetView : UserControl
         double offset;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：向上推 keyboardHeight - 少量间距
-            offset = kbHeight - 8;
+            // 有真实键盘高度：向上推 keyboardHeight - 少量间距，让抽屉紧贴键盘上方
+            offset = kbHeight - 4;
         }
         else if (_textBoxFocused)
         {
-            // 已聚焦但还没收到原生回调：保守估计键盘占屏幕 50%
-            offset = Math.Max(200, (viewHeight > 0 ? viewHeight * 0.50 : 400));
+            // 已聚焦但还没收到原生回调：先用保守估算（屏幕 40%），等原生值到达后再精确调整
+            offset = viewHeight > 0 ? viewHeight * 0.40 : 350;
         }
         else
         {
             return; // 无键盘、无焦点，不需要偏移
         }
+
+        // 安全上限：抽屉上推后顶部不应超过屏幕 15% 位置（避免顶到屏幕最上方）
+        var maxOffset = viewHeight > 0 ? viewHeight * 0.85 : 700;
+        if (offset > maxOffset) offset = maxOffset;
 
         // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);

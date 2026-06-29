@@ -66,24 +66,27 @@ public static class KeyboardHeightService
             var rawHeight = screenHeight - _rect.Bottom;
 
             // 过小值视为无键盘
-            var keyboardHeight = rawHeight < 100 ? 0 : rawHeight;
+            var keyboardHeightPx = rawHeight < 100 ? 0 : rawHeight;
 
             // 防抖：如果当前是 0 但上次报告正值不到 200ms，忽略这次零值
-            // （键盘弹起动画期间 DecorView 会短暂恢复全屏高度）
-            if (keyboardHeight == 0 && KeyboardHeightPx > 0)
+            if (keyboardHeightPx == 0 && KeyboardHeightPx > 0)
             {
                 var now = Stopwatch.GetTimestamp();
                 var elapsedMs = (now - _lastPositiveTickMs) * 1000 / Stopwatch.Frequency;
-                if (elapsedMs < 200) return; // 忽略抖动
+                if (elapsedMs < 200) return;
             }
 
-            if (keyboardHeight != KeyboardHeightPx)
+            if (keyboardHeightPx != KeyboardHeightPx)
             {
-                KeyboardHeightPx = keyboardHeight;
-                if (keyboardHeight > 0)
+                KeyboardHeightPx = keyboardHeightPx;
+                if (keyboardHeightPx > 0)
                     _lastPositiveTickMs = Stopwatch.GetTimestamp();
 
-                try { OnKeyboardHeightChanged?.Invoke(keyboardHeight); }
+                // 用设备真实 DPI 将物理像素转换为 Avalonia 逻辑像素
+                var density = _decorView.Resources?.DisplayMetrics?.Density ?? 2.0f;
+                var keyboardHeightLp = (int)(keyboardHeightPx / density);
+
+                try { OnKeyboardHeightChanged?.Invoke(keyboardHeightLp); }
                 catch { /* 回调异常不影响主流程 */ }
             }
         }

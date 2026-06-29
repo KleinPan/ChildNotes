@@ -272,12 +272,12 @@ public partial class App : Application
 
     /// <summary>
     /// 安卓端原生键盘高度变化回调（由 MainActivity 通过 ViewTreeObserver 驱动）。
-    /// 高度单位为安卓物理像素（px），键盘隐藏时为 0。
+    /// 高度单位为 Avalonia 逻辑像素（已在安卓端用 DisplayMetrics.Density 转换）。
     /// 桌面端永远不会调用此方法。
     /// </summary>
-    public void OnAndroidKeyboardHeightChanged(int heightPx)
+    public void OnAndroidKeyboardHeightChanged(int logicalHeight)
     {
-        KeyboardHeightProvider.UpdateAndroidHeight(heightPx);
+        KeyboardHeightProvider.UpdateAndroidHeight(logicalHeight);
     }
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
