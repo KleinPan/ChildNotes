@@ -1,0 +1,102 @@
+using ChildNotes.Core.Common;
+using ChildNotes.Core.Config;
+using ChildNotes.Core.Constants;
+using ChildNotes.Core.Dtos;
+using ChildNotes.Core.Entities;
+using ChildNotes.Core.Exceptions;
+using ChildNotes.Core.Services;
+using ChildNotes.Infrastructure.Auth;
+using ChildNotes.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+
+namespace ChildNotes.Infrastructure.Services;
+
+public class AdminAuthService : IAdminAuthService
+{
+    private static readonly object _initLock = new();
+    private readonly ChildNotesDbContext _db;
+    private readonly AdminOptions _opt;
+    private readonly ICurrentAdminService _current;
+    private readonly AdminPasswordHasher _passwordHasher;
+
+    public AdminAuthService(
+        ChildNotesDbContext db,
+        IOptions<AdminOptions> opt,
+        ICurrentAdminService current,
+        AdminPasswordHasher passwordHasher)
+    {
+        _db = db;
+        _opt = opt.Value;
+        _current = current;
+        _passwordHasher = passwordHasher;
+    }
+
+    public async Task EnsureDefaultAdminAsync(CancellationToken ct = default)
+    {
+        if (await _db.AdminAccounts.AnyAsync(ct)) return;
+        if (string.IsNullOrEmpty(_opt.InitPassword)) return;
+
+        lock (_initLock)
+        {
+            if (_db.AdminAccounts.Any()) return;
+            var (salt, hash) = _passwordHasher.Hash(_opt.InitPassword);
+            _db.AdminAccounts.Add(new AdminAccount
+            {
+                Username = _opt.InitUsername,
+                PasswordSalt = salt,
+                PasswordHash = hash,
+                DisplayName = _opt.InitDisplayName,
+                Status = StatusConstants.Admin.Active,
+            });
+            _db.SaveChanges();
+        }
+    }
+
+    public async Task<AdminLoginResponse> LoginAsync(AdminLoginRequest req, CancellationToken ct = default)
+    {
+        await EnsureDefaultAdminAsync(ct);
+
+        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
+            throw new BusinessException("Invalid username or password", 400);
+
+        var admin = await _db.AdminAccounts.FirstOrDefaultAsync(a => a.Username == req.Username, ct);
+        if (admin is null || admin.Status != StatusConstants.Admin.Active
+            || !_passwordHasher.Verify(req.Password, admin.PasswordSalt, admin.PasswordHash))
+            throw new BusinessException("Invalid username or password", 400);
+
+        var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        admin.Token = token;
+        admin.TokenExpireAt = DateTime.UtcNow.AddHours(_opt.TokenExpireHours);
+        admin.LastLoginAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return new AdminLoginResponse
+        {
+            AdminId = admin.Id,
+            Username = admin.Username,
+            DisplayName = admin.DisplayName,
+            Token = token,
+            TokenExpireAt = DateTimeFormatter.FormatDateTime(admin.TokenExpireAt!.Value),
+        };
+    }
+
+    public async Task<AdminAccount?> AuthenticateAsync(string? token, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(token)) return null;
+        return await _db.AdminAccounts.FirstOrDefaultAsync(
+            a => a.Token == token && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
+    }
+
+    public Task<AdminAccount?> GetCurrentAdminAsync(CancellationToken ct = default)
+        => Task.FromResult(_current.Admin);
+
+    public async Task LogoutAsync(CancellationToken ct = default)
+    {
+        var admin = _current.Admin;
+        if (admin is null) return;
+        admin.Token = null;
+        admin.TokenExpireAt = null;
+        await _db.SaveChangesAsync(ct);
+    }
+}

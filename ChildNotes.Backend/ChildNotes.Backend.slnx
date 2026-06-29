@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ChildNotes.Api/ChildNotes.Api.csproj" />
+  <Project Path="ChildNotes.Core/ChildNotes.Core.csproj" />
+  <Project Path="ChildNotes.Infrastructure/ChildNotes.Infrastructure.csproj" />
+  <Project Path="ChildNotes.Tests/ChildNotes.Tests.csproj" />
+</Solution>

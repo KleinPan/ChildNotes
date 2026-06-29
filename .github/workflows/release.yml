@@ -1,0 +1,217 @@
+name: Release Build
+
+# 触发条件：推送 tag 时执行
+# 建议使用 v* 或 release-* 前缀，例如 v1.0.0、release-2026.06.1
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'release-*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: '要构建的分支/tag/commit'
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # 用于创建 Release 并上传资源
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  # 统一固定 .NET SDK 版本，配合仓库根目录的 global.json
+  DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: '0'
+
+jobs:
+  # -----------------------------------------------------------------
+  # 构建 Job 矩阵：windows / macos / linux + backend
+  # -----------------------------------------------------------------
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false   # 单个平台失败不影响其他平台继续构建，便于一次性看到所有错误
+      matrix:
+        include:
+          - target: windows
+            runner: windows-latest
+            rid: win-x64
+            archive_ext: zip
+          - target: macos
+            runner: macos-latest
+            rid: osx-x64
+            archive_ext: tar.gz
+          - target: linux
+            runner: ubuntu-latest
+            rid: linux-x64
+            archive_ext: tar.gz
+          - target: backend
+            runner: ubuntu-latest
+            rid: linux-x64
+            archive_ext: tar.gz
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          # global.json 指定 10.0.x；rollForward=latestFeature 允许 runner 上的更高 patch
+          dotnet-version: '10.0.x'
+
+      - name: Show environment info
+        shell: pwsh
+        run: |
+          dotnet --info
+          Write-Host "Target: ${{ matrix.target }} | RID: ${{ matrix.rid }}"
+
+      # ---------- 后端构建 ----------
+      - name: Build backend (publish)
+        if: matrix.target == 'backend'
+        shell: pwsh
+        working-directory: ChildNotes.Backend
+        run: |
+          # 以独立部署(SCD)方式发布，产物内含运行时，目标机器无需额外安装 .NET
+          dotnet publish ChildNotes.Api/ChildNotes.Api.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
+            -o ../artifacts/backend
+
+          # 确保配置文件随产物输出（dotnet publish 默认会复制，这里再显式确认）
+          Copy-Item ChildNotes.Api/appsettings.json ../artifacts/backend/ -Force -ErrorAction SilentlyContinue
+
+      # ---------- 桌面端构建（三平台） ----------
+      - name: Build desktop app (publish)
+        if: matrix.target != 'backend'
+        shell: pwsh
+        working-directory: ChildNotes
+        run: |
+          # 桌面端项目引用 ChildNotes.csproj，使用 ChildNotes.Desktop 作为入口
+          # Avalonia 桌面应用按 RID 发布为自包含可执行文件
+          dotnet publish ChildNotes.Desktop/ChildNotes.Desktop.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained true `
+            -p:PublishSingleFile=false `
+            -p:PublishTrimmed=false `
+            -o ../artifacts/${{ matrix.target }}
+
+      # ---------- 打包产物 ----------
+      - name: Archive artifacts (zip)
+        if: matrix.archive_ext == 'zip'
+        shell: pwsh
+        run: |
+          $staging = "staging-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item -Recurse -Force artifacts/${{ matrix.target }}/* $staging/
+          Compress-Archive -Path "$staging/*" -DestinationPath "ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.zip" -CompressionLevel Optimal
+          Write-Host "::notice::Archive created: ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.zip"
+
+      - name: Archive artifacts (tar.gz)
+        if: matrix.archive_ext == 'tar.gz'
+        shell: bash
+        run: |
+          mkdir -p staging-${{ matrix.target }}
+          cp -r artifacts/${{ matrix.target }}/* staging-${{ matrix.target }}/
+          tar -czf "ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.tar.gz" -C "staging-${{ matrix.target }}" .
+          echo "::notice::Archive created: ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.tar.gz"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChildNotes-${{ matrix.target }}-${{ github.ref_name }}
+          path: |
+            ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.zip
+            ChildNotes-${{ matrix.target }}-${{ github.ref_name }}.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize build status
+        if: always()
+        shell: pwsh
+        run: |
+          $status = '${{ job.status }}'
+          if ($status -eq 'success') {
+            Write-Host "::notice::[${{ matrix.target }}] 构建成功。产物已打包。"
+          } else {
+            Write-Host "::error::[${{ matrix.target }}] 构建失败 (status=$status)，请检查上方日志。"
+          }
+
+  # -----------------------------------------------------------------
+  # 发布 Release：所有平台构建成功后，将压缩包作为 GitHub Release 资源发布
+  # -----------------------------------------------------------------
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 10
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: false
+
+      - name: Flatten artifacts for release upload
+        shell: bash
+        run: |
+          mkdir -p upload
+          find release-assets -type f \( -name '*.zip' -o -name '*.tar.gz' \) -exec cp {} upload/ \;
+          ls -la upload/
+
+      - name: Check build matrix status
+        id: status
+        shell: bash
+        run: |
+          # needs.build.result: success / failure / cancelled
+          RESULT="${{ needs.build.result }}"
+          echo "result=$RESULT" >> $GITHUB_OUTPUT
+          if [ "$RESULT" != "success" ]; then
+            echo "::error::构建矩阵未全部成功 (result=$RESULT)，终止发布。"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: upload/*
+          body: |
+            ## 构建产物
+
+            本次发布包含以下平台的编译产物，均为自包含（self-contained）部署，**目标机器无需额外安装 .NET 运行时**。
+
+            | 平台 | 文件 | 说明 |
+            | ---- | ---- | ---- |
+            | Windows | `ChildNotes-windows-*.zip` | 桌面端应用，解压后运行可执行文件 |
+            | macOS | `ChildNotes-macos-*.tar.gz` | 桌面端应用，解压后运行可执行文件 |
+            | Linux | `ChildNotes-linux-*.tar.gz` | 桌面端应用，解压后运行可执行文件 |
+            | Backend | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，解压后配置 `appsettings.json` 运行 |
+
+            ### 后端部署要点
+            - 解压后编辑 `appsettings.json`，填写数据库连接串、JWT Secret、DeepSeek ApiKey 等敏感配置。
+            - 运行：`./ChildNotes.Api`（监听端口见 `ASPNETCORE_URLS` 环境变量或默认 5000）。
+
+            ### 构建状态
+            - 构建矩阵结果：${{ needs.build.result }}
+            - 对应 commit：${{ github.sha }}
+
+      - name: Release summary
+        if: always()
+        shell: bash
+        run: |
+          echo "::notice::Release 发布完成，访问 https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }} 下载各平台产物。"

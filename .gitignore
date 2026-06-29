@@ -1,0 +1,64 @@
+# ==========================================================================
+# Root .gitignore for the AiJi monorepo
+# (covers backend, IDE/agent tooling, and root-level artifacts)
+# Sub-projects may carry their own .gitignore for project-specific rules.
+# ==========================================================================
+
+# --------------------------------------------------------------------------
+# IDE / Editor
+# --------------------------------------------------------------------------
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+# --------------------------------------------------------------------------
+# .NET build artifacts (catch-all at repo root, in case a project forgets)
+# --------------------------------------------------------------------------
+**/[Bb]in/
+**/[Oo]bj/
+**/[Dd]ebug/
+**/[Dd]ebugPublic/
+**/[Rr]elease/
+**/[Rr]eleases/
+**/artifacts/
+**/TestResults/
+*.log
+*.binlog
+
+# --------------------------------------------------------------------------
+# NuGet
+# --------------------------------------------------------------------------
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+
+# --------------------------------------------------------------------------
+# Backend runtime / user content
+# --------------------------------------------------------------------------
+# uploaded files are runtime user content, must not be version-controlled
+ChildNotes.Backend/ChildNotes.Api/uploads/
+
+# local secrets (override files kept out of VCS)
+**/appsettings.*.Local.json
+**/appsettings.Local.json
+**/secrets.json
+
+# --------------------------------------------------------------------------
+# OS junk
+# --------------------------------------------------------------------------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# --------------------------------------------------------------------------
+# AI/agent tooling scratch (keep rules, ignore caches/logs)
+# --------------------------------------------------------------------------
+.trae/caches/
+.trae/logs/

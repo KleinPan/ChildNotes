@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChildNotes 设计风格参考文档</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -5%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.25);
+            padding: 8px 20px;
+            border-radius: 20px;
+            margin-top: 20px;
+            font-size: 0.95em;
+            backdrop-filter: blur(10px);
+        }
+
+        .content {
+            padding: 60px 40px;
+        }
+
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 4px solid #4CAF50;
+            display: inline-block;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: -10px;
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+        }
+
+        .subsection {
+            margin-top: 40px;
+        }
+
+        .subsection h3 {
+            font-size: 1.8em;
+            color: #34495e;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subsection h3::before {
+            content: '';
+            width: 6px;
+            height: 28px;
+            background: linear-gradient(to bottom, #4CAF50, #81C784);
+            border-radius: 3px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .color-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .color-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+
+        .color-preview {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            border: 2px solid #f0f0f0;
+        }
+
+        .color-name {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .color-hex {
+            font-family: 'Courier New', monospace;
+            color: #7f8c8d;
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+
+        .color-usage {
+            font-size: 0.9em;
+            color: #95a5a6;
+            line-height: 1.4;
+        }
+
+        .component-showcase {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 30px 0;
+        }
+
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .component-item {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #4CAF50;
+            border: 2px solid #4CAF50;
+        }
+
+        .btn-secondary:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .card-demo {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border-left: 4px solid #4CAF50;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .icon-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .icon-item:hover {
+            background: #e8f5e9;
+            transform: translateY(-3px);
+        }
+
+        .icon-emoji {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .spec-table th {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 18px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .spec-table td {
+            padding: 16px 18px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .spec-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .spec-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 24px;
+            border-radius: 12px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+
+        .code-comment {
+            color: #7f8c8d;
+        }
+
+        .code-property {
+            color: #3498db;
+        }
+
+        .code-value {
+            color: #e74c3c;
+        }
+
+        .layout-diagram {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 40px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .diagram-box {
+            display: inline-block;
+            background: white;
+            border: 3px solid #4CAF50;
+            border-radius: 12px;
+            padding: 20px 40px;
+            margin: 10px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .diagram-label {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+        }
+
+        .tip-box {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%);
+            border-left: 5px solid #ffc107;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 24px 0;
+        }
+
+        .tip-box strong {
+            color: #f57c00;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, #ffebee 0%, #fce4ec 100%);
+            border-left: 5px solid #f44336;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 24px 0;
+        }
+
+        .warning-box strong {
+            color: #c62828;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 5px solid #4CAF50;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 24px 0;
+        }
+
+        .success-box strong {
+            color: #2e7d32;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .footer p {
+            opacity: 0.8;
+            margin: 8px 0;
+        }
+
+        ul, ol {
+            margin-left: 30px;
+            margin-top: 15px;
+        }
+
+        li {
+            margin: 10px 0;
+            line-height: 1.8;
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            color: #e74c3c;
+            font-size: 0.92em;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .section-title {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎨 ChildNotes 设计风格参考文档</h1>
+            <p>婴儿成长记录应用视觉设计系统与交互规范指南</p>
+            <div class="badge">Version 1.0 | 基于 UI 截图分析 | 2026-06-24</div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+
+            <!-- Section 1: Design Overview -->
+            <div class="section">
+                <h2 class="section-title">一、设计风格概述</h2>
+                
+                <div class="card-demo">
+                    <h3 style="margin-bottom: 15px; color: #4CAF50;">📱 应用定位与设计理念</h3>
+                    <p><strong>应用类型：</strong>母婴健康记录类移动应用（Baby Care Tracker）</p>
+                    <p><strong>目标用户：</strong>新手父母、育儿家庭</p>
+                    <p><strong>核心功能：</strong>喂养记录、睡眠追踪、成长监测、疫苗接种、活动日志</p>
+                    <p style="margin-top: 15px;"><strong>设计理念：</strong></p>
+                    <ul>
+                        <li><strong>温馨亲和：</strong>采用柔和的绿色系为主色调，营造安全、健康的视觉感受</li>
+                        <li><strong>简洁高效：</strong>卡片式布局 + 图标化操作，降低认知负担，提升记录效率</li>
+                        <li><strong>数据可视化：</strong>通过日历热力图、趋势图表直观展示宝宝成长数据</li>
+                        <li><strong>情感化设计：</strong>使用 Emoji 图标和温暖文案，增强用户情感连接</li>
+                    </ul>
+                </div>
+
+                <div class="success-box">
+                    <strong>✨ 设计优势总结</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>色彩心理学应用：绿色代表生长、健康、自然，契合"成长记录"主题</li>
+                        <li>信息层级清晰：通过颜色深浅、字号大小、间距控制建立视觉层次</li>
+                        <li>交互反馈及时：按钮状态、页面转场、数据更新均有明确反馈</li>
+                        <li>无障碍友好：高对比度配色、大点击区域、清晰的文字标注</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Section 2: Color System -->
+            <div class="section">
+                <h2 class="section-title">二、色彩系统详解</h2>
+
+                <div class="subsection">
+                    <h3>2.1 主色调（Primary Colors）</h3>
+                    
+                    <div class="color-palette">
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #4CAF50;"></div>
+                            <div class="color-name">主绿色 Primary Green</div>
+                            <div class="color-hex">#4CAF50</div>
+                            <div class="color-usage">用于主要按钮、选中状态、重要操作、品牌标识</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #45a049;"></div>
+                            <div class="color-name">深绿色 Dark Green</div>
+                            <div class="color-hex">#45a049</div>
+                            <div class="color-usage">用于按钮按下状态、渐变终点、hover 效果</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #81C784;"></div>
+                            <div class="color-name">浅绿色 Light Green</div>
+                            <div class="color-hex">#81C784</div>
+                            <div class="color-usage">用于次要背景、成功状态、进度条、日历标记</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #E8F5E9;"></div>
+                            <div class="color-name">极浅绿 Pale Green</div>
+                            <div class="color-hex">#E8F5E9</div>
+                            <div class="color-usage">用于卡片背景、输入框聚焦、信息提示区域</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>2.2 辅助色彩（Secondary Colors）</h3>
+                    
+                    <div class="color-palette">
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #2196F3;"></div>
+                            <div class="color-name">蓝色 Blue</div>
+                            <div class="color-hex">#2196F3</div>
+                            <div class="color-usage">用于辅助按钮、链接、奶量统计图表、信息类图标</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #FF9800;"></div>
+                            <div class="color-name">橙色 Orange</div>
+                            <div class="color-hex">#FF9800</div>
+                            <div class="color-usage">用于警告提示、签到功能、待处理事项标记</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #FFC107;"></div>
+                            <div class="color-name">黄色 Yellow</div>
+                            <div class="color-hex">#FFC107</div>
+                            <div class="color-usage">用于提醒事项、温馨提示、星星评分</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #F44336;"></div>
+                            <div class="color-name">红色 Red</div>
+                            <div class="color-hex">#F44336</div>
+                            <div class="color-usage">用于错误提示、删除操作、退出登录等危险动作</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>2.3 中性色（Neutral Colors）</h3>
+                    
+                    <div class="color-palette">
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #212121;"></div>
+                            <div class="color-name">主文字色 Text Primary</div>
+                            <div class="color-hex">#212121 / #333333</div>
+                            <div class="color-usage">用于标题、重要文字内容、主标题</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #666666;"></div>
+                            <div class="color-name">次文字色 Text Secondary</div>
+                            <div class="color-hex">#666666</div>
+                            <div class="color-usage">用于正文、描述文字、次要信息</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #999999;"></div>
+                            <div class="color-name">辅助文字色 Text Tertiary</div>
+                            <div class="color-hex">#999999</div>
+                            <div class="color-usage">用于占位符、禁用状态、辅助说明</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #F5F5F5; border: 1px solid #E0E0E0;"></div>
+                            <div class="color-name">背景色 Background</div>
+                            <div class="color-hex">#F5F5F5 / #FAFAFA</div>
+                            <div class="color-usage">用于页面背景、卡片外层容器</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #FFFFFF; border: 1px solid #E0E0E0;"></div>
+                            <div class="color-name">纯白色 White</div>
+                            <div class="color-hex">#FFFFFF</div>
+                            <div class="color-usage">用于卡片背景、弹窗背景、输入框背景</div>
+                        </div>
+                        
+                        <div class="color-card">
+                            <div class="color-preview" style="background: #E0E0E0;"></div>
+                            <div class="color-name">分割线 Divider</div>
+                            <div class="color-hex">#E0E0E0 / #EEEEEE</div>
+                            <div class="color-usage">用于分割线、边框、禁用状态的边框</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <strong>💡 色彩使用建议</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>主绿色占比应控制在整体界面的 15%-20%，避免过度使用导致视觉疲劳</li>
+                        <li>确保文字与背景的对比度至少达到 WCAG AA 标准（4.5:1）</li>
+                        <li>在浅色背景上使用深色文字，在深色背景上使用浅色文字</li>
+                        <li>同一页面中使用的颜色不应超过 5 种（不含黑白灰）</li>
+                    </ul>
+                </div>
+
+                <div class="code-block">
+<span class="code-comment">/* 色彩变量定义示例 (CSS/Sass) */</span>
+:root {
+    <span class="code-property">--primary-color</span>: <span class="code-value">#4CAF50</span>;
+    <span class="code-property">--primary-dark</span>: <span class="code-value">#45a049</span>;
+    <span class="code-property">--primary-light</span>: <span class="code-value">#81C784</span>;
+    <span class="code-property">--primary-bg</span>: <span class="code-value">#E8F5E9</span>;
+    
+    <span class="code-property">--secondary-blue</span>: <span class="code-value">#2196F3</span>;
+    <span class="code-property">--warning-orange</span>: <span class="code-value">#FF9800</span>;
+    <span class="code-property">--danger-red</span>: <span class="code-value">#F44336</span>;
+    
+    <span class="code-property">--text-primary</span>: <span class="code-value">#212121</span>;
+    <span class="code-property">--text-secondary</span>: <span class="code-value">#666666</span>;
+    <span class="code-property">--text-tertiary</span>: <span class="code-value">#999999</span>;
+    
+    <span class="code-property">--bg-page</span>: <span class="code-value">#F5F5F5</span>;
+    <span class="code-property">--bg-card</span>: <span class="code-value">#FFFFFF</span>;
+    <span class="code-property">--border-color</span>: <span class="code-value">#E0E0E0</span>;
+}
+                </div>
+            </div>
+
+            <!-- Section 3: Typography -->
+            <div class="section">
+                <h2 class="section-title">三、排版样式规范</h2>
+
+                <div class="subsection">
+                    <h3>3.1 字体家族（Font Family）</h3>
+                    
+                    <div class="card-demo">
+                        <p><strong>首选字体栈：</strong></p>
+                        <code>-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif</code>
+                        
+                        <p style="margin-top: 20px;"><strong>字体选择理由：</strong></p>
+                        <ul>
+                            <li><strong>系统字体优先：</strong>保证在各平台的原生体验和渲染性能</li>
+                            <li><strong>中文优化：</strong>PingFang SC（iOS）和 Microsoft YaHei（Windows）针对中文显示优化</li>
+                            <li><strong>无衬线体：</strong>现代感强，屏幕阅读清晰度高</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>3.2 字号规范（Font Size）</h3>
+                    
+                    <table class="spec-table">
+                        <thead>
+                            <tr>
+                                <th>类型</th>
+                                <th>字号 (sp/dp)</th>
+                                <th>行高</th>
+                                <th>字重</th>
+                                <th>使用场景</th>
+                                <th>示例</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>大标题 H1</td>
+                                <td>24sp / 28dp</td>
+                                <td>1.3</td>
+                                <td>Bold (700)</td>
+                                <td>页面主标题</td>
+                                <td style="font-size: 24px; font-weight: bold;">成长记录</td>
+                            </tr>
+                            <tr>
+                                <td>标题 H2</td>
+                                <td>20sp / 22dp</td>
+                                <td>1.35</td>
+                                <td>Semi-Bold (600)</td>
+                                <td>模块标题、卡片标题</td>
+                                <td style="font-size: 20px; font-weight: 600;">统计分析</td>
+                            </tr>
+                            <tr>
+                                <td>子标题 H3</td>
+                                <td>17sp / 18dp</td>
+                                <td>1.4</td>
+                                <td>Medium (500)</td>
+                                <td>列表项标题、弹窗标题</td>
+                                <td style="font-size: 17px; font-weight: 500;">配方奶</td>
+                            </tr>
+                            <tr>
+                                <td>正文 Body</td>
+                                <td>15sp / 16dp</td>
+                                <td>1.5</td>
+                                <td>Regular (400)</td>
+                                <td>主要内容、描述文字</td>
+                                <td style="font-size: 15px;">距上次喂奶 48分钟</td>
+                            </tr>
+                            <tr>
+                                <td>辅助文字 Caption</td>
+                                <td>13sp / 14dp</td>
+                                <td>1.45</td>
+                                <td>Regular (400)</td>
+                                <td>时间戳、单位、提示</td>
+                                <td style="font-size: 13px; color: #999;">2026-06-24 09:30</td>
+                            </tr>
+                            <tr>
+                                <td>小字 Small</td>
+                                <td>11sp / 12dp</td>
+                                <td>1.4</td>
+                                <td>Regular (400)</td>
+                                <td>标签、徽章、脚注</td>
+                                <td style="font-size: 11px; color: #999;">8个月9天</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="subsection">
+                    <h3>3.3 字重规范（Font Weight）</h3>
+                    
+                    <table class="spec-table">
+                        <thead>
+                            <tr>
+                                <th>字重值</th>
+                                <th>名称</th>
+                                <th>使用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>700</td>
+                                <td>Bold</td>
+                                <td>主标题、重要数字、品牌名</td>
+                            </tr>
+                            <tr>
+                                <td>600</td>
+                                <td>Semi-Bold</td>
+                                <td>二级标题、导航项、按钮文字</td>
+                            </tr>
+                            <tr>
+                                <td>500</td>
+                                <td>Medium</td>
+                                <td>三级标题、列表项标题、标签</td>
+                            </tr>
+                            <tr>
+                                <td>400</td>
+                                <td>Regular</td>
+                                <td>正文内容、描述文字</td>
+                            </tr>
+                            <tr>
+                                <td>300</td>
+                                <td>Light</td>
+                                <td>极少使用，仅用于装饰性文字</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="subsection">
+                    <h3>3.4 文本对齐与间距</h3>
+                    
+                    <div class="card-demo">
+                        <ul>
+                            <li><strong>对齐方式：</strong>中文内容左对齐，数字右对齐（便于比较），标题居中对齐</li>
+                            <li><strong>段落间距：</strong>段落之间保持 16dp-24dp 的垂直间距</li>
+                            <li><strong>行间距：</strong>正文字号的 1.4-1.6 倍（如 15sp 文字使用 21-24sp 行高）</li>
+                            <li><strong>字符间距：</strong>默认不调整，大标题可适当增加 1-2%</li>
+                            <li><strong>最大行长：</strong>单行文字不超过 60-70 个汉字，避免阅读疲劳</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Layout & Spacing -->
+            <div class="section">
+                <h2 class="section-title">四、界面布局规范</h2>
+
+                <div class="subsection">
+                    <h3>4.1 整体布局结构</h3>
+                    
+                    <div class="layout-diagram">
+                        <div style="margin-bottom: 30px;">
+                            <div class="diagram-box" style="width: 350px; padding: 15px 30px;">
+                                <span class="diagram-label">状态栏 Status Bar</span>
+                                时间 | 信号 | 电量
+                            </div>
+                        </div>
+                        
+                        <div class="diagram-box" style="width: 350px; min-height: 450px; padding: 20px 30px; text-align: left;">
+                            <span class="diagram-label">内容区 Content Area</span>
+                            <p style="margin: 10px 0;"><strong>顶部导航栏</strong><br>标题 + 操作按钮</p>
+                            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+                            <p style="margin: 10px 0;"><strong>可滚动内容区</strong><br>卡片 / 列表 / 表单</p>
+                            <hr style="margin: 15px 0; border: none; border-top: 1px dashed #ccc;">
+                            <p style="margin: 10px 0;"><strong>底部固定区域</strong><br>快捷入口 / 导航栏</p>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <div class="diagram-box" style="width: 350px; padding: 15px 30px;">
+                                <span class="diagram-label">底部导航 Tab Bar</span>
+                                首页 | 喂养 | 成长 | 我的
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>4.2 间距系统（Spacing System）</h3>
+                    
+                    <table class="spec-table">
+                        <thead>
+                            <tr>
+                                <th>间距名称</th>
+                                <th>数值 (dp)</th>
+                                <th>使用场景</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>超小间距 xs</td>
+                                <td>4dp</td>
+                                <td>图标与文字间距、紧密关联元素</td>
+                            </tr>
+                            <tr>
+                                <td>小间距 sm</td>
+                                <td>8dp</td>
+                                <td>标签内边距、相关元素组内部</td>
+                            </tr>
+                            <tr>
+                                <td>基础间距 base</td>
+                                <td>12dp</td>
+                                <td>列表项内部间距、表单字段间距</td>
+                            </tr>
+                            <tr>
+                                <td>中等间距 md</td>
+                                <td>16dp</td>
+                                <td>标准组件内边距、卡片内边距</td>
+                            </tr>
+                            <tr>
+                                <td>大间距 lg</td>
+                                <td>24dp</td>
+                                <td>区块之间、模块分隔</td>
+                            </tr>
+                            <tr>
+                                <td>超大间距 xl</td>
+                                <td>32dp</td>
+                                <td>页面级区块间距、章节分隔</td>
+                            </tr>
+                            <tr>
+                                <td>超级间距 xxl</td>
+                                <td>48dp</td>
+                                <td>页面顶部/底部留白</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="code-block">
+<span class="code-comment">/* 间距变量示例 */</span>
+:root {
+    <span class="code-property">--space-xs</span>: <span class="code-value">4px</span>;   <span class="code-comment">/* 0.25rem */</span>
+    <span class="code-property">--space-sm</span>: <span class="code-value">8px</span>;   <span class="code-comment">/* 0.5rem */</span>
+    <span class="code-property">--space-base</span>: <span class="code-value">12px</span>; <span class="code-comment">/* 0.75rem */</span>
+    <span class="code-property">--space-md</span>: <span class="code-value">16px</span>;  <span class="code-comment">/* 1rem */</span>
+    <span class="code-property">--space-lg</span>: <span class="code-value">24px</span>;  <span class="code-comment">/* 1.5rem */</span>
+    <span class="code-property">--space-xl</span>: <span class="code-value">32px</span>;  <span class="code-comment">/* 2rem */</span>
+    <span class="code-property">--space-xxl</span>: <span class="code-value">48px</span>; <span class="code-comment">/* 3rem */</span>
+}
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>4.3 卡片式布局（Card Layout）</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px; color: #2c3e50;">卡片设计参数</h4>
+                        
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>属性</th>
+                                    <th>数值</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>圆角半径</td>
+                                    <td>12dp - 16dp</td>
+                                    <td>大卡片 16dp，小组件 12dp</td>
+                                </tr>
+                                <tr>
+                                    <td>内边距 Padding</td>
+                                    <td>16dp - 20dp</td>
+                                    <td>水平方向统一 16dp，垂直方向根据内容调整</td>
+                                </tr>
+                                <tr>
+                                    <td>外边距 Margin</td>
+                                    <td>12dp - 16dp</td>
+                                    <td>卡片之间的间距</td>
+                                </tr>
+                                <tr>
+                                    <td>阴影效果</td>
+                                    <td>0 2dp 8dp rgba(0,0,0,0.08)</td>
+                                    <td>轻微投影，提升层次感</td>
+                                </tr>
+                                <tr>
+                                    <td>背景色</td>
+                                    <td>#FFFFFF</td>
+                                    <td>纯白背景，与页面底色区分</td>
+                                </tr>
+                                <tr>
+                                    <td>边框</td>
+                                    <td>无 或 1px #E0E0E0</td>
+                                    <td>通常无边框，靠阴影区分</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="card-demo" style="margin-top: 30px;">
+                            <h4 style="color: #4CAF50; margin-bottom: 15px;">📋 首页信息卡片示例</h4>
+                            <p><strong>宝宝信息卡：</strong>头像圆形（80dp）+ 姓名（17sp Bold）+ 年龄标签（绿色胶囊形）+ 统计/签到按钮</p>
+                            <p style="margin-top: 10px;"><strong>今日状态卡：</strong>2x2 网格布局，每格包含左侧彩色竖条（4dp宽）+ 图标 + 标题 + 数值</p>
+                            <p style="margin-top: 10px;"><strong>提示信息卡：</strong>浅绿背景（#E8F5E9），带 Emoji 图标 + 标题 + 描述文字</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>4.4 底部导航栏（Bottom Navigation）</h3>
+                    
+                    <div class="component-showcase">
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>属性</th>
+                                    <th>数值</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>高度</td>
+                                    <td>56dp</td>
+                                    <td>iOS 标准高度，含安全区域</td>
+                                </tr>
+                                <tr>
+                                    <td>背景色</td>
+                                    <td>#FFFFFF</td>
+                                    <td>纯白背景，顶部可有细分割线</td>
+                                </tr>
+                                <tr>
+                                    <td>图标尺寸</td>
+                                    <td>24dp x 24dp</td>
+                                    <td>未选中时 outline 风格，选中时 filled 风格</td>
+                                </tr>
+                                <tr>
+                                    <td>文字尺寸</td>
+                                    <td>10sp - 11sp</td>
+                                    <td>位于图标下方</td>
+                                </tr>
+                                <tr>
+                                    <td>选中态颜色</td>
+                                    <td>#4CAF50</td>
+                                    <td>图标和文字同时变绿</td>
+                                </tr>
+                                <tr>
+                                    <td>未选中颜色</td>
+                                    <td>#999999</td>
+                                    <td>灰色表示不可用/未选中</td>
+                                </tr>
+                                <tr>
+                                    <td>标签数量</td>
+                                    <td>4 个</td>
+                                    <td>首页 | 喂养 | 成长 | 我的</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Components -->
+            <div class="section">
+                <h2 class="section-title">五、核心UI组件详解</h2>
+
+                <div class="subsection">
+                    <h3>5.1 按钮系统（Buttons）</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 25px;">按钮类型与规格</h4>
+                        
+                        <div class="component-grid">
+                            <div class="component-item">
+                                <button class="btn btn-primary" style="width: 100%; margin: 0;">保存记录</button>
+                                <p style="margin-top: 15px; font-size: 14px; color: #666;"><strong>主按钮 Primary</strong><br>高度：48dp<br>圆角：24dp（全圆角）<br>背景：#4CAF50 渐变<br>文字：白色 Bold</p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <button class="btn btn-secondary" style="width: 100%; margin: 0;">取消</button>
+                                <p style="margin-top: 15px; font-size: 14px; color: #666;"><strong>次按钮 Secondary</strong><br>高度：48dp<br>圆角：24dp<br>背景：透明<br>边框：2px #4CAF50</p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <button class="btn btn-primary" style="width: 100%; margin: 0; padding: 10px 20px; font-size: 14px;">补记</button>
+                                <p style="margin-top: 15px; font-size: 14px; color: #666;"><strong>小型按钮 Small</strong><br>高度：36dp<br>圆角：18dp<br>用于卡片内操作</p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <button style="background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 18px; font-size: 14px; font-weight: 600;">展开</button>
+                                <p style="margin-top: 15px; font-size: 14px; color: #666;"><strong>辅助按钮 Auxiliary</strong><br>蓝色主题<br>用于非主要操作</p>
+                            </div>
+                        </div>
+
+                        <div class="tip-box" style="margin-top: 30px;">
+                            <strong>💡 按钮设计原则</strong>
+                            <ul style="margin-top: 10px;">
+                                <li>每个屏幕最多一个主按钮，避免用户困惑</li>
+                                <li>最小点击区域 44x44dp，符合人体工程学</li>
+                                <li>按钮文字使用动词开头，如"保存记录"、"添加宝宝"</li>
+                                <li>禁用状态降低透明度至 50%，并移除 hover 效果</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>5.2 快捷入口网格（Quick Actions Grid）</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px;">底部弹出式快捷记录面板</h4>
+                        
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>属性</th>
+                                    <th>数值</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>面板圆角</td>
+                                    <td>20dp（顶部）</td>
+                                    <td>底部为直角，贴合屏幕边缘</td>
+                                </tr>
+                                <tr>
+                                    <td>网格列数</td>
+                                    <td>4 列</td>
+                                    <td>响应式布局，自动换行</td>
+                                </tr>
+                                <tr>
+                                    <td>项目宽度</td>
+                                    <td>均分（约 85dp）</td>
+                                    <td>根据屏幕宽度计算</td>
+                                </tr>
+                                <tr>
+                                    <td>图标尺寸</td>
+                                    <td>40dp x 40dp</td>
+                                    <td>Emoji 或自定义图标</td>
+                                </tr>
+                                <tr>
+                                    <td>文字尺寸</td>
+                                    <td>13sp</td>
+                                    <td>位于图标下方</td>
+                                </tr>
+                                <tr>
+                                    <td>项目间距</td>
+                                    <td>16dp 水平，20dp 垂直</td>
+                                    <td>均匀分布</td>
+                                </tr>
+                                <tr>
+                                    <td>触发器</td>
+                                    <td>"快捷记录 ▼" 按钮</td>
+                                    <td>绿色文字 + 下箭头</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="card-demo" style="margin-top: 25px;">
+                            <h4 style="color: #4CAF50; margin-bottom: 15px;">🎯 支持的快捷记录类型</h4>
+                            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🍼</div>
+                                    <div style="font-size: 13px;">喂奶</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">💩</div>
+                                    <div style="font-size: 13px;">换尿布</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🌙</div>
+                                    <div style="font-size: 13px;">睡眠</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🌡️</div>
+                                    <div style="font-size: 13px;">体温</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">💊</div>
+                                    <div style="font-size: 13px;">补药用</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🍼</div>
+                                    <div style="font-size: 13px;">吸奶</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🥣</div>
+                                    <div style="font-size: 13px;">辅食</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">🍽️</div>
+                                    <div style="font-size: 13px;">妈妈饮食</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 32px; margin-bottom: 8px;">📏</div>
+                                    <div style="font-size: 13px;">成长</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>5.3 表单组件（Form Components）</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px;">输入框与选择器</h4>
+                        
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>组件类型</th>
+                                    <th>高度</th>
+                                    <th>圆角</th>
+                                    <th>边框</th>
+                                    <th>焦点状态</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>文本输入框</td>
+                                    <td>48dp</td>
+                                    <td>8dp</td>
+                                    <td>1px #E0E0E0</td>
+                                    <td>边框 #4CAF50，背景 #E8F5E9</td>
+                                </tr>
+                                <tr>
+                                    <td>多行文本域</td>
+                                    <td>自适应（min 100dp）</td>
+                                    <td>8dp</td>
+                                    <td>1px #E0E0E0</td>
+                                    <td>同上</td>
+                                </tr>
+                                <tr>
+                                    <td>选择器/下拉框</td>
+                                    <td>48dp</td>
+                                    <td>8dp</td>
+                                    <td>1px #E0E0E0</td>
+                                    <td>右侧下拉箭头</td>
+                                </tr>
+                                <tr>
+                                    <td>开关 Switch</td>
+                                    <td>32dp（轨道高度）</td>
+                                    <td>16dp（全圆角）</td>
+                                    <td>无</td>
+                                    <td>开启：#4CAF50；关闭：#E0E0E0</td>
+                                </tr>
+                                <tr>
+                                    <td>分段控制器 Segmented Control</td>
+                                    <td>36dp</td>
+                                    <td>18dp</td>
+                                    <td>1px #E0E0E0</td>
+                                    <td>选中段：#4CAF50 背景 + 白色文字</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="code-block" style="margin-top: 25px;">
+<span class="code-comment">/* 输入框样式示例 */</span>
+.input-field {
+    <span class="code-property">height</span>: <span class="code-value">48px</span>;
+    <span class="code-property">padding</span>: <span class="code-value">0 16px</span>;
+    <span class="code-property">border</span>: <span class="code-value">1px solid #E0E0E0</span>;
+    <span class="code-property">border-radius</span>: <span class="code-value">8px</span>;
+    <span class="code-property">font-size</span>: <span class="code-value">15px</span>;
+    <span class="code-property">background</span>: <span class="code-value">#FFFFFF</span>;
+    <span class="code-property">transition</span>: <span class="code-value">all 0.3s ease</span>;
+}
+
+.input-field:focus {
+    <span class="code-property">border-color</span>: <span class="code-value">#4CAF50</span>;
+    <span class="code-property">background-color</span>: <span class="code-value">#E8F5E9</span>;
+    <span class="code-property">outline</span>: <span class="code-value">none</span>;
+    <span class="code-property">box-shadow</span>: <span class="code-value">0 0 0 3px rgba(76, 175, 80, 0.1)</span>;
+}
+
+.input-field::placeholder {
+    <span class="code-property">color</span>: <span class="code-value">#999999</span>;
+}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>5.4 数据展示组件（Data Display）</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px;">统计图表与日历视图</h4>
+                        
+                        <div class="card-demo">
+                            <h4 style="color: #2196F3; margin-bottom: 15px;">📊 日历热力图（Calendar Heatmap）</h4>
+                            <ul>
+                                <li><strong>单元格尺寸：</strong>40dp x 40dp（日期格子）</li>
+                                <li><strong>圆角：</strong>8dp</li>
+                                <li><strong>有数据状态：</strong>填充对应颜色（绿色/蓝色）+ 显示数值</li>
+                                <li><strong>无数据状态：</strong>白色背景或极浅灰色</li>
+                                <li><strong>今天标记：</strong>稍深的边框或背景色</li>
+                                <li><strong>颜色强度：</strong>根据数值大小调整透明度（5个级别）</li>
+                            </ul>
+                        </div>
+
+                        <div class="card-demo" style="margin-top: 20px;">
+                            <h4 style="color: #FF9800; margin-bottom: 15px;">📈 趋势柱状图（Bar Chart）</h4>
+                            <ul>
+                                <li><strong>柱子宽度：</strong>根据数据点数量自适应（建议 16-24dp）</li>
+                                <li><strong>柱子间距：</strong>8dp</li>
+                                <li><strong>圆角：</strong>顶部 4dp 圆角，底部直角</li>
+                                <li><strong>颜色：</strong>主绿色 #4CAF50 或蓝色 #2196F3（根据数据类型）</li>
+                                <li><strong>Y轴刻度：</strong>显示最大值、中间值、最小值</li>
+                                <li><strong>总计显示：</strong>右上角显示汇总数值 + 单位</li>
+                            </ul>
+                        </div>
+
+                        <div class="card-demo" style="margin-top: 20px;">
+                            <h4 style="color: #9C27B0; margin-bottom: 15px;">📋 时间轴列表（Timeline List）</h4>
+                            <ul>
+                                <li><strong>列表项高度：</strong>72dp - 88dp（根据内容自适应）</li>
+                                <li><strong>时间显示：</strong>左侧，55dp 宽度，右对齐，13sp 灰色</li>
+                                <li><strong>图标：</strong>时间右侧，32dp x 32dp，Emoji 或彩色图标</li>
+                                <li><strong>标题：</strong>图标右侧，15sp 中等字重</li>
+                                <li><strong>详情：</strong>标题下方，13sp 浅灰色</li>
+                                <li><strong>持续时间：</strong>最右侧，13sp 绿色（仅特定类型显示）</li>
+                                <li><strong>分隔线：</strong>1px #F0F0F0，贯穿除最后一项外的所有项</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 6: Icons -->
+            <div class="section">
+                <h2 class="section-title">六、图标使用规范</h2>
+
+                <div class="subsection">
+                    <h3>6.1 图标风格特征</h3>
+                    
+                    <div class="card-demo">
+                        <ul>
+                            <li><strong>风格定位：</strong>线性图标（Outline）+ 填充图标（Filled）双版本</li>
+                            <li><strong>线条粗细：</strong>1.5dp - 2dp</li>
+                            <li><strong>圆角处理：</strong>所有尖角采用圆角处理，视觉更柔和</li>
+                            <li><strong>视觉重量：</strong>均匀一致，避免粗细不一</li>
+                            <li><strong>表情符号（Emoji）：</strong>大量使用 Emoji 作为功能图标，增强趣味性和识别度</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>6.2 图标尺寸规范</h3>
+                    
+                    <table class="spec-table">
+                        <thead>
+                            <tr>
+                                <th>使用场景</th>
+                                <th>尺寸 (dp)</th>
+                                <th>示例位置</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>底部导航栏</td>
+                                <td>24 x 24</td>
+                                <td>Tab Bar 图标</td>
+                            </tr>
+                            <tr>
+                                <td>列表项图标</td>
+                                <td>32 x 32</td>
+                                <td>喂养详情、设置列表</td>
+                            </tr>
+                            <tr>
+                                <td>快捷入口图标</td>
+                                <td>40 x 40</td>
+                                <td>底部弹出面板中的 Emoji</td>
+                            </tr>
+                            <tr>
+                                <td>状态指示图标</td>
+                                <td>20 x 20</td>
+                                <td>卡片内的提示图标</td>
+                            </tr>
+                            <tr>
+                                <td>按钮内图标</td>
+                                <td>18 x 18</td>
+                                <td>图标按钮、文字前缀</td>
+                            </tr>
+                            <tr>
+                                <td>头像/Logo</td>
+                                <td>80 x 80</td>
+                                <td>宝宝头像、用户头像</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="subsection">
+                    <h3>6.3 功能图标映射表</h3>
+                    
+                    <div class="icon-grid">
+                        <div class="icon-item">
+                            <span class="icon-emoji">🏠</span>
+                            <div style="font-size: 13px; font-weight: 600;">首页</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Home</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">🍼</span>
+                            <div style="font-size: 13px; font-weight: 600;">喂养</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Feeding</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">📏</span>
+                            <div style="font-size: 13px; font-weight: 600;">成长</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Growth</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">👤</span>
+                            <div style="font-size: 13px; font-weight: 600;">我的</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Profile</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">💩</span>
+                            <div style="font-size: 13px; font-weight: 600;">换尿布</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Diaper</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">🌙</span>
+                            <div style="font-size: 13px; font-weight: 600;">睡眠</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Sleep</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">🌡️</span>
+                            <div style="font-size: 13px; font-weight: 600;">体温</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Temperature</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">💊</span>
+                            <div style="font-size: 13px; font-weight: 600;">用药</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Medicine</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">🥣</span>
+                            <div style="font-size: 13px; font-weight: 600;">辅食</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Solid Food</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">💉</span>
+                            <div style="font-size: 13px; font-weight: 600;">疫苗</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Vaccine</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">📊</span>
+                            <div style="font-size: 13px; font-weight: 600;">统计</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Statistics</div>
+                        </div>
+                        
+                        <div class="icon-item">
+                            <span class="icon-emoji">✅</span>
+                            <div style="font-size: 13px; font-weight: 600;">签到</div>
+                            <div style="font-size: 11px; color: #999; margin-top: 4px;">Check-in</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="warning-box">
+                    <strong>⚠️ 图标使用注意事项</strong>
+                    <ul style="margin-top: 10px;">
+                        <li>避免在同一界面混用不同风格的图标（如线性图标与 Emoji 混用，除非是刻意设计）</li>
+                        <li>确保图标在不同背景下都有足够的对比度和可读性</li>
+                        <li>所有图标应提供无障碍文本替代（aria-label 或 contentDescription）</li>
+                        <li>Emoji 在不同平台显示可能略有差异，需进行跨平台测试</li>
+                        <li>对于关键操作，不要仅依赖图标传达含义，必须配以文字说明</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Section 7: Interaction Patterns -->
+            <div class="section">
+                <h2 class="section-title">七、交互设计模式</h2>
+
+                <div class="subsection">
+                    <h3>7.1 页面导航与转场</h3>
+                    
+                    <div class="component-showcase">
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>导航类型</th>
+                                    <th>触发方式</th>
+                                    <th>动画效果</th>
+                                    <th>使用场景</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>标签页切换</td>
+                                    <td>点击底部导航</td>
+                                    <td>无动画或淡入淡出（300ms）</td>
+                                    <td>一级页面间切换</td>
+                                </tr>
+                                <tr>
+                                    <td>页面压栈</td>
+                                    <td>点击列表项/卡片</td>
+                                    <td>从右向左滑入（250ms）</td>
+                                    <td>进入详情页/二级页面</td>
+                                </tr>
+                                <tr>
+                                    <td>返回上一级</td>
+                                    <td>点击返回箭头/手势</td>
+                                    <td>从左向右滑出（200ms）</td>
+                                    <td>返回列表/主页</td>
+                                </tr>
+                                <tr>
+                                    <td>模态弹窗</td>
+                                    <td>点击添加/编辑按钮</td>
+                                    <td>底部向上滑入（300ms）+ 半透明遮罩</td>
+                                    <td>新增/编辑记录表单</td>
+                                </tr>
+                                <tr>
+                                    <td>快速操作面板</td>
+                                    <td>点击"快捷记录"按钮</td>
+                                    <td>底部向上展开（250ms）</td>
+                                    <td>选择记录类型</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>7.2 手势交互规范</h3>
+                    
+                    <div class="card-demo">
+                        <ul>
+                            <li><strong>点击（Tap）：</strong>最基础的交互方式，用于按钮、列表项、导航</li>
+                            <li><strong>长按（Long Press）：</strong>用于进入编辑模式、显示上下文菜单、删除确认</li>
+                            <li><strong>左滑（Swipe Left）：</strong>删除列表项（需二次确认）</li>
+                            <li><strong>右滑（Swipe Right）：</strong>完成/标记操作（如标记已读）</li>
+                            <li><strong>下拉刷新（Pull to Refresh）：</strong>首页、列表页支持下拉刷新数据</li>
+                            <li><strong>上拉加载（Load More）：</strong>历史记录列表支持分页加载</li>
+                            <li><strong>捏合缩放（Pinch to Zoom）：</strong>图片查看器支持缩放</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>7.3 反馈机制</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px;">状态反馈类型</h4>
+                        
+                        <div class="component-grid">
+                            <div class="component-item">
+                                <div style="font-size: 32px; margin-bottom: 10px;">✅</div>
+                                <h4 style="font-size: 16px; margin-bottom: 8px;">操作成功</h4>
+                                <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                                    绿色勾选图标 + "保存成功"<br>
+                                    Toast 提示（2秒自动消失）<br>
+                                    可伴随轻微震动反馈
+                                </p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <div style="font-size: 32px; margin-bottom: 10px;">⚠️</div>
+                                <h4 style="font-size: 16px; margin-bottom: 8px;">警告提示</h4>
+                                <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                                    黄色感叹号图标<br>
+                                    Dialog 弹窗需确认<br>
+                                    说明原因及后果
+                                </p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <div style="font-size: 32px; margin-bottom: 10px;">❌</div>
+                                <h4 style="font-size: 16px; margin-bottom: 8px;">错误提示</h4>
+                                <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                                    红色错误图标<br>
+                                    内联显示在输入框下方<br>
+                                    明确错误原因及修复建议
+                                </p>
+                            </div>
+                            
+                            <div class="component-item">
+                                <div style="font-size: 32px; margin-bottom: 10px;">⏳</div>
+                                <h4 style="font-size: 16px; margin-bottom: 8px;">加载状态</h4>
+                                <p style="font-size: 13px; color: #666; line-height: 1.5;">
+                                    Spinner 加载动画<br>
+                                    骨架屏占位<br>
+                                    禁用操作防止重复提交
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="success-box" style="margin-top: 30px;">
+                            <strong>✨ 加载性能要求</strong>
+                            <ul style="margin-top: 10px;">
+                                <li><strong>即时反馈（&lt;100ms）：</strong>按钮点击、开关切换等无需网络的操作</li>
+                                <li><strong>平滑过渡（100-300ms）：</strong>页面切换、动画效果</li>
+                                <li><strong>可接受等待（300ms-1s）：</strong>简单查询，显示加载指示器</li>
+                                <li><strong>需要耐心（&gt;1s）：</strong>复杂操作，显示进度条 + 预估时间</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>7.4 空状态与异常处理</h3>
+                    
+                    <div class="card-demo">
+                        <h4 style="color: #FF9800; margin-bottom: 15px;">📭 空状态设计（Empty State）</h4>
+                        <ul>
+                            <li><strong>插图/图标：</strong>使用友好的插画或大型 Emoji（80-120dp）</li>
+                            <li><strong>标题文案：</strong>简洁明了，如"暂无喂养记录"</li>
+                            <li><strong>辅助说明：</strong>解释为什么是空的以及如何开始，如"点击下方按钮记录第一次喂奶"</li>
+                            <li><strong>引导操作：</strong>提供明确的 CTA 按钮，如"+ 添加记录"</li>
+                        </ul>
+                    </div>
+
+                    <div class="card-demo" style="margin-top: 20px;">
+                        <h4 style="color: #F44336; margin-bottom: 15px;">🔌 异常状态处理</h4>
+                        <ul>
+                            <li><strong>网络异常：</strong>显示断网图标 + "网络连接失败" + "点击重试"按钮</li>
+                            <li><strong>服务器错误：</strong>显示错误页面 + 错误码 + "返回首页"按钮</li>
+                            <li><strong>数据为空：</strong>同空状态处理</li>
+                            <li><strong>权限不足：</strong>提示缺少权限 + 引导去设置页开启</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 8: Application Scenarios -->
+            <div class="section">
+                <h2 class="section-title">八、应用场景说明</h2>
+
+                <div class="subsection">
+                    <h3>8.1 典型页面分析</h3>
+                    
+                    <div class="component-showcase">
+                        <div class="card-demo" style="margin-bottom: 25px;">
+                            <h4 style="color: #4CAF50; margin-bottom: 15px;">📱 场景一：首页仪表盘（Dashboard）</h4>
+                            <p><strong>页面目标：</strong>让家长一眼掌握宝宝当前状态，快速完成日常记录</p>
+                            <p style="margin-top: 10px;"><strong>核心元素：</strong></p>
+                            <ol style="margin-top: 8px;">
+                                <li><strong>头部区域：</strong>宝宝头像 + 姓名 + 月龄 + 统计/签到快捷入口</li>
+                                <li><strong>状态卡片：</strong>2x2 网格展示距上次喂奶、今日睡眠、换尿布次数、身高体重</li>
+                                <li><strong>AI 提示区：</strong>浅绿背景卡片，显示智能分析或温馨提示</li>
+                                <li><strong>追踪模块：</strong>疫苗追踪、活动追踪等可折叠模块</li>
+                                <li><strong>浮动按钮：</strong>"快捷记录"触发器，常驻底部</li>
+                            </ol>
+                            <p style="margin-top: 10px;"><strong>设计要点：</strong>信息密度适中，重要数据突出，操作路径短（最多2步完成记录）</p>
+                        </div>
+
+                        <div class="card-demo" style="margin-bottom: 25px;">
+                            <h4 style="color: #2196F3; margin-bottom: 15px;">📋 场景二：喂养详情页（Feeding Detail）</h4>
+                            <p><strong>页面目标：</strong>按时间顺序查看当天的所有喂养及相关记录</p>
+                            <p style="margin-top: 10px;"><strong>核心元素：</strong></p>
+                            <ol style="margin-top: 8px;">
+                                <li><strong>日期选择器：</strong>左右箭头切换日期，显示星期几和农历</li>
+                                <li><strong>当日摘要：</strong>喂养次数、总量、换尿布、睡眠时长等统计数据</li>
+                                <li><strong>时间轴列表：</strong>按倒序排列的所有记录，每项包含时间、类型、详情</li>
+                                <li><strong>底部导航：</strong>保持可见，方便随时切换</li>
+                            </ol>
+                            <p style="margin-top: 10px;"><strong>设计要点：</strong>时间轴清晰易读，不同类型记录用图标区分，关键数据（如睡眠时长）用绿色高亮</p>
+                        </div>
+
+                        <div class="card-demo" style="margin-bottom: 25px;">
+                            <h4 style="color: #9C27B0; margin-bottom: 15px;">📊 场景三：统计分析页（Analytics）</h4>
+                            <p><strong>页面目标：</strong>通过可视化图表帮助家长了解宝宝的成长规律</p>
+                            <p style="margin-top: 10px;"><strong>核心元素：</strong></p>
+                            <ol style="margin-top: 8px;">
+                                <li><strong>分类标签：</strong>横向滚动的标签组（喂养、奶量、亲喂、睡眠、尿布、体温等）</li>
+                                <li><strong>时间维度：</strong>日/3天/一周/月/自定义范围 切换</li>
+                                <li><strong>日历热力图：</strong>整月视图，每天的数据量一目了然</li>
+                                <li><strong>趋势图表：</strong>柱状图展示每日数据变化趋势</li>
+                                <li><strong>汇总统计：</strong>右上角显示时间段内的总计/平均值</li>
+                            </ol>
+                            <p style="margin-top: 10px;"><strong>设计要点：</strong>数据可视化清晰易懂，支持多维度的数据钻取，颜色编码一致性强</p>
+                        </div>
+
+                        <div class="card-demo">
+                            <h4 style="color: #FF9800; margin-bottom: 15px;">⚙️ 场景四：个人中心页（Settings/Profile）</h4>
+                            <p><strong>页面目标：</strong>管理账户、宝宝信息、应用设置及获取帮助</p>
+                            <p style="margin-top: 10px;"><strong>核心元素：</strong></p>
+                            <ol style="margin-top: 8px;">
+                                <li><strong>用户信息卡：</strong>头像 + 昵称 + 角色（共同记录者）</li>
+                                <li><strong>功能列表：</strong>分组展示各项功能，每组用细线分隔</li>
+                                <li><strong>列表项结构：</strong>左侧图标 + 标题 + 右侧箭头 + 副标题/数值</li>
+                                <li><strong>危险操作：</strong>"退出登录"使用红色文字，与其他项拉开距离</li>
+                            </ol>
+                            <p style="margin-top: 10px;"><strong>设计要点：</strong>分组逻辑清晰，层级关系明确，危险操作视觉警示</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>8.2 用户流程示例</h3>
+                    
+                    <div class="card-demo">
+                        <h4 style="color: #4CAF50; margin-bottom: 15px;">🔄 核心流程：记录一次喂奶</h4>
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                            <p style="margin-bottom: 12px;"><strong>步骤 1：</strong>打开 App → 进入首页 → 点击"快捷记录 ▼"按钮</p>
+                            <p style="margin-bottom: 12px;"><strong>步骤 2：</strong>底部弹出快捷入口面板 → 点击"🍼 喂奶"图标</p>
+                            <p style="margin-bottom: 12px;"><strong>步骤 3：</strong>弹出喂奶记录表单 → 选择类型（配方奶/母乳亲喂/母乳瓶喂）→ 输入喂养量 → 确认时间 → 添加备注（可选）</p>
+                            <p style="margin-bottom: 12px;"><strong>步骤 4：</strong>点击"保存记录"按钮（绿色主按钮）</p>
+                            <p><strong>步骤 5：</strong>Toast 提示"保存成功" → 自动关闭弹窗 → 返回首页，数据实时更新</p>
+                        </div>
+                        <p style="margin-top: 15px; color: #666; font-size: 14px;"><strong>⏱️ 操作耗时预估：</strong>熟练用户可在 10-15 秒内完成一次记录</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 9: Design Guidelines -->
+            <div class="section">
+                <h2 class="section-title">九、设计规范建议</h2>
+
+                <div class="subsection">
+                    <h3>9.1 开发实现建议</h3>
+                    
+                    <div class="success-box">
+                        <strong>✅ 技术选型推荐</strong>
+                        <ul style="margin-top: 10px;">
+                            <li><strong>前端框架：</strong>React Native / Flutter（跨平台一致性更好）</li>
+                            <li><strong>UI 组件库：</strong>可基于 NativeBase、React Native Paper 或自定义组件库</li>
+                            <li><strong>图表库：</strong>Victory（RN）、fl_chart（Flutter）或自定义 SVG 图表</li>
+                            <li><strong>状态管理：</strong>Redux / MobX / Provider</li>
+                            <li><strong>本地存储：</strong>AsyncStorage / SQLite / Realm</li>
+                            <li><strong>动画库：</strong>React Native Reanimated / Animation Controller</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-block" style="margin-top: 25px;">
+<span class="code-comment">/* 推荐的项目目录结构 */</span>
+src/
+├── components/          <span class="code-comment">// 通用UI组件</span>
+│   ├── buttons/
+│   ├── cards/
+│   ├── inputs/
+│   ├── modals/
+│   └── navigation/
+├── screens/             <span class="code-comment">// 页面组件</span>
+│   ├── home/
+│   ├── feeding/
+│   ├── growth/
+│   ├── analytics/
+│   └── profile/
+├── theme/               <span class="code-comment">// 主题配置</span>
+│   ├── colors.js
+│   ├── typography.js
+│   ├── spacing.js
+│   └── index.js
+├── utils/               <span class="code-comment">// 工具函数</span>
+│   ├── formatters.js    <span class="code-comment">// 日期、数字格式化</span>
+│   ├── validators.js    <span class="code-comment">// 表单验证</span>
+│   └── constants.js     <span class="code-comment">// 常量定义</span>
+├── services/            <span class="code-comment">// API服务层</span>
+├── hooks/               <span class="code-comment">// 自定义Hooks</span>
+└── assets/              <span class="code-comment">// 静态资源</span>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>9.2 设计一致性检查清单</h3>
+                    
+                    <div class="component-showcase">
+                        <h4 style="margin-bottom: 20px;">开发前自查项目</h4>
+                        
+                        <table class="spec-table">
+                            <thead>
+                                <tr>
+                                    <th>检查类别</th>
+                                    <th>检查项</th>
+                                    <th>符合标准</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="4"><strong>色彩</strong></td>
+                                    <td>是否使用了正确的主题色值？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>文字与背景的对比度是否达标？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>同一页面颜色种类是否 ≤ 5 种？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>语义化颜色使用是否正确（成功=绿，警告=黄，错误=红）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                
+                                <tr>
+                                    <td rowspan="4"><strong>字体</strong></td>
+                                    <td>字号是否符合规范（H1-H3-Body-Caption-Small）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>字重使用是否合理（标题加粗，正文常规）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>行高是否在 1.4-1.6 倍之间？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>中英文混排时是否使用了合适的字体回退？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                
+                                <tr>
+                                    <td rowspan="4"><strong>间距</strong></td>
+                                    <td>是否使用了统一的间距系统（4/8/12/16/24/32/48）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>卡片内边距是否 ≥ 16dp？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>组件之间的间距是否合理且一致？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>页面四周的留白是否充足（≥ 16dp）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                
+                                <tr>
+                                    <td rowspan="4"><strong>组件</strong></td>
+                                    <td>按钮的最小点击区域是否 ≥ 44x44dp？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>卡片圆角是否在 12-16dp 范围内？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>输入框是否有清晰的焦点状态？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>图标尺寸是否与使用场景匹配？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                
+                                <tr>
+                                    <td rowspan="4"><strong>交互</strong></td>
+                                    <td>所有可点击元素是否有按压/悬停反馈？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>页面转场动画是否流畅（200-300ms）？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>加载状态是否有明确的视觉指示？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                                <tr>
+                                    <td>错误提示是否清晰且提供解决建议？</td>
+                                    <td>□ 是 □ 否</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>9.3 无障碍设计（Accessibility）</h3>
+                    
+                    <div class="tip-box">
+                        <strong>♿ 无障碍设计要点</strong>
+                        <ul style="margin-top: 10px;">
+                            <li><strong>色彩无障碍：</strong>不仅依赖颜色传达信息，结合图标、文字、形状</li>
+                            <li><strong>文字可读性：</strong>正文不小于 14sp，行高不低于 1.4</li>
+                            <li><strong>触摸目标：</strong>所有可交互元素的最小尺寸 44x44dp</li>
+                            <li><strong>屏幕阅读器：</strong>为图标按钮添加 aria-label 或 accessibilityLabel</li>
+                            <li><strong>动态文字：</strong>支持 iOS Dynamic Type 和 Android 缩放</li>
+                            <li><strong>颜色对比度：</strong>正常文本 ≥ 4.5:1，大文本（≥18sp）≥ 3:1</li>
+                            <li><strong>焦点管理：</strong>键盘导航时焦点顺序符合逻辑阅读顺序</li>
+                            <li><strong>动效控制：</strong>尊重系统的"减少动效"设置</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="subsection">
+                    <h3>9.4 性能优化建议</h3>
+                    
+                    <div class="card-demo">
+                        <ul>
+                            <li><strong>图片优化：</strong>使用 WebP 格式，按需加载不同分辨率的图片（1x/2x/3x）</li>
+                            <li><strong>列表虚拟化：</strong>长列表使用 VirtualizedList / ListView，只渲染可视区域</li>
+                            <li><strong>懒加载：</strong>非首屏内容延迟加载，图表组件按需初始化</li>
+                            <li><strong>缓存策略：</strong>合理缓存静态资源和接口数据，减少网络请求</li>
+                            <li><strong>包体积：</strong>按需引入组件库，Tree Shaking 未使用的代码</li>
+                            <li><strong>动画性能：</strong>使用 GPU 加速属性（transform, opacity）进行动画</li>
+                            <li><strong>内存管理：</strong>及时释放大图、长列表的资源，避免内存泄漏</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 10: Summary -->
+            <div class="section">
+                <h2 class="section-title">十、总结与最佳实践</h2>
+
+                <div class="success-box">
+                    <strong>🎯 设计核心理念回顾</strong>
+                    <div style="margin-top: 15px; line-height: 2;">
+                        <p><strong>1. 以用户为中心：</strong>一切设计决策都围绕新手父母的使用场景，简化操作流程，降低学习成本。</p>
+                        <p><strong>2. 一致性至上：</strong>统一的色彩、字体、间距、组件风格，打造专业可信的产品形象。</p>
+                        <p><strong>3. 数据可视化：</strong>将复杂的育儿数据转化为直观的图表，帮助家长更好地理解宝宝成长规律。</p>
+                        <p><strong>4. 情感化设计：</strong>通过温暖的色彩、友好的文案、可爱的图标，建立产品与用户的情感连接。</p>
+                        <p><strong>5. 持续迭代：</strong>收集用户反馈，通过 A/B 测试验证设计假设，不断优化用户体验。</p>
+                    </div>
+                </div>
+
+                <div class="warning-box" style="margin-top: 25px;">
+                    <strong>⚠️ 常见设计陷阱</strong>
+                    <ul style="margin-top: 10px;">
+                        <li><strong>过度设计：</strong>避免为了炫技而添加不必要的动画和特效，保持简洁实用</li>
+                        <li><strong>忽视效率：</strong>记住父母可能一手抱娃一手操作App，尽量减少操作步数</li>
+                        <li><strong>信息过载：</strong>首页不是仪表盘，不要堆砌所有功能，突出最重要的信息</li>
+                        <li><strong>忽略离线：</strong>考虑弱网或无网环境下的基本可用性，支持离线记录</li>
+                        <li><strong>忘记测试：</strong>真实用户测试不可或缺，尤其是目标用户群体（新手爸妈）</li>
+                    </ul>
+                </div>
+
+                <div class="card-demo" style="margin-top: 25px;">
+                    <h4 style="color: #4CAF50; margin-bottom: 15px;">📚 相关资源与工具</h4>
+                    <ul>
+                        <li><strong>设计工具：</strong>Figma（协作设计）、Sketch（Mac）、Adobe XD</li>
+                        <li><strong>原型工具：</strong>Framer、Principle、ProtoPie（高保真交互动效）</li>
+                        <li><strong>设计系统：</strong>Material Design 3、Apple Human Interface Guidelines</li>
+                        <li><strong>无障碍检测：</strong>axe DevTools、WAVE、Colour Contrast Analyser</li>
+                        <li><strong>图标资源：</strong>Iconfont、Flaticon、Emoji（Unicode 标准）</li>
+                        <li><strong>配色工具：</strong>Coolors、ColorHunt、Material Palette Generator</li>
+                        <li><strong>字体工具：</strong>Google Fonts、Font Squirrel、TypeScale</li>
+                    </ul>
+                </div>
+
+                <div class="tip-box" style="margin-top: 25px;">
+                    <strong>💡 最后的建议</strong>
+                    <p style="margin-top: 10px; line-height: 1.8;">
+                        这份设计风格参考文档是基于现有截图的分析总结，旨在为开发团队提供一个清晰的视觉标准和实施指南。在实际开发过程中，请务必：
+                    </p>
+                    <ol style="margin-top: 10px; line-height: 1.8;">
+                        <li>与设计师密切沟通，理解每一个设计决策背后的原因</li>
+                        <li>在实现前先搭建 Design Token 系统，确保全局一致性</li>
+                        <li>定期进行 Code Review，检查代码是否符合设计规范</li>
+                        <li>建立组件库（Component Library），复用经过验证的组件</li>
+                        <li>保留设计迭代的空间，根据用户反馈持续优化</li>
+                    </ol>
+                    <p style="margin-top: 15px; font-weight: 600; color: #4CAF50;">
+                        记住：好的设计不仅是美观，更是好用。让我们一起打造一款真正帮助父母的优秀产品！ 🚀
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>ChildNotes 设计风格参考文档</strong></p>
+            <p>版本：1.0.0 | 更新日期：2026年6月24日</p>
+            <p>基于 UI 截图分析生成 | 仅供内部开发参考使用</p>
+            <p style="margin-top: 20px; opacity: 0.6; font-size: 0.9em;">
+                © 2026 ChildNotes Project Team. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
