@@ -10,6 +10,9 @@
     <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <!-- .NET 10 Android SDK 在 Release 下默认启用 RunAOTCompilation，但要求 PublishTrimmed=true。
+         本项目未启用 trimming，故显式关闭 AOT，避免 XA1030 错误。 -->
+    <RunAOTCompilation>false</RunAOTCompilation>
   </PropertyGroup>
 
   <ItemGroup>
