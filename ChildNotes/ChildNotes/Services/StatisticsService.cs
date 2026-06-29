@@ -32,54 +32,26 @@ public sealed class StatisticsService
     public DayStats GetDayStats(DateTime date)
     {
         var records = _recordService.GetByDate(date);
-        var stats = new DayStats();
-
-        foreach (var r in records)
+        var agg = RecordAggregator.Aggregate(records);
+        return new DayStats
         {
-            switch (r.RecordType)
-            {
-                case RecordType.Feed:
-                    stats.FeedCount++;
-                    if (r.RecordSubType == "breast")
-                    {
-                        stats.BreastCount++;
-                        stats.BreastDurationMin += (r.DurationSec ?? 0) / 60;
-                    }
-                    else
-                    {
-                        stats.TotalMilk += r.AmountMl ?? 0;
-                    }
-                    break;
-                case RecordType.Diaper:
-                    stats.DiaperCount++;
-                    if (r.RecordSubType is "dirty" or "both") stats.DirtyDiaperCount++;
-                    if (r.RecordSubType is "wet" or "both") stats.WetDiaperCount++;
-                    break;
-                case RecordType.Sleep:
-                    stats.SleepTotalMin += (r.DurationSec ?? 0) / 60;
-                    break;
-                case RecordType.Supplement:
-                    stats.SupplementCount++;
-                    break;
-                case RecordType.Pump:
-                    stats.PumpCount++;
-                    stats.PumpTotalMl += r.AmountMl ?? 0;
-                    break;
-                case RecordType.Complementary:
-                    stats.ComplementaryCount++;
-                    break;
-                case RecordType.Temperature:
-                    stats.LatestTemperature = r.TemperatureValue;
-                    if (r.AbnormalFlag == true) stats.HasFever = true;
-                    break;
-                case RecordType.Abnormal:
-                    if (r.RecordSubType == "fever") stats.HasFever = true;
-                    else if (r.RecordSubType == "diarrhea") stats.HasDiarrhea = true;
-                    else stats.HasOtherAbnormal = true;
-                    break;
-            }
-        }
-        return stats;
+            FeedCount = agg.FeedCount,
+            TotalMilk = agg.BottleMilkMl,
+            BreastCount = agg.BreastCount,
+            BreastDurationMin = agg.BreastDurationSec / 60,
+            DiaperCount = agg.DiaperCount,
+            DirtyDiaperCount = agg.DirtyDiaperCount,
+            WetDiaperCount = agg.WetDiaperCount,
+            SupplementCount = agg.SupplementCount,
+            SleepTotalMin = agg.SleepDurationSec / 60,
+            PumpCount = agg.PumpCount,
+            PumpTotalMl = agg.PumpTotalMl,
+            ComplementaryCount = agg.ComplementaryCount,
+            HasFever = agg.HasFever,
+            HasDiarrhea = agg.HasDiarrhea,
+            HasOtherAbnormal = agg.HasOtherAbnormal,
+            LatestTemperature = agg.LatestTemperature,
+        };
     }
 
     public string FormatBreastDuration(int minutes)
@@ -115,29 +87,24 @@ public sealed class StatisticsService
 
     private static DayAggregate BuildAggregate(DateTime date, List<ChildRecord> records)
     {
-        var agg = new DayAggregate { Date = date };
-        foreach (var r in records)
+        var a = RecordAggregator.Aggregate(records);
+        return new DayAggregate
         {
-            switch (r.RecordType)
-            {
-                case RecordType.Feed:
-                    agg.FeedCount++;
-                    if (r.RecordSubType == "breast") agg.BreastDurationSec += r.DurationSec ?? 0;
-                    else agg.TotalMilk += r.AmountMl ?? 0;
-                    break;
-                case RecordType.Sleep: agg.SleepDurationSec += r.DurationSec ?? 0; break;
-                case RecordType.Diaper: agg.DiaperCount++; break;
-                case RecordType.Temperature: agg.TemperatureCount++; break;
-                case RecordType.Supplement: agg.SupplementCount++; break;
-                case RecordType.Growth: agg.GrowthCount++; break;
-                case RecordType.Pump: agg.PumpTotalAmount += r.AmountMl ?? 0; break;
-                case RecordType.Complementary: agg.ComplementaryCount++; break;
-                case RecordType.Abnormal: agg.AbnormalCount++; break;
-                case RecordType.Activity: agg.ActivityDurationSec += r.DurationSec ?? 0; break;
-                case RecordType.Vaccine: agg.VaccineCount++; break;
-            }
-        }
-        return agg;
+            Date = date,
+            FeedCount = a.FeedCount,
+            TotalMilk = a.BottleMilkMl,
+            BreastDurationSec = a.BreastDurationSec,
+            SleepDurationSec = a.SleepDurationSec,
+            DiaperCount = a.DiaperCount,
+            TemperatureCount = a.TemperatureCount,
+            SupplementCount = a.SupplementCount,
+            GrowthCount = a.GrowthCount,
+            PumpTotalAmount = a.PumpTotalMl,
+            ComplementaryCount = a.ComplementaryCount,
+            AbnormalCount = a.AbnormalCount,
+            ActivityDurationSec = a.ActivityDurationSec,
+            VaccineCount = a.VaccineCount,
+        };
     }
 
     public static double ExtractValue(DayAggregate day, string typeKey) => typeKey switch

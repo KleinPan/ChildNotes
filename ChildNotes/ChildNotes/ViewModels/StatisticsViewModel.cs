@@ -48,8 +48,6 @@ public partial class StatisticsViewModel : ViewModelBase
 
     public ObservableCollection<ChartBarItem> ChartBars { get; } = new();
 
-    public event Action? BackRequested;
-
     public void Load()
     {
         UpdateSelections();
@@ -138,8 +136,6 @@ public partial class StatisticsViewModel : ViewModelBase
         UpdateSelections();
         Rebuild();
     }
-
-    public void Back() => BackRequested?.Invoke();
 }
 
 public sealed partial class StatTypeOption : ObservableObject

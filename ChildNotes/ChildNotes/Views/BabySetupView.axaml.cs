@@ -1,8 +1,6 @@
 using Avalonia.Controls;
-using Avalonia.Data.Converters;
 using Avalonia.Interactivity;
 using ChildNotes.ViewModels;
-using System.Globalization;
 
 namespace ChildNotes.Views;
 
@@ -12,9 +10,6 @@ public partial class BabySetupView : UserControl
     {
         InitializeComponent();
     }
-
-    public static readonly IValueConverter IsBoyConverter = new EqualsConverter("boy");
-    public static readonly IValueConverter IsGirlConverter = new EqualsConverter("girl");
 
     private void OnBoyTap(object? sender, RoutedEventArgs e)
     {

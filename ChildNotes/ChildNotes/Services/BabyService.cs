@@ -15,12 +15,21 @@ public sealed class BabyService
         _state = state;
     }
 
-    public List<Baby> LoadBabyList()
+    /// <summary>由 ServiceProvider 在构造完成后注入，避免循环依赖。</summary>
+    public SyncTrigger? SyncTrigger { get; set; }
+
+    private void NotifyWrite()
+    {
+        try { SyncTrigger?.NotifyWrite(); } catch { }
+    }
+
+    public IReadOnlyList<Baby> LoadBabyList()
     {
         DevLogger.Log("Baby", $"LoadBabyList start, userId={_state.UserId}");
         try
         {
-            _state.BabyList = _repo.GetByUser(_state.UserId);
+            _state.BabyList.Clear();
+            foreach (var b in _repo.GetByUser(_state.UserId)) _state.BabyList.Add(b);
             DevLogger.Log("Baby", $"LoadBabyList: count={_state.BabyList.Count}");
             if (_state.BabyList.Count > 0)
             {
@@ -52,91 +61,43 @@ public sealed class BabyService
         baby.Id = _repo.Insert(baby);
         _state.BabyList.Add(baby);
         _state.CurrentBaby = baby;
+        NotifyWrite();
         return baby;
     }
 
     public void UpdateBaby(Baby baby)
     {
         _repo.Update(baby);
-        var idx = _state.BabyList.FindIndex(b => b.Id == baby.Id);
+        var idx = IndexOfBaby(baby.Id);
         if (idx >= 0) _state.BabyList[idx] = baby;
         if (_state.CurrentBaby?.Id == baby.Id) _state.CurrentBaby = baby;
+        NotifyWrite();
     }
 
     public void DeleteBaby(long babyId)
     {
         _repo.Delete(babyId);
-        var idx = _state.BabyList.FindIndex(b => b.Id == babyId);
+        var idx = IndexOfBaby(babyId);
         if (idx < 0) return;
         _state.BabyList.RemoveAt(idx);
         if (_state.CurrentBaby?.Id == babyId)
         {
             _state.CurrentBaby = _state.BabyList.Count > 0 ? _state.BabyList[0] : null;
         }
+        NotifyWrite();
+    }
+
+    /// <summary>查找宝宝在 ObservableCollection 中的索引（ObservableCollection 无 FindIndex）。</summary>
+    private int IndexOfBaby(long id)
+    {
+        for (int i = 0; i < _state.BabyList.Count; i++)
+            if (_state.BabyList[i].Id == id) return i;
+        return -1;
     }
 
     public void SwitchBaby(long babyId)
     {
         _state.CurrentBaby = _state.BabyList.FirstOrDefault(b => b.Id == babyId);
-    }
-
-    public List<BabyMember> GetMembers() => _state.CurrentBaby is null
-        ? new()
-        : _repo.GetMembers(_state.CurrentBaby.Id);
-
-    public void AddMember(string roleCode, string roleName, string nickName)
-    {
-        if (_state.CurrentBaby is null) return;
-
-        // 检查当前用户是否已是成员（owner 或其他角色）
-        var existingMembers = _repo.GetMembers(_state.CurrentBaby.Id);
-        var myMembership = existingMembers.FirstOrDefault(m => m.UserId == _state.UserId);
-
-        if (myMembership is not null)
-        {
-            // 当前用户已是成员：如果新角色与当前不同，且不是 owner，则更新角色
-            // owner 不允许通过 AddMember 修改角色
-            if (!myMembership.IsOwner && myMembership.RoleCode != roleCode)
-            {
-                _repo.UpdateMemberRole(myMembership.Id, roleCode, roleName);
-            }
-            return;
-        }
-
-        // 当前用户还不是成员，直接添加
-        var member = new BabyMember
-        {
-            BabyId = _state.CurrentBaby.Id,
-            UserId = _state.UserId,
-            RoleCode = roleCode,
-            RoleName = roleName,
-            IsOwner = false,
-            Status = "active",
-        };
-        _repo.InsertMember(member);
-    }
-
-    public void UpdateMemberRole(long memberId, string roleCode, string roleName)
-    {
-        _repo.UpdateMemberRole(memberId, roleCode, roleName);
-    }
-
-    public void RemoveMember(long memberId)
-    {
-        _repo.DeleteMember(memberId);
-    }
-
-    public void EnsureOwnerMember()
-    {
-        if (_state.CurrentBaby is null) return;
-        // 根据当前用户性别推断角色，避免硬编码 "father"
-        var (roleCode, roleName) = _state.User?.Gender switch
-        {
-            1 => ("father", "爸爸"),
-            2 => ("mother", "妈妈"),
-            _ => ("father", "爸爸"),
-        };
-        _repo.EnsureOwnerMember(_state.CurrentBaby.Id, _state.UserId, roleCode, roleName);
     }
 
     public string GetGrowthStageText()

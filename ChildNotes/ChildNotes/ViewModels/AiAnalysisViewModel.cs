@@ -13,61 +13,49 @@ public partial class AiAnalysisViewModel : ViewModelBase
     private readonly AppState _state = ServiceProvider.Instance.AppState;
 
     [ObservableProperty] private string _babyName = string.Empty;
-    [ObservableProperty] private DateTimeOffset? _startDate;
-    [ObservableProperty] private DateTimeOffset? _endDate;
+    // 使用 DateTime? 而非 DateTimeOffset? —— Avalonia 12 的 CalendarDatePicker.SelectedDate
+    // 实际类型是 DateTime?，使用 DateTimeOffset? 绑定时控件会调用 DateTimeOffset.ToString()
+    // 生成 "2026/6/22 0:00:00 +08:00" 这样的带偏移字符串，再尝试解析为 DateTime 时
+    // 因偏移量导致失败，抛出 "could not convert ... to System.DateTime" 错误。
+    [ObservableProperty] private DateTime? _startDate;
+    [ObservableProperty] private DateTime? _endDate;
     [ObservableProperty] private string _rangeTip = "请选择连续 7 天作为分析区间";
     [ObservableProperty] private bool _rangeValid;
     [ObservableProperty] private bool _canGenerate = true;
     [ObservableProperty] private bool _generating;
     [ObservableProperty] private string _generateButtonText = "生成新的分析";
-    [ObservableProperty] private bool _showConfigSheet;
     [ObservableProperty] private bool _showDetail;
     [ObservableProperty] private string _detailText = string.Empty;
     [ObservableProperty] private string _detailRangeLabel = string.Empty;
     [ObservableProperty] private string _detailCreatedLabel = string.Empty;
     [ObservableProperty] private string _detailQualityTip = string.Empty;
-    [ObservableProperty] private string _toastMessage = string.Empty;
-    [ObservableProperty] private bool _showToast;
-    [ObservableProperty] private string _errorMessage = string.Empty;
-
-    [ObservableProperty] private string _configApiBaseUrl = string.Empty;
-    [ObservableProperty] private string _configApiKey = string.Empty;
-    [ObservableProperty] private string _configModelName = string.Empty;
-    [ObservableProperty] private double _configTemperature = 0.7;
-    [ObservableProperty] private int _configMaxTokens = 2048;
 
     public ObservableCollection<AiAnalysisRecord> Records { get; } = new();
 
-    public event Action? BackRequested;
+    /// <summary>沿用历史 2500ms 显示时长。</summary>
+    protected override int ToastDurationMs => 2500;
+
+    /// <summary>请求跳转到 AI 分析设置页（由 MainShellViewModel 订阅）。</summary>
+    public event Action? ConfigRequired;
 
     public void Load()
     {
         var baby = _state.CurrentBaby;
         BabyName = baby?.Name ?? string.Empty;
 
-        var today = DateTime.Today;
-        StartDate = new DateTimeOffset(today.AddDays(-6));
-        EndDate = new DateTimeOffset(today);
+        // 显式指定 Local Kind，避免 CalendarDatePicker 双向绑定回传时
+        // 丢失 Kind 信息导致后续与 DateTime.Today 做差值运算抛 DateTimeKind 异常
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
+        StartDate = today.AddDays(-6);
+        EndDate = today;
         UpdateRangeTip();
 
         Records.Clear();
         foreach (var r in _aiService.ListRecords()) Records.Add(r);
-
-        LoadConfig();
     }
 
-    private void LoadConfig()
-    {
-        var config = _aiService.GetLlmConfig();
-        ConfigApiBaseUrl = config.ApiBaseUrl;
-        ConfigApiKey = config.ApiKey;
-        ConfigModelName = config.ModelName;
-        ConfigTemperature = config.Temperature;
-        ConfigMaxTokens = config.MaxTokens;
-    }
-
-    partial void OnStartDateChanged(DateTimeOffset? value) => UpdateRangeTip();
-    partial void OnEndDateChanged(DateTimeOffset? value) => UpdateRangeTip();
+    partial void OnStartDateChanged(DateTime? value) => UpdateRangeTip();
+    partial void OnEndDateChanged(DateTime? value) => UpdateRangeTip();
 
     private void UpdateRangeTip()
     {
@@ -114,7 +102,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         if (!config.Enabled || string.IsNullOrWhiteSpace(config.ApiKey))
         {
             ShowToastMessage("请先配置大模型 API Key");
-            ShowConfigSheet = true;
+            ConfigRequired?.Invoke();
             return;
         }
 
@@ -162,43 +150,13 @@ public partial class AiAnalysisViewModel : ViewModelBase
         ShowDetail = false;
     }
 
+    /// <summary>请求跳转到 AI 分析设置页。</summary>
     [RelayCommand]
     private void OpenConfig()
     {
-        LoadConfig();
-        ShowConfigSheet = true;
+        ConfigRequired?.Invoke();
     }
 
-    [RelayCommand]
-    private void CloseConfig()
-    {
-        ShowConfigSheet = false;
-    }
-
-    [RelayCommand]
-    private void SaveConfig()
-    {
-        var config = new LlmConfig
-        {
-            ApiBaseUrl = ConfigApiBaseUrl,
-            ApiKey = ConfigApiKey,
-            ModelName = ConfigModelName,
-            Temperature = ConfigTemperature,
-            MaxTokens = ConfigMaxTokens,
-            Enabled = true,
-        };
-        _aiService.SaveLlmConfig(config);
-        ShowConfigSheet = false;
-        ShowToastMessage("配置已保存");
-    }
-
-    public void Back() => BackRequested?.Invoke();
-
-    private async void ShowToastMessage(string msg)
-    {
-        ToastMessage = msg;
-        ShowToast = true;
-        await Task.Delay(2500);
-        ShowToast = false;
-    }
+    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（沿用 2500ms 时长由 ToastDurationMs 覆写控制）
+    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }

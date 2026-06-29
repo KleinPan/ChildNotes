@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.AiSettingsView"
+             x:DataType="vm:AiSettingsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="AI 分析设置"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 启用开关 -->
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,12,12,4">
+                    <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="启用 AI 分析" FontSize="15"/>
+                            <TextBlock Text="关闭后无法生成新的分析" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
+                    </Grid>
+                </Border>
+
+                <!-- 模型配置 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="大模型配置"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*">
+                            <TextBlock Grid.Column="0" Text="API 地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ConfigApiBaseUrl}" PlaceholderText="https://api.openai.com"
+                                     Background="Transparent" BorderThickness="0"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*">
+                            <TextBlock Grid.Column="0" Text="API Key" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ConfigApiKey}" PlaceholderText="sk-..."
+                                     PasswordChar="•" Background="Transparent" BorderThickness="0"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*">
+                            <TextBlock Grid.Column="0" Text="模型名称" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ConfigModelName}" PlaceholderText="gpt-4o-mini"
+                                     Background="Transparent" BorderThickness="0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- "Ai记"解析服务来源 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="Ai 记 解析服务"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="服务来源" FontSize="14"/>
+                                <TextBlock Text="选择 Ai 记 使用本地大模型还是后端解析服务" FontSize="11"
+                                           Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="14,0,14,12" ColumnDefinitions="*,*">
+                            <RadioButton Grid.Column="0" Content="本地大模型" IsChecked="{Binding UseLocalSource, Mode=TwoWay}"
+                                         IsEnabled="{Binding !IsTesting}"/>
+                            <RadioButton Grid.Column="1" Content="后端服务" IsChecked="{Binding UseServerSource, Mode=TwoWay}"
+                                         IsEnabled="{Binding !IsTesting}"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
+                            <TextBlock Grid.Column="0" Text="后端地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServerUrl}" FontSize="13"
+                                       Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
+                            <TextBlock Grid.Column="0" Text="提示" FontSize="14" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1" Text="后端地址需在同步设置中配置" FontSize="12"
+                                       Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 连接测试 -->
+                <Button Content="{Binding TestButtonText}" Classes="weui-btn default" Margin="12,12"
+                        HorizontalAlignment="Stretch" CornerRadius="24" MinHeight="40"
+                        Command="{Binding TestConnectionCommand}"
+                        IsEnabled="{Binding !IsTesting}"/>
+
+                <Border CornerRadius="8" Padding="10,8" Margin="12,4"
+                        Background="{Binding TestSuccess, Converter={x:Static v:AppConverters.TestResultBackgroundConverter}}"
+                        IsVisible="{Binding TestResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="2">
+                        <TextBlock FontSize="13" FontWeight="Medium"
+                                   Foreground="{Binding TestSuccess, Converter={x:Static v:AppConverters.TestResultForegroundConverter}}"
+                                   Text="{Binding TestSuccess, Converter={x:Static v:AppConverters.TestResultTitleConverter}}"/>
+                        <TextBlock Text="{Binding TestResult}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 生成参数 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="生成参数"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel Margin="14,12">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="温度" FontSize="14"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="0" Maximum="2" Value="{Binding ConfigTemperature}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
+
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="最大 Token 数" FontSize="14"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="512" Maximum="8192" Value="{Binding ConfigMaxTokens}" TickFrequency="256" IsSnapToTickEnabled="True"/>
+                    </StackPanel>
+                </Border>
+
+                <Button Content="保存配置" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                        Command="{Binding SaveCommand}"/>
+
+                <!-- 说明 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="说明"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                    <StackPanel Margin="14,12" Spacing="6">
+                        <TextBlock Text="• 配置 OpenAI 兼容的大模型 API，支持 OpenAI、DeepSeek、通义千问、Moonshot 等" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• API Key 仅保存在本地，不会上传服务器" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 温度越高输出越多样，越低越确定" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 修改配置后需重新生成分析才会生效" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+        </Border>
+    </Grid>
+</UserControl>

@@ -16,17 +16,22 @@
             <Setter Property="Margin" Value="0,0,0,10"/>
             <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000"/>
         </Style>
-        <Style Selector="Border.config-field">
-            <Setter Property="Background" Value="#F7FBF8"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="12,10"/>
-            <Setter Property="Margin" Value="0,0,0,10"/>
-        </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto">
 
-        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <!-- 统一顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="AI 分析"/>
+                <Button Grid.Column="2" Classes="nav-back" Command="{Binding OpenConfigCommand}"
+                        Content="⚙" FontSize="18" Padding="8,4" Background="Transparent" BorderThickness="0"
+                        Foreground="{StaticResource WeuiFg1Brush}"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
                 <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8">
@@ -51,12 +56,14 @@
                                 <Grid ColumnDefinitions="*,Auto,*" Margin="0,0,0,8">
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="开始日期" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
-                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="13"/>
+                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="13"
+                                                            PlaceholderText="选择开始日期"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="至" VerticalAlignment="Bottom" Margin="8,0" Foreground="{StaticResource WeuiFg1Brush}"/>
                                     <StackPanel Grid.Column="2">
                                         <TextBlock Text="结束日期" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,4"/>
-                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="13"/>
+                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="13"
+                                                            PlaceholderText="选择结束日期"/>
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock Text="{Binding RangeTip}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
@@ -128,63 +135,10 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="*,Auto">
-                <Button Grid.Column="0" Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
-                <Button Grid.Column="1" Content="⚙ 配置" Classes="weui-btn default" Margin="8,0,0,0" Command="{Binding OpenConfigCommand}"/>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
             <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
         </Border>
-
-        <Panel Grid.Row="0" IsVisible="{Binding ShowConfigSheet}">
-            <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="8,8,0,0" Padding="24,24,24,30"
-                    VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
-                    <StackPanel>
-                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                            <TextBlock Grid.Column="0" Text="大模型配置" FontSize="18" FontWeight="Bold" Foreground="#222"/>
-                            <TextBlock Grid.Column="1" Text="✕" FontSize="20" Foreground="#BBB" PointerPressed="OnCloseConfig"/>
-                        </Grid>
-                        <TextBlock Text="配置 OpenAI 兼容的大模型 API，支持 OpenAI、DeepSeek、通义千问、Moonshot 等" FontSize="13" Foreground="#666" TextWrapping="Wrap" Margin="0,0,0,16"/>
-
-                        <TextBlock Text="API 地址" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <Border Classes="config-field">
-                            <TextBox Text="{Binding ConfigApiBaseUrl}" PlaceholderText="https://api.openai.com" BorderThickness="0" Background="Transparent"/>
-                        </Border>
-
-                        <TextBlock Text="API Key" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <Border Classes="config-field">
-                            <TextBox Text="{Binding ConfigApiKey}" PlaceholderText="sk-..." BorderThickness="0" Background="Transparent" PasswordChar="*"/>
-                        </Border>
-
-                        <TextBlock Text="模型名称" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                        <Border Classes="config-field">
-                            <TextBox Text="{Binding ConfigModelName}" PlaceholderText="gpt-4o-mini" BorderThickness="0" Background="Transparent"/>
-                        </Border>
-
-                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="温度" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
-                        </Grid>
-                        <Slider Minimum="0" Maximum="2" Value="{Binding ConfigTemperature}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
-
-                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="最大 Token 数" FontSize="14" FontWeight="SemiBold"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
-                        </Grid>
-                        <Slider Minimum="512" Maximum="8192" Value="{Binding ConfigMaxTokens}" TickFrequency="256" IsSnapToTickEnabled="True" Margin="0,0,0,16"/>
-
-                        <Button Content="保存配置" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
-                                Command="{Binding SaveConfigCommand}" HorizontalAlignment="Stretch"/>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-        </Panel>
 
     </Grid>
 </UserControl>

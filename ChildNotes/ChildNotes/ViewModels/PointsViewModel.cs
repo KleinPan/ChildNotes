@@ -17,13 +17,12 @@ public partial class PointsViewModel : ViewModelBase
     [ObservableProperty] private int _continuousDays;
     [ObservableProperty] private bool _signing;
     [ObservableProperty] private string _signButtonText = "立即签到";
-    [ObservableProperty] private string _toastMessage = string.Empty;
-    [ObservableProperty] private bool _showToast;
 
     public ObservableCollection<SignInTimelineItem> Timeline { get; } = new();
     public ObservableCollection<TaskDisplayItem> Tasks { get; } = new();
 
-    public event Action? BackRequested;
+    /// <summary>沿用历史 2000ms 显示时长。</summary>
+    protected override int ToastDurationMs => 2000;
 
     public void Load()
     {
@@ -66,15 +65,8 @@ public partial class PointsViewModel : ViewModelBase
         Signing = false;
     }
 
-    private async void ShowToastMessage(string msg)
-    {
-        ToastMessage = msg;
-        ShowToast = true;
-        await Task.Delay(2000);
-        ShowToast = false;
-    }
-
-    public void Back() => BackRequested?.Invoke();
+    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（2000ms 时长由 ToastDurationMs 覆写控制）
+    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }
 
 public sealed class TaskDisplayItem

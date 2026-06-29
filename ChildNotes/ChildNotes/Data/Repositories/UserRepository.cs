@@ -4,73 +4,53 @@ using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
 
-public sealed class UserRepository
+public sealed class UserRepository : BaseRepository
 {
-    private readonly DbConnectionFactory _factory;
+    public UserRepository(DbConnectionFactory factory) : base(factory) { }
 
-    public UserRepository(DbConnectionFactory factory) => _factory = factory;
+    private const string SelectBase =
+        "SELECT id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at FROM app_user";
 
     public AppUser? FindByUsername(string username)
     {
         DevLogger.Log("UserRepo", $"FindByUsername: '{username}'");
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at FROM app_user WHERE username = @u";
-        cmd.Parameters.AddWithValue("@u", username);
-        using var r = cmd.ExecuteReader();
-        if (!r.Read())
-        {
-            DevLogger.Log("UserRepo", "FindByUsername: not found");
-            return null;
-        }
-        var user = MapUser(r);
-        DevLogger.Log("UserRepo", $"FindByUsername: found id={user.Id}");
+        var user = QueryFirstOrDefault(SelectBase + " WHERE username = @u",
+            cmd => cmd.Add("@u", username), Map);
+        DevLogger.Log("UserRepo", user is null ? "FindByUsername: not found" : $"FindByUsername: found id={user.Id}");
         return user;
     }
 
     public AppUser? FindById(long id)
-    {
-        DevLogger.Log("UserRepo", $"FindById: {id}");
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at FROM app_user WHERE id = @i";
-        cmd.Parameters.AddWithValue("@i", id);
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? MapUser(r) : null;
-    }
+        => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
     public long Insert(AppUser user)
     {
         DevLogger.Log("UserRepo", $"Insert: username={user.Username}");
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO app_user (username, password_hash, nick_name, avatar_url, gender, created_at, updated_at)
-            VALUES (@u, @p, @n, @a, @g, @c, @c); SELECT last_insert_rowid();";
-        cmd.Parameters.AddWithValue("@u", user.Username);
-        cmd.Parameters.AddWithValue("@p", user.PasswordHash);
-        cmd.Parameters.AddWithValue("@n", user.NickName);
-        cmd.Parameters.AddWithValue("@a", user.AvatarUrl);
-        cmd.Parameters.AddWithValue("@g", user.Gender);
-        cmd.Parameters.AddWithValue("@c", DateTime.UtcNow.ToString("O"));
-        var id = (long)cmd.ExecuteScalar()!;
+        var id = (long)ExecuteScalar(
+            @"INSERT INTO app_user (username, password_hash, nick_name, avatar_url, gender, created_at, updated_at)
+              VALUES (@u, @p, @n, @a, @g, @c, @c); SELECT last_insert_rowid();",
+            cmd => cmd
+                .Add("@u", user.Username)
+                .Add("@p", user.PasswordHash)
+                .Add("@n", user.NickName)
+                .Add("@a", user.AvatarUrl)
+                .Add("@g", user.Gender)
+                .AddUtc("@c", DateTime.UtcNow))!;
         DevLogger.Log("UserRepo", $"Insert done: id={id}");
         return id;
     }
 
     public void UpdateProfile(AppUser user)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE app_user SET nick_name=@n, avatar_url=@a, gender=@g, updated_at=@t WHERE id=@i";
-        cmd.Parameters.AddWithValue("@n", user.NickName);
-        cmd.Parameters.AddWithValue("@a", user.AvatarUrl);
-        cmd.Parameters.AddWithValue("@g", user.Gender);
-        cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("O"));
-        cmd.Parameters.AddWithValue("@i", user.Id);
-        cmd.ExecuteNonQuery();
-    }
+        => ExecuteNonQuery(
+            "UPDATE app_user SET nick_name=@n, avatar_url=@a, gender=@g, updated_at=@t WHERE id=@i",
+            cmd => cmd
+                .Add("@n", user.NickName)
+                .Add("@a", user.AvatarUrl)
+                .Add("@g", user.Gender)
+                .AddUtc("@t", DateTime.UtcNow)
+                .Add("@i", user.Id));
 
-    private static AppUser MapUser(SqliteDataReader r) => new()
+    private static AppUser Map(SqliteDataReader r) => new()
     {
         Id = r.GetInt64(0),
         Username = r.GetString(1),

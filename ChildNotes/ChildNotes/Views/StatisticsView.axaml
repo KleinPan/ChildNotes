@@ -27,21 +27,31 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto">
-        <Border Grid.Row="0" Background="{StaticResource WeuiBg2Brush}" Padding="16,16,16,12">
-            <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="统计分析" FontSize="18" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
-                </StackPanel>
-                <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CurrentTypeLabel}"/>
-                </Border>
+    <Grid RowDefinitions="Auto,*">
+        <!-- 统一顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="统计分析"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
 
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
+
+                <!-- 原 Row=0 自定义顶栏内容：RangeLabel + TypeChip，作为内容区筛选条 -->
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="统计分析" FontSize="15" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding CurrentTypeLabel}"/>
+                        </Border>
+                    </Grid>
+                </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
                     <ItemsControl ItemsSource="{Binding TypeOptions}">
@@ -125,9 +135,5 @@
 
             </StackPanel>
         </ScrollViewer>
-
-        <Border Grid.Row="2" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
-            <Button Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
-        </Border>
     </Grid>
 </UserControl>

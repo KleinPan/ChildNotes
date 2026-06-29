@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.AiNoteView"
+             x:DataType="vm:AiNoteViewModel"
+             Background="Transparent">
+
+    <UserControl.Styles>
+        <Style Selector="TextBox.ai-input">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="MinHeight" Value="120"/>
+            <Setter Property="AcceptsReturn" Value="True"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel>
+        <!-- 模态遮罩 -->
+        <Border Classes="modal-mask"/>
+
+        <!-- 居中卡片 -->
+        <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="16" Padding="20,18"
+                MaxWidth="340" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <StackPanel Spacing="12">
+
+                <!-- 标题栏 -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="2">
+                        <TextBlock Text="🤖 Ai 记" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Text="用一句话记录，AI 帮你自动分类保存" FontSize="12"
+                                   Foreground="{StaticResource WeuiFg1Brush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" FontSize="16" Padding="8,2"
+                            Background="Transparent" BorderThickness="0"
+                            Command="{Binding CancelCommand}"/>
+                </Grid>
+
+                <!-- 输入框 -->
+                <TextBox Classes="ai-input"
+                         Text="{Binding InputText}"
+                         PlaceholderText="{Binding Placeholder}"/>
+
+                <!-- 示例提示 -->
+                <StackPanel Spacing="2" IsVisible="{Binding !ShowResult}">
+                    <TextBlock Text="示例：" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                    <TextBlock Text="• 14点30分喝了120ml奶" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                    <TextBlock Text="• 换尿布 嘘嘘" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                    <TextBlock Text="• 亲喂 左10分 右15分" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                    <TextBlock Text="• 体温37.5度" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                </StackPanel>
+
+                <!-- 错误提示 -->
+                <Border Background="#FFF0F0" CornerRadius="8" Padding="10,8"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="{StaticResource WeuiRedBrush}" TextWrapping="Wrap"/>
+                </Border>
+
+                <!-- 解析结果反馈 -->
+                <Border Background="#E8F9EF" CornerRadius="8" Padding="10,8"
+                        IsVisible="{Binding ShowResult}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="✅ 已保存" FontSize="13" FontWeight="Medium" Foreground="#06AD56"/>
+                        <TextBlock Text="{Binding ResultSummary}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 按钮区 -->
+                <Grid ColumnDefinitions="*,10,*" Margin="0,4,0,0">
+                    <Button Grid.Column="0" Content="取消" Classes="weui-btn default"
+                            CornerRadius="24" MinHeight="40"
+                            Command="{Binding CancelCommand}"/>
+                    <Button Grid.Column="2" Content="{Binding ParseButtonText}" Classes="weui-btn primary"
+                            CornerRadius="24" MinHeight="40"
+                            Command="{Binding SaveCommand}"
+                            IsEnabled="{Binding !IsParsing}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Toast 浮层 -->
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="8" Padding="20,10"
+                IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+        </Border>
+    </Panel>
+</UserControl>

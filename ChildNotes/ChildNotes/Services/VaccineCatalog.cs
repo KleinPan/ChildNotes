@@ -1,3 +1,4 @@
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Models.Dtos;
 
@@ -348,7 +349,7 @@ public static class VaccineTimelineBuilder
                 if (birthDate.HasValue && d.DueDays.HasValue)
                 {
                     plan.RecommendedDate = birthDate.Value.AddDays(d.DueDays.Value).Date;
-                    plan.RecommendedDateText = plan.RecommendedDate.Value.ToString("yyyy-MM-dd");
+                    plan.RecommendedDateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(plan.RecommendedDate.Value);
                 }
                 plans.Add(plan);
             }
@@ -371,7 +372,7 @@ public static class VaccineTimelineBuilder
             if (birthDate.HasValue && cv.DueDays.HasValue)
             {
                 plan.RecommendedDate = birthDate.Value.AddDays(cv.DueDays.Value).Date;
-                plan.RecommendedDateText = plan.RecommendedDate.Value.ToString("yyyy-MM-dd");
+                plan.RecommendedDateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(plan.RecommendedDate.Value);
             }
             plans.Add(plan);
         }
@@ -531,7 +532,7 @@ public static class VaccineTimelineBuilder
 
     private static string? FormatRecordTime(ChildRecord rec, DateTime? birthDate)
     {
-        if (rec.RecordTime != default) return rec.RecordTime.ToString("yyyy-MM-dd HH:mm");
+        if (rec.RecordTime != default) return ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(rec.RecordTime);
         return null;
     }
 

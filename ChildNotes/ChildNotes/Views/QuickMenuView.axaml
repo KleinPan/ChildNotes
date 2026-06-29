@@ -49,7 +49,7 @@
 
     <Panel>
         <!-- 遮罩层：仅在菜单或卡片打开时拦截事件 -->
-        <Border Background="#80000000"
+        <Border Classes="modal-mask"
                 IsVisible="{Binding IsMenuOpen}"
                 PointerPressed="OnMaskPressed"/>
 
@@ -76,15 +76,23 @@
             </ItemsControl>
         </StackPanel>
 
-        <!-- 居中卡片表单 -->
-        <v:QuickRecordCardView IsVisible="{Binding IsCardOpen}"/>
+        <!-- 居中卡片表单（已移除）：原 QuickRecordCardView 已合并到 RecordSheetView 底部抽屉，
+             由 MainShellViewModel.OpenQuickRecord 统一打开，避免双份表单 XAML 维护。 -->
 
-        <!-- 悬浮 + 按钮（仅首页可见，最顶层）：用 Border 承载阴影，Button 透明覆盖 -->
+        <!-- 悬浮 + 按钮（仅首页可见，最顶层）：用 Border 承载阴影，Button 透明覆盖。
+             FAB 显隐通过 Opacity 平滑过渡（200ms 淡入/淡出），IsHitTestVisible 同步切换防误触。
+             不用 IsVisible=false 是因为它会立即 collapse 控件，无法看到过渡动画。 -->
         <Border Classes="fab-main"
-                IsVisible="{Binding IsFabVisible}"
+                Opacity="{Binding IsFabVisible, Converter={x:Static v:QuickMenuView.FabOpacityConverter}}"
+                IsHitTestVisible="{Binding IsFabVisible}"
                 HorizontalAlignment="Right"
                 VerticalAlignment="Bottom"
                 Margin="0,0,16,72">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
+                </Transitions>
+            </Border.Transitions>
             <Button Background="Transparent" BorderThickness="0" Padding="0"
                     CornerRadius="28"
                     Command="{Binding ToggleMenuCommand}"

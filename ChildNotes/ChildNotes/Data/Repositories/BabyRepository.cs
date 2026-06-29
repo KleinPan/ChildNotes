@@ -3,85 +3,115 @@ using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
 
-public sealed class BabyRepository
+public sealed class BabyRepository : BaseRepository
 {
-    private readonly DbConnectionFactory _factory;
+    public BabyRepository(DbConnectionFactory factory) : base(factory) { }
 
-    public BabyRepository(DbConnectionFactory factory) => _factory = factory;
+    private const string SelectBase =
+        "SELECT id, user_id, name, avatar, gender, birth_date, created_at, updated_at, " +
+        "device_id, synced_at FROM baby";
 
     public List<Baby> GetByUser(long userId)
-    {
-        var list = new List<Baby>();
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, user_id, name, avatar, gender, birth_date, created_at, updated_at FROM baby WHERE user_id = @u ORDER BY id";
-        cmd.Parameters.AddWithValue("@u", userId);
-        using var r = cmd.ExecuteReader();
-        while (r.Read()) list.Add(MapBaby(r));
-        return list;
-    }
+        => Query(SelectBase + " WHERE user_id = @u ORDER BY id",
+            cmd => cmd.Add("@u", userId), Map);
 
     public Baby? FindById(long id)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, user_id, name, avatar, gender, birth_date, created_at, updated_at FROM baby WHERE id = @i";
-        cmd.Parameters.AddWithValue("@i", id);
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? MapBaby(r) : null;
-    }
+        => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
     public long Insert(Baby baby)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO baby (user_id, name, avatar, gender, birth_date, created_at, updated_at)
-            VALUES (@u, @n, @a, @g, @b, @c, @c); SELECT last_insert_rowid();";
-        cmd.Parameters.AddWithValue("@u", baby.UserId);
-        cmd.Parameters.AddWithValue("@n", baby.Name);
-        cmd.Parameters.AddWithValue("@a", (object?)baby.Avatar ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@g", (object?)baby.Gender ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@b", (object?)(baby.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@c", DateTime.UtcNow.ToString("O"));
-        return (long)cmd.ExecuteScalar()!;
-    }
+        => (long)ExecuteScalar(
+            @"INSERT INTO baby (user_id, name, avatar, gender, birth_date, created_at, updated_at)
+              VALUES (@u, @n, @a, @g, @b, @c, @c); SELECT last_insert_rowid();",
+            cmd => cmd
+                .Add("@u", baby.UserId)
+                .Add("@n", baby.Name)
+                .Add("@a", (object?)baby.Avatar ?? DBNull.Value)
+                .Add("@g", (object?)baby.Gender ?? DBNull.Value)
+                .Add("@b", (object?)(baby.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
+                .AddUtc("@c", DateTime.UtcNow))!;
 
     public void Update(Baby baby)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE baby SET name=@n, avatar=@a, gender=@g, birth_date=@b, updated_at=@t WHERE id=@i";
-        cmd.Parameters.AddWithValue("@n", baby.Name);
-        cmd.Parameters.AddWithValue("@a", (object?)baby.Avatar ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@g", (object?)baby.Gender ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@b", (object?)(baby.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("O"));
-        cmd.Parameters.AddWithValue("@i", baby.Id);
-        cmd.ExecuteNonQuery();
-    }
+        => ExecuteNonQuery(
+            "UPDATE baby SET name=@n, avatar=@a, gender=@g, birth_date=@b, updated_at=@t WHERE id=@i",
+            cmd => cmd
+                .Add("@n", baby.Name)
+                .Add("@a", (object?)baby.Avatar ?? DBNull.Value)
+                .Add("@g", (object?)baby.Gender ?? DBNull.Value)
+                .Add("@b", (object?)(baby.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
+                .AddUtc("@t", DateTime.UtcNow)
+                .Add("@i", baby.Id));
 
     public void Delete(long id)
+        => ExecuteNonQuery("DELETE FROM baby WHERE id=@i", cmd => cmd.Add("@i", id));
+
+    /// <summary>获取本地指定更新时间之后的所有宝宝（含已软删，用于增量上送）。</summary>
+    public List<Baby> GetByUpdatedAt(DateTime since)
+        => Query(SelectBase + " WHERE updated_at > @s ORDER BY updated_at",
+            cmd => cmd.AddUtc("@s", since), Map);
+
+    /// <summary>以 LWW（updated_at 比较）合并远端下发的 baby。返回是否实际写入。</summary>
+    public bool UpsertFromSync(Baby item)
     {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM baby WHERE id=@i";
-        cmd.Parameters.AddWithValue("@i", id);
-        cmd.ExecuteNonQuery();
+        // 需要先查后写，无法走通用 ExecuteNonQuery/Query 路径
+        using var conn = OpenConnection();
+        using var check = conn.CreateCommand();
+        check.CommandText = "SELECT updated_at FROM baby WHERE id=@i";
+        check.Add("@i", item.Id);
+        var existing = check.ExecuteScalar() as string;
+        if (existing is not null)
+        {
+            var existingAt = DateTimeExtensions.ParseDb(existing);
+            if (item.UpdatedAt <= existingAt) return false; // 本地较新，跳过
+            using var upd = conn.CreateCommand();
+            upd.CommandText = "UPDATE baby SET user_id=@u, name=@n, avatar=@a, gender=@g, birth_date=@b, updated_at=@t WHERE id=@i";
+            upd.Add("@u", item.UserId)
+               .Add("@n", item.Name)
+               .Add("@a", (object?)item.Avatar ?? DBNull.Value)
+               .Add("@g", (object?)item.Gender ?? DBNull.Value)
+               .Add("@b", (object?)(item.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
+               .AddUtc("@t", item.UpdatedAt)
+               .Add("@i", item.Id);
+            upd.ExecuteNonQuery();
+            return true;
+        }
+        using var ins = conn.CreateCommand();
+        ins.CommandText = @"INSERT INTO baby (id, user_id, name, avatar, gender, birth_date, created_at, updated_at)
+            VALUES (@i, @u, @n, @a, @g, @b, @c, @t)";
+        ins.Add("@i", item.Id)
+           .Add("@u", item.UserId)
+           .Add("@n", item.Name)
+           .Add("@a", (object?)item.Avatar ?? DBNull.Value)
+           .Add("@g", (object?)item.Gender ?? DBNull.Value)
+           .Add("@b", (object?)(item.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
+           .AddUtc("@c", item.CreatedAt)
+           .AddUtc("@t", item.UpdatedAt);
+        ins.ExecuteNonQuery();
+        return true;
     }
 
-    public List<BabyMember> GetMembers(long babyId)
+    /// <summary>
+    /// 批量标记宝宝为"已上送"（更新 synced_at）。Push 成功后调用，防止崩溃导致重推。
+    /// </summary>
+    public void MarkSynced(IEnumerable<long> ids, DateTime syncedAt)
     {
-        var list = new List<BabyMember>();
-        using var conn = _factory.Create();
+        var idList = ids.ToList();
+        if (idList.Count == 0) return;
+        using var conn = OpenConnection();
+        using var tx = conn.BeginTransaction();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, baby_id, user_id, role_code, role_name, is_owner, status, created_at, updated_at FROM baby_member WHERE baby_id = @b AND status='active' ORDER BY is_owner DESC, id";
-        cmd.Parameters.AddWithValue("@b", babyId);
-        using var r = cmd.ExecuteReader();
-        while (r.Read()) list.Add(MapMember(r));
-        return list;
+        cmd.Transaction = tx;
+        cmd.CommandText = "UPDATE baby SET synced_at=@t WHERE id=@id";
+        cmd.AddUtc("@t", syncedAt);
+        var idParam = cmd.Parameters.AddWithValue("@id", (long)0);
+        foreach (var id in idList)
+        {
+            idParam.Value = id;
+            cmd.ExecuteNonQuery();
+        }
+        tx.Commit();
     }
 
-    private static Baby MapBaby(SqliteDataReader r) => new()
+    private static Baby Map(SqliteDataReader r) => new()
     {
         Id = r.GetInt64(0),
         UserId = r.GetInt64(1),
@@ -91,78 +121,7 @@ public sealed class BabyRepository
         BirthDate = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
         CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
         UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
-    };
-
-    public void InsertMember(BabyMember member)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO baby_member (baby_id, user_id, role_code, role_name, is_owner, status, created_at, updated_at)
-            VALUES (@b, @u, @rc, @rn, @o, @s, @c, @c); SELECT last_insert_rowid();";
-        cmd.Parameters.AddWithValue("@b", member.BabyId);
-        cmd.Parameters.AddWithValue("@u", member.UserId);
-        cmd.Parameters.AddWithValue("@rc", member.RoleCode);
-        cmd.Parameters.AddWithValue("@rn", member.RoleName);
-        cmd.Parameters.AddWithValue("@o", member.IsOwner ? 1 : 0);
-        cmd.Parameters.AddWithValue("@s", member.Status);
-        cmd.Parameters.AddWithValue("@c", DateTime.UtcNow.ToString("O"));
-        member.Id = (long)cmd.ExecuteScalar()!;
-    }
-
-    public void UpdateMemberRole(long memberId, string roleCode, string roleName)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE baby_member SET role_code=@rc, role_name=@rn, updated_at=@t WHERE id=@i";
-        cmd.Parameters.AddWithValue("@rc", roleCode);
-        cmd.Parameters.AddWithValue("@rn", roleName);
-        cmd.Parameters.AddWithValue("@t", DateTime.UtcNow.ToString("O"));
-        cmd.Parameters.AddWithValue("@i", memberId);
-        cmd.ExecuteNonQuery();
-    }
-
-    public void DeleteMember(long memberId)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM baby_member WHERE id=@i";
-        cmd.Parameters.AddWithValue("@i", memberId);
-        cmd.ExecuteNonQuery();
-    }
-
-    public void EnsureOwnerMember(long babyId, long userId, string roleCode = "father", string roleName = "爸爸")
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM baby_member WHERE baby_id=@b AND user_id=@u";
-        cmd.Parameters.AddWithValue("@b", babyId);
-        cmd.Parameters.AddWithValue("@u", userId);
-        var count = (long)cmd.ExecuteScalar()!;
-        if (count == 0)
-        {
-            var owner = new BabyMember
-            {
-                BabyId = babyId,
-                UserId = userId,
-                RoleCode = roleCode,
-                RoleName = roleName,
-                IsOwner = true,
-                Status = "active",
-            };
-            InsertMember(owner);
-        }
-    }
-
-    private static BabyMember MapMember(SqliteDataReader r) => new()
-    {
-        Id = r.GetInt64(0),
-        BabyId = r.GetInt64(1),
-        UserId = r.GetInt64(2),
-        RoleCode = r.GetString(3),
-        RoleName = r.GetString(4),
-        IsOwner = r.GetInt32(5) == 1,
-        Status = r.GetString(6),
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
+        DeviceId = r.IsDBNull(8) ? null : r.GetString(8),
+        SyncedAt = r.IsDBNull(9) ? null : DateTimeExtensions.ParseDb(r.GetString(9)),
     };
 }

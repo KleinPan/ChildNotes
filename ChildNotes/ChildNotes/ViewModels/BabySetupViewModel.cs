@@ -14,7 +14,6 @@ public partial class BabySetupViewModel : ViewModelBase
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private DateTime? _birthDate;
     [ObservableProperty] private bool _saving;
-    [ObservableProperty] private string _errorMessage = string.Empty;
 
     public event Action? Completed;
 
@@ -47,7 +46,9 @@ public partial class BabySetupViewModel : ViewModelBase
         Saving = true;
         try
         {
-            _babyService.AddBaby(Name.Trim(), Gender, BirthDate.Value.Date);
+            // 统一转 Local Kind，避免 CalendarDatePicker 回传 Unspecified Kind
+            // 在后续与 DateTime.Today 比较时抛 DateTimeKind 异常
+            _babyService.AddBaby(Name.Trim(), Gender, DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local));
             Completed?.Invoke();
         }
         finally

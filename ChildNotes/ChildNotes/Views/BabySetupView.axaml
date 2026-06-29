@@ -35,10 +35,10 @@
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
                         <TextBlock Text="性别" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
                         <Button Content="👦 男宝" Classes="gender-btn"
-                                Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsBoyConverter}}"
+                                Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                 Click="OnBoyTap"/>
                         <Button Content="👧 女宝" Classes="gender-btn" Margin="10,0,0,0"
-                                Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsGirlConverter}}"
+                                Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsGirl}}"
                                 Click="OnGirlTap"/>
                     </StackPanel>
 

@@ -45,14 +45,20 @@
         <ContentControl Grid.Row="0" Content="{Binding Points}" IsTabStop="False"
                         IsVisible="{Binding IsPointsOpen}"/>
 
-        <ContentControl Grid.Row="0" Content="{Binding Family}" IsTabStop="False"
-                        IsVisible="{Binding IsFamilyOpen}"/>
-
         <ContentControl Grid.Row="0" Content="{Binding AiAnalysis}" IsTabStop="False"
                         IsVisible="{Binding IsAiAnalysisOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding AiSettings}" IsTabStop="False"
+                        IsVisible="{Binding IsAiSettingsOpen}"/>
+
         <ContentControl Grid.Row="0" Content="{Binding SyncSettings}" IsTabStop="False"
                         IsVisible="{Binding IsSyncSettingsOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding Family}" IsTabStop="False"
+                        IsVisible="{Binding IsFamilyOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding AiNote}" IsTabStop="False"
+                        IsVisible="{Binding IsAiNoteOpen}"/>
 
         <!-- 快捷记录：右下角悬浮 + 按钮 + 扇形菜单 + 居中卡片表单（跨行覆盖，+ 按钮始终可见） -->
         <ContentControl Grid.RowSpan="2" Content="{Binding QuickMenu}" IsTabStop="False"/>

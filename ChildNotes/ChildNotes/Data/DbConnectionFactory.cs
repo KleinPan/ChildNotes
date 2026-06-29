@@ -35,4 +35,22 @@ public sealed class DbConnectionFactory
         pragma.ExecuteNonQuery();
         return conn;
     }
+
+    /// <summary>
+    /// 使用 VACUUM INTO 将当前数据库快照备份到指定路径。
+    /// VACUUM INTO 是 SQLite 3.27+ 的特性，生成一个干净的、独立的备份文件，
+    /// 不影响原数据库读写，适合在同步前做防极端损坏的快照。
+    /// </summary>
+    /// <param name="backupPath">备份文件路径。若已存在会被覆盖。</param>
+    public void BackupTo(string backupPath)
+    {
+        // VACUUM INTO 不支持参数化路径，但路径来自代码内部常量，无注入风险
+        using var conn = Create();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"VACUUM INTO '{backupPath.Replace("'", "''")}';";
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>数据库文件路径（供备份路径推导等使用）。</summary>
+    public string DbPath => _dbPath;
 }

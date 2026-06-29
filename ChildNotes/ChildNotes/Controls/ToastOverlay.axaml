@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:ChildNotes.Controls"
+             x:Class="ChildNotes.Controls.ToastOverlay"
+             x:DataType="controls:ToastOverlay"
+             IsHitTestVisible="False"
+             Background="Transparent">
+    <!-- 底部居中的 Toast 浮层，替代各 View 中重复的 Border+TextBlock Toast 模板 -->
+    <Border VerticalAlignment="Bottom"
+            HorizontalAlignment="Center"
+            Margin="0,0,0,80"
+            Background="#CC000000"
+            CornerRadius="8"
+            Padding="20,10"
+            IsVisible="{Binding ShowToast, RelativeSource={RelativeSource AncestorType=controls:ToastOverlay}}">
+        <TextBlock Text="{Binding ToastMessage, RelativeSource={RelativeSource AncestorType=controls:ToastOverlay}}"
+                   Foreground="White"
+                   FontSize="13"/>
+    </Border>
+</UserControl>

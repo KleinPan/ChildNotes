@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -22,10 +21,5 @@ public partial class StatisticsView : UserControl
     {
         if (sender is Border b && b.DataContext is StatRangeOption opt && DataContext is StatisticsViewModel vm)
             vm.SelectRangeCommand.Execute(opt.Key);
-    }
-
-    private void OnBack(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is StatisticsViewModel vm) vm.Back();
     }
 }

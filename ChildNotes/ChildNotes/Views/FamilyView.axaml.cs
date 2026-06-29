@@ -1,7 +1,6 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
-using ChildNotes.Models;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -13,83 +12,26 @@ public partial class FamilyView : UserControl
         InitializeComponent();
     }
 
-    private void OnBack(object? sender, RoutedEventArgs e)
+    private void OnJoinTap(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FamilyViewModel vm) vm.Back();
+        if (DataContext is FamilyViewModel vm) vm.OpenJoin();
     }
 
-    private void OnCloseAddSheet(object? sender, PointerPressedEventArgs e)
+    private void OnEditRoleTap(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FamilyViewModel vm) vm.ShowAddSheet = false;
+        if (sender is Control { Tag: BabyFamilyItem fam } && DataContext is FamilyViewModel vm)
+            vm.OpenRoleEditor(fam);
     }
 
-    private void OnSelectNewRole(object? sender, PointerPressedEventArgs e)
+    private void OnSelectJoinRoleTap(object? sender, RoutedEventArgs e)
     {
-        if (sender is Border border && border.DataContext is RoleOption role && DataContext is FamilyViewModel vm)
-        {
-            vm.SelectNewRole(role);
-            RefreshRoleSelection(AddRoleList, vm.SelectedRoleCode);
-        }
+        if (sender is Control { Tag: string code } && DataContext is FamilyViewModel vm)
+            vm.SelectJoinRole(code);
     }
 
-    private void OnCloseRoleSheet(object? sender, PointerPressedEventArgs e)
+    private void OnSelectEditingRoleTap(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is FamilyViewModel vm) vm.ShowRoleSheet = false;
-    }
-
-    private void OnSelectEditingRole(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is Border border && border.DataContext is RoleOption role && DataContext is FamilyViewModel vm)
-        {
-            vm.SelectEditingRole(role);
-            RefreshRoleSelection(EditRoleList, vm.EditingRoleCode);
-        }
-    }
-
-    private void OnEditRoleTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is long memberId && DataContext is FamilyViewModel vm)
-        {
-            var item = FindMember(vm, memberId);
-            if (item is not null)
-            {
-                vm.OpenRoleSheet(item);
-                RefreshRoleSelection(EditRoleList, vm.EditingRoleCode);
-            }
-        }
-    }
-
-    private void OnRemoveTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (sender is Button btn && btn.Tag is long memberId && DataContext is FamilyViewModel vm)
-        {
-            var item = FindMember(vm, memberId);
-            if (item is not null) vm.OpenRemoveConfirm(item);
-        }
-    }
-
-    private static FamilyMemberItem? FindMember(FamilyViewModel vm, long memberId)
-    {
-        foreach (var m in vm.Members)
-        {
-            if (m.MemberId == memberId) return m;
-        }
-        return null;
-    }
-
-    private static void RefreshRoleSelection(ItemsControl list, string selectedCode)
-    {
-        foreach (var item in list.Items)
-        {
-            if (item is RoleOption role)
-            {
-                var container = list.ContainerFromItem(role);
-                if (container is ContentControl cc && cc.Content is Border border)
-                {
-                    if (role.Code == selectedCode) border.Classes.Add("selected");
-                    else border.Classes.Remove("selected");
-                }
-            }
-        }
+        if (sender is Control { Tag: string code } && DataContext is FamilyViewModel vm)
+            vm.SelectEditingRole(code);
     }
 }

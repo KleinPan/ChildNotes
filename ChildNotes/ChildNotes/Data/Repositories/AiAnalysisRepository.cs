@@ -3,78 +3,49 @@ using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
 
-public sealed class AiAnalysisRepository
+public sealed class AiAnalysisRepository : BaseRepository
 {
-    private readonly DbConnectionFactory _factory;
+    public AiAnalysisRepository(DbConnectionFactory factory) : base(factory) { }
 
-    public AiAnalysisRepository(DbConnectionFactory factory) => _factory = factory;
+    private const string SelectBase =
+        "SELECT id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at FROM ai_analysis_record";
 
     public List<AiAnalysisRecord> GetByBaby(long babyId)
-    {
-        var list = new List<AiAnalysisRecord>();
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at FROM ai_analysis_record WHERE baby_id = @b ORDER BY created_at DESC";
-        cmd.Parameters.AddWithValue("@b", babyId);
-        using var r = cmd.ExecuteReader();
-        while (r.Read()) list.Add(Map(r));
-        return list;
-    }
+        => Query(SelectBase + " WHERE baby_id = @b ORDER BY created_at DESC",
+            cmd => cmd.Add("@b", babyId), Map);
 
     public AiAnalysisRecord? FindByRange(long babyId, DateTime start, DateTime end)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at FROM ai_analysis_record WHERE baby_id = @b AND range_start_date = @s AND range_end_date = @e ORDER BY created_at DESC LIMIT 1";
-        cmd.Parameters.AddWithValue("@b", babyId);
-        cmd.Parameters.AddWithValue("@s", start.ToString("yyyy-MM-dd"));
-        cmd.Parameters.AddWithValue("@e", end.ToString("yyyy-MM-dd"));
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? Map(r) : null;
-    }
+        => QueryFirstOrDefault(
+            SelectBase + " WHERE baby_id = @b AND range_start_date = @s AND range_end_date = @e ORDER BY created_at DESC LIMIT 1",
+            cmd => cmd.Add("@b", babyId).AddDate("@s", start).AddDate("@e", end),
+            Map);
 
     public AiAnalysisRecord? FindById(long id)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at FROM ai_analysis_record WHERE id = @i";
-        cmd.Parameters.AddWithValue("@i", id);
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? Map(r) : null;
-    }
+        => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
     public long Insert(AiAnalysisRecord record)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO ai_analysis_record (user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at)
-            VALUES (@u, @b, @bn, @s, @e, @t, @dq, @m, @c, @c); SELECT last_insert_rowid();";
-        cmd.Parameters.AddWithValue("@u", record.UserId);
-        cmd.Parameters.AddWithValue("@b", record.BabyId);
-        cmd.Parameters.AddWithValue("@bn", (object?)record.BabyName ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@s", record.RangeStartDate.ToString("yyyy-MM-dd"));
-        cmd.Parameters.AddWithValue("@e", record.RangeEndDate.ToString("yyyy-MM-dd"));
-        cmd.Parameters.AddWithValue("@t", record.AnalysisText);
-        cmd.Parameters.AddWithValue("@dq", (object?)record.DataQualityTip ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@m", (object?)record.Model ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@c", DateTime.UtcNow.ToString("O"));
-        return (long)cmd.ExecuteScalar()!;
-    }
+        => (long)ExecuteScalar(
+            @"INSERT INTO ai_analysis_record (user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at)
+              VALUES (@u, @b, @bn, @s, @e, @t, @dq, @m, @c, @c); SELECT last_insert_rowid();",
+            cmd => cmd
+                .Add("@u", record.UserId)
+                .Add("@b", record.BabyId)
+                .Add("@bn", (object?)record.BabyName ?? DBNull.Value)
+                .AddDate("@s", record.RangeStartDate)
+                .AddDate("@e", record.RangeEndDate)
+                .Add("@t", record.AnalysisText)
+                .Add("@dq", (object?)record.DataQualityTip ?? DBNull.Value)
+                .Add("@m", (object?)record.Model ?? DBNull.Value)
+                .AddUtc("@c", DateTime.UtcNow))!;
 
     public void Delete(long id)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "DELETE FROM ai_analysis_record WHERE id = @i";
-        cmd.Parameters.AddWithValue("@i", id);
-        cmd.ExecuteNonQuery();
-    }
+        => ExecuteNonQuery("DELETE FROM ai_analysis_record WHERE id = @i", cmd => cmd.Add("@i", id));
 
     public LlmConfig GetLlmConfig()
     {
-        using var conn = _factory.Create();
+        using var conn = OpenConnection();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled FROM llm_config WHERE id = 1";
+        cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source FROM llm_config WHERE id = 1";
         using var r = cmd.ExecuteReader();
         if (r.Read())
         {
@@ -86,27 +57,26 @@ public sealed class AiAnalysisRepository
                 Temperature = r.GetDouble(3),
                 MaxTokens = r.GetInt32(4),
                 Enabled = r.GetInt32(5) == 1,
+                NoteSource = r.IsDBNull(6) ? "local" : r.GetString(6),
             };
         }
         return new LlmConfig();
     }
 
     public void SaveLlmConfig(LlmConfig config)
-    {
-        using var conn = _factory.Create();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"INSERT INTO llm_config (id, api_base_url, api_key, model_name, temperature, max_tokens, enabled, updated_at)
-            VALUES (1, @u, @k, @m, @t, @mt, @e, @now)
-            ON CONFLICT(id) DO UPDATE SET api_base_url=@u, api_key=@k, model_name=@m, temperature=@t, max_tokens=@mt, enabled=@e, updated_at=@now";
-        cmd.Parameters.AddWithValue("@u", config.ApiBaseUrl);
-        cmd.Parameters.AddWithValue("@k", config.ApiKey);
-        cmd.Parameters.AddWithValue("@m", config.ModelName);
-        cmd.Parameters.AddWithValue("@t", config.Temperature);
-        cmd.Parameters.AddWithValue("@mt", config.MaxTokens);
-        cmd.Parameters.AddWithValue("@e", config.Enabled ? 1 : 0);
-        cmd.Parameters.AddWithValue("@now", DateTime.UtcNow.ToString("O"));
-        cmd.ExecuteNonQuery();
-    }
+        => ExecuteNonQuery(
+            @"INSERT INTO llm_config (id, api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source, updated_at)
+              VALUES (1, @u, @k, @m, @t, @mt, @e, @ns, @now)
+              ON CONFLICT(id) DO UPDATE SET api_base_url=@u, api_key=@k, model_name=@m, temperature=@t, max_tokens=@mt, enabled=@e, note_source=@ns, updated_at=@now",
+            cmd => cmd
+                .Add("@u", config.ApiBaseUrl)
+                .Add("@k", config.ApiKey)
+                .Add("@m", config.ModelName)
+                .Add("@t", config.Temperature)
+                .Add("@mt", config.MaxTokens)
+                .Add("@e", config.Enabled ? 1 : 0)
+                .Add("@ns", string.IsNullOrEmpty(config.NoteSource) ? "local" : config.NoteSource)
+                .AddUtc("@now", DateTime.UtcNow));
 
     private static AiAnalysisRecord Map(SqliteDataReader r) => new()
     {

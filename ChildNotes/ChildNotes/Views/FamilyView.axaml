@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
-             xmlns:v="using:ChildNotes.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -9,243 +8,158 @@
              x:DataType="vm:FamilyViewModel"
              Background="{StaticResource WeuiBg0Brush}">
 
-    <UserControl.Styles>
-        <Style Selector="Border.member-item">
-            <Setter Property="Padding" Value="20,18"/>
-            <Setter Property="BorderBrush" Value="#F5F5F5"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-        </Style>
-        <Style Selector="Border.role-chip">
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="Background" Value="#14B57C14"/>
-            <Setter Property="Margin" Value="0,0,8,0"/>
-        </Style>
-        <Style Selector="Border.role-chip TextBlock">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-        </Style>
-        <Style Selector="Border.owner-tag">
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="12,4"/>
-            <Setter Property="Background" Value="#1A07C160"/>
-        </Style>
-        <Style Selector="Border.owner-tag TextBlock">
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-        </Style>
-        <Style Selector="Button.role-btn">
-            <Setter Property="CornerRadius" Value="26"/>
-            <Setter Property="Padding" Value="18,6"/>
-            <Setter Property="Background" Value="#F3F7F4"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="11"/>
-        </Style>
-        <Style Selector="Button.remove-btn">
-            <Setter Property="CornerRadius" Value="26"/>
-            <Setter Property="Padding" Value="18,6"/>
-            <Setter Property="Background" Value="#FAEDED"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiRedBrush}"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="11"/>
-        </Style>
-        <Style Selector="Border.role-option">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="0,10"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
-            <Setter Property="Margin" Value="0,0,6,6"/>
-        </Style>
-        <Style Selector="Border.role-option.selected">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
-        </Style>
-        <Style Selector="Border.role-option TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-        <Style Selector="Border.role-option.selected TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*,Auto">
 
-    <Grid RowDefinitions="*,Auto">
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="家人管理"/>
+                <Button Grid.Column="2" Content="刷新" Classes="weui-btn mini"
+                        Command="{Binding RefreshCommand}" Margin="0,0,8,0"/>
+            </Grid>
+        </Border>
 
-        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="家人管理" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding BabyName, StringFormat=当前宝宝：\{0\}}" FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,6,0,0"
-                                   IsVisible="{Binding HasBaby}"/>
-                    </StackPanel>
-                </Border>
+                <!-- 加入家庭按钮 -->
+                <Button Content="+ 通过宝宝 ID 加入家庭" Classes="weui-btn primary"
+                        Margin="12,12" HorizontalAlignment="Stretch"
+                        Click="OnJoinTap"/>
 
-                <Panel IsVisible="{Binding !HasBaby}" Margin="0,80,0,0">
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="👪" FontSize="56" HorizontalAlignment="Center" Margin="0,0,0,16"/>
-                        <TextBlock Text="还没有宝宝" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="添加宝宝后，可以在这里管理家人信息" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center" Margin="20,0"/>
-                        <Button Content="去添加宝宝" Classes="weui-btn primary" CornerRadius="6" Padding="40,12"
-                                Command="{Binding GoAddBabyCommand}" Margin="0,24,0,0" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Panel>
+                <!-- 加载中 / 空态 -->
+                <StackPanel IsVisible="{Binding !HasData}" Margin="0,40">
+                    <TextBlock Text="{Binding EmptyHint}" FontSize="14"
+                               Foreground="{StaticResource WeuiFg1Brush}"
+                               HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
 
-                <Panel IsVisible="{Binding HasBaby}" Margin="0,-12,0,0">
-                    <StackPanel>
+                <!-- 家庭列表 -->
+                <ItemsControl ItemsSource="{Binding Families}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{StaticResource WeuiBg2Brush}"
+                                    CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                                <StackPanel>
+                                    <!-- 家庭标题 -->
+                                    <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                            <TextBlock Text="👶" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                            <TextBlock Text="{Binding BabyName}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="我的角色" Classes="weui-btn mini"
+                                                Click="OnEditRoleTap" Tag="{Binding}"/>
+                                    </Grid>
+                                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
 
-                        <Border Background="White" CornerRadius="8" Margin="12,4" Padding="0,0" BoxShadow="0 2 14 0 #08000000">
-                            <ItemsControl ItemsSource="{Binding Members}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Classes="member-item">
-                                            <Grid ColumnDefinitions="Auto,*,Auto">
-                                                <Border Grid.Column="0" Width="46" Height="46" CornerRadius="23" Background="#F0F0F0" VerticalAlignment="Center">
-                                                    <TextBlock Text="👤" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                        <TextBlock Text="{Binding NickName}" FontSize="15" FontWeight="Bold" Foreground="#222" Margin="0,0,10,0"/>
-                                                        <Border Classes="role-chip">
-                                                            <TextBlock Text="{Binding RoleName}"/>
-                                                        </Border>
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding CreatedAtText, StringFormat=加入时间：\{0\}}" FontSize="11" Foreground="#999"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
-                                                    <Border Classes="owner-tag" IsVisible="{Binding IsOwner}">
-                                                        <TextBlock Text="创建者"/>
+                                    <!-- 成员列表 -->
+                                    <ItemsControl ItemsSource="{Binding Members}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="14,10" ColumnDefinitions="Auto,*,Auto">
+                                                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="18"
+                                                            Background="{StaticResource AvatarGradientBrush}"
+                                                            VerticalAlignment="Center">
+                                                        <TextBlock Text="👤" FontSize="18" Foreground="White"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
-                                                    <Button Classes="role-btn" Content="修改身份" IsVisible="{Binding !IsOwner}"
-                                                            Tag="{Binding MemberId}"
-                                                            PointerPressed="OnEditRoleTap"/>
-                                                    <Button Classes="remove-btn" Content="移除" IsVisible="{Binding !IsOwner}"
-                                                            Tag="{Binding MemberId}"
-                                                            PointerPressed="OnRemoveTap"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Border>
+                                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding NickName}" FontSize="14" FontWeight="Medium"/>
+                                                            <TextBlock Text="（我）" FontSize="12" Foreground="{StaticResource WeuiGreenBrush}"
+                                                                       IsVisible="{Binding Mine}" Margin="2,0,0,0"/>
+                                                            <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4"
+                                                                    Padding="4,1" Margin="6,0,0,0" IsVisible="{Binding Owner}">
+                                                                <TextBlock Text="主人" FontSize="10" Foreground="White"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding RoleName}" FontSize="12"
+                                                                   Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
 
-                        <Border Margin="12,24,12,0" HorizontalAlignment="Stretch">
-                            <Button Content="+ 添加家人" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
-                                    Command="{Binding OpenAddSheetCommand}" HorizontalAlignment="Stretch"/>
-                        </Border>
-                        <TextBlock Text="添加家人成员，方便多人一起记录宝宝成长" FontSize="12" Foreground="#999" HorizontalAlignment="Center" Margin="0,12,0,0"/>
-
-                    </StackPanel>
-                </Panel>
+                <Border Height="24"/>
 
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" Padding="16,10" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
-            <Button Content="返回" Classes="weui-btn default" HorizontalAlignment="Stretch" Click="OnBack"/>
+        <!-- 加入家庭弹窗 -->
+        <Border Grid.RowSpan="2" Background="#88000000" IsVisible="{Binding IsJoinOpen}">
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="加入家庭" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="宝宝 ID" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <TextBox Text="{Binding JoinBabyId}" PlaceholderText="向宝宝主人索取 ID" Margin="0,0,0,12"/>
+                    <TextBlock Text="选择身份" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding RoleOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                        Click="OnSelectJoinRoleTap" Tag="{Binding Code}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding JoinRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
+                               FontSize="12" Foreground="{StaticResource WeuiGreenBrush}" Margin="0,4,0,10"/>
+                    <TextBlock Text="{Binding JoinError}" FontSize="12" Foreground="{StaticResource WeuiRedBrush}"
+                               Margin="0,0,0,8" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="取消" Classes="weui-btn default" Command="{Binding CloseJoinCommand}"/>
+                        <Button Grid.Column="2" Content="确定加入" Classes="weui-btn primary" Command="{Binding ConfirmJoinCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Border>
 
-        <Border Grid.Row="0" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+        <!-- 修改角色弹窗 -->
+        <Border Grid.RowSpan="2" Background="#88000000" IsVisible="{Binding IsRoleEditorOpen}">
+            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="{Binding RoleEditorTitle}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="选择身份" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding RoleOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                        Click="OnSelectEditingRoleTap" Tag="{Binding Code}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding EditingRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
+                               FontSize="12" Foreground="{StaticResource WeuiGreenBrush}" Margin="0,4,0,16"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="取消" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
+                        <Button Grid.Column="2" Content="保存" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Toast -->
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding Toast}" Foreground="White" FontSize="13"/>
         </Border>
-
-        <Panel Grid.Row="0" IsVisible="{Binding ShowAddSheet}">
-            <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="8,8,0,0" Padding="24,24,24,30"
-                    VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
-                <StackPanel>
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                        <TextBlock Grid.Column="0" Text="添加家人" FontSize="18" FontWeight="Bold" Foreground="#222"/>
-                        <TextBlock Grid.Column="1" Text="✕" FontSize="20" Foreground="#BBB" PointerPressed="OnCloseAddSheet"/>
-                    </Grid>
-                    <TextBlock Text="选择家人身份，可填写昵称（选填）" FontSize="13" Foreground="#666" Margin="0,0,0,16"/>
-
-                    <TextBlock Text="选择身份" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <ItemsControl ItemsSource="{Binding Roles}" x:Name="AddRoleList">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="74" Classes="role-option"
-                                        Tag="{Binding Code}"
-                                        PointerPressed="OnSelectNewRole">
-                                    <TextBlock Text="{Binding Name}"/>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Text="昵称（选填）" FontSize="14" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                    <TextBox Text="{Binding NewNickName}" PlaceholderText="如：奶奶、张阿姨"
-                             CornerRadius="10" BorderBrush="#E0E0E0" Padding="12,8"/>
-
-                    <Button Content="确认添加" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
-                            Command="{Binding ConfirmAddCommand}" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-                </ScrollViewer>
-            </Border>
-        </Panel>
-
-        <Panel Grid.Row="0" IsVisible="{Binding ShowRoleSheet}">
-            <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="8,8,0,0" Padding="24,24,24,30"
-                    VerticalAlignment="Bottom" MaxHeight="600" ZIndex="11">
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" MaxHeight="500">
-                <StackPanel>
-                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                        <TextBlock Grid.Column="0" Text="修改身份" FontSize="18" FontWeight="Bold" Foreground="#222"/>
-                        <TextBlock Grid.Column="1" Text="✕" FontSize="20" Foreground="#BBB" PointerPressed="OnCloseRoleSheet"/>
-                    </Grid>
-                    <TextBlock Text="选择新的家人身份" FontSize="13" Foreground="#666" Margin="0,0,0,16"/>
-
-                    <ItemsControl ItemsSource="{Binding Roles}" x:Name="EditRoleList">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Width="74" Classes="role-option"
-                                        Tag="{Binding Code}"
-                                        PointerPressed="OnSelectEditingRole">
-                                    <TextBlock Text="{Binding Name}"/>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <Button Content="确认修改" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
-                            Command="{Binding ConfirmRoleCommand}" Margin="0,20,0,0" HorizontalAlignment="Stretch"/>
-                </StackPanel>
-                </ScrollViewer>
-            </Border>
-        </Panel>
-
-        <Panel Grid.Row="0" IsVisible="{Binding ShowRemoveConfirm}">
-            <Border Background="#66000000" ZIndex="10"/>
-            <Border Background="White" CornerRadius="8" Padding="28,24" MaxWidth="300"
-                    HorizontalAlignment="Center" VerticalAlignment="Center" ZIndex="11">
-                <StackPanel>
-                    <TextBlock Text="确认移除" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                    <TextBlock Text="{Binding RemovingRoleName, StringFormat=确定要移除家人「\{0\}」吗？}" FontSize="13" Foreground="#666" TextAlignment="Center" Margin="0,0,0,20"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                        <Button Content="取消" Classes="weui-btn default" CornerRadius="6" Padding="24,8"
-                                Command="{Binding CloseRemoveConfirmCommand}"/>
-                        <Button Content="确认移除" Classes="weui-btn warn" CornerRadius="6" Padding="24,8"
-                                Command="{Binding ConfirmRemoveCommand}"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-        </Panel>
-
     </Grid>
 </UserControl>

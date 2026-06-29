@@ -9,12 +9,18 @@ namespace ChildNotes.Services;
 public sealed class AuthService
 {
     private readonly UserRepository _users;
+    private readonly SessionRepository _sessions;
     private readonly AppState _state;
+
+    /// <summary>会话有效期 30 天（滑动过期：每次启动自动续期）。</summary>
+    public static readonly TimeSpan SessionLifetime = TimeSpan.FromDays(30);
+
     public AppUser? CurrentUser { get; private set; }
 
-    public AuthService(UserRepository users, AppState state)
+    public AuthService(UserRepository users, SessionRepository sessions, AppState state)
     {
         _users = users;
+        _sessions = sessions;
         _state = state;
     }
 
@@ -60,6 +66,7 @@ public sealed class AuthService
             throw;
         }
         CurrentUser = user;
+        SaveSession(user.Id);
         DevLogger.Log("Auth", $"Register success: user={username}, id={user.Id}");
         return LoginResult.Ok(user);
     }
@@ -101,6 +108,7 @@ public sealed class AuthService
             return Fail("密码错误");
         }
         CurrentUser = user;
+        SaveSession(user.Id);
         DevLogger.Log("Auth", $"Login success: user={username}, id={user.Id}");
         return LoginResult.Ok(user);
     }
@@ -113,6 +121,7 @@ public sealed class AuthService
 
     public void Logout()
     {
+        _sessions.Clear();
         CurrentUser = null;
         _state.Clear();
     }
@@ -126,9 +135,45 @@ public sealed class AuthService
         _users.UpdateProfile(CurrentUser);
     }
 
-    public void RestoreSession(long userId)
+    /// <summary>
+    /// 启动时尝试从持久化会话恢复登录态。
+    /// 成功条件：存在会话记录 + 用户存在 + 未过期。
+    /// 成功则滑动续期 30 天；失败（无会话/用户不存在/已过期）则清除会话并返回 false。
+    /// </summary>
+    public bool TryRestoreSession()
     {
-        CurrentUser = _users.FindById(userId);
+        var session = _sessions.Get();
+        if (session is null)
+        {
+            DevLogger.Log("Auth", "RestoreSession: no session record");
+            return false;
+        }
+
+        if (DateTime.UtcNow >= session.ExpireAt)
+        {
+            DevLogger.Log("Auth", $"RestoreSession: expired (expireAt={session.ExpireAt:O})");
+            _sessions.Clear();
+            return false;
+        }
+
+        var user = _users.FindById(session.UserId);
+        if (user is null)
+        {
+            DevLogger.Log("Auth", $"RestoreSession: user not found (id={session.UserId})");
+            _sessions.Clear();
+            return false;
+        }
+
+        CurrentUser = user;
+        SaveSession(user.Id); // 滑动续期
+        DevLogger.Log("Auth", $"RestoreSession success: user={user.Username}, id={user.Id}, renewed expireAt={DateTime.UtcNow + SessionLifetime:O}");
+        return true;
+    }
+
+    private void SaveSession(long userId)
+    {
+        var now = DateTime.UtcNow;
+        _sessions.Save(userId, now, now + SessionLifetime);
     }
 
     public static string HashPassword(string password)

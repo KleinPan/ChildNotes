@@ -13,7 +13,6 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private string _nickName = string.Empty;
     [ObservableProperty] private bool _isRegisterMode;
-    [ObservableProperty] private string _errorMessage = string.Empty;
 
     public event Action? LoginSucceeded;
 

@@ -18,6 +18,9 @@ public static class RecordType
     public const string FeverResolved = "fever_resolved";
     public const string DiarrheaResolved = "diarrhea_resolved";
     public const string AbnormalResolved = "abnormal_resolved";
+
+    /// <summary>特殊类型：AI 智能记。不直接对应一条记录，而是触发文本解析流程。</summary>
+    public const string AiNote = "ai-note";
 }
 
 public static class FeedType

@@ -16,19 +16,10 @@ public partial class BabyManagerView : UserControl
         InitializeComponent();
     }
 
-    // 性别相关转换器（与 BabySetupView 一致，编辑表单复用）
-    public static readonly IValueConverter IsBoyConverter = new EqualsConverter("boy");
-    public static readonly IValueConverter IsGirlConverter = new EqualsConverter("girl");
-
     // 判断是否为当前宝宝（参数: Baby, 用 AppState.CurrentBaby.Id 比较）
     public static readonly IValueConverter IsCurrentBabyConverter = new IsCurrentBabyConverter();
 
     private BabyManagerViewModel? Vm => DataContext as BabyManagerViewModel;
-
-    private void OnBackTapped(object? sender, PointerPressedEventArgs e)
-    {
-        Vm?.BackCommand.Execute(null);
-    }
 
     private void OnBabyItemTapped(object? sender, PointerPressedEventArgs e)
     {

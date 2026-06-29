@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
+using ChildNotes.Models;
 
 namespace ChildNotes.ViewModels;
 
@@ -15,6 +16,18 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isRecordSheetOpen;
     [ObservableProperty] private RecordSheetViewModel _recordSheet;
     [ObservableProperty] private QuickMenuViewModel _quickMenu;
+
+    /// <summary>
+    /// 底部抽屉打开/关闭时同步到 QuickMenu，触发 FAB 显隐派生属性变更。
+    /// </summary>
+    partial void OnIsRecordSheetOpenChanged(bool value)
+    {
+        if (QuickMenu is not null)
+        {
+            QuickMenu.IsRecordSheetOpen = value;
+            DevLogger.Log("Shell", $"OnIsRecordSheetOpenChanged: {value} -> FAB will be {(value ? "hidden" : "shown")}");
+        }
+    }
     [ObservableProperty] private bool _isBabySetupOpen;
     [ObservableProperty] private BabySetupViewModel _babySetup;
     [ObservableProperty] private bool _isBabyManagerOpen;
@@ -23,12 +36,16 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private StatisticsViewModel _statistics;
     [ObservableProperty] private bool _isPointsOpen;
     [ObservableProperty] private PointsViewModel _points;
-    [ObservableProperty] private bool _isFamilyOpen;
-    [ObservableProperty] private FamilyViewModel _family;
     [ObservableProperty] private bool _isAiAnalysisOpen;
     [ObservableProperty] private AiAnalysisViewModel _aiAnalysis;
+    [ObservableProperty] private bool _isAiSettingsOpen;
+    [ObservableProperty] private AiSettingsViewModel _aiSettings;
     [ObservableProperty] private bool _isSyncSettingsOpen;
     [ObservableProperty] private SyncSettingsViewModel _syncSettings;
+    [ObservableProperty] private bool _isFamilyOpen;
+    [ObservableProperty] private FamilyViewModel _family;
+    [ObservableProperty] private bool _isAiNoteOpen;
+    [ObservableProperty] private AiNoteViewModel _aiNote;
 
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
@@ -36,6 +53,65 @@ public partial class MainShellViewModel : ViewModelBase
     public MineViewModel Mine { get; }
 
     public event Action? LogoutRequested;
+
+    /// <summary>
+    /// 弹层注册表：每个弹层项记录 VM、打开/关闭动作与 IsOpen 探测器。
+    /// 关闭顺序由枚举顺序固定（最近打开的先关），避免在 SwitchTab/OnLogout 中重复罗列 IsXxxOpen=false。
+    /// </summary>
+    private readonly List<OverlayEntry> _overlays = new();
+
+    /// <summary>记录表单与快捷菜单：非 OverlayKind 枚举内成员，单独关闭。</summary>
+    private void CloseRecordSheetAndQuickMenu()
+    {
+        IsRecordSheetOpen = false;
+        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
+    }
+
+    private sealed class OverlayEntry
+    {
+        public ViewModelBase Vm { get; }
+        public Action Open { get; }
+        public Action Close { get; }
+        public Func<bool> IsOpen { get; }
+        public OverlayEntry(ViewModelBase vm, Action open, Action close, Func<bool> isOpen)
+        { Vm = vm; Open = open; Close = close; IsOpen = isOpen; }
+    }
+
+    /// <summary>
+    /// 注册一个弹层：
+    /// - 自动订阅其 BackRequested 以触发关闭
+    /// - open 动作可选（部分弹层需要预加载）
+    /// </summary>
+    private void RegisterOverlay(ViewModelBase vm, Action close, Func<bool> isOpen, Action? open = null)
+    {
+        vm.BackRequested += () => close();
+        _overlays.Add(new OverlayEntry(vm, open ?? (() => { }), close, isOpen));
+    }
+
+    /// <summary>关闭全部已注册弹层（不含记录表单与快捷菜单，那两项请显式调用 CloseRecordSheetAndQuickMenu）。</summary>
+    private void CloseAllOverlays()
+    {
+        foreach (var entry in _overlays) entry.Close();
+    }
+
+    /// <summary>系统返回键处理：关闭最近一个处于打开状态的弹层；若都没有打开，回落到关闭记录表单/快捷菜单。</summary>
+    public bool HandleSystemBack()
+    {
+        for (int i = _overlays.Count - 1; i >= 0; i--)
+        {
+            if (_overlays[i].IsOpen())
+            {
+                _overlays[i].Close();
+                return true;
+            }
+        }
+        if (IsRecordSheetOpen || QuickMenu.IsMenuOpen)
+        {
+            CloseRecordSheetAndQuickMenu();
+            return true;
+        }
+        return false;
+    }
 
     public MainShellViewModel()
     {
@@ -48,56 +124,67 @@ public partial class MainShellViewModel : ViewModelBase
         Home.StatisticsRequested += OpenStatistics;
         Home.CheckInRequested += OpenPoints;
         Home.QuickRecordRequested += OpenQuickRecord;
+        Feeding.EditRequested += OpenEditRecord;
         Mine.LogoutRequested += OnLogout;
 
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
 
-        _quickMenu = new QuickMenuViewModel(_recordSheet);
-        _quickMenu.Saved += OnRecordSaved;
+        _quickMenu = new QuickMenuViewModel();
+        _quickMenu.OpenRecordRequested += OpenQuickRecord;
 
         _babySetup = new BabySetupViewModel();
         _babySetup.Completed += OnBabySetupCompleted;
 
         _babyManager = new BabyManagerViewModel();
-        _babyManager.BackRequested += () => IsBabyManagerOpen = false;
         _babyManager.BabyChanged += OnBabyChanged;
 
         _statistics = new StatisticsViewModel();
-        _statistics.BackRequested += () => IsStatisticsOpen = false;
 
         _points = new PointsViewModel();
-        _points.BackRequested += () => IsPointsOpen = false;
-
-        _family = new FamilyViewModel();
-        _family.BackRequested += () => IsFamilyOpen = false;
-        _family.AddBabyRequested += () =>
-        {
-            IsFamilyOpen = false;
-            OpenBabySetup();
-        };
 
         _aiAnalysis = new AiAnalysisViewModel();
-        _aiAnalysis.BackRequested += () => IsAiAnalysisOpen = false;
+        _aiAnalysis.ConfigRequired += OpenAiSettings;
+
+        _aiSettings = new AiSettingsViewModel();
 
         _syncSettings = new SyncSettingsViewModel();
-        _syncSettings.BackRequested += () => IsSyncSettingsOpen = false;
+
+        _family = new FamilyViewModel();
+
+        _aiNote = new AiNoteViewModel();
+        _aiNote.Saved += OnRecordSaved;
+
+        // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
+        RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
+        RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
+        RegisterOverlay(Statistics, () => IsStatisticsOpen = false, () => IsStatisticsOpen);
+        RegisterOverlay(Points, () => IsPointsOpen = false, () => IsPointsOpen);
+        RegisterOverlay(AiAnalysis, () => IsAiAnalysisOpen = false, () => IsAiAnalysisOpen);
+        RegisterOverlay(AiSettings, () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
+        RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
+        RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
+        RegisterOverlay(AiNote, () => IsAiNoteOpen = false, () => IsAiNoteOpen, OpenAiNote);
+    }
+
+    /// <summary>打开 AI 智能记模态窗口。</summary>
+    public void OpenAiNote()
+    {
+        if (ServiceProvider.Instance.AppState.CurrentBaby is null)
+        {
+            OpenBabySetup();
+            return;
+        }
+        AiNote.Activate();
+        IsAiNoteOpen = true;
     }
 
     [RelayCommand]
     private void SwitchTab(string tab)
     {
-        IsRecordSheetOpen = false;
-        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
-        if (QuickMenu.IsCardOpen) QuickMenu.CloseCardCommand.Execute(null);
-        // 加号按钮仅首页可见：切走时隐藏，回首页时显示
-        QuickMenu.IsFabVisible = tab == "home";
-        IsBabySetupOpen = false;
-        IsStatisticsOpen = false;
-        IsPointsOpen = false;
-        IsFamilyOpen = false;
-        IsAiAnalysisOpen = false;
-        IsSyncSettingsOpen = false;
+        CloseRecordSheetAndQuickMenu();
+        QuickMenu.IsFabEnabled = tab == "home";
+        CloseAllOverlays();
 
         IsHomeSelected = tab == "home";
         IsFeedingSelected = tab == "feeding";
@@ -123,13 +210,34 @@ public partial class MainShellViewModel : ViewModelBase
 
     public void OpenQuickRecord(string recordType)
     {
+        DevLogger.Log("Shell", $"OpenQuickRecord type={recordType}");
         if (ServiceProvider.Instance.AppState.CurrentBaby is null)
         {
+            DevLogger.Log("Shell", "OpenQuickRecord: no current baby, open BabySetup");
             OpenBabySetup();
+            return;
+        }
+        // Ai 记走单独的模态窗口，不走底部抽屉
+        if (recordType == RecordType.AiNote)
+        {
+            OpenAiNote();
             return;
         }
         RecordSheet.Open(recordType);
         IsRecordSheetOpen = true;
+        DevLogger.Log("Shell", $"OpenQuickRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
+    }
+
+    /// <summary>
+    /// 编辑现有记录：复用 RecordSheet 的编辑模式（同一套表单 XAML，所有字段可编辑）。
+    /// 由 FeedingViewModel.EditRecord 等调用。
+    /// </summary>
+    public void OpenEditRecord(ChildRecord record)
+    {
+        DevLogger.Log("Shell", $"OpenEditRecord type={record.RecordType}, id={record.Id}");
+        RecordSheet.Edit(record);
+        IsRecordSheetOpen = true;
+        DevLogger.Log("Shell", $"OpenEditRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
     }
 
     public void OpenBabySetup()
@@ -156,26 +264,32 @@ public partial class MainShellViewModel : ViewModelBase
         IsPointsOpen = true;
     }
 
-    public void OpenFamily()
-    {
-        Family.Load();
-        IsFamilyOpen = true;
-    }
-
     public void OpenAiAnalysis()
     {
         AiAnalysis.Load();
         IsAiAnalysisOpen = true;
     }
 
+    public void OpenAiSettings()
+    {
+        AiSettings.Activate();
+        IsAiSettingsOpen = true;
+    }
+
     public void OpenSyncSettings()
     {
-        SyncSettings.Activate();
         IsSyncSettingsOpen = true;
+    }
+
+    public async void OpenFamily()
+    {
+        IsFamilyOpen = true;
+        await Family.LoadAsync();
     }
 
     private void OnRecordSaved()
     {
+        DevLogger.Log("Shell", "OnRecordSaved: closing sheet, refreshing Home/Feeding/Statistics");
         IsRecordSheetOpen = false;
         Home.Refresh();
         if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
@@ -197,17 +311,8 @@ public partial class MainShellViewModel : ViewModelBase
 
     private void OnLogout()
     {
-        // 关闭所有弹层
-        IsRecordSheetOpen = false;
-        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
-        if (QuickMenu.IsCardOpen) QuickMenu.CloseCardCommand.Execute(null);
-        IsBabySetupOpen = false;
-        IsStatisticsOpen = false;
-        IsPointsOpen = false;
-        IsFamilyOpen = false;
-        IsAiAnalysisOpen = false;
-        IsSyncSettingsOpen = false;
-        IsBabyManagerOpen = false;
+        CloseRecordSheetAndQuickMenu();
+        CloseAllOverlays();
         LogoutRequested?.Invoke();
     }
 
@@ -218,7 +323,7 @@ public partial class MainShellViewModel : ViewModelBase
         IsGrowthSelected = false;
         IsMineSelected = false;
         CurrentTab = Home;
-        QuickMenu.IsFabVisible = true;
+        QuickMenu.IsFabEnabled = true;
         Home.Activate();
     }
 }

@@ -69,7 +69,7 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
 public sealed class MilestoneDisplayItem
 {
     public Milestone Milestone { get; }
-    public string DateText => Milestone.RecordDate.ToString("yyyy-MM-dd");
+    public string DateText => ServiceProvider.Instance.DateTimeFormatter.FormatDate(Milestone.RecordDate);
     public string Title => Milestone.Title;
     public string? Content => Milestone.Content;
     public List<string> Photos => string.IsNullOrEmpty(Milestone.PhotosJson)

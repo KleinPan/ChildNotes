@@ -3,6 +3,7 @@
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:m="using:ChildNotes.Models"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -40,13 +41,12 @@
         <Border Background="{StaticResource WeuiBg0Brush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*,Auto">
 
-                <!-- 顶部标题栏 -->
-                <Border Grid.Row="0" Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8"
-                        PointerPressed="OnBackTapped">
+                <!-- 统一顶栏 -->
+                <Border Grid.Row="0" Classes="nav-bar">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <TextBlock Grid.Column="0" Text="‹" FontSize="22" Foreground="White" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="宝宝管理" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text=" " FontSize="22"/>
+                        <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                        <TextBlock Grid.Column="1" Classes="nav-title" Text="宝宝管理"/>
+                        <TextBlock Grid.Column="2" Text=" " Width="40"/>
                     </Grid>
                 </Border>
 
@@ -101,7 +101,7 @@
         </Border>
 
         <!-- 编辑/添加表单（对齐小程序 baby editor sheet） -->
-        <Border Background="#80000000" IsVisible="{Binding IsEditorOpen}">
+        <Border Classes="modal-mask" IsVisible="{Binding IsEditorOpen}">
             <Border Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,*">
                     <!-- 标题栏 -->
@@ -122,10 +122,10 @@
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
                                 <TextBlock Text="性别" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
                                 <Button Content="👦 男宝" Classes="gender-btn"
-                                        Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsBoyConverter}}"
+                                        Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                         Click="OnBoyTap"/>
                                 <Button Content="👧 女宝" Classes="gender-btn" Margin="10,0,0,0"
-                                        Classes.active="{Binding Gender, Converter={x:Static v:BabySetupView.IsGirlConverter}}"
+                                        Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsGirl}}"
                                         Click="OnGirlTap"/>
                             </StackPanel>
 
@@ -167,23 +167,18 @@
         </Border>
 
         <!-- 删除确认对话框 -->
-        <Border Background="#B3000000" IsVisible="{Binding IsDeleteConfirmOpen}">
-            <Border Background="White" CornerRadius="12" Padding="24,20" MaxWidth="280" HorizontalAlignment="Center" VerticalAlignment="Center">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="删除宝宝" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" TextAlignment="Center" TextWrapping="Wrap">
-                        <Run Text="确定要删除"/>
-                        <Run Text="{Binding DeleteConfirmName}" FontWeight="Bold"/>
-                        <Run Text="吗？相关记录将保留，但宝宝信息将无法恢复。"/>
-                    </TextBlock>
-                    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                        <Button Content="取消" Classes="weui-btn default" CornerRadius="24" MinWidth="100" MinHeight="40"
-                                Command="{Binding CloseDeleteConfirmCommand}"/>
-                        <Button Content="删除" Classes="weui-btn warn" CornerRadius="24" MinWidth="100" MinHeight="40"
-                                Command="{Binding ConfirmDeleteCommand}"/>
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-        </Border>
+        <controls:DialogHost IsOpen="{Binding IsDeleteConfirmOpen}"
+                             Title="删除宝宝"
+                             CancelText="取消" ConfirmText="删除"
+                             CancelCommand="{Binding CloseDeleteConfirmCommand}"
+                             ConfirmCommand="{Binding ConfirmDeleteCommand}">
+            <controls:DialogHost.MessageContent>
+                <TextBlock FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" TextAlignment="Center" TextWrapping="Wrap">
+                    <Run Text="确定要删除"/>
+                    <Run Text="{Binding DeleteConfirmName}" FontWeight="Bold"/>
+                    <Run Text="吗？相关记录将保留，但宝宝信息将无法恢复。"/>
+                </TextBlock>
+            </controls:DialogHost.MessageContent>
+        </controls:DialogHost>
     </Grid>
 </UserControl>

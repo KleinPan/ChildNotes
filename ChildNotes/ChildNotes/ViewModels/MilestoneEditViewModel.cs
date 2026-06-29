@@ -15,7 +15,6 @@ public partial class MilestoneEditViewModel : ViewModelBase
     [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private string _content = string.Empty;
     [ObservableProperty] private DateTimeOffset _recordDate = DateTimeOffset.Now;
-    [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private string _sheetTitle = "添加成长时刻";
     [ObservableProperty] private bool _isVisible;
 

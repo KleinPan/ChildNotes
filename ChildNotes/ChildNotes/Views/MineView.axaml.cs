@@ -17,6 +17,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenBabyManager();
     }
 
+    private void OnFamilyTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenFamily();
+    }
+
     private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenStatistics();
@@ -27,14 +32,14 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenPoints();
     }
 
-    private void OnFamilyTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenFamily();
-    }
-
     private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenAiAnalysis();
+    }
+
+    private void OnAiSettingsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenAiSettings();
     }
 
     private void OnSyncSettingsTap(object? sender, PointerPressedEventArgs e)

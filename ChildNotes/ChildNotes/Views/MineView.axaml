@@ -50,7 +50,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="👪" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="0" Text="👨‍👩‍👧" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
                         <TextBlock Grid.Column="1" Text="家人管理" FontSize="15" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                     </Grid>
@@ -108,17 +108,26 @@
 
             <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                 <StackPanel>
+                    <Grid Margin="14,12" PointerPressed="OnAiSettingsTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🤖" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="AI 分析设置" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
                     <Grid Margin="14,12" PointerPressed="OnSyncSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="☁️" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
                         <TextBlock Grid.Column="1" Text="数据同步" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="WebDAV" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                     </Grid>
                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
                     <Grid Margin="14,12">

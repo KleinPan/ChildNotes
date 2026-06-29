@@ -165,6 +165,9 @@ CREATE TABLE IF NOT EXISTS llm_config (
     updated_at TEXT NOT NULL
 );");
 
+        // "Ai记" 解析服务来源：local=本地 LLM（默认），server=后端解析接口
+        AddColumnIfNotExists(conn, "llm_config", "note_source", "TEXT NOT NULL DEFAULT 'local'");
+
         conn.ExecuteNonQuery(@"
 CREATE INDEX IF NOT EXISTS idx_child_record_user_date_type
     ON child_record (user_id, record_date, record_type);");
@@ -176,37 +179,6 @@ CREATE INDEX IF NOT EXISTS idx_child_record_baby_date
         conn.ExecuteNonQuery(@"
 CREATE INDEX IF NOT EXISTS idx_ai_analysis_baby
     ON ai_analysis_record (baby_id, range_start_date, range_end_date);");
-
-        // ===== 同步相关表 =====
-        // WebDAV 配置表（单行，id=1）
-        conn.ExecuteNonQuery(@"
-CREATE TABLE IF NOT EXISTS webdav_config (
-    id INTEGER PRIMARY KEY,
-    server_url TEXT NOT NULL,
-    username TEXT NOT NULL,
-    password TEXT NOT NULL,
-    remote_path TEXT NOT NULL DEFAULT '/ChildNotes/',
-    enabled INTEGER NOT NULL DEFAULT 0,
-    auto_sync INTEGER NOT NULL DEFAULT 1,
-    last_sync_at TEXT,
-    last_sync_status TEXT,
-    updated_at TEXT NOT NULL
-);");
-
-        // 同步状态表（记录每次同步的元信息）
-        conn.ExecuteNonQuery(@"
-CREATE TABLE IF NOT EXISTS sync_state (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    sync_type TEXT NOT NULL,
-    started_at TEXT NOT NULL,
-    finished_at TEXT,
-    status TEXT NOT NULL,
-    detail TEXT,
-    db_pushed INTEGER NOT NULL DEFAULT 0,
-    db_pulled INTEGER NOT NULL DEFAULT 0,
-    images_pushed INTEGER NOT NULL DEFAULT 0,
-    images_pulled INTEGER NOT NULL DEFAULT 0
-);");
 
         // ===== 为业务表添加同步字段（增量迁移，幂等执行）=====
         // 注：SQLite 不支持 ADD COLUMN IF NOT EXISTS，需先查 PRAGMA table_info
@@ -228,6 +200,41 @@ CREATE TABLE IF NOT EXISTS sync_state (
         AddColumnIfNotExists(conn, "ai_analysis_record", "is_deleted", "INTEGER NOT NULL DEFAULT 0");
         AddColumnIfNotExists(conn, "ai_analysis_record", "device_id", "TEXT");
         AddColumnIfNotExists(conn, "ai_analysis_record", "synced_at", "TEXT");
+
+        // ===== 在线同步配置表 =====
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS sync_config (
+    id INTEGER PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    server_url TEXT NOT NULL DEFAULT '',
+    username TEXT NOT NULL DEFAULT '',
+    password TEXT NOT NULL DEFAULT '',
+    token TEXT NOT NULL DEFAULT '',
+    last_sync_at TEXT,
+    last_sync_status TEXT,
+    last_sync_msg TEXT
+);");
+        conn.ExecuteNonQuery(@"
+INSERT OR IGNORE INTO sync_config (id, enabled, server_url, username, password, token)
+VALUES (1, 0, '', '', '', '');
+");
+
+        // sync_config 增量迁移：device_id 字段（用于设备级追踪与冲突归因）
+        AddColumnIfNotExists(conn, "sync_config", "device_id", "TEXT");
+
+        // child_record 增量索引：updated_at 用于增量上送查询
+        conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_updated ON child_record (updated_at);");
+        conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_baby_updated ON baby (updated_at);");
+
+        // ===== 登录会话持久化表（单行，id=1）=====
+        // 用于实现关闭应用后自动登录；30 天滑动过期，每次启动续期。
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS user_session (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    issued_at TEXT NOT NULL,
+    expire_at TEXT NOT NULL
+);");
 
         DevLogger.Log("DB", "DbInitializer.Initialize done");
     }

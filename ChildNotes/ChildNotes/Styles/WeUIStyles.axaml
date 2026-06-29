@@ -26,6 +26,11 @@
         <Setter Property="CornerRadius" Value="{StaticResource WeuiCardRadius}" />
     </Style>
 
+    <!-- 模态遮罩：统一各弹层/对话框的半透明黑色背景（50% black） -->
+    <Style Selector="Border.modal-mask">
+        <Setter Property="Background" Value="#80000000" />
+    </Style>
+
     <!-- 原版 baby-status-bar 统计区 mini-card -->
     <Style Selector="Border.mini-card">
         <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
@@ -138,5 +143,43 @@
         <Setter Property="FontSize" Value="15" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}" />
+    </Style>
+
+    <!-- 统一顶栏（方案 C） -->
+    <Style Selector="Border.nav-bar">
+        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}"/>
+        <Setter Property="Height" Value="48"/>
+        <Setter Property="Padding" Value="4,0"/>
+        <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+    </Style>
+    <Style Selector="Border.nav-bar TextBlock.nav-title">
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- 统一左上角返回按钮 -->
+    <Style Selector="Button.nav-back">
+        <Setter Property="Padding" Value="12,8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Content" Value="‹"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    <Style Selector="Button.nav-back:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource WeuiBgColorActiveBrush}"/>
+    </Style>
+    <Style Selector="Button.nav-back:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
     </Style>
 </Styles>

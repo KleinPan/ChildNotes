@@ -185,32 +185,26 @@ public sealed class AiAnalysisService
 
     private static string BuildAggregateStats(List<ChildRecord> records)
     {
+        // 按 RecordTime 升序传入聚合器，使 "last wins" 等价于 "最新时间"。
+        var agg = RecordAggregator.Aggregate(records.OrderBy(r => r.RecordTime));
         var sb = new StringBuilder();
-        var feeds = records.Where(r => r.RecordType == RecordType.Feed).ToList();
-        var bottleMilk = feeds.Where(r => r.RecordSubType != "breast").Sum(r => r.AmountMl ?? 0);
-        var breastMin = feeds.Where(r => r.RecordSubType == "breast").Sum(r => (r.DurationSec ?? 0) / 60);
-        var sleeps = records.Where(r => r.RecordType == RecordType.Sleep).Sum(r => (r.DurationSec ?? 0) / 60);
-        var diapers = records.Count(r => r.RecordType == RecordType.Diaper);
-        var dirtyDiapers = records.Count(r => r.RecordType == RecordType.Diaper && r.RecordSubType is "dirty" or "both");
-        var temps = records.Where(r => r.RecordType == RecordType.Temperature).ToList();
-        var growths = records.Where(r => r.RecordType == RecordType.Growth).ToList();
-        var abnormals = records.Count(r => r.RecordType == RecordType.Abnormal);
+        var breastMin = agg.BreastDurationSec / 60;
+        var sleepHours = agg.SleepDurationSec / 3600;
+        var sleepMinutes = (agg.SleepDurationSec % 3600) / 60;
 
-        sb.AppendLine($"  喂养次数：{feeds.Count}（瓶喂总量 {bottleMilk}ml，亲喂总时长 {breastMin}分钟）");
-        sb.AppendLine($"  睡眠总时长：{sleeps / 60}小时{sleeps % 60}分钟");
-        sb.AppendLine($"  尿布次数：{diapers}（其中排便 {dirtyDiapers} 次）");
-        if (temps.Count > 0)
+        sb.AppendLine($"  喂养次数：{agg.FeedCount}（瓶喂总量 {agg.BottleMilkMl}ml，亲喂总时长 {breastMin}分钟）");
+        sb.AppendLine($"  睡眠总时长：{sleepHours}小时{sleepMinutes}分钟");
+        sb.AppendLine($"  尿布次数：{agg.DiaperCount}（其中排便 {agg.DirtyDiaperCount} 次）");
+        if (agg.TemperatureCount > 0)
         {
-            var latest = temps.OrderByDescending(r => r.RecordTime).First();
-            sb.AppendLine($"  体温记录：{temps.Count} 次，最近 {latest.TemperatureValue}℃");
+            sb.AppendLine($"  体温记录：{agg.TemperatureCount} 次，最近 {agg.LatestTemperature}℃");
         }
-        if (growths.Count > 0)
+        if (agg.GrowthCount > 0)
         {
-            var latest = growths.OrderByDescending(r => r.RecordTime).First();
-            sb.AppendLine($"  最近生长：身高 {latest.HeightCm}cm 体重 {latest.WeightKg}kg");
+            sb.AppendLine($"  最近生长：身高 {agg.LatestHeightCm}cm 体重 {agg.LatestWeightKg}kg");
         }
-        if (abnormals > 0)
-            sb.AppendLine($"  异常记录：{abnormals} 次");
+        if (agg.AbnormalCount > 0)
+            sb.AppendLine($"  异常记录：{agg.AbnormalCount} 次");
         return sb.ToString();
     }
 

@@ -41,16 +41,29 @@ public partial class App : Application
             Batteries_V2.Init();
             DevLogger.Log("App", "Batteries_V2.Init done");
 
+            // 启动时尝试恢复登录会话（30 天滑动过期）
+            var restored = TryRestoreSession();
+            DevLogger.Log("App", $"TryRestoreSession result={restored}");
+
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow ??= new MainWindow();
                 DevLogger.Log("App", "Lifetime=Desktop");
-                ShowLogin(desktop.MainWindow);
+                if (restored) EnterMainShell(desktop.MainWindow);
+                else ShowLogin(desktop.MainWindow);
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
                 DevLogger.Log("App", "Lifetime=SingleView");
-                ShowLogin(singleViewPlatform);
+                // 移动端必须先创建 RootContainer（无论恢复成功与否都需要）
+                if (_rootContainer is null)
+                {
+                    _rootContainer = new RootContainer();
+                    singleViewPlatform.MainView = _rootContainer;
+                    DevLogger.Log("App", "RootContainer set as single.MainView");
+                }
+                if (restored) EnterMainShell(null);
+                else ShowLogin(singleViewPlatform);
             }
             else
             {
@@ -66,6 +79,59 @@ public partial class App : Application
 
         DevLogger.Log("App", "OnFrameworkInitializationCompleted end");
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// 启动时尝试从持久化会话恢复登录态。
+    /// 成功则同步 AppState / BabyList，失败返回 false（走登录页）。
+    /// 任何异常都吞掉并回退到登录页，避免恢复逻辑阻断启动。
+    /// </summary>
+    private bool TryRestoreSession()
+    {
+        try
+        {
+            if (!ServiceProvider.Instance.AuthService.TryRestoreSession()) return false;
+            ServiceProvider.Instance.BindUserToState();
+            ServiceProvider.Instance.BabyService.LoadBabyList();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("App", "TryRestoreSession EXCEPTION: " + ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 恢复登录成功后直接进入主界面（复用 OnLoginSucceeded 的初始化逻辑）。
+    /// desktopHost 非空时直接设为 MainWindow.Content；为空则走 RootContainer 模式（移动端）。
+    /// </summary>
+    private void EnterMainShell(object? desktopHost)
+    {
+        try
+        {
+            _shellVm = new MainShellViewModel();
+            _shellVm.LogoutRequested += OnLogout;
+            _shellVm.ActivateHomeAfterLogin();
+            _shellView = new MainShellView { DataContext = _shellVm };
+
+            if (desktopHost is MainWindow window)
+            {
+                window.Content = _shellView;
+            }
+            else if (_rootContainer is not null)
+            {
+                _rootContainer.SetContent(_shellView);
+            }
+            DevLogger.Log("App", "EnterMainShell done (session restored)");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("App", "EnterMainShell EXCEPTION: " + ex);
+            // 恢复失败时回退到登录页
+            if (desktopHost is MainWindow w) ShowLogin(w);
+            else if (ApplicationLifetime is ISingleViewApplicationLifetime sv) ShowLogin(sv);
+        }
     }
 
     private void ShowLogin(object host)
@@ -139,9 +205,6 @@ public partial class App : Application
             // 切换视图到主界面
             SwitchToMainView();
 
-            // 登录成功后触发启动同步（延迟几秒，避免与 UI 初始化抢资源）
-            ServiceProvider.Instance.SyncTrigger.TriggerStartupSync();
-
             DevLogger.Log("App", "OnLoginSucceeded done");
         }
         catch (Exception ex)
@@ -199,6 +262,12 @@ public partial class App : Application
         {
             ShowLogin(single);
         }
+    }
+
+    /// <summary>系统返回键入口：优先关闭当前弹层，返回 false 表示无弹层可关。</summary>
+    public bool HandleSystemBack()
+    {
+        return _shellVm?.HandleSystemBack() ?? false;
     }
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)

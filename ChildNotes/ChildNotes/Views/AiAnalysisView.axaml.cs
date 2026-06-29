@@ -1,6 +1,5 @@
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using ChildNotes.Models;
 using ChildNotes.ViewModels;
 
@@ -11,16 +10,6 @@ public partial class AiAnalysisView : UserControl
     public AiAnalysisView()
     {
         InitializeComponent();
-    }
-
-    private void OnBack(object? sender, RoutedEventArgs e)
-    {
-        if (DataContext is AiAnalysisViewModel vm) vm.Back();
-    }
-
-    private void OnCloseConfig(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is AiAnalysisViewModel vm) vm.ShowConfigSheet = false;
     }
 
     private void OnRecordTap(object? sender, PointerPressedEventArgs e)

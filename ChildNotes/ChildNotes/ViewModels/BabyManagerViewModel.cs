@@ -18,7 +18,6 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditing;          // true=编辑, false=新增
     [ObservableProperty] private bool _isDeleteConfirmOpen;
-    [ObservableProperty] private string _title = "宝宝管理";
     [ObservableProperty] private string _editorTitle = "添加宝宝";
 
     // 编辑表单字段
@@ -26,10 +25,8 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _gender = "boy";
     [ObservableProperty] private DateTime? _birthDate;
-    [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private string _deleteConfirmName = string.Empty;
 
-    public event Action? BackRequested;
     public event Action? BabyChanged;        // 增删改后通知外部刷新
 
     public void Load()
@@ -41,12 +38,6 @@ public partial class BabyManagerViewModel : ViewModelBase
     }
 
     public bool IsCurrentBaby(Baby baby) => _state.CurrentBaby?.Id == baby.Id;
-
-    [RelayCommand]
-    private void Back()
-    {
-        BackRequested?.Invoke();
-    }
 
     public void OpenAdd()
     {
@@ -67,7 +58,11 @@ public partial class BabyManagerViewModel : ViewModelBase
         EditingId = baby.Id;
         Name = baby.Name;
         Gender = baby.Gender;
-        BirthDate = baby.BirthDate?.Date;
+        // 数据库读出的 BirthDate 是 Unspecified Kind，绑定到 CalendarDatePicker 后再回传
+        // 与 DateTime.Today 做差值运算会抛 DateTimeKind 异常，显式指定 Local Kind
+        BirthDate = baby.BirthDate.HasValue
+            ? DateTime.SpecifyKind(baby.BirthDate.Value.Date, DateTimeKind.Local)
+            : null;
         ErrorMessage = string.Empty;
         IsEditorOpen = true;
     }
@@ -102,13 +97,15 @@ public partial class BabyManagerViewModel : ViewModelBase
             {
                 baby.Name = Name.Trim();
                 baby.Gender = Gender;
-                baby.BirthDate = BirthDate.Value.Date;
+                // 统一转 Local Kind，避免 CalendarDatePicker 回传 Unspecified Kind
+                // 在后续与 DateTime.Today 比较时抛 DateTimeKind 异常
+                baby.BirthDate = DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local);
                 _babyService.UpdateBaby(baby);
             }
         }
         else
         {
-            _babyService.AddBaby(Name.Trim(), Gender, BirthDate.Value.Date);
+            _babyService.AddBaby(Name.Trim(), Gender, DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local));
         }
 
         IsEditorOpen = false;
@@ -134,6 +131,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     {
         _babyService.DeleteBaby(EditingId);
         IsDeleteConfirmOpen = false;
+        IsEditorOpen = false;
         Load();
         BabyChanged?.Invoke();
     }

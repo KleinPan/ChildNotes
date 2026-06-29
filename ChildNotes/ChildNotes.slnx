@@ -1,4 +1,8 @@
 <Solution>
+  <Project Path="../ChildNotes.Backend/ChildNotes.Api/ChildNotes.Api.csproj" />
+  <Project Path="../ChildNotes.Backend/ChildNotes.Core/ChildNotes.Core.csproj" />
+  <Project Path="../ChildNotes.Backend/ChildNotes.Infrastructure/ChildNotes.Infrastructure.csproj" />
+  <Project Path="../ChildNotes.Backend/ChildNotes.Tests/ChildNotes.Tests.csproj" />
   <Project Path="ChildNotes.Android/ChildNotes.Android.csproj">
     <Deploy />
   </Project>

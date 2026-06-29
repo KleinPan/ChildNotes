@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -32,11 +33,35 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _aiStatusIcon = "☀️";
     [ObservableProperty] private string _aiStatusTitle = "小铃铛状态良好";
     [ObservableProperty] private string _aiStatusSubtitle = "正在快乐成长中~";
-    [ObservableProperty] private string _aiTipText = "洗澡水温37~38℃最适合，用手肘试温";
+    [ObservableProperty] private string _aiTipText = DailyTipsCatalog.Current.DefaultTip;
+
+    // 轮播提示相关：对齐小程序 good-status 组件 <swiper interval=5000> 行为
+    private readonly DispatcherTimer _tipCarouselTimer = new(TimeSpan.FromSeconds(5), DispatcherPriority.Normal, (_, _) => { });
+    private IReadOnlyList<string> _currentTipPool = Array.Empty<string>();
+    private int _tipCarouselIndex;
 
     [ObservableProperty] private ObservableCollection<VaccineItem> _vaccineItems = new();
     [ObservableProperty] private string _vaccineProgressText = "0/0";
     [ObservableProperty] private bool _isVaccineExpanded;
+
+    // ===== 异常/生病追踪状态（对齐小程序首页 fever/diarrhea/other-abnormal 三态） =====
+    /// <summary>当前是否有活动异常（发烧/腹泻/其他异常任一）。</summary>
+    [ObservableProperty] private bool _hasActiveAbnormal;
+    /// <summary>是否存在「其他异常」（控制「已恢复」按钮可见性；发烧/腹泻通过各自入口恢复）。</summary>
+    [ObservableProperty] private bool _hasOtherAbnormal;
+    [ObservableProperty] private string _abnormalStatusText = string.Empty;
+    [ObservableProperty] private string _abnormalSummaryText = string.Empty;
+
+    // ===== 活动追踪（对齐小程序 activity-tracker 组件） =====
+    [ObservableProperty] private bool _isActivityExpanded;
+    [ObservableProperty] private bool _isActivityDetailOpen;
+    [ObservableProperty] private ActivityLatestItem? _lastActivity;
+    [ObservableProperty] private string _activityTimeSince = "--";
+    [ObservableProperty] private ObservableCollection<ActivityTimelineGroup> _activityTimelineGroups = new();
+
+    // 距上次活动时间实时刷新（对齐小程序 startTimer 30 秒间隔）
+    private readonly DispatcherTimer _activitySinceTimer = new(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, (_, _) => { });
+    private DateTime? _lastActivityTime;
 
     public event Action? StatisticsRequested;
     public event Action? CheckInRequested;
@@ -84,6 +109,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             LatestWeightText = "--kg";
             VaccineItems.Clear();
             VaccineProgressText = "0/0";
+            ResetActivity();
+            ResetAbnormal();
             return;
         }
 
@@ -103,6 +130,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         RefreshGrowth();
         RefreshAiStatus(TodayStats);
         RefreshVaccines();
+        RefreshActivity();
+        RefreshAbnormal();
     }
 
     private void RefreshLastFeed()
@@ -173,50 +202,115 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
     private void RefreshAiStatus(DayStats? stats)
     {
+        // 配置来源：DailyTipsCatalog.Current（默认值对齐小程序，可由 daily-tips.json 覆盖）
+        var cfg = DailyTipsCatalog.Current;
+        // 标题拼接对齐小程序 good-status/index.wxml 第 10 行 babyName + '状态良好'
+        var name = string.IsNullOrWhiteSpace(BabyName) ? cfg.NoBabyTitle : BabyName;
+
         if (stats is null)
         {
             AiStatusIcon = "☀️";
-            AiStatusTitle = "小铃铛状态良好";
+            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = "正在快乐成长中~";
-            AiTipText = "洗澡水温37~38℃最适合，用手肘试温";
+            SetStaticTip(cfg.DefaultTip);
             return;
         }
 
         if (stats.HasFever)
         {
             AiStatusIcon = "🌡️";
-            AiStatusTitle = "体温偏高需关注";
+            AiStatusTitle = FormatTitle(cfg.FeverTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = $"当前体温{stats.LatestTemperature?.ToString("F1")}℃";
-            AiTipText = "多喂温水，物理降温，持续发热请及时就医";
+            SetStaticTip(cfg.FeverTip);
         }
         else if (stats.HasDiarrhea)
         {
             AiStatusIcon = "⚠️";
-            AiStatusTitle = "肠胃需要呵护";
+            AiStatusTitle = FormatTitle(cfg.DiarrheaTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = "今日有腹泻记录";
-            AiTipText = "注意补充水分和电解质，清淡饮食为主";
+            SetStaticTip(cfg.DiarrheaTip);
         }
         else if (stats.FeedCount >= 6 && stats.SleepTotalMin >= 480)
         {
             AiStatusIcon = "😊";
-            AiStatusTitle = "小铃铛状态良好";
+            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = "吃得好睡得香~";
-            AiTipText = "继续保持规律作息，户外活动有助于维生素D合成";
+            StartTipCarousel(cfg.DailyTips);
         }
         else if (stats.FeedCount == 0 && stats.DiaperCount == 0)
         {
             AiStatusIcon = "📝";
-            AiStatusTitle = "今天还没开始记录哦";
+            AiStatusTitle = FormatTitle(cfg.NoRecordTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = "点击下方快捷按钮开始吧";
-            AiTipText = "坚持记录能更了解宝宝成长变化";
+            SetStaticTip(cfg.DefaultTip);
         }
         else
         {
             AiStatusIcon = "☀️";
-            AiStatusTitle = "小铃铛状态良好";
+            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
             AiStatusSubtitle = "正在快乐成长中~";
-            AiTipText = "洗澡水温37~38℃最适合，用手肘试温";
+            StartTipCarousel(cfg.DailyTips);
         }
+    }
+
+    /// <summary>
+    /// 用宝宝姓名填充标题模板。
+    /// 对齐小程序 babyName + '状态良好' 拼接行为：模板含 {0} 时填充姓名，
+    /// 否则原样返回；姓名为空（未添加宝宝）时回退到 NoBabyTitle。
+    /// </summary>
+    private static string FormatTitle(string template, string babyName, string noBabyTitle)
+    {
+        if (string.IsNullOrWhiteSpace(babyName)) return noBabyTitle;
+        return template.Contains("{0}")
+            ? string.Format(template, babyName)
+            : template;
+    }
+
+    /// <summary>设置单条静态提示并停止轮播（异常/未记录状态）。</summary>
+    private void SetStaticTip(string tip)
+    {
+        _tipCarouselTimer.Stop();
+        _currentTipPool = Array.Empty<string>();
+        _tipCarouselIndex = 0;
+        AiTipText = tip;
+    }
+
+    /// <summary>
+    /// 启动提示轮播（对齐小程序 good-status 组件 vertical swiper，5 秒间隔、循环播放）。
+    /// 每次刷新会重置索引；空池时回退到默认提示。
+    /// </summary>
+    private void StartTipCarousel(IReadOnlyList<string> tips)
+    {
+        if (tips.Count == 0)
+        {
+            SetStaticTip(DailyTipsCatalog.Current.DefaultTip);
+            return;
+        }
+
+        // 若池内容未变则保持当前索引，避免刷新打断轮播节奏
+        if (!ReferenceEquals(_currentTipPool, tips) && !_currentTipPool.SequenceEqual(tips))
+        {
+            _currentTipPool = tips;
+            _tipCarouselIndex = 0;
+        }
+        else
+        {
+            _currentTipPool = tips;
+        }
+
+        AiTipText = _currentTipPool[_tipCarouselIndex];
+
+        _tipCarouselTimer.Stop();
+        _tipCarouselTimer.Tick -= OnTipCarouselTick!;
+        _tipCarouselTimer.Tick += OnTipCarouselTick!;
+        _tipCarouselTimer.Start();
+    }
+
+    private void OnTipCarouselTick(object sender, EventArgs e)
+    {
+        if (_currentTipPool.Count == 0) return;
+        _tipCarouselIndex = (_tipCarouselIndex + 1) % _currentTipPool.Count;
+        AiTipText = _currentTipPool[_tipCarouselIndex];
     }
 
     private void RefreshVaccines()
@@ -284,10 +378,211 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         return "今天还没有记录，点击下方快捷操作开始吧";
     }
 
+    /// <summary>
+    /// 刷新活动追踪模块（对齐小程序 activity-tracker）。
+    /// 最近一条活动 = GetByType(activity) 列表的第一条（列表已按 record_time DESC 返回）。
+    /// </summary>
+    private void RefreshActivity()
+    {
+        // 刷新即重置展开/详情状态（对齐小程序 pageVersion observer）
+        IsActivityExpanded = false;
+        IsActivityDetailOpen = false;
+        ActivityTimelineGroups.Clear();
+
+        var activities = _recordService.GetByType(RecordType.Activity, 100);
+        if (activities.Count == 0)
+        {
+            ResetActivity();
+            return;
+        }
+
+        var latest = activities[0];
+        var dto = latest.GetPayload<ActivityRecordDto>();
+        _lastActivityTime = latest.RecordTime;
+        LastActivity = new ActivityLatestItem(
+            dto?.Name ?? string.Empty,
+            dto?.Category ?? latest.RecordSubType ?? "play",
+            dto?.Duration,
+            ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(latest.RecordTime));
+
+        UpdateActivityTimeSince();
+        StartActivitySinceTimer();
+    }
+
+    private void ResetActivity()
+    {
+        StopActivitySinceTimer();
+        _lastActivityTime = null;
+        LastActivity = null;
+        ActivityTimeSince = "--";
+        IsActivityExpanded = false;
+        IsActivityDetailOpen = false;
+        ActivityTimelineGroups.Clear();
+    }
+
+    /// <summary>计算"X小时Y分钟前 / Y分钟前"，对齐小程序 timeSince 格式。</summary>
+    private void UpdateActivityTimeSince()
+    {
+        if (!_lastActivityTime.HasValue)
+        {
+            ActivityTimeSince = "--";
+            return;
+        }
+        var diff = DateTime.Now - _lastActivityTime.Value;
+        var totalMin = Math.Max(0, (int)diff.TotalMinutes);
+        var h = totalMin / 60;
+        var m = totalMin % 60;
+        ActivityTimeSince = h > 0 ? $"{h}小时{m}分钟前" : $"{m}分钟前";
+    }
+
+    private void StartActivitySinceTimer()
+    {
+        _activitySinceTimer.Stop();
+        _activitySinceTimer.Tick -= OnActivitySinceTick!;
+        _activitySinceTimer.Tick += OnActivitySinceTick!;
+        _activitySinceTimer.Start();
+    }
+
+    private void StopActivitySinceTimer()
+    {
+        _activitySinceTimer.Stop();
+        _activitySinceTimer.Tick -= OnActivitySinceTick!;
+    }
+
+    private void OnActivitySinceTick(object sender, EventArgs e)
+    {
+        UpdateActivityTimeSince();
+    }
+
+    /// <summary>
+    /// 构建活动时间轴分组（对齐小程序 buildTimeline）。
+    /// 记录列表已按时间倒序（最新在前），分组时保持该顺序：今天在最上。
+    /// </summary>
+    private void BuildActivityTimeline()
+    {
+        ActivityTimelineGroups.Clear();
+        var activities = _recordService.GetByType(RecordType.Activity, 100);
+        if (activities.Count == 0) return;
+
+        var todayStr = DateTime.Today.ToString("yyyy-MM-dd");
+        ActivityTimelineGroup? current = null;
+        var lastDate = string.Empty;
+
+        foreach (var rec in activities)
+        {
+            var dateStr = rec.RecordTime.ToString("yyyy-MM-dd");
+            if (dateStr != lastDate)
+            {
+                lastDate = dateStr;
+                current = new ActivityTimelineGroup(
+                    dateStr == todayStr ? "今天" : dateStr,
+                    dateStr == todayStr);
+                ActivityTimelineGroups.Add(current);
+            }
+            var dto = rec.GetPayload<ActivityRecordDto>();
+            current!.Items.Add(new ActivityTimelineItem(
+                dto?.Name ?? string.Empty,
+                dto?.Category ?? rec.RecordSubType ?? "play",
+                dto?.Duration,
+                ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(rec.RecordTime)));
+        }
+    }
+
+    /// <summary>
+    /// 刷新异常/生病追踪状态：依据今日 DayStats 的三态标志（发烧/腹泻/其他异常），
+    /// 并从今日异常记录中提取最新摘要。对齐小程序首页 getTodayStats 驱动的状态展示。
+    /// </summary>
+    private void RefreshAbnormal()
+    {
+        var stats = TodayStats;
+        if (stats is null || (!stats.HasFever && !stats.HasDiarrhea && !stats.HasOtherAbnormal))
+        {
+            ResetAbnormal();
+            return;
+        }
+
+        HasActiveAbnormal = true;
+        HasOtherAbnormal = stats.HasOtherAbnormal;
+
+        var statusParts = new List<string>();
+        if (stats.HasFever) statusParts.Add("发烧");
+        if (stats.HasDiarrhea) statusParts.Add("腹泻");
+        if (stats.HasOtherAbnormal) statusParts.Add("其他异常");
+        AbnormalStatusText = string.Join(" · ", statusParts);
+
+        // 摘要：取今日最新一条异常记录，拼体温 + 备注/其他描述
+        var latestAbnormal = _recordService.GetByType(RecordType.Abnormal, 1).FirstOrDefault();
+        if (latestAbnormal is not null)
+        {
+            var summaryParts = new List<string>();
+            if (latestAbnormal.TemperatureValue.HasValue)
+                summaryParts.Add($"{latestAbnormal.TemperatureValue:F1}℃");
+            AbnormalRecordDto? dto = null;
+            try { dto = latestAbnormal.GetPayload<AbnormalRecordDto>(); } catch { }
+            if (dto is not null)
+            {
+                if (dto.Respiratory.Count > 0)
+                    summaryParts.Add("呼吸道：" + string.Join("、", dto.Respiratory));
+                if (dto.Vomit) summaryParts.Add("呕吐");
+                if (dto.Medicine) summaryParts.Add("已用药");
+                if (!string.IsNullOrWhiteSpace(dto.Note)) summaryParts.Add(dto.Note);
+            }
+            var time = ServiceProvider.Instance.DateTimeFormatter.FormatTime(latestAbnormal.RecordTime);
+            summaryParts.Insert(0, time);
+            AbnormalSummaryText = string.Join(" · ", summaryParts);
+        }
+        else
+        {
+            AbnormalSummaryText = "今日有异常记录，请关注宝宝状态";
+        }
+    }
+
+    private void ResetAbnormal()
+    {
+        HasActiveAbnormal = false;
+        HasOtherAbnormal = false;
+        AbnormalStatusText = string.Empty;
+        AbnormalSummaryText = string.Empty;
+    }
+
+    /// <summary>
+    /// 标记「其他异常」已恢复：写入一条 abnormal_resolved 占位记录，
+    /// 对齐小程序 markAbnormalResolved 的语义（写入恢复标记记录，聚合时不再计入活动异常）。
+    /// </summary>
+    [RelayCommand]
+    private void MarkAbnormalResolved()
+    {
+        _recordService.MarkResolved(RecordType.AbnormalResolved);
+        Refresh();
+    }
+
     [RelayCommand]
     private void QuickRecord(string type)
     {
         QuickRecordRequested?.Invoke(type);
+    }
+
+    [RelayCommand]
+    private void ToggleActivityPanel()
+    {
+        IsActivityExpanded = !IsActivityExpanded;
+    }
+
+    [RelayCommand]
+    private void ToggleActivityDetail()
+    {
+        // 首次打开时构建时间轴分组（对齐小程序 onToggleDetail）
+        if (!IsActivityDetailOpen)
+        {
+            BuildActivityTimeline();
+        }
+        IsActivityDetailOpen = !IsActivityDetailOpen;
+    }
+
+    [RelayCommand]
+    private void CloseActivityDetail()
+    {
+        IsActivityDetailOpen = false;
     }
 
     [RelayCommand]
@@ -345,5 +640,56 @@ public sealed class VaccineItem
     public VaccineItem(string name, string category, int daysLater, bool isDone)
     {
         Name = name; Category = category; DaysLater = daysLater; IsDone = isDone;
+    }
+}
+
+/// <summary>
+/// 活动追踪"最近活动"展示项（对齐小程序 activity-tracker 的 lastActivity）。
+/// </summary>
+public sealed class ActivityLatestItem
+{
+    public string Name { get; }
+    public string Category { get; }
+    public int? Duration { get; }
+    /// <summary>格式化的记录时间（yyyy-MM-dd HH:mm）。</summary>
+    public string Time { get; }
+    /// <summary>类别展示文本（🌳 室外 / 🏠 室内），对齐小程序 at-cat。</summary>
+    public string CategoryText => Category == "outdoor" ? "🌳 室外" : "🏠 室内";
+    /// <summary>类别 emoji（时间轴卡片用），对齐小程序 at-tl-cat。</summary>
+    public string CategoryEmoji => Category == "outdoor" ? "🌳" : "🏠";
+    /// <summary>时长展示文本（仅当 duration 存在）。</summary>
+    public string DurationText => Duration.HasValue ? $"⏱ {Duration}分钟" : string.Empty;
+
+    public ActivityLatestItem(string name, string category, int? duration, string time)
+    {
+        Name = name; Category = category; Duration = duration; Time = time;
+    }
+}
+
+/// <summary>活动时间轴分组（按日期分组，对齐小程序 timelineGroups）。</summary>
+public sealed class ActivityTimelineGroup
+{
+    public string Label { get; }
+    public bool IsToday { get; }
+    public ObservableCollection<ActivityTimelineItem> Items { get; } = new();
+    public ActivityTimelineGroup(string label, bool isToday)
+    {
+        Label = label; IsToday = isToday;
+    }
+}
+
+/// <summary>活动时间轴单项（对齐小程序 at-tl-item）。</summary>
+public sealed class ActivityTimelineItem
+{
+    public string Name { get; }
+    public string Category { get; }
+    public int? Duration { get; }
+    public string Time { get; }
+    public string CategoryEmoji => Category == "outdoor" ? "🌳" : "🏠";
+    public string DurationText => Duration.HasValue ? $"⏱ {Duration}分钟" : string.Empty;
+
+    public ActivityTimelineItem(string name, string category, int? duration, string time)
+    {
+        Name = name; Category = category; Duration = duration; Time = time;
     }
 }
