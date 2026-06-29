@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Android.App;
 using Android.Graphics;
 using Android.Views;
@@ -11,8 +12,8 @@ namespace ChildNotes.Android.Services;
 /// 通过 ViewTreeObserver.OnGlobalLayoutListener 检测 DecorView 可见区域变化，
 /// 计算真实键盘高度（像素），并通过回调通知 Avalonia 层。
 ///
-/// 使用方式：在 MainActivity.OnCreate 中调用 <see cref="StartObserving"/>，
-/// 在 OnDestroy 中调用 <see cref="StopObserving"/>。
+/// 内置防抖：键盘动画期间 DecorView 高度会快速跳变（如 537→0→537），
+/// 忽略短时间内（&lt;200ms）从正值跳回 0 的抖动，避免 Avalonia 层收到错误的"键盘已收起"信号。
 /// </summary>
 public static class KeyboardHeightService
 {
@@ -27,12 +28,12 @@ public static class KeyboardHeightService
 
     public static void StartObserving(Activity activity)
     {
-        if (_listener is not null) return; // 已在监听
+        if (_listener is not null) return;
 
         _decorView = activity.Window?.DecorView;
         if (_decorView is null) return;
 
-        _listener = new GlobalLayoutListener(activity);
+        _listener = new GlobalLayoutListener();
         _decorView.ViewTreeObserver.AddOnGlobalLayoutListener(_listener);
     }
 
@@ -51,27 +52,36 @@ public static class KeyboardHeightService
 
     private class GlobalLayoutListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
-        private readonly Activity _activity;
         private readonly Rect _rect = new();
-
-        public GlobalLayoutListener(Activity activity) => _activity = activity;
+        // 防抖：上次报告正高度的时间戳，用于抑制动画期间的零值抖动
+        private static long _lastPositiveTickMs;
 
         public void OnGlobalLayout()
         {
             if (_decorView is null) return;
 
-            _decorView?.GetWindowVisibleDisplayFrame(_rect);
-            // 键盘高度 = 屏幕高度 - 可见区域底部（状态栏 + 内容可见区）
+            _decorView.GetWindowVisibleDisplayFrame(_rect);
             var screenHeight = _decorView.RootView.Height;
-            var keyboardHeight = screenHeight - _rect.Bottom;
+            var rawHeight = screenHeight - _rect.Bottom;
 
-            // 考虑到导航栏等：负值或过小值视为键盘未弹出
-            if (keyboardHeight < 100)
-                keyboardHeight = 0;
+            // 过小值视为无键盘
+            var keyboardHeight = rawHeight < 100 ? 0 : rawHeight;
+
+            // 防抖：如果当前是 0 但上次报告正值不到 200ms，忽略这次零值
+            // （键盘弹起动画期间 DecorView 会短暂恢复全屏高度）
+            if (keyboardHeight == 0 && KeyboardHeightPx > 0)
+            {
+                var now = Stopwatch.GetTimestamp();
+                var elapsedMs = (now - _lastPositiveTickMs) * 1000 / Stopwatch.Frequency;
+                if (elapsedMs < 200) return; // 忽略抖动
+            }
 
             if (keyboardHeight != KeyboardHeightPx)
             {
                 KeyboardHeightPx = keyboardHeight;
+                if (keyboardHeight > 0)
+                    _lastPositiveTickMs = Stopwatch.GetTimestamp();
+
                 try { OnKeyboardHeightChanged?.Invoke(keyboardHeight); }
                 catch { /* 回调异常不影响主流程 */ }
             }
