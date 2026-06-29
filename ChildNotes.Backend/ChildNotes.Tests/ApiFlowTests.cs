@@ -1,5 +1,7 @@
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;

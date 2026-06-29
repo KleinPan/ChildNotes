@@ -4,6 +4,7 @@ using System.Text.Json;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Shared.Sync;
 
 namespace ChildNotes.Services;
 
@@ -132,7 +133,7 @@ public sealed class ApiSyncService : BaseApiClient
             var localBabies = _babyRepo.GetByUpdatedAt(pushSince);
             var localRecords = _recordRepo.GetByUpdatedAt(pushSince);
 
-            var pushReq = new PushRequest
+            var pushReq = new SyncBatchRequest
             {
                 Babies = localBabies.Select(MapToBabyItem).ToList(),
                 Records = localRecords.Select(MapToRecordItem).ToList(),
@@ -264,7 +265,7 @@ public sealed class ApiSyncService : BaseApiClient
         }
     }
 
-    private async Task<PullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, CancellationToken ct)
+    private async Task<SyncPullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, CancellationToken ct)
     {
         try
         {
@@ -274,7 +275,7 @@ public sealed class ApiSyncService : BaseApiClient
                     var path = "/api/sync/pull?since=" + Uri.EscapeDataString(since.ToUniversalTime().ToString("O"))
                                + "&limit=" + limit;
                     using var resp = await SendWithTokenV2Async(_cfgRepo, server, token, HttpMethod.Get, path, null, ct);
-                    return await ReadDataAsync<PullResponse>(resp, ct)
+                    return await ReadDataAsync<SyncPullResponse>(resp, ct)
                         ?? throw new SyncException(SyncErrorKind.Business, "Pull 响应解析失败");
                 },
                 serverUrl, ct);
@@ -294,7 +295,7 @@ public sealed class ApiSyncService : BaseApiClient
         }
     }
 
-    private async Task<PushResponse?> PushWithRetryAsync(string serverUrl, string token, PushRequest req, CancellationToken ct)
+    private async Task<SyncBatchResponse?> PushWithRetryAsync(string serverUrl, string token, SyncBatchRequest req, CancellationToken ct)
     {
         try
         {
@@ -303,7 +304,7 @@ public sealed class ApiSyncService : BaseApiClient
                 {
                     var body = Serialize(req);
                     using var resp = await SendWithTokenV2Async(_cfgRepo, server, token, HttpMethod.Post, "/api/sync/push", body, ct);
-                    return await ReadDataAsync<PushResponse>(resp, ct)
+                    return await ReadDataAsync<SyncBatchResponse>(resp, ct)
                         ?? throw new SyncException(SyncErrorKind.Business, "Push 响应解析失败");
                 },
                 serverUrl, ct);
@@ -315,73 +316,16 @@ public sealed class ApiSyncService : BaseApiClient
         }
     }
 
-    // ===== DTO（仅客户端使用，与后端字段对齐）=====
+    // ===== 映射方法：本地实体 ↔ 共享同步 DTO（ChildNotes.Shared.Sync）=====
 
-    private sealed class PullResponse
-    {
-        public List<BabyItem> Babies { get; set; } = new();
-        public List<RecordItem> Records { get; set; } = new();
-        public DateTime ServerTime { get; set; }
-        public bool HasMore { get; set; }
-        public DateTime? NextCursor { get; set; }
-    }
-
-    private sealed class PushRequest
-    {
-        public List<BabyItem> Babies { get; set; } = new();
-        public List<RecordItem> Records { get; set; } = new();
-    }
-
-    private sealed class PushResponse
-    {
-        public int RecordsUpserted { get; set; }
-        public int BabiesUpserted { get; set; }
-        public DateTime ServerTime { get; set; }
-    }
-
-    private sealed class BabyItem
-    {
-        public long Id { get; set; }
-        public long UserId { get; set; }
-        public string Name { get; set; } = "";
-        public string Avatar { get; set; } = "";
-        public string Gender { get; set; } = "";
-        public DateTime? BirthDate { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-    }
-
-    private sealed class RecordItem
-    {
-        public long Id { get; set; }
-        public long UserId { get; set; }
-        public long? BabyId { get; set; }
-        public string RecordType { get; set; } = "";
-        public string? RecordSubType { get; set; }
-        public DateTime RecordDate { get; set; }
-        public DateTime RecordTime { get; set; }
-        public int? AmountMl { get; set; }
-        public int? DurationSec { get; set; }
-        public int? LeftDurationSec { get; set; }
-        public int? RightDurationSec { get; set; }
-        public bool? AbnormalFlag { get; set; }
-        public decimal? TemperatureValue { get; set; }
-        public decimal? HeightCm { get; set; }
-        public decimal? WeightKg { get; set; }
-        public string PayloadJson { get; set; } = "{}";
-        public bool Deleted { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-    }
-
-    private static Baby MapToBaby(BabyItem i) => new()
+    private static Baby MapToBaby(SyncBabyItem i) => new()
     {
         Id = i.Id, UserId = i.UserId, Name = i.Name, Avatar = i.Avatar ?? "",
         Gender = i.Gender ?? "", BirthDate = i.BirthDate,
         CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
     };
 
-    private static ChildRecord MapToRecord(RecordItem i) => new()
+    private static ChildRecord MapToRecord(SyncRecordItem i) => new()
     {
         Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
         RecordType = i.RecordType, RecordSubType = i.RecordSubType,
@@ -394,14 +338,14 @@ public sealed class ApiSyncService : BaseApiClient
         CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
     };
 
-    private static BabyItem MapToBabyItem(Baby b) => new()
+    private static SyncBabyItem MapToBabyItem(Baby b) => new()
     {
         Id = b.Id, UserId = b.UserId, Name = b.Name, Avatar = b.Avatar ?? "",
         Gender = b.Gender ?? "", BirthDate = b.BirthDate,
         CreatedAt = b.CreatedAt, UpdatedAt = b.UpdatedAt,
     };
 
-    private static RecordItem MapToRecordItem(ChildRecord r) => new()
+    private static SyncRecordItem MapToRecordItem(ChildRecord r) => new()
     {
         Id = r.Id, UserId = r.UserId, BabyId = r.BabyId,
         RecordType = r.RecordType, RecordSubType = r.RecordSubType,

@@ -1,14 +1,9 @@
+using ChildNotes.Shared.Entities;
+
 namespace ChildNotes.Models;
 
-public sealed class UserPoints
+public sealed class UserPoints : UserPointsBase
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public int Points { get; set; }
-    public int TotalEarned { get; set; }
-    public int TotalSpent { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
 }
 
 public sealed class SignInRecord

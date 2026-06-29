@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
+using BabyFamilyItem = ChildNotes.Shared.Dtos.BabyFamilyDto;
 
 namespace ChildNotes.ViewModels;
 
@@ -18,7 +20,7 @@ public partial class FamilyViewModel : ViewModelBase
     public ObservableCollection<BabyFamilyItem> Families { get; } = new();
 
     /// <summary>角色选项。</summary>
-    public IReadOnlyList<RoleOptionItem> RoleOptions => FamilyRoleOptions.All;
+    public IReadOnlyList<RoleOption> RoleOptions => FamilyRoles.All;
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasData;
@@ -110,7 +112,7 @@ public partial class FamilyViewModel : ViewModelBase
             return;
         }
         IsJoinOpen = false;
-        ShowToastMsg($"已加入，角色：{FamilyRoleOptions.GetRoleName(JoinRoleCode)}");
+        ShowToastMsg($"已加入，角色：{FamilyRoles.GetRoleName(JoinRoleCode)}");
         await LoadAsync();
     }
 
@@ -140,7 +142,7 @@ public partial class FamilyViewModel : ViewModelBase
             return;
         }
         IsRoleEditorOpen = false;
-        DisplayToast($"角色已更新为：{FamilyRoleOptions.GetRoleName(EditingRoleCode)}");
+        DisplayToast($"角色已更新为：{FamilyRoles.GetRoleName(EditingRoleCode)}");
         await LoadAsync();
     }
 

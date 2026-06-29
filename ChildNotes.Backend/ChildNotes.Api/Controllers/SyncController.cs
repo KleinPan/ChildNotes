@@ -1,4 +1,5 @@
 using ChildNotes.Core.Services;
+using ChildNotes.Shared.Sync;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChildNotes.Api.Controllers;

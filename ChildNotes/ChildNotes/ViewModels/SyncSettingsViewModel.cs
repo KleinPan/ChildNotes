@@ -8,8 +8,9 @@ using ChildNotes.Services;
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 同步设置页 ViewModel：管理 sync_config 配置 + 手动触发同步。
-/// 服务器地址由 <see cref="ServerEndpoints"/> 硬编码，UI 不再提供编辑入口。
+/// 同步设置页 ViewModel：管理 sync_config 的 enabled 开关 + 手动触发同步。
+/// 服务器地址由 <see cref="ServerEndpoints"/> 硬编码，登录凭据由登录流程自动写入，
+/// UI 不再提供账号/密码/服务器编辑入口。
 /// </summary>
 public partial class SyncSettingsViewModel : ViewModelBase
 {
@@ -18,8 +19,6 @@ public partial class SyncSettingsViewModel : ViewModelBase
     private readonly NetworkMonitor _networkMonitor = ServiceProvider.Instance.NetworkMonitor;
 
     [ObservableProperty] private bool _enabled;
-    [ObservableProperty] private string _username = string.Empty;
-    [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private string _lastSyncText = "尚未同步";
     [ObservableProperty] private string _statusText = string.Empty;
     [ObservableProperty] private bool _isSyncing;
@@ -38,6 +37,9 @@ public partial class SyncSettingsViewModel : ViewModelBase
 
     partial void OnIsSyncingChanged(bool value) => OnPropertyChanged(nameof(SyncButtonText));
 
+    /// <summary>开关切换时自动保存到 sync_config（无需单独保存按钮）。</summary>
+    partial void OnEnabledChanged(bool value) => PersistEnabled();
+
     public SyncSettingsViewModel()
     {
         Title = "数据同步";
@@ -47,13 +49,25 @@ public partial class SyncSettingsViewModel : ViewModelBase
         _trigger.SyncCompleted += OnSyncCompleted;
     }
 
+    private bool _loading = true;
+
     private void Load()
     {
         var cfg = _cfgRepo.Get();
         Enabled = cfg.Enabled;
-        Username = cfg.Username;
-        Password = cfg.Password;
         UpdateLastSyncText(cfg);
+        _loading = false;
+    }
+
+    /// <summary>开关切换时持久化 enabled 字段，跳过首次加载触发。</summary>
+    private void PersistEnabled()
+    {
+        if (_loading) return;
+        var cfg = _cfgRepo.Get();
+        if (cfg.Enabled == Enabled) return;
+        cfg.Enabled = Enabled;
+        _cfgRepo.Save(cfg);
+        ShowToastMsg(Enabled ? "已启用云同步" : "已关闭云同步");
     }
 
     private void UpdateLastSyncText(SyncConfig cfg)
@@ -92,24 +106,9 @@ public partial class SyncSettingsViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Save()
-    {
-        var cfg = _cfgRepo.Get();
-        cfg.Enabled = Enabled;
-        cfg.Username = Username.Trim();
-        if (!string.IsNullOrWhiteSpace(Password))
-            cfg.Password = Password; // 仅在用户输入新密码时覆盖
-        // ServerUrl 不再由 UI 配置，保留硬编码值
-        _cfgRepo.Save(cfg);
-        ShowToastMsg("已保存");
-    }
-
-    [RelayCommand]
     private async Task SyncNow()
     {
         if (IsSyncing) return;
-        // 先保存当前编辑值，确保同步使用最新配置
-        Save();
         IsSyncing = true;
         StatusText = "同步中…";
         try

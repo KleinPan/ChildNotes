@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Constants;
 using ChildNotes.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;

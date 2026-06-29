@@ -1,5 +1,8 @@
-namespace ChildNotes.Core.Constants;
+namespace ChildNotes.Shared.Constants;
 
+/// <summary>
+/// 家庭角色选项。前后端共享，确保 UI 选项与数据库存储的 role code 一致。
+/// </summary>
 public static class FamilyRoles
 {
     public static readonly IReadOnlyList<RoleOption> All = new[]

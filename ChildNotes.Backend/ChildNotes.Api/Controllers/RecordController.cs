@@ -1,6 +1,8 @@
 using System.Text.Json;
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 

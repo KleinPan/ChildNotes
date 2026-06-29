@@ -1,7 +1,12 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace ChildNotes.Models.Dtos;
+namespace ChildNotes.Shared.Dtos;
 
+/// <summary>
+/// 记录 DTO。前后端共享，确保 HTTP API 请求/响应字段一致。
+/// 修改此文件需同步构建前后端。
+/// </summary>
 public abstract class BaseRecordDto
 {
     public long Id { get; set; }
@@ -147,4 +152,26 @@ public sealed class MilestoneRecordDto
     public string? Content { get; set; }
     public string Date { get; set; } = string.Empty;
     public List<string> Photos { get; set; } = new();
+}
+
+/// <summary>按日期分组的记录响应（后端专用，前端不需要但保留以保持共享契约完整）。</summary>
+public sealed class DailyRecordsResponse
+{
+    public DateTime Date { get; set; }
+    public Dictionary<string, List<JsonElement>> RecordsByType { get; set; } = new();
+}
+
+/// <summary>日统计响应（后端专用）。</summary>
+public sealed class DailyStatsResponse
+{
+    public DateTime Date { get; set; }
+    public int TotalCount { get; set; }
+    public int? FeedCount { get; set; }
+    public int? FeedMl { get; set; }
+    public int? SleepCount { get; set; }
+    public int? SleepDurationSec { get; set; }
+    public int? DiaperCount { get; set; }
+    public decimal? MaxTemperature { get; set; }
+    public decimal? LatestHeight { get; set; }
+    public decimal? LatestWeight { get; set; }
 }

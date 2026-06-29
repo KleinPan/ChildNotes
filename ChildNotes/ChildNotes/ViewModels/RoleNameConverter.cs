@@ -1,5 +1,5 @@
 using Avalonia.Data.Converters;
-using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 using System.Globalization;
 
 namespace ChildNotes.ViewModels;
@@ -14,7 +14,7 @@ public sealed class RoleNameConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         var code = value?.ToString() ?? "";
-        return string.IsNullOrEmpty(code) ? "未选择" : FamilyRoleOptions.GetRoleName(code);
+        return string.IsNullOrEmpty(code) ? "未选择" : FamilyRoles.GetRoleName(code);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

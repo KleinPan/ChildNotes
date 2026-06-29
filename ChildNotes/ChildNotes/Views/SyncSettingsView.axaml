@@ -22,14 +22,41 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <!-- 启用开关 -->
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,12,12,4">
-                    <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0">
-                            <TextBlock Text="启用云同步" FontSize="15"/>
-                            <TextBlock Text="关闭时本地数据仍可正常使用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
+                <!-- 同步（核心操作区：开关 + 同步状态合并） -->
+                <Border Classes="section-title">
+                    <TextBlock Text="同步"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="启用云同步" FontSize="15"/>
+                                <TextBlock Text="关闭时本地数据仍可正常使用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding LastSyncText}" FontSize="14"/>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 立即同步（主操作按钮） -->
+                <Button Content="{Binding SyncButtonText}"
+                        Classes="weui-btn primary" Margin="12,8,12,16" HorizontalAlignment="Stretch"
+                        Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}"/>
+
+                <!-- 服务器（地址内置，只读展示） -->
+                <Border Classes="section-title">
+                    <TextBlock Text="服务器"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <Grid Margin="14,12" ColumnDefinitions="80,*">
+                        <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
+                                   Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                     </Grid>
                 </Border>
 
@@ -40,66 +67,9 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding NetworkStateText}" FontSize="14"/>
-                        <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center">
-                            <Ellipse.Fill>
-                                <SolidColorBrush Color="#07C160"/>
-                            </Ellipse.Fill>
-                            <Ellipse.Styles>
-                                <Style Selector="Ellipse">
-                                    <Setter Property="Opacity" Value="1"/>
-                                </Style>
-                            </Ellipse.Styles>
-                        </Ellipse>
+                        <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center" Fill="#07C160"/>
                     </Grid>
                 </Border>
-
-                <!-- 账号配置（服务器地址硬编码，不再可编辑） -->
-                <Border Classes="section-title">
-                    <TextBlock Text="账号配置"/>
-                </Border>
-
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
-                    <StackPanel>
-                        <Grid Margin="14,10" ColumnDefinitions="80,*">
-                            <TextBlock Grid.Column="0" Text="服务器" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
-                                       Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
-                        <Grid Margin="14,10" ColumnDefinitions="80,*">
-                            <TextBlock Grid.Column="0" Text="用户名" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1" Text="{Binding Username}" Watermark="登录用户名"
-                                     Background="Transparent" BorderThickness="0"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
-                        <Grid Margin="14,10" ColumnDefinitions="80,*">
-                            <TextBlock Grid.Column="0" Text="密码" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1" Text="{Binding Password}" Watermark="留空表示不修改"
-                                     PasswordChar="•" Background="Transparent" BorderThickness="0"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Button Content="保存配置" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
-                        Command="{Binding SaveCommand}"/>
-
-                <!-- 同步状态与手动触发 -->
-                <Border Classes="section-title">
-                    <TextBlock Text="同步状态"/>
-                </Border>
-
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
-                    <StackPanel>
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{Binding LastSyncText}" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <Button Content="{Binding SyncButtonText}"
-                        Classes="weui-btn default" Margin="12,8,12,16" HorizontalAlignment="Stretch"
-                        Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}"/>
 
                 <!-- 说明 -->
                 <Border Classes="section-title">
@@ -108,7 +78,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
                         <TextBlock Text="• 本地数据为优先源，离线可正常使用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 服务器地址由应用内置，无需配置" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 服务器地址与登录账号由应用自动配置，无需手动填写" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 网络恢复后自动同步；新增记录 5 秒后自动同步" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 同步失败会自动重试，瞬时错误无需手动干预" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 冲突按更新时间合并（后写覆盖）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>

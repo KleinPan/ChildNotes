@@ -1,0 +1,25 @@
+<Solution>
+  <!--
+    仓库根级统一解决方案入口。
+    由于 slnx 格式要求项目名唯一，而前后端各有一个名为 ChildNotes.Tests 的项目，
+    此处只包含前后端的主项目（非测试），测试项目请通过各自的子 slnx 打开：
+      - 前端测试：ChildNotes/ChildNotes.slnx
+      - 后端测试：ChildNotes.Backend/ChildNotes.Backend.slnx
+  -->
+  <!-- 后端 (ASP.NET Core) -->
+  <Project Path="ChildNotes.Backend/ChildNotes.Api/ChildNotes.Api.csproj" />
+  <Project Path="ChildNotes.Backend/ChildNotes.Core/ChildNotes.Core.csproj" />
+  <Project Path="ChildNotes.Backend/ChildNotes.Infrastructure/ChildNotes.Infrastructure.csproj" />
+  <!-- 共享契约 (前后端通用) -->
+  <Project Path="ChildNotes.Shared/ChildNotes.Shared.csproj" />
+  <!-- 前端 (Avalonia) -->
+  <Project Path="ChildNotes/ChildNotes/ChildNotes.csproj" />
+  <Project Path="ChildNotes/ChildNotes.Desktop/ChildNotes.Desktop.csproj" />
+  <Project Path="ChildNotes/ChildNotes.Android/ChildNotes.Android.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="ChildNotes/ChildNotes.iOS/ChildNotes.iOS.csproj">
+    <Deploy />
+  </Project>
+  <Project Path="ChildNotes/ChildNotes.UiDesignCheck/ChildNotes.UiDesignCheck.csproj" />
+</Solution>

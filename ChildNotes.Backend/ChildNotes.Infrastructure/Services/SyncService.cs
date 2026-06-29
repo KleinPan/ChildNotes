@@ -1,6 +1,7 @@
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
+using ChildNotes.Shared.Sync;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 

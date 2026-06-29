@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
-using ChildNotes.Models.Dtos;
+using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 

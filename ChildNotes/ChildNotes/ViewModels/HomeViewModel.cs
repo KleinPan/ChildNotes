@@ -3,8 +3,9 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
+using ChildNotes.Shared.Constants;
 using ChildNotes.Models;
-using ChildNotes.Models.Dtos;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;

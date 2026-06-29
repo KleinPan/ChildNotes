@@ -1,4 +1,5 @@
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.Core.Services;
 

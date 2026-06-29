@@ -1,4 +1,5 @@
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 

@@ -1,5 +1,10 @@
 using System.Net.Http;
 using ChildNotes.Data.Repositories;
+using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
+// 前端历史命名 → 共享 DTO 别名（保持调用方代码不变）
+using BabyFamilyItem = ChildNotes.Shared.Dtos.BabyFamilyDto;
+using FamilyMemberItem = ChildNotes.Shared.Dtos.BabyMemberDto;
 
 namespace ChildNotes.Services;
 
@@ -37,57 +42,6 @@ public sealed class FamilyApiClient : BaseApiClient
     }
 }
 
-/// <summary>与后端 BabyFamilyDto 对齐。</summary>
-public sealed class BabyFamilyItem
-{
-    public long BabyId { get; set; }
-    public string BabyName { get; set; } = "";
-    public List<FamilyMemberItem> Members { get; set; } = new();
-}
+// BabyFamilyItem / FamilyMemberItem 已迁移至 ChildNotes.Shared.Dtos（前后端共享）
+// 本文件顶部通过 using 别名保留前端历史命名，调用方代码无需改动。
 
-/// <summary>与后端 BabyMemberDto 对齐。</summary>
-public sealed class FamilyMemberItem
-{
-    public long Id { get; set; }
-    public long BabyId { get; set; }
-    public long UserId { get; set; }
-    public string NickName { get; set; } = "";
-    public string AvatarUrl { get; set; } = "";
-    public string RoleCode { get; set; } = "";
-    public string RoleName { get; set; } = "";
-    public bool Owner { get; set; }
-    public bool Mine { get; set; }
-}
-
-/// <summary>角色选项（与后端 FamilyRoles 保持一致）。</summary>
-public static class FamilyRoleOptions
-{
-    public static readonly IReadOnlyList<RoleOptionItem> All = new[]
-    {
-        new RoleOptionItem("father", "爸爸"),
-        new RoleOptionItem("mother", "妈妈"),
-        new RoleOptionItem("grandpa", "爷爷"),
-        new RoleOptionItem("grandma", "奶奶"),
-        new RoleOptionItem("maternalGrandpa", "外公"),
-        new RoleOptionItem("maternalGrandma", "外婆"),
-        new RoleOptionItem("uncle", "叔叔"),
-        new RoleOptionItem("aunt", "阿姨"),
-        new RoleOptionItem("paternalAunt", "姑姑"),
-        new RoleOptionItem("maternalUncle", "舅舅"),
-        new RoleOptionItem("nanny", "保姆"),
-        new RoleOptionItem("other", "其他"),
-    };
-
-    public static string GetRoleName(string code)
-    {
-        foreach (var r in All) if (r.Code == code) return r.Name;
-        return "家人";
-    }
-}
-
-public sealed class RoleOptionItem
-{
-    public string Code { get; }
-    public string Name { get; }
-    public RoleOptionItem(string code, string name) { Code = code; Name = name; }
-}

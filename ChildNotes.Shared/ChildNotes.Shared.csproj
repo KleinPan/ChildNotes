@@ -4,10 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Description>前后端共享的纯 POCO / 常量 / DTO / 协议契约。不依赖任何 UI 或 ORM 框架。</Description>
   </PropertyGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\ChildNotes.Shared\ChildNotes.Shared.csproj" />
-  </ItemGroup>
 
 </Project>

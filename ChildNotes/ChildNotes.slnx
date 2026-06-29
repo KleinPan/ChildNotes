@@ -1,8 +1,5 @@
 <Solution>
-  <Project Path="../ChildNotes.Backend/ChildNotes.Api/ChildNotes.Api.csproj" />
-  <Project Path="../ChildNotes.Backend/ChildNotes.Core/ChildNotes.Core.csproj" />
-  <Project Path="../ChildNotes.Backend/ChildNotes.Infrastructure/ChildNotes.Infrastructure.csproj" />
-  <Project Path="../ChildNotes.Backend/ChildNotes.Tests/ChildNotes.Tests.csproj" />
+  <!-- 前端 (Avalonia) 项目。后端项目请使用仓库根的 AiJi.slnx 或 ChildNotes.Backend.slnx -->
   <Project Path="ChildNotes.Android/ChildNotes.Android.csproj">
     <Deploy />
   </Project>
@@ -12,4 +9,5 @@
   </Project>
   <Project Path="ChildNotes/ChildNotes.csproj" />
   <Project Path="ChildNotes.UiDesignCheck/ChildNotes.UiDesignCheck.csproj" />
+  <Project Path="ChildNotes.Tests/ChildNotes.Tests.csproj" />
 </Solution>

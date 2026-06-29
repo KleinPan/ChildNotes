@@ -1,6 +1,7 @@
 using Avalonia.Data.Converters;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 using System.Globalization;
 
 namespace ChildNotes.Views;

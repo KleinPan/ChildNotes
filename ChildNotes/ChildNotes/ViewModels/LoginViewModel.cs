@@ -8,6 +8,7 @@ namespace ChildNotes.ViewModels;
 public partial class LoginViewModel : ViewModelBase
 {
     private readonly AuthService _auth = ServiceProvider.Instance.AuthService;
+    private readonly Data.Repositories.SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
 
     [ObservableProperty] private string _username = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
@@ -38,6 +39,9 @@ public partial class LoginViewModel : ViewModelBase
 
             if (result.Success)
             {
+                // 登录/注册成功后把凭据写入 sync_config，供 ApiSyncService 调用 /api/auth/login 取 token。
+                // 这样同步页无需再单独输入账号密码，凭据随登录自动同步。
+                SaveCredentialsToSyncConfig();
                 ServiceProvider.Instance.BindUserToState();
                 DevLogger.Log("Login", "BindUserToState done");
                 ServiceProvider.Instance.BabyService.LoadBabyList();
@@ -64,6 +68,29 @@ public partial class LoginViewModel : ViewModelBase
             if (ex.InnerException is not null)
                 detail += "\n---> " + ex.InnerException;
             ErrorMessage = "操作失败：" + detail;
+        }
+    }
+
+    /// <summary>
+    /// 把当前登录的用户名/明文密码写入 sync_config。
+    /// 同步功能（ApiSyncService）会以此凭据向服务器换取 token，
+    /// 因此登录后同步页不再需要单独输入账号密码。
+    /// </summary>
+    private void SaveCredentialsToSyncConfig()
+    {
+        try
+        {
+            var cfg = _cfgRepo.Get();
+            cfg.Username = Username.Trim();
+            cfg.Password = Password;
+            // 清空旧 token，避免使用上一账号的失效 token
+            cfg.Token = string.Empty;
+            _cfgRepo.Save(cfg);
+            DevLogger.Log("Login", $"SyncConfig credentials updated: user={cfg.Username}");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Login", "SaveCredentialsToSyncConfig failed: " + ex.Message);
         }
     }
 }

@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
+using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.External;
 

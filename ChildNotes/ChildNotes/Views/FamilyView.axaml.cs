@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using ChildNotes.Services;
 using ChildNotes.ViewModels;
+using BabyFamilyItem = ChildNotes.Shared.Dtos.BabyFamilyDto;
 
 namespace ChildNotes.Views;
 

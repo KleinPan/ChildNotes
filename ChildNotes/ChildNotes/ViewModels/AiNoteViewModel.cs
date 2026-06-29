@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.ViewModels;
 
@@ -390,7 +391,7 @@ note, summary(<=30字一句话), confidence(0~1)。
             case RecordType.Feed:
                 if (r.RecordSubType == "breast")
                 {
-                    _recordService.AddFeed(new Models.Dtos.FeedRecordDto
+                    _recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
                         Type = "breast",
                         Time = time,
@@ -402,7 +403,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 }
                 else
                 {
-                    _recordService.AddFeed(new Models.Dtos.FeedRecordDto
+                    _recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
                         Type = string.IsNullOrEmpty(r.RecordSubType) ? "bottle" : r.RecordSubType,
                         Time = time,
@@ -411,21 +412,21 @@ note, summary(<=30字一句话), confidence(0~1)。
                 }
                 break;
             case RecordType.Diaper:
-                _recordService.AddDiaper(new Models.Dtos.DiaperRecordDto
+                _recordService.AddDiaper(new ChildNotes.Shared.Dtos.DiaperRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.DiaperType) ? (r.RecordSubType ?? "dry") : r.DiaperType,
                     Time = time,
                 });
                 break;
             case RecordType.Sleep:
-                _recordService.AddSleep(new Models.Dtos.SleepRecordDto
+                _recordService.AddSleep(new ChildNotes.Shared.Dtos.SleepRecordDto
                 {
                     Time = time,
                     Duration = r.Duration,
                 });
                 break;
             case RecordType.Temperature:
-                _recordService.AddTemperature(new Models.Dtos.TemperatureRecordDto
+                _recordService.AddTemperature(new ChildNotes.Shared.Dtos.TemperatureRecordDto
                 {
                     Temperature = r.Temperature ?? 0,
                     IsAbnormal = (r.Temperature ?? 0) >= 37.3m,
@@ -434,7 +435,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Growth:
-                _recordService.AddGrowth(new Models.Dtos.GrowthRecordDto
+                _recordService.AddGrowth(new ChildNotes.Shared.Dtos.GrowthRecordDto
                 {
                     Height = r.Height,
                     Weight = r.Weight,
@@ -442,7 +443,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Supplement:
-                _recordService.AddSupplement(new Models.Dtos.SupplementRecordDto
+                _recordService.AddSupplement(new ChildNotes.Shared.Dtos.SupplementRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.RecordSubType) ? "medicine" : r.RecordSubType,
                     Name = r.Note ?? "AI 识别",
@@ -450,7 +451,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Pump:
-                _recordService.AddPump(new Models.Dtos.PumpRecordDto
+                _recordService.AddPump(new ChildNotes.Shared.Dtos.PumpRecordDto
                 {
                     TotalAmount = r.Amount,
                     LeftDuration = r.LeftDuration,
@@ -460,14 +461,14 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Complementary:
-                _recordService.AddComplementary(new Models.Dtos.ComplementaryRecordDto
+                _recordService.AddComplementary(new ChildNotes.Shared.Dtos.ComplementaryRecordDto
                 {
                     FoodName = r.Note,
                     Time = time,
                 });
                 break;
             case RecordType.Abnormal:
-                _recordService.AddAbnormal(new Models.Dtos.AbnormalRecordDto
+                _recordService.AddAbnormal(new ChildNotes.Shared.Dtos.AbnormalRecordDto
                 {
                     Temperature = r.Temperature,
                     Note = r.Note,
@@ -475,7 +476,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Activity:
-                _recordService.AddActivity(new Models.Dtos.ActivityRecordDto
+                _recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
                 {
                     Name = r.Note ?? originalText,
                     Category = r.RecordSubType,
@@ -485,7 +486,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 break;
             default:
                 // 未知类型作为 activity 兜底，原文保留在 Name
-                _recordService.AddActivity(new Models.Dtos.ActivityRecordDto
+                _recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
                 {
                     Name = originalText,
                     Time = time,

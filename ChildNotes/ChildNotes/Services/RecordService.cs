@@ -2,7 +2,8 @@ using System.Text.Json;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
-using ChildNotes.Models.Dtos;
+using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.Services;
 
