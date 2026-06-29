@@ -1,9 +1,10 @@
 using System;
 using System.Diagnostics;
-using Android.App;
 using Android.Graphics;
 using Android.Views;
 using Android.Widget;
+// .NET 10 Android 中 Activity 存在歧义（与 System.Diagnostics.Activity 冲突），使用别名
+using AndroidActivity = Android.App.Activity;
 
 namespace ChildNotes.Android.Services;
 
@@ -26,7 +27,7 @@ public static class KeyboardHeightService
     /// <summary>键盘高度变化回调（高度像素值）。</summary>
     public static Action<int>? OnKeyboardHeightChanged;
 
-    public static void StartObserving(Activity activity)
+    public static void StartObserving(AndroidActivity activity)
     {
         if (_listener is not null) return;
 
