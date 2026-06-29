@@ -44,12 +44,14 @@ jobs:
           # 客户端 - Android 版（APK）
           - target: android
             runner: ubuntu-latest
-          # 客户端 - iOS 版（必须 macOS runner，未签名 .app）
-          - target: ios
-            runner: macos-latest
           # 服务端 - Linux Ubuntu 版（自包含，linux-x64）
           - target: backend
             runner: ubuntu-latest
+          # 注：iOS 不在 CI 构建矩阵中
+          # 原因：.NET 10 iOS SDK 强制 PublishTrimmed=true，ILLink 在 macOS runner 上分析
+          #       大量程序集耗时极长（>45min），且各种关闭 trimming 的属性组合均无效。
+          #       产物本身是未签名 .app，用户仍需 Mac + 开发者证书重签才能安装，
+          #       能重签的用户也能自行 `dotnet publish`。如需本地构建命令参见 Release notes。
 
     steps:
       - name: Checkout
@@ -135,48 +137,21 @@ jobs:
           echo "::notice::APK created: ChildNotes-android-${{ github.ref_name }}.apk"
 
       # ===============================================================
-      # 客户端 - iOS 版（未签名 .app，需 macos runner）
+      # 客户端 - iOS 版
+      # ---------------------------------------------------------------
+      # 不在 CI 构建。原因：
+      # 1. .NET 10 iOS SDK 强制 PublishTrimmed=true，ILLink 在 macOS runner 上
+      #    分析大量程序集耗时极长（>45min），各种关闭 trimming 的属性组合均无效。
+      # 2. CI 产物是未签名 .app，用户仍需 Mac + 开发者证书重签才能安装，
+      #    能重签的用户也能自行 `dotnet publish`。
+      # 本地构建命令（需 Mac + Xcode + dotnet workload install ios）：
+      #   dotnet publish ChildNotes.iOS/ChildNotes.iOS.csproj \
+      #     -c Release -f net10.0-ios -r ios-arm64 \
+      #     -p:RuntimeIdentifier=ios-arm64 \
+      #     -p:EnableCodeSigning=false -p:CodesignEntitlements= \
+      #     -p:PublishTrimmed=true -p:MtouchLink=None -p:TrimMode=copy \
+      #     -o ./artifacts/ios
       # ===============================================================
-      - name: Install iOS workload
-        if: matrix.target == 'ios'
-        shell: bash
-        run: dotnet workload install ios
-
-      - name: Build iOS app
-        if: matrix.target == 'ios'
-        shell: bash
-        working-directory: ChildNotes
-        run: |
-          # 针对真机架构 ios-arm64，禁用代码签名产出未签名 .app
-          # 用户后续需用开发者证书重签后才能安装到设备
-          # .NET 10 iOS SDK 强制要求 PublishTrimmed=true；
-          # 用 MtouchLink=None 跳过 Xamarin.iOS linker，
-          # 再用 TrimMode=copy 让 ILLink 仅复制程序集不做裁剪分析（避免在 macOS runner 上超时，
-          # 也避免 reflection-based JSON 序列化被裁剪后运行时失败）。
-          dotnet publish ChildNotes.iOS/ChildNotes.iOS.csproj \
-            -c Release \
-            -f net10.0-ios \
-            -r ios-arm64 \
-            -p:RuntimeIdentifier=ios-arm64 \
-            -p:EnableCodeSigning=false \
-            -p:CodesignEntitlements= \
-            -p:PublishTrimmed=true \
-            -p:MtouchLink=None \
-            -p:TrimMode=copy \
-            -o ../artifacts/ios
-
-      - name: Archive iOS app
-        if: matrix.target == 'ios'
-        shell: bash
-        run: |
-          APP_DIR=$(find artifacts/ios -maxdepth 1 -name '*.app' -type d | head -n 1)
-          if [ -z "$APP_DIR" ]; then
-            echo "::error::未找到 .app 产物"
-            exit 1
-          fi
-          APP_NAME=$(basename "$APP_DIR")
-          tar -czf "ChildNotes-ios-${{ github.ref_name }}.tar.gz" -C "$(dirname "$APP_DIR")" "$APP_NAME"
-          echo "::notice::Archive created: ChildNotes-ios-${{ github.ref_name }}.tar.gz"
 
       # ===============================================================
       # 服务端 - Linux Ubuntu 版
@@ -217,7 +192,6 @@ jobs:
           path: |
             ChildNotes-windows-${{ github.ref_name }}.zip
             ChildNotes-android-${{ github.ref_name }}.apk
-            ChildNotes-ios-${{ github.ref_name }}.tar.gz
             ChildNotes-backend-${{ github.ref_name }}.tar.gz
           if-no-files-found: error
           retention-days: 30
@@ -286,7 +260,6 @@ jobs:
             | ---- | ---- | ---- |
             | Windows 桌面 | `ChildNotes-windows-*.zip` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |
             | Android | `ChildNotes-android-*.apk` | APK 安装包（debug 签名），生产环境请用正式签名重签 |
-            | iOS | `ChildNotes-ios-*.tar.gz` | 未签名 `.app` 包，需用开发者证书重签后安装 |
             | 服务端 | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |
 
             ### 服务端部署要点
@@ -294,10 +267,20 @@ jobs:
             - 运行：`./ChildNotes.Api`（监听端口见 `ASPNETCORE_URLS` 环境变量或默认 5000）。
             - 目标机器为 Linux Ubuntu，无需额外安装 .NET 运行时。
 
-            ### iOS 部署说明
-            - 产物为**未签名**的 `.app` 包，无法直接安装到普通设备。
-            - 如需安装，请使用开发者证书重签名后，通过 Xcode 或 AltStore/Sideloadly 等工具安装。
-            - 仅适合越狱设备或个人开发测试。
+            ### iOS 构建说明
+            - iOS 产物**不在 CI 中构建**。原因：.NET 10 iOS SDK 强制启用 `PublishTrimmed=true`，
+              ILLink 在 GitHub Actions 的 macOS runner 上分析大量程序集耗时极长（>45min），
+              各种关闭 trimming 的属性组合均无效，导致构建超时。
+            - 如需 iOS 版本，请在 Mac 上本地构建（需 Xcode + `dotnet workload install ios`）：
+              ```bash
+              dotnet publish ChildNotes.iOS/ChildNotes.iOS.csproj \
+                -c Release -f net10.0-ios -r ios-arm64 \
+                -p:RuntimeIdentifier=ios-arm64 \
+                -p:EnableCodeSigning=false -p:CodesignEntitlements= \
+                -p:PublishTrimmed=true -p:MtouchLink=None -p:TrimMode=copy \
+                -o ./artifacts/ios
+              ```
+            - 产物为**未签名**的 `.app` 包，需用开发者证书重签后通过 Xcode / AltStore / Sideloadly 安装。
 
             ### Android 部署说明
             - APK 使用 debug 签名，生产环境请用正式签名重签后再发布。
