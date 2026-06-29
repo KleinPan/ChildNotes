@@ -209,7 +209,7 @@ public partial class MainShellViewModel : ViewModelBase
         Home.Activate();
     }
 
-    public void OpenQuickRecord(string recordType)
+    public async void OpenQuickRecord(string recordType)
     {
         DevLogger.Log("Shell", $"OpenQuickRecord type={recordType}");
         if (ServiceProvider.Instance.AppState.CurrentBaby is null)
@@ -224,8 +224,17 @@ public partial class MainShellViewModel : ViewModelBase
             OpenAiNote();
             return;
         }
-        RecordSheet.Open(recordType);
-        IsRecordSheetOpen = true;
+        // 疫苗类型先设置抽屉可见（占位立即响应），再异步加载数据
+        if (recordType == RecordType.Vaccine)
+        {
+            IsRecordSheetOpen = true;
+            await RecordSheet.OpenAsync(recordType);
+        }
+        else
+        {
+            RecordSheet.Open(recordType);
+            IsRecordSheetOpen = true;
+        }
         DevLogger.Log("Shell", $"OpenQuickRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
     }
 

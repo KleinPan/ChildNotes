@@ -306,7 +306,20 @@ public sealed class VaccinePlanView : VaccinePlan
     public string Status { get; set; } = VaccineDoseStatus.Pending;
     public string StatusText { get; set; } = string.Empty;
     public string StatusClass { get; set; } = string.Empty;
+    /// <summary>
+    /// 预计算的状态 bool 属性，供 AXAML Classes.xxx 绑定直接使用，
+    /// 替代原先通过 EqualsConverter 对 StatusClass 字符串求值的方式。
+    /// 每个剂次卡片减少 7 次转换器实例调用（ToString + 字符串比较）。
+    /// </summary>
+    public bool IsDone => Status == VaccineDoseStatus.Done;
+    public bool IsSkipped => Status == VaccineDoseStatus.Skipped;
+    public bool IsReplaced => Status == VaccineDoseStatus.Replaced;
+    public bool IsOverdue => Status == VaccineDoseStatus.Overdue;
+    public bool IsDue => Status == VaccineDoseStatus.Due;
+    public bool IsSoon => Status == VaccineDoseStatus.Soon;
+    public bool IsPending => Status == VaccineDoseStatus.Pending;
     public bool Handled { get; set; }
+    public bool NotHandled => !Handled;
     public string? DoneTime { get; set; }
     public string? SkippedTime { get; set; }
     public string? ReplacedByName { get; set; }

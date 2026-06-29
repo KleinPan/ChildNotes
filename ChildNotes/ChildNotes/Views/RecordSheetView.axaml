@@ -209,7 +209,7 @@
                     </Grid>
                 </Border>
 
-                <ScrollViewer Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
@@ -783,13 +783,13 @@
                                                 <ItemsControl ItemsSource="{Binding FreeDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Classes="vf-card" Classes.done="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusDone}}"
-                                                                    Classes.skipped="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusSkipped}}"
-                                                                    Classes.replaced="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusReplaced}}"
-                                                                    Classes.overdue="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusOverdue}}"
-                                                                    Classes.due="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusDue}}"
-                                                                    Classes.soon="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusSoon}}"
-                                                                    Classes.pending="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusPending}}"
+                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone}"
+                                                                    Classes.skipped="{Binding IsSkipped}"
+                                                                    Classes.replaced="{Binding IsReplaced}"
+                                                                    Classes.overdue="{Binding IsOverdue}"
+                                                                    Classes.due="{Binding IsDue}"
+                                                                    Classes.soon="{Binding IsSoon}"
+                                                                    Classes.pending="{Binding IsPending}"
                                                                     PointerPressed="OnVaccineDoseClick">
                                                                 <StackPanel Spacing="2">
                                                                     <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
@@ -802,7 +802,7 @@
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                                                         <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding !Handled}">
+                                                                                    IsVisible="{Binding NotHandled}">
                                                                             <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>
@@ -840,13 +840,13 @@
                                                 <ItemsControl ItemsSource="{Binding PaidDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Classes="vf-card" Classes.done="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusDone}}"
-                                                                    Classes.skipped="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusSkipped}}"
-                                                                    Classes.replaced="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusReplaced}}"
-                                                                    Classes.overdue="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusOverdue}}"
-                                                                    Classes.due="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusDue}}"
-                                                                    Classes.soon="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusSoon}}"
-                                                                    Classes.pending="{Binding StatusClass, Converter={x:Static v:AppConverters.IsStatusPending}}"
+                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone}"
+                                                                    Classes.skipped="{Binding IsSkipped}"
+                                                                    Classes.replaced="{Binding IsReplaced}"
+                                                                    Classes.overdue="{Binding IsOverdue}"
+                                                                    Classes.due="{Binding IsDue}"
+                                                                    Classes.soon="{Binding IsSoon}"
+                                                                    Classes.pending="{Binding IsPending}"
                                                                     PointerPressed="OnVaccineDoseClick">
                                                                 <StackPanel Spacing="2">
                                                                     <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
@@ -859,7 +859,7 @@
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                                                         <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding !Handled}">
+                                                                                    IsVisible="{Binding NotHandled}">
                                                                             <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>

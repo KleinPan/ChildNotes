@@ -43,22 +43,45 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
 
     public IReadOnlyList<string> CustomVaccineAgeUnits { get; } = new[] { "日龄", "周龄", "月龄", "周岁" };
 
-    /// <summary>初始化时间轴（在 Open 时调用）</summary>
-    public void Load()
+    /// <summary>初始化时间轴（在 Open 时调用）。异步执行：后台线程构建数据，UI 线程仅做集合同步。</summary>
+    public async Task LoadAsync()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var appState = ServiceProvider.Instance.AppState;
         var birthDate = appState.CurrentBaby?.BirthDate;
         var today = DateTime.Today;
-        var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 1000);
+        // 拷贝 CustomVaccines 快照，避免后台线程与 UI 集合并发访问
+        var customSnapshot = CustomVaccines.ToList();
 
-        var plans = VaccineTimelineBuilder.BuildPlans(birthDate, CustomVaccines);
-        var views = VaccineTimelineBuilder.BuildPlanViews(plans, vaccineRecords, birthDate, today);
-        var groups = VaccineTimelineBuilder.BuildGroups(views);
+        // 后台线程执行：DB 读取 + 计划构建 + 状态计算 + 分组
+        var groups = await Task.Run(() =>
+        {
+            var dbSw = System.Diagnostics.Stopwatch.StartNew();
+            var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 1000);
+            dbSw.Stop();
+            var buildSw = System.Diagnostics.Stopwatch.StartNew();
+            var plans = VaccineTimelineBuilder.BuildPlans(birthDate, customSnapshot);
+            var views = VaccineTimelineBuilder.BuildPlanViews(plans, vaccineRecords, birthDate, today);
+            var result = VaccineTimelineBuilder.BuildGroups(views);
+            buildSw.Stop();
+            DevLogger.Log("VaccinePerf",
+                $"LoadAsync(background) | db={dbSw.ElapsedMilliseconds}ms | build={buildSw.ElapsedMilliseconds}ms | groups={result.Count} | views={views.Count}");
+            return result;
+        });
 
+        // UI 线程：批量替换集合（Clear + Add 仍会触发通知，但数据已就绪，无需重复构建）
+        var uiSw = System.Diagnostics.Stopwatch.StartNew();
         TimelineGroups.Clear();
         foreach (var g in groups) TimelineGroups.Add(g);
         SelectedPlan = null;
+        uiSw.Stop();
+        sw.Stop();
+        DevLogger.Log("VaccinePerf",
+            $"LoadAsync(total) | total={sw.ElapsedMilliseconds}ms | ui-sync={uiSw.ElapsedMilliseconds}ms | groups={TimelineGroups.Count}");
     }
+
+    /// <summary>同步加载（保留兼容入口，内部走异步等待）。仅在非 UI 线程或测试场景使用。</summary>
+    public void Load() => LoadAsync().GetAwaiter().GetResult();
 
     /// <summary>点击时间轴上的剂次：选中并展示</summary>
     public void SelectDose(VaccinePlanView plan)
@@ -118,7 +141,7 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
     }
 
     /// <summary>添加自定义疫苗到本地集合（不立即持久化，加入时间轴后随「已打」记录一起保存）</summary>
-    public (bool Ok, string Error) AddCustomVaccine()
+    public async Task<(bool Ok, string Error)> AddCustomVaccineAsync()
     {
         var name = (CustomVaccineName ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(name))
@@ -147,9 +170,12 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         CustomVaccineDisease = string.Empty;
         CustomVaccineAgeValue = string.Empty;
         ShowCustomVaccineForm = false;
-        Load();
+        await LoadAsync();
         return (true, string.Empty);
     }
+
+    /// <summary>同步兼容入口。</summary>
+    public (bool Ok, string Error) AddCustomVaccine() => AddCustomVaccineAsync().GetAwaiter().GetResult();
 
     [RelayCommand]
     private void ToggleCustomVaccineForm()

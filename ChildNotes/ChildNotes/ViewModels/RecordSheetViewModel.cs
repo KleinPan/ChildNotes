@@ -20,7 +20,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     /// <summary>编辑模式下保存的原始记录日期（用于时间解析回填）。</summary>
     private DateTime _editingDate;
 
-    public void Open(string type)
+    public async Task OpenAsync(string type)
     {
         ActiveType = type;
         IsEditMode = false;
@@ -28,12 +28,15 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         SheetTitle = BuildTitle("记录", type);
         ErrorMessage = string.Empty;
         IsVisible = true;
-        // 疫苗类型需要加载时间轴
+        // 疫苗类型需要加载时间轴：先显示抽屉占位，再异步填充数据
         if (type == RecordType.Vaccine)
         {
-            VaccineForm.Load();
+            await VaccineForm.LoadAsync();
         }
     }
+
+    /// <summary>同步打开入口（兼容旧调用方，内部走异步等待）。</summary>
+    public void Open(string type) => OpenAsync(type).GetAwaiter().GetResult();
 
     /// <summary>
     /// 编辑模式入口：用现有记录填充表单，标题改为「编辑xxx」。
@@ -52,14 +55,14 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     }
 
     /// <summary>疫苗专用：标记某剂次为「已打」并保存</summary>
-    public bool MarkVaccineDone(VaccinePlanView plan)
+    public async Task<bool> MarkVaccineDoneAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkDone(plan);
         if (dto is null) return false;
         try
         {
             RecordService.AddVaccine(dto);
-            VaccineForm.Load(); // 刷新时间轴状态
+            await VaccineForm.LoadAsync(); // 刷新时间轴状态
             Saved?.Invoke();
             return true;
         }
@@ -70,15 +73,18 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
+    /// <summary>同步兼容入口（事件回调使用）。</summary>
+    public bool MarkVaccineDone(VaccinePlanView plan) => MarkVaccineDoneAsync(plan).GetAwaiter().GetResult();
+
     /// <summary>疫苗专用：标记某剂次为「跳过」并保存</summary>
-    public bool MarkVaccineSkipped(VaccinePlanView plan)
+    public async Task<bool> MarkVaccineSkippedAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkSkipped(plan);
         if (dto is null) return false;
         try
         {
             RecordService.AddVaccine(dto);
-            VaccineForm.Load();
+            await VaccineForm.LoadAsync();
             Saved?.Invoke();
             return true;
         }
@@ -88,6 +94,9 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             return false;
         }
     }
+
+    /// <summary>同步兼容入口（事件回调使用）。</summary>
+    public bool MarkVaccineSkipped(VaccinePlanView plan) => MarkVaccineSkippedAsync(plan).GetAwaiter().GetResult();
 
     /// <summary>疫苗专用：添加自定义疫苗到时间轴</summary>
     public (bool Ok, string Error) AddCustomVaccine()
