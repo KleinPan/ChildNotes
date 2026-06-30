@@ -86,6 +86,11 @@ public static class KeyboardHeightService
                 var density = _decorView.Resources?.DisplayMetrics?.Density ?? 2.0f;
                 var keyboardHeightLp = (int)(keyboardHeightPx / density);
 
+                // 详细日志：便于排查 offset 偏小问题
+                System.Diagnostics.Debug.WriteLine(
+                    $"[KbSvc] px={keyboardHeightPx} lp={keyboardHeightLp} " +
+                    $"density={density} screenHeight={screenHeight} rectBottom={_rect.Bottom} rectTop={_rect.Top}");
+
                 try { OnKeyboardHeightChanged?.Invoke(keyboardHeightLp); }
                 catch { /* 回调异常不影响主流程 */ }
             }

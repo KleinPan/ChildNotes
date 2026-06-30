@@ -29,6 +29,19 @@ public partial class MainShellViewModel : ViewModelBase
             DevLogger.Log("Shell", $"OnIsRecordSheetOpenChanged: {value} -> FAB will be {(value ? "hidden" : "shown")}");
         }
     }
+
+    /// <summary>
+    /// Ai 记弹层打开/关闭时同步到 QuickMenu，触发 FAB 显隐派生属性变更。
+    /// 与 OnIsRecordSheetOpenChanged 对称，确保 Ai 记弹出时 + 按钮正确隐藏。
+    /// </summary>
+    partial void OnIsAiNoteOpenChanged(bool value)
+    {
+        if (QuickMenu is not null)
+        {
+            QuickMenu.IsAiNoteOpen = value;
+            DevLogger.Log("Shell", $"OnIsAiNoteOpenChanged: {value} -> FAB will be {(value ? "hidden" : "shown")}");
+        }
+    }
     [ObservableProperty] private bool _isBabySetupOpen;
     [ObservableProperty] private BabySetupViewModel _babySetup;
     [ObservableProperty] private bool _isBabyManagerOpen;
@@ -224,17 +237,9 @@ public partial class MainShellViewModel : ViewModelBase
             OpenAiNote();
             return;
         }
-        // 疫苗类型先设置抽屉可见（占位立即响应），再异步加载数据
-        if (recordType == RecordType.Vaccine)
-        {
-            IsRecordSheetOpen = true;
-            await RecordSheet.OpenAsync(recordType);
-        }
-        else
-        {
-            RecordSheet.Open(recordType);
-            IsRecordSheetOpen = true;
-        }
+        // 先设置抽屉可见（占位立即响应），再异步打开（疫苗类型会异步加载数据）
+        IsRecordSheetOpen = true;
+        await RecordSheet.OpenAsync(recordType);
         DevLogger.Log("Shell", $"OpenQuickRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
     }
 
@@ -256,28 +261,28 @@ public partial class MainShellViewModel : ViewModelBase
         IsBabySetupOpen = true;
     }
 
-    public void OpenBabyManager()
+    public async void OpenBabyManager()
     {
-        BabyManager.Load();
         IsBabyManagerOpen = true;
+        await BabyManager.LoadAsync();
     }
 
-    public void OpenStatistics()
+    public async void OpenStatistics()
     {
-        Statistics.Load();
         IsStatisticsOpen = true;
+        await Statistics.LoadAsync();
     }
 
-    public void OpenPoints()
+    public async void OpenPoints()
     {
-        Points.Load();
         IsPointsOpen = true;
+        await Points.LoadAsync();
     }
 
-    public void OpenAiAnalysis()
+    public async void OpenAiAnalysis()
     {
-        AiAnalysis.Load();
         IsAiAnalysisOpen = true;
+        await AiAnalysis.LoadAsync();
     }
 
     public void OpenAiSettings()
@@ -297,25 +302,46 @@ public partial class MainShellViewModel : ViewModelBase
         await Family.LoadAsync();
     }
 
-    private void OnRecordSaved()
+    /// <summary>OnRecordSaved 防抖取消令牌：5 秒内多次保存只触发一次刷新链。</summary>
+    private CancellationTokenSource? _savedRefreshCts;
+
+    private async void OnRecordSaved()
     {
-        DevLogger.Log("Shell", "OnRecordSaved: closing sheet, refreshing Home/Feeding/Statistics");
+        DevLogger.Log("Shell", "OnRecordSaved: closing sheet, debouncing Home/Feeding refresh");
         IsRecordSheetOpen = false;
-        Home.Refresh();
-        if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
-        // 刷新统计页，避免数据不同步
-        Statistics.Load();
+
+        // 防抖 100ms：快速连续保存（如批量补记）只触发一次刷新
+        _savedRefreshCts?.Cancel();
+        _savedRefreshCts?.Dispose();
+        _savedRefreshCts = new CancellationTokenSource();
+        var ct = _savedRefreshCts.Token;
+        try
+        {
+            await Task.Delay(100, ct);
+            await Home.RefreshAsync();
+            if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
+            // Statistics 不再主动刷新：用户进入统计页时 OpenStatistics 会触发 LoadAsync
+            // 避免保存记录后无谓地刷新用户未查看的页面
+        }
+        catch (OperationCanceledException)
+        {
+            DevLogger.Log("Shell", "OnRecordSaved: refresh debounced (superseded by newer save)");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Shell", "OnRecordSaved refresh failed: " + ex.Message);
+        }
     }
 
-    private void OnBabySetupCompleted()
+    private async void OnBabySetupCompleted()
     {
         IsBabySetupOpen = false;
-        Home.Refresh();
+        await Home.RefreshAsync();
     }
 
-    private void OnBabyChanged()
+    private async void OnBabyChanged()
     {
-        Home.Refresh();
+        await Home.RefreshAsync();
         if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
     }
 

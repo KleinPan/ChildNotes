@@ -32,6 +32,9 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
     public ObservableCollection<AiAnalysisRecord> Records { get; } = new();
 
+    // AI 分析取消令牌：用户点击"取消分析"时取消正在进行的 LLM 请求
+    private CancellationTokenSource? _generateCts;
+
     /// <summary>沿用历史 2500ms 显示时长。</summary>
     protected override int ToastDurationMs => 2500;
 
@@ -52,6 +55,25 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
         Records.Clear();
         foreach (var r in _aiService.ListRecords()) Records.Add(r);
+    }
+
+    /// <summary>
+    /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
+    /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// </summary>
+    public async Task LoadAsync()
+    {
+        var baby = _state.CurrentBaby;
+        BabyName = baby?.Name ?? string.Empty;
+
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
+        StartDate = today.AddDays(-6);
+        EndDate = today;
+        UpdateRangeTip();
+
+        var records = await Task.Run(() => _aiService.ListRecords());
+        Records.Clear();
+        foreach (var r in records) Records.Add(r);
     }
 
     partial void OnStartDateChanged(DateTime? value) => UpdateRangeTip();
@@ -99,12 +121,17 @@ public partial class AiAnalysisViewModel : ViewModelBase
         if (Generating || !RangeValid || StartDate is null || EndDate is null) return;
 
         var config = _aiService.GetLlmConfig();
-        if (!config.Enabled || string.IsNullOrWhiteSpace(config.ApiKey))
+        if (!config.Enabled)
         {
-            ShowToastMessage("请先配置大模型 API Key");
+            ShowToastMessage("请先在设置中启用大模型");
             ConfigRequired?.Invoke();
             return;
         }
+
+        // 取消上一次未完成的请求（防御性，正常情况下 finally 已清理）
+        _generateCts?.Cancel();
+        _generateCts?.Dispose();
+        _generateCts = new CancellationTokenSource();
 
         Generating = true;
         GenerateButtonText = "正在分析...";
@@ -112,7 +139,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
         try
         {
-            var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date);
+            var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date, _generateCts.Token);
             Records.Clear();
             foreach (var r in _aiService.ListRecords()) Records.Add(r);
             ShowDetail = true;
@@ -123,6 +150,10 @@ public partial class AiAnalysisViewModel : ViewModelBase
             UpdateRangeTip();
             ShowToastMessage("分析完成");
         }
+        catch (OperationCanceledException)
+        {
+            ShowToastMessage("已取消分析");
+        }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
@@ -132,8 +163,22 @@ public partial class AiAnalysisViewModel : ViewModelBase
         {
             Generating = false;
             GenerateButtonText = CanGenerate ? "生成新的分析" : "该区间已分析";
+            _generateCts?.Dispose();
+            _generateCts = null;
         }
     }
+
+    /// <summary>取消正在进行的 AI 分析请求。</summary>
+    [RelayCommand(CanExecute = nameof(CanCancelGenerate))]
+    private void CancelGenerate()
+    {
+        _generateCts?.Cancel();
+    }
+
+    private bool CanCancelGenerate => Generating;
+
+    /// <summary>Generating 状态变化时刷新取消按钮可用性。</summary>
+    partial void OnGeneratingChanged(bool value) => CancelGenerateCommand.NotifyCanExecuteChanged();
 
     public void OpenDetail(AiAnalysisRecord record)
     {

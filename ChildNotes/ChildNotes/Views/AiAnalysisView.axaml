@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:m="using:ChildNotes.Models"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -73,6 +74,10 @@
                         <Button Content="{Binding GenerateButtonText}" Classes="weui-btn primary" CornerRadius="6" Padding="0,14"
                                 Command="{Binding GenerateCommand}" IsEnabled="{Binding CanGenerate}"
                                 Margin="12,4" HorizontalAlignment="Stretch"/>
+                        <Button Content="取消分析" Classes="weui-btn default" CornerRadius="6" Padding="0,12"
+                                Command="{Binding CancelGenerateCommand}"
+                                Margin="12,0,12,4" HorizontalAlignment="Stretch"
+                                IsVisible="{Binding Generating}"/>
 
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
                                    Margin="12,8" TextWrapping="Wrap"
@@ -84,7 +89,7 @@
 
                         <ItemsControl ItemsSource="{Binding Records}" Margin="12,4">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="m:AiAnalysisRecord">
                                     <Border Classes="record-card" PointerPressed="OnRecordTap" Tag="{Binding Id}">
                                         <StackPanel>
                                             <Grid ColumnDefinitions="*,Auto">

@@ -79,7 +79,7 @@ public sealed class AiAnalysisService
         return _repo.FindByRange(_state.CurrentBaby.Id, start, end) is not null;
     }
 
-    public async Task<AiAnalysisRecord> GenerateAsync(DateTime start, DateTime end)
+    public async Task<AiAnalysisRecord> GenerateAsync(DateTime start, DateTime end, CancellationToken ct = default)
     {
         var baby = _state.CurrentBaby ?? throw new InvalidOperationException("请先选择宝宝");
 
@@ -105,7 +105,7 @@ public sealed class AiAnalysisService
         }
 
         var config = _repo.GetLlmConfig();
-        var analysisText = await _llmClient.ChatAsync(config, SkillPrompt, sourceText);
+        var analysisText = await _llmClient.ChatAsync(config, SkillPrompt, sourceText, ct);
 
         var record = new AiAnalysisRecord
         {

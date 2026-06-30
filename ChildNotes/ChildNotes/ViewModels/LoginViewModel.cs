@@ -25,15 +25,16 @@ public partial class LoginViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Submit()
+    private async Task Submit()
     {
         ErrorMessage = string.Empty;
         try
         {
             DevLogger.Log("Login", $"Submit start: Mode={IsRegisterMode}, User='{Username}', PwdLen={Password?.Length ?? 0}, Nick='{NickName}'");
-            var result = IsRegisterMode
+            // PBKDF2 哈希 + DB 查询放后台线程，避免阻塞 UI 30-80ms
+            var result = await Task.Run(() => IsRegisterMode
                 ? _auth.Register(Username, Password, NickName)
-                : _auth.Login(Username, Password);
+                : _auth.Login(Username, Password));
 
             DevLogger.Log("Login", $"Result: Success={result.Success}, Msg='{result.Message}', UserId={result.User?.Id}");
 
@@ -53,6 +54,10 @@ public partial class LoginViewModel : ViewModelBase
                 // 兼容备份：如果 App 的订阅还在，也触发事件
                 LoginSucceeded?.Invoke();
                 DevLogger.Log("Login", "LoginSucceeded invoked");
+                // 登录成功后主动触发首次同步，避免等待 8 秒启动定时器或 15 分钟保活
+                // fire-and-forget：同步失败不影响登录流程，下次触发会再试
+                _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
+                DevLogger.Log("Login", "Initial sync triggered");
             }
             else
             {

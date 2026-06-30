@@ -193,7 +193,7 @@
                     </Grid>
                     <ItemsControl IsVisible="{Binding IsVaccineExpanded}" ItemsSource="{Binding VaccineItems}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:VaccineItem">
                                 <Border Background="{StaticResource WeuiBg1Brush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
                                         <Border Grid.Column="0" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4" Padding="6,2">
@@ -336,7 +336,7 @@
                         <!-- 时间轴主体（对齐小程序 at-timeline） -->
                         <ItemsControl ItemsSource="{Binding ActivityTimelineGroups}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="vm:ActivityTimelineGroup">
                                     <StackPanel Margin="0,0,0,16">
                                         <!-- 日期分组标签 -->
                                         <TextBlock Text="{Binding Label}" FontSize="12" Foreground="#999999"
@@ -344,11 +344,11 @@
                                         <!-- 组内时间轴项 -->
                                         <ItemsControl ItemsSource="{Binding Items}">
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
+                                                <DataTemplate x:DataType="vm:ActivityTimelineItem">
                                                     <Grid ColumnDefinitions="20,*" Margin="0,0,0,14">
                                                         <!-- 左轴：竖线 + 圆点 -->
                                                         <Panel Grid.Column="0">
-                                                            <Border Width="2" Background="#E8E8E8"
+                                                            <Border Width="2" Background="{StaticResource StatsSplitBrush}"
                                                                     HorizontalAlignment="Center"
                                                                     Margin="0,-7,0,-21"/>
                                                             <Border Width="11" Height="11" CornerRadius="6"
@@ -358,7 +358,7 @@
                                                                     VerticalAlignment="Top" Margin="0,2,0,0"/>
                                                         </Panel>
                                                         <!-- 卡片 -->
-                                                        <Border Grid.Column="1" Background="#F9FAFB"
+                                                        <Border Grid.Column="1" Background="{StaticResource StatsAreaBgBrush}"
                                                                 CornerRadius="8" Padding="12,10" Margin="4,0,0,0">
                                                             <StackPanel Spacing="4">
                                                                 <Grid ColumnDefinitions="*,Auto">

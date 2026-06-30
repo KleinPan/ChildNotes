@@ -35,9 +35,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>同步打开入口（兼容旧调用方，内部走异步等待）。</summary>
-    public void Open(string type) => OpenAsync(type).GetAwaiter().GetResult();
-
     /// <summary>
     /// 编辑模式入口：用现有记录填充表单，标题改为「编辑xxx」。
     /// 复用与新建完全相同的表单字段，保证可编辑所有字段。
@@ -73,9 +70,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>同步兼容入口（事件回调使用）。</summary>
-    public bool MarkVaccineDone(VaccinePlanView plan) => MarkVaccineDoneAsync(plan).GetAwaiter().GetResult();
-
     /// <summary>疫苗专用：标记某剂次为「跳过」并保存</summary>
     public async Task<bool> MarkVaccineSkippedAsync(VaccinePlanView plan)
     {
@@ -95,13 +89,10 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>同步兼容入口（事件回调使用）。</summary>
-    public bool MarkVaccineSkipped(VaccinePlanView plan) => MarkVaccineSkippedAsync(plan).GetAwaiter().GetResult();
-
     /// <summary>疫苗专用：添加自定义疫苗到时间轴</summary>
-    public (bool Ok, string Error) AddCustomVaccine()
+    public async Task<(bool Ok, string Error)> AddCustomVaccineAsync()
     {
-        var (ok, error) = VaccineForm.AddCustomVaccine();
+        var (ok, error) = await VaccineForm.AddCustomVaccineAsync();
         if (!ok) ErrorMessage = error;
         else ErrorMessage = string.Empty;
         return (ok, error);

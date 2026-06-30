@@ -66,7 +66,7 @@
                         <!-- 列表 -->
                         <ItemsControl ItemsSource="{Binding BabyList}" IsVisible="{Binding HasBaby}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="m:Baby">
+                                <DataTemplate x:DataType="m:Baby">
                                     <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="14,12"
                                             PointerPressed="OnBabyItemTapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">

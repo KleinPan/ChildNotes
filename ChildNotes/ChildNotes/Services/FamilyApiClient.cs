@@ -16,10 +16,67 @@ public sealed class FamilyApiClient : BaseApiClient
 {
     private readonly SyncConfigRepository _cfgRepo;
 
+    /// <summary>ListFamiliesAsync 内存缓存：避免短时间内重复拉取同一接口。</summary>
+    private List<BabyFamilyItem>? _familiesCache;
+    private DateTime _familiesCacheAt;
+    private static readonly TimeSpan FamiliesCacheTtl = TimeSpan.FromSeconds(15);
+
+    /// <summary>ListFamiliesAsync 请求去重：并发调用合并为单次 HTTP。</summary>
+    private readonly SemaphoreSlim _familiesGate = new(1, 1);
+    private Task<List<BabyFamilyItem>?>? _familiesInFlight;
+
     public FamilyApiClient(SyncConfigRepository cfgRepo) => _cfgRepo = cfgRepo;
 
     /// <summary>列出当前用户加入的所有家庭及其成员。</summary>
     public async Task<List<BabyFamilyItem>?> ListFamiliesAsync(CancellationToken ct = default)
+    {
+        // 命中缓存（未过期）直接返回
+        var now = DateTime.UtcNow;
+        if (_familiesCache is not null && (now - _familiesCacheAt) < FamiliesCacheTtl)
+        {
+            return _familiesCache;
+        }
+
+        // 请求去重：并发调用合并为单次 HTTP
+        await _familiesGate.WaitAsync(ct);
+        try
+        {
+            // 二次检查缓存（可能在等待锁期间已被其他调用填充）
+            now = DateTime.UtcNow;
+            if (_familiesCache is not null && (now - _familiesCacheAt) < FamiliesCacheTtl)
+            {
+                return _familiesCache;
+            }
+
+            // 若已有相同请求在飞，复用其 Task
+            if (_familiesInFlight is not null)
+            {
+                return await _familiesInFlight;
+            }
+
+            _familiesInFlight = DoListFamiliesAsync(ct);
+            try
+            {
+                var result = await _familiesInFlight;
+                if (result is not null)
+                {
+                    _familiesCache = result;
+                    _familiesCacheAt = DateTime.UtcNow;
+                }
+                return result;
+            }
+            finally
+            {
+                _familiesInFlight = null;
+            }
+        }
+        finally
+        {
+            _familiesGate.Release();
+        }
+    }
+
+    private async Task<List<BabyFamilyItem>?> DoListFamiliesAsync(CancellationToken ct)
     {
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Get, "/api/baby/family/members", null, ct);
         return resp is null ? null : await ReadDataAsync<List<BabyFamilyItem>>(resp, ct);
@@ -30,7 +87,10 @@ public sealed class FamilyApiClient : BaseApiClient
     {
         var body = Serialize(new { babyId, roleCode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Put, "/api/baby/family/my-role", body, ct);
-        return resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
+        var result = resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
+        // 写入操作后失效缓存，下次读取会拉取最新数据
+        InvalidateFamiliesCache();
+        return result;
     }
 
     /// <summary>通过宝宝 ID 加入家庭（后端会把当前用户加到宝宝主人名下所有宝宝）。</summary>
@@ -38,7 +98,16 @@ public sealed class FamilyApiClient : BaseApiClient
     {
         var body = Serialize(new { babyId, roleCode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join", body, ct);
-        return resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
+        var result = resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
+        InvalidateFamiliesCache();
+        return result;
+    }
+
+    /// <summary>失效家庭列表缓存。写入操作后调用，确保下次读取拉取最新数据。</summary>
+    public void InvalidateFamiliesCache()
+    {
+        _familiesCache = null;
+        _familiesCacheAt = default;
     }
 }
 

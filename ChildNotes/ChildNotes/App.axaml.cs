@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -29,38 +30,39 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var sw = Stopwatch.StartNew();
         // 全局异常处理：避免未捕获异常导致应用崩溃白屏
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         _current = this;
-        DevLogger.Log("App", "OnFrameworkInitializationCompleted start");
+        DevLogger.Log("Startup", "OnFrameworkInitializationCompleted start");
         try
         {
             Batteries_V2.Init();
-            DevLogger.Log("App", "Batteries_V2.Init done");
+            DevLogger.Log("Startup", $"Batteries_V2.Init: {sw.ElapsedMilliseconds}ms");
 
             // 启动时尝试恢复登录会话（30 天滑动过期）
             var restored = TryRestoreSession();
-            DevLogger.Log("App", $"TryRestoreSession result={restored}");
+            DevLogger.Log("Startup", $"TryRestoreSession: {sw.ElapsedMilliseconds}ms (restored={restored})");
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow ??= new MainWindow();
-                DevLogger.Log("App", "Lifetime=Desktop");
+                DevLogger.Log("Startup", $"Lifetime=Desktop, MainWindow created: {sw.ElapsedMilliseconds}ms");
                 if (restored) EnterMainShell(desktop.MainWindow);
                 else ShowLogin(desktop.MainWindow);
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
-                DevLogger.Log("App", "Lifetime=SingleView");
+                DevLogger.Log("Startup", $"Lifetime=SingleView: {sw.ElapsedMilliseconds}ms");
                 // 移动端必须先创建 RootContainer（无论恢复成功与否都需要）
                 if (_rootContainer is null)
                 {
                     _rootContainer = new RootContainer();
                     singleViewPlatform.MainView = _rootContainer;
-                    DevLogger.Log("App", "RootContainer set as single.MainView");
+                    DevLogger.Log("Startup", $"RootContainer set: {sw.ElapsedMilliseconds}ms");
                 }
                 if (restored) EnterMainShell(null);
                 else ShowLogin(singleViewPlatform);
@@ -77,7 +79,8 @@ public partial class App : Application
             throw;
         }
 
-        DevLogger.Log("App", "OnFrameworkInitializationCompleted end");
+        sw.Stop();
+        DevLogger.Log("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -288,8 +291,10 @@ public partial class App : Application
     private static void OnUiThreadUnhandledException(object? sender, DispatcherUnhandledExceptionEventArgs e)
     {
         LogException(e.Exception, "UIThread");
-        // 开发阶段：不标记 Handled，让异常直接暴露便于排查（默认会崩溃，但能看到完整堆栈）
-        // 上线前改为 e.Handled = true;
+        // Release 构建标记 Handled 防止崩溃；Debug 下不标记，让异常直接暴露便于排查。
+#if !DEBUG
+        e.Handled = true;
+#endif
     }
 
     private static void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)

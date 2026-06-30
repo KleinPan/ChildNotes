@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using ChildNotes.Infrastructure;
@@ -8,9 +7,11 @@ using ChildNotes.Views;
 
 namespace ChildNotes;
 
-[RequiresUnreferencedCode(
-    "Default implementation of ViewLocator involves reflection which may be trimmed away.",
-    Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
+/// <summary>
+/// ViewModel → View 映射。完全显式 switch，不使用反射，
+/// 兼容 AOT / Trimming（iOS Release、Android Profiled AOT）。
+/// 新增 ViewModel 时在此追加一条分支即可。
+/// </summary>
 public class ViewLocator : IDataTemplate
 {
     public Control? Build(object? param)
@@ -24,13 +25,27 @@ public class ViewLocator : IDataTemplate
         DevLogger.Log("VL", $"Build: {typeName}");
         try
         {
-            var view = param switch
+            Control view = param switch
             {
-                HomeViewModel => (Control)new HomeView(),
+                MainShellViewModel => new MainShellView(),
+                LoginViewModel => new LoginView(),
+                HomeViewModel => new HomeView(),
                 FeedingViewModel => new FeedingView(),
                 GrowthViewModel => new GrowthView(),
                 MineViewModel => new MineView(),
-                _ => ResolveByName(param),
+                BabySetupViewModel => new BabySetupView(),
+                BabyManagerViewModel => new BabyManagerView(),
+                StatisticsViewModel => new StatisticsView(),
+                PointsViewModel => new PointsView(),
+                AiAnalysisViewModel => new AiAnalysisView(),
+                AiSettingsViewModel => new AiSettingsView(),
+                AiNoteViewModel => new AiNoteView(),
+                SyncSettingsViewModel => new SyncSettingsView(),
+                FamilyViewModel => new FamilyView(),
+                RecordSheetViewModel => new RecordSheetView(),
+                QuickMenuViewModel => new QuickMenuView(),
+                // MilestoneEditViewModel 是 GrowthView 内嵌表单，不独立导航
+                _ => new TextBlock { Text = "View Not Mapped: " + typeName }
             };
             DevLogger.Log("VL", $"Build done: {typeName} -> {view.GetType().Name}");
             return view;
@@ -41,16 +56,6 @@ public class ViewLocator : IDataTemplate
             DevLogger.Log("VL", ex);
             return new TextBlock { Text = "Build failed: " + ex.Message };
         }
-    }
-
-    private static Control ResolveByName(object param)
-    {
-        var name = param.GetType().FullName!.Replace("ViewModel", "View", StringComparison.Ordinal);
-        DevLogger.Log("VL", $"ResolveByName: {name}");
-        var type = Type.GetType(name);
-        if (type != null) return (Control)Activator.CreateInstance(type)!;
-        DevLogger.Log("VL", $"ResolveByName: type not found for {name}");
-        return new TextBlock { Text = "Not Found: " + name };
     }
 
     public bool Match(object? data) => data is ViewModelBase;

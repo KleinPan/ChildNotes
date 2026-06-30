@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:s="using:ChildNotes.Services"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -66,7 +67,7 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="s:SignInTimelineItem">
                                     <Border Width="42" Classes="timeline-item"
                                             Classes.signed="{Binding Signed}"
                                             Classes.today="{Binding Today}">
@@ -94,7 +95,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <ItemsControl ItemsSource="{Binding Tasks}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:TaskDisplayItem">
                                 <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>

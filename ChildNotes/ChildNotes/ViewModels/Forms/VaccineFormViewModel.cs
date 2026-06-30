@@ -80,9 +80,6 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
             $"LoadAsync(total) | total={sw.ElapsedMilliseconds}ms | ui-sync={uiSw.ElapsedMilliseconds}ms | groups={TimelineGroups.Count}");
     }
 
-    /// <summary>同步加载（保留兼容入口，内部走异步等待）。仅在非 UI 线程或测试场景使用。</summary>
-    public void Load() => LoadAsync().GetAwaiter().GetResult();
-
     /// <summary>点击时间轴上的剂次：选中并展示</summary>
     public void SelectDose(VaccinePlanView plan)
     {
@@ -173,9 +170,6 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         await LoadAsync();
         return (true, string.Empty);
     }
-
-    /// <summary>同步兼容入口。</summary>
-    public (bool Ok, string Error) AddCustomVaccine() => AddCustomVaccineAsync().GetAwaiter().GetResult();
 
     [RelayCommand]
     private void ToggleCustomVaccineForm()

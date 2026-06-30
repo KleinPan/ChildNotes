@@ -116,7 +116,7 @@
 
                 <ItemsControl ItemsSource="{Binding Records}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="vm:RecordDisplayItem">
                             <!--  原版 record-card: 白底，16rpx≈8px 圆角，24rpx≈12px padding，弱阴影  -->
                             <Border Margin="12,4" Padding="12" Background="White" BoxShadow="0 1 4 0 #08000000"
                                     CornerRadius="8" PointerPressed="OnRecordTap"

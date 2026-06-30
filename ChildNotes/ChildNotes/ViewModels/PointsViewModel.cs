@@ -29,9 +29,18 @@ public partial class PointsViewModel : ViewModelBase
         Refresh();
     }
 
-    private void Refresh()
+    /// <summary>
+    /// 异步加载：DB 查询放到后台线程，UI 线程仅做属性赋值。
+    /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// </summary>
+    public async Task LoadAsync()
     {
-        var dashboard = _pointsService.GetDashboard();
+        var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+        ApplyDashboard(dashboard);
+    }
+
+    private void ApplyDashboard(PointsDashboard dashboard)
+    {
         Points = dashboard.Points;
         TotalEarned = dashboard.TotalEarned;
         TotalSpent = dashboard.TotalSpent;
@@ -44,6 +53,12 @@ public partial class PointsViewModel : ViewModelBase
 
         Tasks.Clear();
         foreach (var t in dashboard.Tasks) Tasks.Add(new TaskDisplayItem(t));
+    }
+
+    private void Refresh()
+    {
+        var dashboard = _pointsService.GetDashboard();
+        ApplyDashboard(dashboard);
     }
 
     [RelayCommand]

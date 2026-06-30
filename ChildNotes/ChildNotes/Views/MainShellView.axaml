@@ -11,14 +11,8 @@
              Background="{StaticResource WeuiBg0Brush}">
 
     <UserControl.Styles>
-        <Style Selector="Button.tab-item PathIcon">
-            <Setter Property="Foreground" Value="#999999"/>
-        </Style>
         <Style Selector="Button.tab-item TextBlock.tab-text">
             <Setter Property="Foreground" Value="#999999"/>
-        </Style>
-        <Style Selector="Button.tab-item.active PathIcon">
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
         </Style>
         <Style Selector="Button.tab-item.active TextBlock.tab-text">
             <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>

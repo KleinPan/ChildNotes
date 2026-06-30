@@ -24,9 +24,18 @@ public static class DevLogger
     public static IReadOnlyList<LogEntry> Entries => _entries;
     public static event Action<LogEntry>? Logged;
 
+    /// <summary>当前运行平台简称（Win/And/iOS/macOS），用于日志开头标识。</summary>
+    public static string PlatformTag =>
+        OperatingSystem.IsAndroid() ? "And"
+        : OperatingSystem.IsIOS() ? "iOS"
+        : OperatingSystem.IsMacOS() ? "mac"
+        : OperatingSystem.IsWindows() ? "Win"
+        : "???";
+
     public static void Log(string tag, string message)
     {
-        var entry = new LogEntry { Time = DateTime.Now, Tag = tag, Message = message };
+        // 日志开头加平台标识，便于在跨平台日志中区分来源
+        var entry = new LogEntry { Time = DateTime.Now, Tag = $"{PlatformTag}/{tag}", Message = message };
         // 始终先输出到 Debug，确保即使 UI 线程出问题也能在 logcat 看到
         System.Diagnostics.Debug.WriteLine(entry.Full);
 

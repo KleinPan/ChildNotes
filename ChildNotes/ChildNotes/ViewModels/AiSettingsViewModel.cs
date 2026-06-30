@@ -17,6 +17,13 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
     private readonly LlmClient _llmClient = ServiceProvider.Instance.LlmClient;
     private readonly SyncConfigRepository _syncRepo = ServiceProvider.Instance.SyncConfigRepository;
 
+    /// <summary>
+    /// 后端连通性测试用的共享 HttpClient。
+    /// 复用单例避免每次测试都 new HttpClient 导致 socket 耗尽（.NET 推荐做法）。
+    /// 超时通过 CancellationTokenSource 控制，不依赖 HttpClient.Timeout（实例共享后不能按请求设置不同超时）。
+    /// </summary>
+    private static readonly HttpClient SharedHealthHttp = new();
+
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private string _configApiBaseUrl = string.Empty;
     [ObservableProperty] private string _configApiKey = string.Empty;
@@ -130,8 +137,9 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
                     TestSuccess = false;
                     return;
                 }
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                using var resp = await http.GetAsync(server.TrimEnd('/') + "/health");
+                // 复用共享 HttpClient，超时通过 CTS 控制
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var resp = await SharedHealthHttp.GetAsync(server.TrimEnd('/') + "/health", cts.Token);
                 if (resp.IsSuccessStatusCode)
                 {
                     TestResult = "后端服务连接正常";

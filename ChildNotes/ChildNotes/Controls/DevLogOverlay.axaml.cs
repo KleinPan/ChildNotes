@@ -1,5 +1,7 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 
 namespace ChildNotes.Controls;
@@ -22,7 +24,10 @@ public partial class DevLogOverlay : UserControl
         ToggleButton.IsVisible = !_isExpanded;
         Panel.IsVisible = _isExpanded;
         if (_isExpanded)
+        {
+            UpdateStatus();
             ScrollToEnd();
+        }
     }
 
     private void OnClear(object? sender, RoutedEventArgs e)
@@ -43,9 +48,14 @@ public partial class DevLogOverlay : UserControl
             ScrollToEnd();
     }
 
-    private void UpdateStatus()
+    private void UpdateStatus(string? hint = null)
     {
-        StatusText.Text = $"{DevLogger.Entries.Count} 行";
+        Dispatcher.UIThread.Post(() =>
+        {
+            var count = DevLogger.Entries.Count;
+            StatusText.Text = hint ?? $"{count} 行";
+            PlatformText.Text = DevLogger.PlatformTag;
+        });
     }
 
     private void ScrollToEnd()

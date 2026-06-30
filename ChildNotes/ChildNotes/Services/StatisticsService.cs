@@ -32,7 +32,18 @@ public sealed class StatisticsService
     public DayStats GetDayStats(DateTime date)
     {
         var records = _recordService.GetByDate(date);
-        var agg = RecordAggregator.Aggregate(records);
+        return GetDayStats(date, records);
+    }
+
+    /// <summary>
+    /// 基于已查询的当日记录构建 DayStats，避免重复 DB 查询。
+    /// 用于 HomeViewModel.RefreshAsync 合并查询场景。
+    /// </summary>
+    public DayStats GetDayStats(DateTime date, List<ChildRecord> todayRecords)
+    {
+        // 仅保留当日记录（防御性：调用方可能传入混合日期）
+        var dayRecords = todayRecords.Where(r => r.RecordDate.Date == date.Date).ToList();
+        var agg = RecordAggregator.Aggregate(dayRecords);
         return new DayStats
         {
             FeedCount = agg.FeedCount,

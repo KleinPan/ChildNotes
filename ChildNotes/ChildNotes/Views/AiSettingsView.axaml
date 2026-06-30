@@ -143,6 +143,8 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
                         <TextBlock Text="• 配置 OpenAI 兼容的大模型 API，支持 OpenAI、DeepSeek、通义千问、Moonshot 等" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• API 地址默认追加 /v1/chat/completions；若模型仅支持 v2 路径（如阿里云百炼 qwen3），请直接填写完整 URL，例如 https://dashscope.aliyuncs.com/api/ais-v2/chat/completions" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 本地大模型（Ollama/vLLM/LM Studio 等）可不填 API Key" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• API Key 仅保存在本地，不会上传服务器" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 温度越高输出越多样，越低越确定" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 修改配置后需重新生成分析才会生效" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>

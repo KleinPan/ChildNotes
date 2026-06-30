@@ -3,6 +3,7 @@
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:v="using:ChildNotes.Views"
              xmlns:ctrl="using:ChildNotes.Controls"
+             xmlns:s="using:ChildNotes.Services"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -776,13 +777,13 @@
                             <!-- F. 时间轴分组 -->
                             <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate x:DataType="s:VaccineTimelineGroup">
                                         <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0">
                                             <!-- 左：免费疫苗 -->
                                             <StackPanel Grid.Column="0" Spacing="4">
                                                 <ItemsControl ItemsSource="{Binding FreeDoses}">
                                                     <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
+                                                        <DataTemplate x:DataType="s:VaccinePlanView">
                                                             <Border Classes="vf-card" Classes.done="{Binding IsDone}"
                                                                     Classes.skipped="{Binding IsSkipped}"
                                                                     Classes.replaced="{Binding IsReplaced}"
@@ -839,7 +840,7 @@
                                             <StackPanel Grid.Column="2" Spacing="4">
                                                 <ItemsControl ItemsSource="{Binding PaidDoses}">
                                                     <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
+                                                        <DataTemplate x:DataType="s:VaccinePlanView">
                                                             <Border Classes="vf-card" Classes.done="{Binding IsDone}"
                                                                     Classes.skipped="{Binding IsSkipped}"
                                                                     Classes.replaced="{Binding IsReplaced}"

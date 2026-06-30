@@ -197,7 +197,7 @@ note, summary(<=30字一句话), confidence(0~1)。
     /// <summary>尝试调用用户配置的本地 LLM；未配置/未启用/失败时返回 null。</summary>
     private async Task<AiNoteParseResult?> TryLocalLlmAsync(string text, LlmConfig config)
     {
-        if (config is null || !config.Enabled || string.IsNullOrWhiteSpace(config.ApiKey))
+        if (config is null || !config.Enabled)
             return null;
         try
         {

@@ -90,7 +90,7 @@
 
                 <ItemsControl ItemsSource="{Binding Milestones}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="vm:MilestoneDisplayItem">
                             <Grid Margin="16,0,16,20" ColumnDefinitions="32,*">
                                 <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="White" DotBorderThickness="3" DotBrush="#FFAB91"
                                                        DotSize="14" DotTopMargin="10" HalfSpacing="10" LineBrush="#FFAB91"

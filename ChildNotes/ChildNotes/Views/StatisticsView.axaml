@@ -61,7 +61,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:StatTypeOption">
                                 <Border Classes="stat-chip"
                                         Classes.active="{Binding IsSelected}"
                                         PointerPressed="OnTypeTap">
@@ -80,7 +80,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="vm:StatRangeOption">
                                 <Border Classes="stat-chip"
                                         Classes.active="{Binding IsSelected}"
                                         PointerPressed="OnRangeTap">
@@ -119,7 +119,7 @@
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate x:DataType="vm:ChartBarItem">
                                         <StackPanel Width="34" HorizontalAlignment="Center" VerticalAlignment="Bottom" Spacing="4">
                                             <TextBlock Text="{Binding ValueText}" FontSize="9" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
                                             <Border Height="{Binding HeightPct}" MinHeight="2" CornerRadius="3,3,0,0"

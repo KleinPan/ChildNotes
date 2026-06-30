@@ -37,6 +37,18 @@ public partial class BabyManagerViewModel : ViewModelBase
         HasBaby = list.Count > 0;
     }
 
+    /// <summary>
+    /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
+    /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// </summary>
+    public async Task LoadAsync()
+    {
+        var list = await Task.Run(() => _babyService.LoadBabyList());
+        BabyList.Clear();
+        foreach (var b in list) BabyList.Add(b);
+        HasBaby = list.Count > 0;
+    }
+
     public bool IsCurrentBaby(Baby baby) => _state.CurrentBaby?.Id == baby.Id;
 
     public void OpenAdd()

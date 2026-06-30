@@ -54,6 +54,74 @@ public partial class StatisticsViewModel : ViewModelBase
         Rebuild();
     }
 
+    /// <summary>
+    /// 异步加载：DB 查询放到后台线程，UI 线程仅做属性赋值。
+    /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// </summary>
+    public async Task LoadAsync()
+    {
+        UpdateSelections();
+        var (start, end) = GetRange();
+        var selectedType = SelectedType;
+        var selectedRange = SelectedRange;
+        var typeOpt = TypeOptions.First(t => t.Key == selectedType);
+
+        // 后台线程：仅做 DB 查询和纯计算，不触碰 ObservableObject
+        var snapshot = await Task.Run(() =>
+        {
+            var aggregates = _statsService.GetDailyAggregates(start, end);
+            var values = aggregates.Select(a => new
+            {
+                a.Date,
+                Value = StatisticsService.ExtractValue(a, selectedType),
+            }).ToList();
+            var max = values.Count > 0 ? values.Max(v => v.Value) : 0;
+            var total = values.Sum(v => v.Value);
+            var avg = values.Count > 0 ? total / values.Count : 0;
+            // 预生成 ChartBarItem（纯 POCO，可在后台构造）
+            var bars = new List<ChartBarItem>(values.Count);
+            foreach (var v in values)
+            {
+                bars.Add(new ChartBarItem
+                {
+                    Label = selectedRange == "month" ? $"{v.Date.Month}月" : v.Date.ToString("M/d"),
+                    ValueText = StatisticsService.FormatMetric(v.Value, selectedType, typeOpt.Unit),
+                    HeightPct = max > 0 && v.Value > 0 ? Math.Max(4, (v.Value / max) * 100) : 0,
+                    BarColor = typeOpt.Color,
+                    IsToday = v.Date.Date == DateTime.Today,
+                });
+            }
+            return new
+            {
+                Bars = bars,
+                Total = total,
+                Avg = avg,
+                Max = max,
+            };
+        });
+
+        // UI 线程：仅做属性赋值
+        RangeLabel = selectedRange switch
+        {
+            "day" => $"{DateTime.Today:yyyy年M月d日}",
+            "threeDays" => "最近3天",
+            "week" => "最近一周",
+            "month" => $"{start:yyyy年M月}",
+            "range" => $"{start:MM-dd} 至 {end:MM-dd}",
+            _ => "最近一周",
+        };
+        AverageLabel = selectedRange == "month" ? "月均" : "日均";
+        CurrentTypeLabel = typeOpt.Label;
+        CurrentTypeColor = typeOpt.Color;
+
+        ChartBars.Clear();
+        foreach (var b in snapshot.Bars) ChartBars.Add(b);
+
+        TotalText = StatisticsService.FormatMetric(snapshot.Total, selectedType, typeOpt.Unit);
+        AverageText = StatisticsService.FormatMetric(snapshot.Avg, selectedType, typeOpt.Unit);
+        MaxText = StatisticsService.FormatMetric(snapshot.Max, selectedType, typeOpt.Unit);
+    }
+
     private void UpdateSelections()
     {
         foreach (var t in TypeOptions) t.IsSelected = t.Key == SelectedType;

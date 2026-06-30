@@ -22,8 +22,14 @@ public partial class QuickMenuViewModel : ViewModelBase
     [ObservableProperty] private bool _isRecordSheetOpen;
 
     /// <summary>
+    /// Ai 记弹层是否打开（由 MainShellViewModel 同步镜像）。
+    /// Ai 记弹出期间 FAB 必须隐藏，与 RecordSheet 行为对齐。
+    /// </summary>
+    [ObservableProperty] private bool _isAiNoteOpen;
+
+    /// <summary>
     /// FAB 是否在当前 tab 可见（仅首页可见，由 MainShellViewModel.SwitchTab 同步）。
-    /// 与 IsRecordSheetOpen/IsMenuOpen 共同决定 FAB 最终可见性。
+    /// 与 IsRecordSheetOpen/IsAiNoteOpen/IsMenuOpen 共同决定 FAB 最终可见性。
     /// </summary>
     [ObservableProperty] private bool _isFabEnabled = true;
 
@@ -52,13 +58,14 @@ public partial class QuickMenuViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// FAB 实际可见性：当前 tab 允许显示 且 未打开底部抽屉 且 菜单已关闭。
-    /// 三个条件任一不满足即隐藏 FAB。派生属性，由 ObservableProperty 自动通知。
+    /// FAB 实际可见性：当前 tab 允许显示 且 未打开底部抽屉 且 Ai 记弹层未打开 且 菜单已关闭。
+    /// 四个条件任一不满足即隐藏 FAB。派生属性，由 ObservableProperty 自动通知。
     /// </summary>
-    public bool IsFabVisible => IsFabEnabled && !IsRecordSheetOpen && !IsMenuOpen;
+    public bool IsFabVisible => IsFabEnabled && !IsRecordSheetOpen && !IsAiNoteOpen && !IsMenuOpen;
 
     partial void OnIsMenuOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
     partial void OnIsRecordSheetOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
+    partial void OnIsAiNoteOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
     partial void OnIsFabEnabledChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
 
     [RelayCommand]

@@ -68,6 +68,9 @@ public partial class RecordSheetView : UserControl
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
     {
+        // 桌面端不会触发此回调（KeyboardHeightService 只在安卓端注册），但防御性判断
+        if (!OperatingSystem.IsAndroid()) return;
+
         // 无论是否 focused 都响应——用户可能在键盘已弹出时切换表单类型
         if (IsVisible)
         {
@@ -104,38 +107,57 @@ public partial class RecordSheetView : UserControl
     /// <summary>
     /// 核心修复：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
     /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网（防止长表单溢出到键盘区域）。
-    ///
-    /// 为什么用 Margin 而不是只设 MaxHeight：
-    /// 喂奶等短表单内容仅 ~168px，远小于任何合理的 MaxHeight（396~522），
-    /// 所以 MaxHeight 对短表单完全无效。必须通过 Margin.Bottom 把整个抽屉物理上移。
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
-        if (SheetRoot is null) return;
+        if (SheetRoot is null)
+        {
+            DevLogger.Log("SheetView", "ApplyOffset SKIP: SheetRoot is null");
+            return;
+        }
+
+        // 桌面端无软键盘，跳过偏移逻辑（Windows 输入框失焦不会触发键盘，
+        // 但 GotFocus 仍会触发本方法，需要在此拦截避免误上推）
+        if (!OperatingSystem.IsAndroid())
+        {
+            DevLogger.Log("SheetView", $"ApplyOffset SKIP: not Android (reason={reason})");
+            return;
+        }
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
         var topLevel = TopLevel.GetTopLevel(this);
         var viewHeight = topLevel?.ClientSize.Height ?? 0;
+        var scaling = topLevel?.RenderScaling ?? 1.0;
 
         double offset;
+        string offsetSource;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：向上推 keyboardHeight - 少量间距，让抽屉紧贴键盘上方
-            offset = kbHeight - 4;
+            // 有真实键盘高度：向上推 keyboardHeight，让抽屉紧贴键盘上方
+            offset = kbHeight;
+            offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
             // 已聚焦但还没收到原生回调：先用保守估算（屏幕 40%），等原生值到达后再精确调整
             offset = viewHeight > 0 ? viewHeight * 0.40 : 350;
+            offsetSource = "fallback";
         }
         else
         {
+            DevLogger.Log("SheetView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
             return; // 无键盘、无焦点，不需要偏移
         }
 
-        // 安全上限：抽屉上推后顶部不应超过屏幕 15% 位置（避免顶到屏幕最上方）
-        var maxOffset = viewHeight > 0 ? viewHeight * 0.85 : 700;
-        if (offset > maxOffset) offset = maxOffset;
+        // 安全上限：抽屉上推后顶部不应超过屏幕 5% 位置（避免顶到屏幕最上方）
+        var maxOffset = viewHeight > 0 ? viewHeight * 0.95 : 800;
+        var clamped = false;
+        if (offset > maxOffset)
+        {
+            offset = maxOffset;
+            offsetSource += "(clamped)";
+            clamped = true;
+        }
 
         // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);
@@ -146,14 +168,15 @@ public partial class RecordSheetView : UserControl
             SheetRoot.MaxHeight = Math.Max(280, viewHeight - offset - 16);
         }
 
-        if (Math.Abs(offset - _lastKbOffset) > 1)
-        {
-            _lastKbOffset = offset;
-            DevLogger.Log("SheetView",
-                $"ApplyOffset | {reason} | kbH={kbHeight:F0}lp | offset={offset:F0}lp | " +
-                $"viewH={viewHeight:F0} | MaxH={SheetRoot.MaxHeight:F0} | " +
-                $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0}");
-        }
+        // 详细调试日志：输出关键变量和执行流程，便于排查 offset 偏小/偏大问题
+        DevLogger.Log("SheetView",
+            $"ApplyOffset | {reason} | src={offsetSource} | " +
+            $"kbH={kbHeight:F1}lp | offset={offset:F1}lp | viewH={viewHeight:F1}lp | " +
+            $"scaling={scaling:F2} | clamped={clamped} | " +
+            $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
+            $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
+            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+        _lastKbOffset = offset;
     }
 
     /// <summary>清除键盘偏移，恢复默认状态。</summary>
@@ -223,19 +246,19 @@ public partial class RecordSheetView : UserControl
         }
     }
 
-    private void OnVaccineMarkDone(object sender, RoutedEventArgs e)
+    private async void OnVaccineMarkDone(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
         {
-            vm.MarkVaccineDone(plan);
+            await vm.MarkVaccineDoneAsync(plan);
         }
     }
 
-    private void OnVaccineSkip(object sender, RoutedEventArgs e)
+    private async void OnVaccineSkip(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
         {
-            vm.MarkVaccineSkipped(plan);
+            await vm.MarkVaccineSkippedAsync(plan);
         }
     }
 
@@ -254,11 +277,11 @@ public partial class RecordSheetView : UserControl
         if (DataContext is RecordSheetViewModel vm) vm.VaccineForm.SwitchCustomCategoryCommand.Execute(c);
     }
 
-    private void OnAddCustomVaccine(object sender, RoutedEventArgs e)
+    private async void OnAddCustomVaccine(object sender, RoutedEventArgs e)
     {
         if (DataContext is RecordSheetViewModel vm)
         {
-            vm.AddCustomVaccine();
+            await vm.AddCustomVaccineAsync();
         }
     }
 

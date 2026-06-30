@@ -1,6 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:shared="using:ChildNotes.Shared.Dtos"
+             xmlns:sharedConst="using:ChildNotes.Shared.Constants"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -38,7 +40,7 @@
                 <!-- 家庭列表 -->
                 <ItemsControl ItemsSource="{Binding Families}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="shared:BabyFamilyDto">
                             <Border Background="{StaticResource WeuiBg2Brush}"
                                     CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                                 <StackPanel>
@@ -56,7 +58,7 @@
                                     <!-- 成员列表 -->
                                     <ItemsControl ItemsSource="{Binding Members}">
                                         <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
+                                            <DataTemplate x:DataType="shared:BabyMemberDto">
                                                 <Grid Margin="14,10" ColumnDefinitions="Auto,*,Auto">
                                                     <Border Grid.Column="0" Width="36" Height="36" CornerRadius="18"
                                                             Background="{StaticResource AvatarGradientBrush}"
@@ -108,7 +110,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="sharedConst:RoleOption">
                                 <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
                                         Click="OnSelectJoinRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>
@@ -140,7 +142,7 @@
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
+                            <DataTemplate x:DataType="sharedConst:RoleOption">
                                 <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
                                         Click="OnSelectEditingRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>

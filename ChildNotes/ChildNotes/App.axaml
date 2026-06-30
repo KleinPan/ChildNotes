@@ -19,8 +19,7 @@
     </Application.Resources>
 
     <Application.Styles>
-        <FluentTheme />
-        <StyleInclude Source="avares://ChildNotes/Styles/WeUIStyles.axaml"/>
         <semi:SemiTheme Locale="zh-CN"/>
+        <StyleInclude Source="avares://ChildNotes/Styles/WeUIStyles.axaml"/>
     </Application.Styles>
 </Application>

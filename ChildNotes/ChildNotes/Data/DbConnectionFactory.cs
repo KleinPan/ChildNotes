@@ -14,24 +14,25 @@ public sealed class DbConnectionFactory
         // 启用 WAL 模式提升并发读性能；设置 BusyTimeout 避免写入冲突时立即失败
         _connectionString = $"Data Source={dbPath};Mode=ReadWriteCreate";
         DevLogger.Log("DB", $"DbConnectionFactory ctor: path={dbPath}, dir exists={System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(dbPath))}");
-        // 初始化 PRAGMA（每次新连接都会执行）
+        // WAL 是数据库级持久化属性，只需在首次构造时设置一次；
+        // foreign_keys 是连接级属性，必须在每个新连接的 Create() 中重新启用
         using var initConn = new SqliteConnection(_connectionString);
         initConn.Open();
         using (var pragma = initConn.CreateCommand())
         {
-            pragma.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;";
+            pragma.CommandText = "PRAGMA journal_mode=WAL;";
             pragma.ExecuteNonQuery();
         }
-        DevLogger.Log("DB", "DbConnectionFactory ctor done (initial PRAGMA ok)");
+        DevLogger.Log("DB", "DbConnectionFactory ctor done (WAL persisted)");
     }
 
     public SqliteConnection Create()
     {
         var conn = new SqliteConnection(_connectionString);
         conn.Open();
-        // 每个连接都启用 WAL 和 busy_timeout，确保多连接并发安全
+        // 每个连接都必须重新启用 foreign_keys 和 busy_timeout（连接级属性，不跨连接持久化）
         using var pragma = conn.CreateCommand();
-        pragma.CommandText = "PRAGMA busy_timeout=5000;";
+        pragma.CommandText = "PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;";
         pragma.ExecuteNonQuery();
         return conn;
     }
