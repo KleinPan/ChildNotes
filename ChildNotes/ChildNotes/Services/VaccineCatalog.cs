@@ -209,19 +209,31 @@ public static class VaccineCatalog
     };
 
     /// <summary>
-    /// 展开所有剂次，返回 (疫苗名+剂次, 月龄标签, 距出生天数) 列表
+    /// 缓存的剂次展开列表。疫苗目录是静态数据（All 在类型初始化时固定），
+    /// FlattenDoses 结果不可变，缓存后避免每次 RefreshAsync 重新枚举 52 项 + 字符串拼接。
     /// </summary>
-    public static IEnumerable<(string Name, string AgeLabel, int? DueDays)> FlattenDoses()
+    private static readonly List<(string Name, string AgeLabel, int? DueDays)> FlattenedDosesCache =
+        BuildFlattenedDosesCache();
+
+    private static List<(string Name, string AgeLabel, int? DueDays)> BuildFlattenedDosesCache()
     {
+        var list = new List<(string, string, int?)>(64);
         foreach (var v in All)
         {
             foreach (var d in v.Doses)
             {
                 var name = string.IsNullOrEmpty(d.Label) ? v.Name : $"{v.Name} {d.Label}";
-                yield return (name, d.AgeLabel, d.DueDays);
+                list.Add((name, d.AgeLabel, d.DueDays));
             }
         }
+        return list;
     }
+
+    /// <summary>
+    /// 展开所有剂次，返回 (疫苗名+剂次, 月龄标签, 距出生天数) 列表。
+    /// 结果在首次调用时构建并缓存，后续调用直接返回缓存引用（疫苗目录是静态数据）。
+    /// </summary>
+    public static IReadOnlyList<(string Name, string AgeLabel, int? DueDays)> FlattenDoses() => FlattenedDosesCache;
 
     /// <summary>自费疫苗替代免费疫苗的映射：key=自费剂次key，value=被替代的免费剂次key列表</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Replacements = new Dictionary<string, IReadOnlyList<string>>

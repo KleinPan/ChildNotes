@@ -346,13 +346,21 @@
                 <!-- 时间轴内容（可滚动） -->
                 <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
+                        <!-- Loading 占位：DB 查询后台线程执行时显示，避免 UI 卡顿无反馈 -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,40" Spacing="8"
+                                    IsVisible="{Binding IsActivityLoading}">
+                            <ProgressBar IsIndeterminate="True" Width="120" Height="4"/>
+                            <TextBlock Text="加载中..." FontSize="13" Foreground="#999999" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
                         <!-- 时间轴主体（对齐小程序 at-timeline） -->
-                        <ItemsControl ItemsSource="{Binding ActivityTimelineGroups}">
+                        <ItemsControl ItemsSource="{Binding ActivityTimelineGroups}"
+                                      IsVisible="{Binding !IsActivityLoading}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ActivityTimelineGroup">
                                     <StackPanel Margin="0,0,0,16">
                                         <!-- 日期分组标签 -->
-                                        <TextBlock Text="{Binding Label}" FontSize="12" Foreground="#999999"
+                                        <TextBlock Text="{Binding Label, Mode=OneTime}" FontSize="12" Foreground="#999999"
                                                    FontWeight="Medium" Margin="0,0,0,8"/>
                                         <!-- 组内时间轴项 -->
                                         <ItemsControl ItemsSource="{Binding Items}">
@@ -375,15 +383,15 @@
                                                                 CornerRadius="8" Padding="12,10" Margin="4,0,0,0">
                                                             <StackPanel Spacing="4">
                                                                 <Grid ColumnDefinitions="*,Auto">
-                                                                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                                                                    <TextBlock Grid.Column="0" Text="{Binding Name, Mode=OneTime}"
                                                                                FontSize="14" FontWeight="SemiBold"
                                                                                Foreground="#333333" TextTrimming="CharacterEllipsis"/>
-                                                                    <TextBlock Grid.Column="1" Text="{Binding CategoryEmoji}"
+                                                                    <TextBlock Grid.Column="1" Text="{Binding CategoryEmoji, Mode=OneTime}"
                                                                                FontSize="14"/>
                                                                 </Grid>
                                                                 <StackPanel Orientation="Horizontal" Spacing="12">
-                                                                    <TextBlock Text="{Binding Time}" FontSize="11" Foreground="#AAAAAA"/>
-                                                                    <TextBlock Text="{Binding DurationText}" FontSize="11"
+                                                                    <TextBlock Text="{Binding Time, Mode=OneTime}" FontSize="11" Foreground="#AAAAAA"/>
+                                                                    <TextBlock Text="{Binding DurationText, Mode=OneTime}" FontSize="11"
                                                                                Foreground="#888888"
                                                                                IsVisible="{Binding Duration, Converter={x:Static ObjectConverters.IsNotNull}}"/>
                                                                 </StackPanel>
@@ -401,6 +409,12 @@
                         <TextBlock Text="暂无活动记录" FontSize="14" Foreground="#CCCCCC"
                                    HorizontalAlignment="Center" Padding="0,40"
                                    IsVisible="{Binding ActivityTimelineGroups.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
+                        <!-- 加载更多按钮：分页加载剩余活动记录 -->
+                        <Button Content="加载更多" Classes="weui-btn default" CornerRadius="6" Padding="0,10"
+                                Margin="0,8,0,0" HorizontalAlignment="Stretch"
+                                Command="{Binding LoadMoreActivitiesCommand}"
+                                IsVisible="{Binding HasMoreActivities}"
+                                IsEnabled="{Binding !IsActivityLoading}"/>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>

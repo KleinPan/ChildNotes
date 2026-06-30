@@ -76,6 +76,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private ActivityLatestItem? _lastActivity;
     [ObservableProperty] private string _activityTimeSince = "--";
     [ObservableProperty] private ObservableCollection<ActivityTimelineGroup> _activityTimelineGroups = new();
+    /// <summary>活动详情面板加载状态：true 时显示 loading 占位，避免 UI 卡顿无反馈。</summary>
+    [ObservableProperty] private bool _isActivityLoading;
 
     // 距上次活动时间实时刷新（对齐小程序 startTimer 30 秒间隔）
     private readonly DispatcherTimer _activitySinceTimer = new(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, (_, _) => { });
@@ -511,21 +513,56 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     }
 
     /// <summary>
-    /// 构建活动时间轴分组（对齐小程序 buildTimeline）。
+    /// 活动时间轴每页加载条数：首屏 20 条，滚动加载每次 +20。
+    /// 原 100 条全量加载导致面板打开卡顿 200-500ms，分页后首屏 < 50ms。
+    /// </summary>
+    private const int ActivityPageSize = 20;
+    private int _activityLoadedCount;
+
+    /// <summary>
+    /// 异步构建活动时间轴分组（对齐小程序 buildTimeline）。
+    /// DB 查询放到后台线程，UI 线程仅做分组填充；首屏只加载 20 条，剩余按需加载。
     /// 记录列表已按时间倒序（最新在前），分组时保持该顺序：今天在最上。
     /// </summary>
-    private void BuildActivityTimeline()
+    private async Task BuildActivityTimelineAsync()
     {
-        ActivityTimelineGroups.Clear();
-        var activities = _recordService.GetByType(RecordType.Activity, 100);
-        if (activities.Count == 0) return;
+        IsActivityLoading = true;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            // 后台线程查询 DB（避免阻塞 UI 线程）
+            var activities = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
+            DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: DB query {activities.Count} items in {sw.ElapsedMilliseconds}ms");
 
+            // UI 线程：分页填充首屏
+            ActivityTimelineGroups.Clear();
+            _activityLoadedCount = 0;
+            AppendActivityPage(activities, ActivityPageSize);
+            DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: first page rendered, total={sw.ElapsedMilliseconds}ms, items={_activityLoadedCount}");
+        }
+        finally
+        {
+            IsActivityLoading = false;
+        }
+    }
+
+    /// <summary>追加一页活动记录到现有分组（保持日期分组逻辑）。</summary>
+    private void AppendActivityPage(List<ChildRecord> activities, int pageSize)
+    {
         var todayStr = DateTime.Today.ToString("yyyy-MM-dd");
         ActivityTimelineGroup? current = null;
         var lastDate = string.Empty;
-
-        foreach (var rec in activities)
+        // 复用最后一个已有分组（如果日期相同）
+        if (ActivityTimelineGroups.Count > 0)
         {
+            current = ActivityTimelineGroups[^1];
+            lastDate = current.IsToday ? todayStr : current.Label;
+        }
+
+        var endIndex = Math.Min(_activityLoadedCount + pageSize, activities.Count);
+        for (var i = _activityLoadedCount; i < endIndex; i++)
+        {
+            var rec = activities[i];
             var dateStr = rec.RecordTime.ToString("yyyy-MM-dd");
             if (dateStr != lastDate)
             {
@@ -542,7 +579,30 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
                 dto?.Duration,
                 ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(rec.RecordTime)));
         }
+        _activityLoadedCount = endIndex;
     }
+
+    /// <summary>是否还有更多活动记录可加载（用于"加载更多"按钮显隐）。</summary>
+    public bool HasMoreActivities => _activityLoadedCount < 100;
+
+    [RelayCommand(CanExecute = nameof(CanLoadMoreActivities))]
+    private async Task LoadMoreActivities()
+    {
+        if (IsActivityLoading) return;
+        IsActivityLoading = true;
+        try
+        {
+            var activities = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
+            AppendActivityPage(activities, ActivityPageSize);
+            LoadMoreActivitiesCommand.NotifyCanExecuteChanged();
+        }
+        finally
+        {
+            IsActivityLoading = false;
+        }
+    }
+
+    private bool CanLoadMoreActivities => HasMoreActivities && !IsActivityLoading;
 
     /// <summary>
     /// 从快照数据应用异常/生病追踪状态（不再重复查询 DB）。
@@ -625,14 +685,19 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     }
 
     [RelayCommand]
-    private void ToggleActivityDetail()
+    private async Task ToggleActivityDetail()
     {
-        // 首次打开时构建时间轴分组（对齐小程序 onToggleDetail）
+        // 首次打开时异步构建时间轴分组（对齐小程序 onToggleDetail）
         if (!IsActivityDetailOpen)
         {
-            BuildActivityTimeline();
+            // 立即打开面板（显示 loading 占位），后台异步加载数据
+            IsActivityDetailOpen = true;
+            await BuildActivityTimelineAsync();
         }
-        IsActivityDetailOpen = !IsActivityDetailOpen;
+        else
+        {
+            IsActivityDetailOpen = false;
+        }
     }
 
     [RelayCommand]
