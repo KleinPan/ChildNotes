@@ -10,11 +10,9 @@ public partial class MainShellView : UserControl
     {
         InitializeComponent();
         DevLogger.Log("Shell", "MainShellView ctor");
-        if (DataContext is MainShellViewModel vm)
-        {
-            DevLogger.Log("Shell", "MainShellView ctor: DataContext already set, calling ActivateHome");
-            vm.ActivateHome();
-        }
+        // 不在此处调用 vm.ActivateHome()：OnDataContextChanged 会触发，
+        // 在此处调用会导致启动时 ActivateHome 被执行 2-3 次（ctor + OnDataContextChanged + ActivateHomeAfterLogin），
+        // 每次都触发 RefreshAsync（~1300ms DB 查询），白白浪费 ~2600ms。
     }
 
     protected override void OnDataContextChanged(EventArgs e)

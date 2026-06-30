@@ -32,12 +32,13 @@
             <Grid RowDefinitions="Auto,*,Auto">
                 <!-- 顶部工具栏 -->
                 <Border Grid.Row="0" Background="#33000000" Padding="8,4" CornerRadius="6,6,0,0">
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="DEV LOG（可跨行选择/Ctrl+A 全选）" Foreground="#0FF" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="全选" Click="OnSelectAll" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
-                        <Button Grid.Column="2" Content="清" Click="OnClear" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
-                        <Button Grid.Column="3" Content="底" Click="OnScrollEnd" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
-                        <Button Grid.Column="4" Content="×" Click="OnToggle" Padding="6,2" FontSize="10" Background="#333" Foreground="White"/>
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="DEV LOG（点击复制可导出全部日志）" Foreground="#0FF" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="复制" Click="OnCopy" Padding="6,2" FontSize="10" Margin="4,0" Background="#07C160" Foreground="White"/>
+                        <Button Grid.Column="2" Content="全选" Click="OnSelectAll" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="3" Content="清" Click="OnClear" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="4" Content="底" Click="OnScrollEnd" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="5" Content="×" Click="OnToggle" Padding="6,2" FontSize="10" Background="#333" Foreground="White"/>
                     </Grid>
                 </Border>
 

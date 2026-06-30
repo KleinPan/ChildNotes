@@ -106,24 +106,37 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         }
     }
 
+    /// <summary>RefreshAsync 防重复令牌：启动时 ActivateHome 被调用 2-3 次（ctor + OnDataContextChanged + ActivateHomeAfterLogin），
+    /// 每次都触发 RefreshAsync，导致 ~1300ms 的 DB 查询被执行多次。此字段确保同一时刻只有一个 RefreshAsync 在跑。/// </summary>
+    private CancellationTokenSource? _refreshCts;
+
     /// <summary>
     /// 异步刷新首页：后台线程批量查询所有 DB 数据，UI 线程仅做属性赋值。
     /// 把原先 Refresh + RefreshLastFeed + RefreshVaccines + RefreshActivity + RefreshAbnormal
     /// 的 8+ 次串行同步 DB 查询合并为 1 次后台批量查询，UI 线程阻塞从 200-500ms 降至 &lt;50ms。
+    /// 含防重复机制：若已有 RefreshAsync 在执行，取消旧任务后重新开始（最新数据优先）。
     /// </summary>
     public async Task RefreshAsync()
     {
+        // 防重复：取消上一次未完成的刷新
+        _refreshCts?.Cancel();
+        _refreshCts?.Dispose();
+        _refreshCts = new CancellationTokenSource();
+        var ct = _refreshCts.Token;
+
         DevLogger.Log("Home", "RefreshAsync start");
         var sw = System.Diagnostics.Stopwatch.StartNew();
 
         var appState = ServiceProvider.Instance.AppState;
         var currentBabyId = appState.CurrentBabyId;
 
-        // 后台线程：一次性查询所有需要的数据
+        // 后台线程：一次性查询所有需要的数据（可被后续 RefreshAsync 取消）
         var snapshot = await Task.Run(() =>
         {
+            ct.ThrowIfCancellationRequested();
             var baby = _babyService.LoadBabyList().FirstOrDefault(b => b.Id == currentBabyId)
                        ?? appState.CurrentBaby;
+            ct.ThrowIfCancellationRequested();
             if (baby is null)
                 return (Baby: (Baby?)null, TodayRecords: new List<ChildRecord>(),
                         LatestFeed: (ChildRecord?)null, VaccineRecords: new List<ChildRecord>(),
@@ -141,57 +154,69 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
                     LatestFeed: latestFeed, VaccineRecords: vaccineRecords,
                     Activities: activities, GrowthRecords: growthRecords,
                     AbnormalRecords: abnormalRecords, Stats: (DayStats?)stats);
-        });
+        }, ct);
 
-        // UI 线程：属性赋值与集合更新
-        appState.CurrentBaby = snapshot.Baby;
-        DevLogger.Log("Home", $"RefreshAsync: baby={(snapshot.Baby is null ? "null" : snapshot.Baby.Name)}, db={sw.ElapsedMilliseconds}ms");
-
-        if (snapshot.Baby is null)
+        // UI 线程：属性赋值与集合更新（被取消则静默跳过）
+        try
         {
-            BabyName = "未添加宝宝";
-            BabyAgeText = string.Empty;
-            GrowthStage = string.Empty;
-            TodayStats = null;
-            LastFeedAgoText = "--";
-            LastFeedSummary = "--";
-            DiaperTodayText = "0次";
-            DiaperDetailText = "便0 尿0";
-            SleepTodayText = "0小时0分钟";
-            LatestHeightText = "--cm";
-            LatestWeightText = "--kg";
-            VaccineItems.Clear();
-            VaccineProgressText = "0/0";
-            ResetActivity();
-            ResetAbnormal();
-            return;
+            appState.CurrentBaby = snapshot.Baby;
+            DevLogger.Log("Home", $"RefreshAsync: baby={(snapshot.Baby is null ? "null" : snapshot.Baby.Name)}, db={sw.ElapsedMilliseconds}ms");
+
+            if (snapshot.Baby is null)
+            {
+                BabyName = "未添加宝宝";
+                BabyAgeText = string.Empty;
+                GrowthStage = string.Empty;
+                TodayStats = null;
+                LastFeedAgoText = "--";
+                LastFeedSummary = "--";
+                DiaperTodayText = "0次";
+                DiaperDetailText = "便0 尿0";
+                SleepTodayText = "0小时0分钟";
+                LatestHeightText = "--cm";
+                LatestWeightText = "--kg";
+                VaccineItems.Clear();
+                VaccineProgressText = "0/0";
+                ResetActivity();
+                ResetAbnormal();
+                return;
+            }
+
+            BabyName = snapshot.Baby.Name;
+            BabyAvatar = snapshot.Baby.Avatar;
+            GrowthStage = _babyService.GetGrowthStageText();
+            BabyAgeText = snapshot.Baby.BirthDate.HasValue
+                ? FormatAge(snapshot.Baby.BirthDate.Value)
+                : string.Empty;
+
+            TodayStats = snapshot.Stats;
+            DailyTip = GetDailyTip(TodayStats);
+
+            // 从已查快照中派生各子项，不再重复查询 DB
+            ApplyLastFeed(snapshot.LatestFeed, snapshot.TodayRecords);
+            ApplyDiaper(snapshot.Stats);
+            ApplySleep(snapshot.Stats);
+            ApplyGrowth(snapshot.GrowthRecords);
+            RefreshAiStatus(snapshot.Stats);
+            var tVac = sw.ElapsedMilliseconds;
+            ApplyVaccines(snapshot.VaccineRecords);
+            var tAct = sw.ElapsedMilliseconds;
+            ApplyActivity(snapshot.Activities);
+            var tAbn = sw.ElapsedMilliseconds;
+            ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
+
+            sw.Stop();
+            DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAct - tVac}ms activity={tAbn - tAct}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
         }
-
-        BabyName = snapshot.Baby.Name;
-        BabyAvatar = snapshot.Baby.Avatar;
-        GrowthStage = _babyService.GetGrowthStageText();
-        BabyAgeText = snapshot.Baby.BirthDate.HasValue
-            ? FormatAge(snapshot.Baby.BirthDate.Value)
-            : string.Empty;
-
-        TodayStats = snapshot.Stats;
-        DailyTip = GetDailyTip(TodayStats);
-
-        // 从已查快照中派生各子项，不再重复查询 DB
-        ApplyLastFeed(snapshot.LatestFeed, snapshot.TodayRecords);
-        ApplyDiaper(snapshot.Stats);
-        ApplySleep(snapshot.Stats);
-        ApplyGrowth(snapshot.GrowthRecords);
-        RefreshAiStatus(snapshot.Stats);
-        var tVac = sw.ElapsedMilliseconds;
-        ApplyVaccines(snapshot.VaccineRecords);
-        var tAct = sw.ElapsedMilliseconds;
-        ApplyActivity(snapshot.Activities);
-        var tAbn = sw.ElapsedMilliseconds;
-        ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
-
-        sw.Stop();
-        DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAct - tVac}ms activity={tAbn - tAct}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
+        catch (OperationCanceledException)
+        {
+            DevLogger.Log("Home", "RefreshAsync cancelled (superseded by newer refresh)");
+        }
+        finally
+        {
+            _refreshCts?.Dispose();
+            _refreshCts = null;
+        }
     }
 
     /// <summary>从快照数据应用最近一次喂养信息（不再重复查询 DB）。</summary>
