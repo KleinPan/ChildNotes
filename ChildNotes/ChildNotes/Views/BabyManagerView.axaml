@@ -100,27 +100,51 @@
             </Grid>
         </Border>
 
-        <!-- 编辑/添加表单（对齐小程序 baby editor sheet） -->
-        <Border Classes="modal-mask" IsVisible="{Binding IsEditorOpen}">
+        <!-- 编辑/添加表单（统一为：标题栏 ✕ 关闭 + 底部 保存按钮，与 RecordSheetView/AiNoteView 一致） -->
+        <Border x:Name="EditorSheet" Classes="modal-mask" IsVisible="{Binding IsEditorOpen}">
             <Border Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
-                <Grid RowDefinitions="Auto,*">
-                    <!-- 标题栏 -->
-                    <Border Grid.Row="0" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1" Padding="20,16">
-                        <Grid ColumnDefinitions="Auto,*,Auto">
-                            <TextBlock Grid.Column="0" Text="取消" FontSize="15" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"
-                                       PointerPressed="OnCancelEditorTapped"/>
-                            <TextBlock Grid.Column="1" Text="{Binding EditorTitle}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="保存" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"
-                                       PointerPressed="OnSaveTapped"/>
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
+                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding EditorTitle}" FontSize="17" FontWeight="Bold"/>
+                            <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
+                                    Background="Transparent" BorderThickness="0"
+                                    Command="{Binding CloseEditorCommand}"/>
                         </Grid>
                     </Border>
 
                     <!-- 表单内容 -->
                     <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="16" Margin="20,16,20,24">
+                        <StackPanel Spacing="16" Margin="20,8,20,16" HorizontalAlignment="Center">
+
+                            <!-- 头像编辑区（点击更换头像） -->
+                            <Button Click="OnAvatarTap" Padding="0"
+                                    Background="Transparent" BorderThickness="0"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Cursor="Hand">
+                                <Border Width="80" Height="80" CornerRadius="40"
+                                        Background="{StaticResource WeuiBg2Brush}"
+                                        BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="1">
+                                    <Grid>
+                                        <!-- 有头像时显示图片 -->
+                                        <Image Source="{Binding AvatarBitmap}"
+                                               IsVisible="{Binding HasAvatar}"
+                                               Stretch="UniformToFill"/>
+                                        <!-- 无头像时显示性别 emoji 占位 -->
+                                        <TextBlock Text="{Binding GenderEmoji}"
+                                                   FontSize="36"
+                                                   IsVisible="{Binding !HasAvatar}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </Button>
+                            <TextBlock Text="点击更换头像" FontSize="11"
+                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       HorizontalAlignment="Center"/>
+
                             <!-- 性别选择 -->
-                            <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
-                                <TextBlock Text="性别" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,6">
                                 <Button Content="👦 男宝" Classes="gender-btn"
                                         Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                         Click="OnBoyTap"/>
@@ -129,7 +153,7 @@
                                         Click="OnGirlTap"/>
                             </StackPanel>
 
-                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
 
                             <!-- 姓名 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -139,7 +163,7 @@
                                          VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
                             </StackPanel>
 
-                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
 
                             <!-- 出生日期 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -149,7 +173,7 @@
                                                     HorizontalAlignment="Stretch" FontSize="15"/>
                             </StackPanel>
 
-                            <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
 
                             <!-- 错误提示 -->
                             <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
@@ -162,6 +186,18 @@
                                     Click="OnDeleteTapped"/>
                         </StackPanel>
                     </ScrollViewer>
+
+                    <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                        <Grid ColumnDefinitions="*,10,*">
+                            <Button Grid.Column="0" Content="取消" Classes="weui-btn default"
+                                    CornerRadius="24" MinHeight="40"
+                                    Command="{Binding CloseEditorCommand}"/>
+                            <Button Grid.Column="2" Content="保存" Classes="weui-btn primary"
+                                    CornerRadius="24" MinHeight="40"
+                                    Command="{Binding SaveCommand}"/>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
         </Border>

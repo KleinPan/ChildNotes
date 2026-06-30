@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.DeveloperOptionsView"
+             x:DataType="vm:DeveloperOptionsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="开发者选项"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 调试工具 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="调试工具"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="日志悬浮层" FontSize="15"/>
+                                <TextBlock Text="在界面右上角显示开发日志浮层，可查看实时日志输出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDevLogOverlay}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 说明 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="说明"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                    <StackPanel Margin="14,12" Spacing="6">
+                        <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 日志悬浮层默认关闭，开启后立即生效，无需重启应用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 开关状态会自动保存，下次启动保持上次设置" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+        </Border>
+    </Grid>
+</UserControl>

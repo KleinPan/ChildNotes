@@ -54,6 +54,9 @@
         <ContentControl Grid.Row="0" Content="{Binding AiNote}" IsTabStop="False"
                         IsVisible="{Binding IsAiNoteOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding DeveloperOptions}" IsTabStop="False"
+                        IsVisible="{Binding IsDeveloperOptionsOpen}"/>
+
         <!-- 快捷记录：右下角悬浮 + 按钮 + 扇形菜单 + 居中卡片表单（跨行覆盖，+ 按钮始终可见） -->
         <ContentControl Grid.RowSpan="2" Content="{Binding QuickMenu}" IsTabStop="False"/>
 
@@ -95,7 +98,7 @@
             </Grid>
         </Border>
 
-        <!-- 开发阶段日志浮层（最上层覆盖，跨 Row） -->
-        <ctrl:DevLogOverlay Grid.RowSpan="2"/>
+        <!-- 开发阶段日志浮层（最上层覆盖，跨 Row，可见性由开发者选项控制） -->
+        <ctrl:DevLogOverlay Grid.RowSpan="2" IsVisible="{Binding IsDevLogOverlayVisible}"/>
     </Grid>
 </UserControl>

@@ -1,9 +1,18 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" android:installLocation="auto">
 	<uses-permission android:name="android.permission.INTERNET" />
 	<!-- application 节点必须包含所有 activity 子节点；
 	     icon 统一小写避免 Linux/Mac 构建失败 -->
-	<application android:label="ChildNotes" android:icon="@drawable/icon">
+	<!--
+		enableOnBackInvokedCallback=true：显式启用预测式返回手势（Android 13+）。
+		必须显式声明，不能依赖默认值——不同 OEM ROM（MIUI/EMUI/ColorOS）对默认值处理不一致，
+		导致部分手机侧滑返回直接退出应用。显式 true 后，所有设备统一走 OnBackInvokedCallback 路径。
+		targetSdk=36 时此属性默认就是 true，但显式声明可消除 OEM 差异。
+	-->
+	<application
+		android:label="ChildNotes"
+		android:icon="@drawable/icon"
+		android:enableOnBackInvokedCallback="true">
 		<!-- MainActivity 由 C# [Activity] 特性自动生成 <activity> 节点，
 		     windowSoftInputMode=adjustResize 通过 C# 特性无法稳定设置（.NET 10 Android 枚举绑定变化），
 		     故在此显式声明。android:name 必须与 ApplicationId 匹配，.NET Android 会做包名映射 -->

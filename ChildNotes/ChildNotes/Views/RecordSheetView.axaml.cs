@@ -107,6 +107,9 @@ public partial class RecordSheetView : UserControl
     /// <summary>
     /// 核心修复：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
     /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网（防止长表单溢出到键盘区域）。
+    ///
+    /// 关键修正：使用 SheetRoot 父容器的 Bounds.Height 作为可用高度基准，
+    /// 而非 TopLevel.ClientSize.Height（后者包含 TabBar 等非内容区域）。
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -116,8 +119,7 @@ public partial class RecordSheetView : UserControl
             return;
         }
 
-        // 桌面端无软键盘，跳过偏移逻辑（Windows 输入框失焦不会触发键盘，
-        // 但 GotFocus 仍会触发本方法，需要在此拦截避免误上推）
+        // 桌面端无软键盘，跳过偏移逻辑
         if (!OperatingSystem.IsAndroid())
         {
             DevLogger.Log("SheetView", $"ApplyOffset SKIP: not Android (reason={reason})");
@@ -125,32 +127,35 @@ public partial class RecordSheetView : UserControl
         }
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
+
+        // ★ 关键：使用父容器实际高度而非窗口高度
+        var parent = SheetRoot.Parent as Avalonia.Layout.Layoutable;
+        var containerHeight = parent?.Bounds.Height ?? 0;
+
+        // 窗口高度仅用于日志对比
         var topLevel = TopLevel.GetTopLevel(this);
-        var viewHeight = topLevel?.ClientSize.Height ?? 0;
-        var scaling = topLevel?.RenderScaling ?? 1.0;
+        var windowHeight = topLevel?.ClientSize.Height ?? 0;
 
         double offset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：向上推 keyboardHeight，让抽屉紧贴键盘上方
             offset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            // 已聚焦但还没收到原生回调：先用保守估算（屏幕 40%），等原生值到达后再精确调整
-            offset = viewHeight > 0 ? viewHeight * 0.40 : 350;
+            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
         {
             DevLogger.Log("SheetView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
-            return; // 无键盘、无焦点，不需要偏移
+            return;
         }
 
-        // 安全上限：抽屉上推后顶部不应超过屏幕 5% 位置（避免顶到屏幕最上方）
-        var maxOffset = viewHeight > 0 ? viewHeight * 0.95 : 800;
+        // 安全上限
+        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         var clamped = false;
         if (offset > maxOffset)
         {
@@ -159,20 +164,17 @@ public partial class RecordSheetView : UserControl
             clamped = true;
         }
 
-        // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);
 
-        // 安全网：也限制 MaxHeight（对长表单有效）
-        if (viewHeight > 0)
+        if (containerHeight > 0)
         {
-            SheetRoot.MaxHeight = Math.Max(280, viewHeight - offset - 16);
+            SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
         }
 
-        // 详细调试日志：输出关键变量和执行流程，便于排查 offset 偏小/偏大问题
         DevLogger.Log("SheetView",
             $"ApplyOffset | {reason} | src={offsetSource} | " +
-            $"kbH={kbHeight:F1}lp | offset={offset:F1}lp | viewH={viewHeight:F1}lp | " +
-            $"scaling={scaling:F2} | clamped={clamped} | " +
+            $"kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | winH={windowHeight:F1}lp | clamped={clamped} | " +
             $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
             $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
             $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");

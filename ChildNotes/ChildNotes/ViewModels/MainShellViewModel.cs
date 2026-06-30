@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.ViewModels;
@@ -60,6 +61,14 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private FamilyViewModel _family;
     [ObservableProperty] private bool _isAiNoteOpen;
     [ObservableProperty] private AiNoteViewModel _aiNote;
+
+    [ObservableProperty] private bool _isDeveloperOptionsOpen;
+    [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
+
+    /// <summary>
+    /// 日志悬浮层是否可见（从持久化设置读取，运行时可通过开发者选项实时切换）。
+    /// </summary>
+    [ObservableProperty] private bool _isDevLogOverlayVisible;
 
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
@@ -143,6 +152,7 @@ public partial class MainShellViewModel : ViewModelBase
 
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
+        _recordSheet.Closed += OnRecordSheetClosed;
 
         _quickMenu = new QuickMenuViewModel();
         _quickMenu.OpenRecordRequested += OpenQuickRecord;
@@ -169,6 +179,12 @@ public partial class MainShellViewModel : ViewModelBase
         _aiNote = new AiNoteViewModel();
         _aiNote.Saved += OnRecordSaved;
 
+        _developerOptions = new DeveloperOptionsViewModel();
+        _developerOptions.DevLogOverlayVisibilityChanged += OnDevLogOverlayVisibilityChanged;
+
+        // 从持久化设置加载日志悬浮层初始状态
+        IsDevLogOverlayVisible = DeveloperPreferences.Load().ShowDevLogOverlay;
+
         // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
         RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
         RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
@@ -179,6 +195,7 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
         RegisterOverlay(AiNote, () => IsAiNoteOpen = false, () => IsAiNoteOpen, OpenAiNote);
+        RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
     }
 
     /// <summary>打开 AI 智能记模态窗口。</summary>
@@ -208,6 +225,40 @@ public partial class MainShellViewModel : ViewModelBase
         CurrentTab = tab switch
         {
             "home" => Home,
+            "feeding" => Feeding,
+            "growth" => Growth,
+            "mine" => Mine,
+            _ => Home,
+        };
+        if (CurrentTab is IActivatable activatable) activatable.Activate();
+    }
+
+    /// <summary>
+    /// 获取当前活动 tab 的字符串标识（home/feeding/growth/mine）。
+    /// 供 MainActivity.OnSaveInstanceState 保存 UI 状态，Activity 重建后还原。
+    /// </summary>
+    public string GetCurrentTabId()
+    {
+        if (ReferenceEquals(CurrentTab, Feeding)) return "feeding";
+        if (ReferenceEquals(CurrentTab, Growth)) return "growth";
+        if (ReferenceEquals(CurrentTab, Mine)) return "mine";
+        return "home";
+    }
+
+    /// <summary>
+    /// 供 MainActivity.OnRestoreInstanceState 调用，Activity 重建后还原 tab。
+    /// 不走 SwitchTabCommand 是为了避免触发 CloseAllOverlays（恢复期无弹层可关）。
+    /// </summary>
+    public void RestoreTab(string tabId)
+    {
+        var tab = tabId is "feeding" or "growth" or "mine" ? tabId : "home";
+        QuickMenu.IsFabEnabled = tab == "home";
+        IsHomeSelected = tab == "home";
+        IsFeedingSelected = tab == "feeding";
+        IsGrowthSelected = tab == "growth";
+        IsMineSelected = tab == "mine";
+        CurrentTab = tab switch
+        {
             "feeding" => Feeding,
             "growth" => Growth,
             "mine" => Mine,
@@ -302,8 +353,29 @@ public partial class MainShellViewModel : ViewModelBase
         await Family.LoadAsync();
     }
 
+    public void OpenDeveloperOptions()
+    {
+        IsDeveloperOptionsOpen = true;
+    }
+
+    /// <summary>响应开发者选项中日志悬浮层开关的切换。</summary>
+    private void OnDevLogOverlayVisibilityChanged(bool visible)
+    {
+        IsDevLogOverlayVisible = visible;
+    }
+
     /// <summary>OnRecordSaved 防抖取消令牌：5 秒内多次保存只触发一次刷新链。</summary>
     private CancellationTokenSource? _savedRefreshCts;
+
+    /// <summary>
+    /// 记录抽屉关闭时统一重置 IsRecordSheetOpen（保存和 X 关闭共用）。
+    /// 这是修复"关闭弹窗后 FAB 不恢复"bug 的核心：X 按钮关闭路径此前未重置该标志。
+    /// </summary>
+    private void OnRecordSheetClosed()
+    {
+        DevLogger.Log("Shell", "OnRecordSheetClosed: setting IsRecordSheetOpen=false -> FAB should reappear");
+        IsRecordSheetOpen = false;
+    }
 
     private async void OnRecordSaved()
     {

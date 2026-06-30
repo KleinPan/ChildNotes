@@ -274,6 +274,17 @@ public partial class App : Application
     }
 
     /// <summary>
+    /// 获取当前活动 tab 的字符串标识（home/feeding/growth/mine）。
+    /// 供 MainActivity.OnSaveInstanceState 保存 UI 状态，Activity 重建后还原。
+    /// </summary>
+    public string? GetCurrentTabId() => _shellVm?.GetCurrentTabId();
+
+    /// <summary>
+    /// 供 MainActivity.OnRestoreInstanceState 调用，Activity 重建后还原 tab。
+    /// </summary>
+    public void SwitchToTab(string tabId) => _shellVm?.RestoreTab(tabId);
+
+    /// <summary>
     /// 安卓端原生键盘高度变化回调（由 MainActivity 通过 ViewTreeObserver 驱动）。
     /// 高度单位为 Avalonia 逻辑像素（已在安卓端用 DisplayMetrics.Density 转换）。
     /// 桌面端永远不会调用此方法。

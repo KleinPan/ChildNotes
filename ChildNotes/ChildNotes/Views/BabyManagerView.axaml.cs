@@ -2,6 +2,8 @@ using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.ViewModels;
@@ -34,8 +36,42 @@ public partial class BabyManagerView : UserControl
     private void OnBoyTap(object? sender, RoutedEventArgs e) => Vm?.SelectGender("boy");
     private void OnGirlTap(object? sender, RoutedEventArgs e) => Vm?.SelectGender("girl");
 
-    private void OnCancelEditorTapped(object? sender, PointerPressedEventArgs e) => Vm?.CloseEditorCommand.Execute(null);
-    private void OnSaveTapped(object? sender, PointerPressedEventArgs e) => Vm?.SaveCommand.Execute(null);
+    /// <summary>
+    /// 头像点击：调用系统文件选择器选取图片。
+    /// 桌面端用 StorageProvider.OpenFilePicker；安卓端通过 Avalonia 的文件选择 API。
+    /// </summary>
+    private async void OnAvatarTap(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel?.StorageProvider is not { } provider) return;
+
+            var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "选择头像",
+                AllowMultiple = false,
+                FileTypeFilter = new[]
+                {
+                    new FilePickerFileType("图片文件")
+                    {
+                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp" },
+                        MimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },
+                    },
+                },
+            });
+
+            if (files.Count > 0 && Vm is { } vm)
+            {
+                await vm.LoadAvatarFromFile(files[0]);
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("BabyManagerView", $"选择头像失败: {ex.Message}");
+        }
+    }
+
     private void OnDeleteTapped(object? sender, RoutedEventArgs e)
     {
         if (Vm is not { IsEditing: true } vm) return;

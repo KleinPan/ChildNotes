@@ -50,7 +50,6 @@ public static class AppConverters
     public static readonly IValueConverter IsVaccine = new EqualsConverter(RecordType.Vaccine);
     public static readonly IValueConverter NotVaccine = new NotEqualsConverter(RecordType.Vaccine);
     public static readonly IValueConverter IsActivity = new EqualsConverter(RecordType.Activity);
-    public static readonly IValueConverter IsMaternalFood = new EqualsConverter(RecordType.MaternalFood);
 
     // ===== 性别 =====
     public static readonly IValueConverter IsBoy = new EqualsConverter("boy");
@@ -104,17 +103,6 @@ public static class AppConverters
     public static readonly IValueConverter IsStatusDue = new EqualsConverter(VaccineDoseStatus.Due);
     public static readonly IValueConverter IsStatusSoon = new EqualsConverter(VaccineDoseStatus.Soon);
     public static readonly IValueConverter IsStatusPending = new EqualsConverter(VaccineDoseStatus.Pending);
-
-    // ===== 餐次 =====
-    public static readonly IValueConverter IsBreakfast = new EqualsConverter("breakfast");
-    public static readonly IValueConverter IsLunch = new EqualsConverter("lunch");
-    public static readonly IValueConverter IsDinner = new EqualsConverter("dinner");
-    public static readonly IValueConverter IsSnack = new EqualsConverter("snack");
-
-    // ===== 可疑程度 =====
-    public static readonly IValueConverter IsNoSuspicion = new EqualsConverter("none");
-    public static readonly IValueConverter IsMildSuspicion = new EqualsConverter("mild");
-    public static readonly IValueConverter IsHighSuspicion = new EqualsConverter("high");
 
     // ===== AI 设置：测试连接结果 =====
     public static readonly IValueConverter TestResultTitleConverter = new BoolToTextConverter("✅ 连接成功", "❌ 连接失败");

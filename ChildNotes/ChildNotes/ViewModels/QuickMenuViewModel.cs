@@ -41,11 +41,9 @@ public partial class QuickMenuViewModel : ViewModelBase
 
     public QuickMenuViewModel()
     {
-        // 11 个快捷项：不常用的在上边（远离 + 按钮），常用的在下边（靠近 + 按钮）
-        // 异常/生病记录为低频但重要功能，置于顶部（对齐小程序首页常驻红色入口的语义）
-        Actions.Add(new QuickActionItem("🚨", "异常", RecordType.Abnormal, "#FFEBEE"));
+        // 快捷项：不常用的在上边（远离 + 按钮），常用的在下边（靠近 + 按钮）
+        // 异常记录已在首页有独立红色入口，此处不再重复添加
         Actions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
-        Actions.Add(new QuickActionItem("🍽️", "妈妈饮食", RecordType.MaternalFood, "#F2F7E8"));
         Actions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary, "#FFF3E0"));
         Actions.Add(new QuickActionItem("🍶", "吸奶", RecordType.Pump, "#E8F5E9"));
         Actions.Add(new QuickActionItem("💊", "补给用药", RecordType.Supplement, "#F3E5F5"));

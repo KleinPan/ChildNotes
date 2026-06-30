@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
@@ -81,7 +82,10 @@ public partial class AiNoteView : UserControl
     /// <summary>
     /// 核心修复：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
     /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网（防止长表单溢出到键盘区域）。
-    /// 逻辑与 RecordSheetView.ApplyKeyboardOffset 保持一致。
+    ///
+    /// 关键修正：使用 SheetRoot 父容器（Panel）的 Bounds.Height 作为可用高度基准，
+    /// 而非 TopLevel.ClientSize.Height（后者包含 TabBar 等非内容区域，
+    /// 导致基于窗口高度的偏移量计算不准——抽屉无法紧贴键盘上方）。
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -91,8 +95,7 @@ public partial class AiNoteView : UserControl
             return;
         }
 
-        // 桌面端无软键盘，跳过偏移逻辑（Windows 输入框获得焦点不会触发键盘，
-        // 但 GotFocus 仍会触发本方法，需要在此拦截避免误上推到屏幕中间）
+        // 桌面端无软键盘，跳过偏移逻辑
         if (!OperatingSystem.IsAndroid())
         {
             DevLogger.Log("AiNoteView", $"ApplyOffset SKIP: not Android (reason={reason})");
@@ -100,30 +103,39 @@ public partial class AiNoteView : UserControl
         }
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
+
+        // ★ 关键：使用父容器（Panel）的实际高度而非窗口高度。
+        //   MainShellView 中 AiNoteView 放在 Grid.Row=0（TabBar 上方区域），
+        //   所以父容器高度 < ClientSize.Height。用错误的基准会导致偏移不足。
+        var parent = SheetRoot.Parent as Avalonia.Layout.Layoutable;
+        var containerHeight = parent?.Bounds.Height ?? 0;
+
+        // 窗口高度仅用于 fallback 估算和安全上限
         var topLevel = TopLevel.GetTopLevel(this);
-        var viewHeight = topLevel?.ClientSize.Height ?? 0;
+        var windowHeight = topLevel?.ClientSize.Height ?? 0;
 
         double offset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：向上推 keyboardHeight，让抽屉紧贴键盘上方
+            // 有真实键盘高度：直接用键盘高度作为偏移量
             offset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            // 已聚焦但还没收到原生回调：先用保守估算（屏幕 40%），等原生值到达后再精确调整
-            offset = viewHeight > 0 ? viewHeight * 0.40 : 350;
+            // 已聚焦但还没收到原生回调：用容器高度的 45% 做保守估算
+            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
         {
+            DevLogger.Log("AiNoteView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
             return; // 无键盘、无焦点，不需要偏移
         }
 
-        // 安全上限：抽屉上推后顶部不应超过屏幕 5% 位置（避免顶到屏幕最上方）
-        var maxOffset = viewHeight > 0 ? viewHeight * 0.95 : 800;
+        // 安全上限：抽屉顶部不超过容器的 8% 位置
+        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         if (offset > maxOffset)
         {
             offset = maxOffset;
@@ -133,15 +145,16 @@ public partial class AiNoteView : UserControl
         // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);
 
-        // 安全网：也限制 MaxHeight（对长表单有效）
-        if (viewHeight > 0)
+        // 限制 MaxHeight：确保抽屉不超出容器可见区
+        if (containerHeight > 0)
         {
-            SheetRoot.MaxHeight = Math.Max(280, viewHeight - offset - 16);
+            SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
         }
 
         DevLogger.Log("AiNoteView",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F0}lp | " +
-            $"offset={offset:F0}lp | viewH={viewHeight:F0} | MaxH={SheetRoot.MaxHeight:F0} | " +
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | " +
+            $"offset={offset:F1}lp | containerH={containerHeight:F1}lp | winH={windowHeight:F1}lp | " +
+            $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
             $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
             $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;

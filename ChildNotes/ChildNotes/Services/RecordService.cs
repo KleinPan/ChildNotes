@@ -176,18 +176,6 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddMaternalFood(MaternalFoodRecordDto dto)
-    {
-        var rec = NewRecord(RecordType.MaternalFood, dto.Time);
-        rec.RecordSubType = dto.MealType;
-        if (!string.IsNullOrEmpty(dto.SuspicionLevel) && dto.SuspicionLevel != "none")
-            rec.AbnormalFlag = true;
-        rec.PayloadJson = JsonSerializer.Serialize(dto);
-        rec.Id = _repo.Insert(rec);
-        NotifyWrite();
-        return rec.Id;
-    }
-
     public void MarkResolved(string resolvedType)
     {
         var rec = NewRecord(resolvedType, DateTime.Now.ToString("O"));

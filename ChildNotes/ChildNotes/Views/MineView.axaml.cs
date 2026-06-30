@@ -47,6 +47,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenSyncSettings();
     }
 
+    private void OnDeveloperOptionsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenDeveloperOptions();
+    }
+
     private MainShellViewModel? FindShell()
     {
         var shell = this.FindAncestorOfType<UserControl>();

@@ -1,3 +1,4 @@
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -13,8 +14,8 @@ public partial class DevLogOverlay : UserControl
     public DevLogOverlay()
     {
         InitializeComponent();
-        LogList.ItemsSource = DevLogger.Entries;
         DevLogger.Logged += OnLogged;
+        RefreshLogText();
         UpdateStatus();
     }
 
@@ -25,6 +26,7 @@ public partial class DevLogOverlay : UserControl
         Panel.IsVisible = _isExpanded;
         if (_isExpanded)
         {
+            RefreshLogText();
             UpdateStatus();
             ScrollToEnd();
         }
@@ -33,6 +35,7 @@ public partial class DevLogOverlay : UserControl
     private void OnClear(object? sender, RoutedEventArgs e)
     {
         DevLogger.Clear();
+        RefreshLogText();
         UpdateStatus();
     }
 
@@ -41,11 +44,20 @@ public partial class DevLogOverlay : UserControl
         ScrollToEnd();
     }
 
+    private void OnSelectAll(object? sender, RoutedEventArgs e)
+    {
+        // SelectableTextBlock.SelectAll 选中全部文本，用户随后可 Ctrl+C 复制
+        LogText.SelectAll();
+    }
+
     private void OnLogged(DevLogger.LogEntry entry)
     {
         UpdateStatus();
         if (_isExpanded)
+        {
+            RefreshLogText();
             ScrollToEnd();
+        }
     }
 
     private void UpdateStatus(string? hint = null)
@@ -55,6 +67,30 @@ public partial class DevLogOverlay : UserControl
             var count = DevLogger.Entries.Count;
             StatusText.Text = hint ?? $"{count} 行";
             PlatformText.Text = DevLogger.PlatformTag;
+        });
+    }
+
+    /// <summary>
+    /// 刷新日志全文。将所有 LogEntry.Full 用换行连接为单一文本，
+    /// 让 SelectableTextBlock 支持跨行选择与全选。
+    /// </summary>
+    private void RefreshLogText()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (DevLogger.Entries.Count == 0)
+            {
+                LogText.Text = string.Empty;
+                return;
+            }
+            var sb = new StringBuilder();
+            foreach (var entry in DevLogger.Entries)
+            {
+                if (sb.Length > 0)
+                    sb.Append('\n');
+                sb.Append(entry.Full);
+            }
+            LogText.Text = sb.ToString();
         });
     }
 

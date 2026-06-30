@@ -130,6 +130,17 @@
                         <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                     </Grid>
                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="🔧" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                        <TextBlock Grid.Column="1" Text="开发者选项" FontSize="15" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
                     <Grid Margin="14,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>

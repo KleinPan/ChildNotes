@@ -9,7 +9,11 @@ namespace ChildNotes.ViewModels;
 
 public partial class RecordSheetViewModel : RecordFormHostViewModel
 {
+    /// <summary>保存成功后触发（用于刷新首页/喂养页数据）。</summary>
     public event Action? Saved;
+
+    /// <summary>抽屉关闭时触发（无论保存还是点 X 关闭，统一通知 Shell 重置 IsRecordSheetOpen）。</summary>
+    public event Action? Closed;
 
     /// <summary>是否为编辑模式（true=编辑现有记录，false=新建记录）。</summary>
     [ObservableProperty] private bool _isEditMode;
@@ -115,6 +119,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             }
             IsVisible = false;
             Saved?.Invoke();
+            Closed?.Invoke();
         }
         catch (Exception ex)
         {
@@ -137,7 +142,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             case RecordType.Abnormal: RecordService.AddAbnormal(AbnormalForm.BuildDto()); break;
             case RecordType.Vaccine: RecordService.AddVaccine(VaccineForm.BuildDto()); break;
             case RecordType.Activity: RecordService.AddActivity(ActivityForm.BuildDto()); break;
-            case RecordType.MaternalFood: RecordService.AddMaternalFood(MaternalFoodForm.BuildDto()); break;
         }
     }
 
@@ -230,10 +234,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.DurationSec = (actDto.Duration ?? 0) * 60;
                 existing.RecordTime = ParseTime(actDto.Time, _editingDate);
                 break;
-            case RecordType.MaternalFood:
-                var matDto = MaternalFoodForm.BuildDto();
-                existing.RecordTime = ParseTime(matDto.Time, _editingDate);
-                break;
         }
         RecordService.Update(existing);
     }
@@ -244,4 +244,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             return date.Date + ts;
         return date;
     }
+
+    /// <summary>覆写基类钩子：抽屉关闭时统一触发 Closed 事件（保存和 X 关闭共用）。</summary>
+    protected override void OnSheetClosed() => Closed?.Invoke();
 }

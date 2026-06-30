@@ -32,28 +32,22 @@
             <Grid RowDefinitions="Auto,*,Auto">
                 <!-- 顶部工具栏 -->
                 <Border Grid.Row="0" Background="#33000000" Padding="8,4" CornerRadius="6,6,0,0">
-                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                        <TextBlock Grid.Column="0" Text="DEV LOG（长按日志可选择复制）" Foreground="#0FF" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="清" Click="OnClear" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
-                        <Button Grid.Column="2" Content="底" Click="OnScrollEnd" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
-                        <Button Grid.Column="3" Content="×" Click="OnToggle" Padding="6,2" FontSize="10" Background="#333" Foreground="White"/>
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                        <TextBlock Grid.Column="0" Text="DEV LOG（可跨行选择/Ctrl+A 全选）" Foreground="#0FF" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="全选" Click="OnSelectAll" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="2" Content="清" Click="OnClear" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="3" Content="底" Click="OnScrollEnd" Padding="6,2" FontSize="10" Margin="4,0" Background="#333" Foreground="White"/>
+                        <Button Grid.Column="4" Content="×" Click="OnToggle" Padding="6,2" FontSize="10" Background="#333" Foreground="White"/>
                     </Grid>
                 </Border>
 
-                <!-- 日志列表：使用 SelectableTextBlock 支持文本选择复制 -->
+                <!-- 日志内容：单一 SelectableTextBlock 承载全部日志，支持跨行选择与全选 -->
                 <ScrollViewer Grid.Row="1" x:Name="LogScroll" Background="#10000000" Padding="4">
-                    <ItemsControl x:Name="LogList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="infra:DevLogger+LogEntry">
-                                <SelectableTextBlock Text="{Binding Full}"
-                                                     FontFamily="Cascadia Code,Consolas,monospace"
-                                                     FontSize="10"
-                                                     Foreground="#DDD"
-                                                     TextWrapping="Wrap"
-                                                     Margin="0,1"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <SelectableTextBlock x:Name="LogText"
+                                         FontFamily="Cascadia Code,Consolas,monospace"
+                                         FontSize="10"
+                                         Foreground="#DDD"
+                                         TextWrapping="Wrap"/>
                 </ScrollViewer>
 
                 <!-- 底部状态 -->

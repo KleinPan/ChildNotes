@@ -51,7 +51,6 @@
     <SolidColorBrush x:Key="QuickSupplementBgBrush" Color="#F3E5F5" />
     <SolidColorBrush x:Key="QuickPumpBgBrush" Color="#E8F5E9" />
     <SolidColorBrush x:Key="QuickCompBgBrush" Color="#FFF3E0" />
-    <SolidColorBrush x:Key="QuickMaternalFoodBgBrush" Color="#F2F7E8" />
     <SolidColorBrush x:Key="QuickGrowthBgBrush" Color="#E0F2F1" />
 
     <!-- 原版统计区底色 -->

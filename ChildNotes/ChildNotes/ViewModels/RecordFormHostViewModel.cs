@@ -19,7 +19,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
     [ObservableProperty] private string _activeType = string.Empty;
     [ObservableProperty] private string _sheetTitle = string.Empty;
 
-    // 12 个表单 VM（统一实例化，派生类直接使用）
+    // 11 个表单 VM（统一实例化，派生类直接使用）
     public FeedFormViewModel FeedForm { get; } = new();
     public DiaperFormViewModel DiaperForm { get; } = new();
     public SleepFormViewModel SleepForm { get; } = new();
@@ -31,7 +31,6 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
     public AbnormalFormViewModel AbnormalForm { get; } = new();
     public VaccineFormViewModel VaccineForm { get; } = new();
     public ActivityFormViewModel ActivityForm { get; } = new();
-    public MaternalFoodFormViewModel MaternalFoodForm { get; } = new();
 
     protected readonly RecordService RecordService = ServiceProvider.Instance.RecordService;
 
@@ -49,7 +48,6 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
         RecordType.Abnormal => AbnormalForm,
         RecordType.Vaccine => VaccineForm,
         RecordType.Activity => ActivityForm,
-        RecordType.MaternalFood => MaternalFoodForm,
         _ => null,
     };
 
@@ -67,7 +65,6 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
         RecordType.Abnormal => $"{prefix}异常",
         RecordType.Vaccine => $"{prefix}疫苗",
         RecordType.Activity => $"{prefix}活动",
-        RecordType.MaternalFood => $"{prefix}妈妈饮食",
         _ => $"{prefix}记录",
     };
 
@@ -157,9 +154,6 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 ActivityForm.DurationText = ((r.DurationSec ?? 0) / 60).ToString();
                 ActivityForm.TimeText = time;
                 break;
-            case RecordType.MaternalFood:
-                MaternalFoodForm.TimeText = time;
-                break;
         }
     }
 
@@ -167,5 +161,9 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
     protected void Close()
     {
         IsVisible = false;
+        OnSheetClosed();
     }
+
+    /// <summary>抽屉关闭后的扩展点（子类可覆写以触发额外逻辑，如通知 Shell 恢复 FAB）。</summary>
+    protected virtual void OnSheetClosed() { }
 }

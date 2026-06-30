@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -26,6 +28,10 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private string _gender = "boy";
     [ObservableProperty] private DateTime? _birthDate;
     [ObservableProperty] private string _deleteConfirmName = string.Empty;
+
+    // 头像相关
+    [ObservableProperty] private Bitmap? _avatarBitmap;
+    [ObservableProperty] private bool _hasAvatar;
 
     public event Action? BabyChanged;        // 增删改后通知外部刷新
 
@@ -60,6 +66,7 @@ public partial class BabyManagerViewModel : ViewModelBase
         Gender = "boy";
         BirthDate = null;
         ErrorMessage = string.Empty;
+        ClearAvatar();
         IsEditorOpen = true;
     }
 
@@ -76,6 +83,7 @@ public partial class BabyManagerViewModel : ViewModelBase
             ? DateTime.SpecifyKind(baby.BirthDate.Value.Date, DateTimeKind.Local)
             : null;
         ErrorMessage = string.Empty;
+        LoadAvatarFromPath(baby.Avatar);
         IsEditorOpen = true;
     }
 
@@ -112,12 +120,14 @@ public partial class BabyManagerViewModel : ViewModelBase
                 // 统一转 Local Kind，避免 CalendarDatePicker 回传 Unspecified Kind
                 // 在后续与 DateTime.Today 比较时抛 DateTimeKind 异常
                 baby.BirthDate = DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local);
+                baby.Avatar = _pendingAvatarPath ?? baby.Avatar;  // 保存新选择的头像路径
                 _babyService.UpdateBaby(baby);
             }
         }
         else
         {
-            _babyService.AddBaby(Name.Trim(), Gender, DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local));
+            var avatarPath = _pendingAvatarPath ?? string.Empty;
+            _babyService.AddBaby(Name.Trim(), Gender, DateTime.SpecifyKind(BirthDate.Value.Date, DateTimeKind.Local), avatarPath);
         }
 
         IsEditorOpen = false;
@@ -146,5 +156,82 @@ public partial class BabyManagerViewModel : ViewModelBase
         IsEditorOpen = false;
         Load();
         BabyChanged?.Invoke();
+    }
+
+    // ==================== 头像相关方法 ====================
+
+    /// <summary>待保存的头像文件路径（用户选择后暂存，Save 时写入实体）。</summary>
+    private string? _pendingAvatarPath;
+
+    /// <summary>清空头像状态（新增模式调用）。</summary>
+    private void ClearAvatar()
+    {
+        AvatarBitmap = null;
+        HasAvatar = false;
+        _pendingAvatarPath = null;
+    }
+
+    /// <summary>从已有路径加载头像到 Bitmap（编辑模式调用）。</summary>
+    private async void LoadAvatarFromPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            ClearAvatar();
+            return;
+        }
+        try
+        {
+            if (System.IO.File.Exists(path))
+            {
+                await using var fs = System.IO.File.OpenRead(path);
+                AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fs, 160));
+                HasAvatar = true;
+            }
+            else
+            {
+                ClearAvatar();
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("BabyManagerVM", $"加载头像失败: {ex.Message}");
+            ClearAvatar();
+        }
+    }
+
+    /// <summary>从文件选择器结果加载头像图片。</summary>
+    public async Task LoadAvatarFromFile(IStorageFile file)
+    {
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            // 复制到本地 AppData 目录持久化存储
+            var avatarDir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ChildNotes", "avatars");
+            System.IO.Directory.CreateDirectory(avatarDir);
+
+            var ext = System.IO.Path.GetExtension(file.Name)?.ToLowerInvariant() ?? ".jpg";
+            if (ext is not (".jpg" or ".jpeg" or ".png" or ".gif" or ".webp"))
+                ext = ".jpg";
+            var fileName = $"baby_{EditingId}_{DateTime.Now:yyyyMMddHHmmss}{ext}";
+            var localPath = System.IO.Path.Combine(avatarDir, fileName);
+
+            // 从选择器流复制到本地文件
+            using var fileStream = System.IO.File.Create(localPath);
+            await stream.CopyToAsync(fileStream);
+
+            // 加载为 Bitmap 显示
+            fileStream.Position = 0;  // 重置位置后重新读取
+            AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fileStream, 160));
+            HasAvatar = true;
+
+            _pendingAvatarPath = localPath;
+            DevLogger.Log("BabyManagerVM", $"头像已选择: {localPath}");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("BabyManagerVM", $"加载头像失败: {ex.Message}");
+        }
     }
 }

@@ -179,7 +179,6 @@ public sealed class AiAnalysisService
             RecordType.Activity => $"活动-{r.RecordSubType} {(r.DurationSec ?? 0) / 60}分钟",
             RecordType.Vaccine => "疫苗",
             RecordType.Milestone => "里程碑",
-            RecordType.MaternalFood => $"妈妈饮食-{r.RecordSubType}",
             _ => r.RecordType,
         };
     }
