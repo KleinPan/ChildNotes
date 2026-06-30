@@ -135,6 +135,16 @@ public sealed class ActivityRecordDto : BaseRecordDto
     public int? Duration { get; set; }
 }
 
+public sealed class MaternalFoodRecordDto : BaseRecordDto
+{
+    public string? MealType { get; set; }
+    public List<string> Foods { get; set; } = new();
+    public List<string> CustomFoods { get; set; } = new();
+    public string? SuspicionLevel { get; set; }
+    public string? Note { get; set; }
+    public List<string> Photos { get; set; } = new();
+}
+
 public sealed class MilestoneRecordDto
 {
     public long Id { get; set; }
