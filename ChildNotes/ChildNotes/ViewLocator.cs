@@ -44,6 +44,7 @@ public class ViewLocator : IDataTemplate
                 FamilyViewModel => new FamilyView(),
                 RecordSheetViewModel => new RecordSheetView(),
                 QuickMenuViewModel => new QuickMenuView(),
+                DeveloperOptionsViewModel => new DeveloperOptionsView(),
                 // MilestoneEditViewModel 是 GrowthView 内嵌表单，不独立导航
                 _ => new TextBlock { Text = "View Not Mapped: " + typeName }
             };

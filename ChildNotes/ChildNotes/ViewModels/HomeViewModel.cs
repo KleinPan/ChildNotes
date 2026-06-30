@@ -55,6 +55,13 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     /// <summary>是否需要展开/收起按钮（总条数 > 默认显示条数时才显示）。</summary>
     public bool NeedsVaccineExpand => VaccineItems.Count > VaccineDefaultVisibleCount;
 
+    /// <summary>
+    /// 疫苗列表 ScrollViewer 的 MaxHeight：折叠态约 3 项高度（180），展开态约 6 项高度（360）。
+    /// 配合 VirtualizingStackPanel 实现虚拟化：仅渲染可见区域内的项，52 个剂次不再一次性创建全部 UI 元素。
+    /// 展开时通过滚动查看剩余项，而非一次性渲染全部。
+    /// </summary>
+    public double VaccineListMaxHeight => IsVaccineExpanded ? 360 : 180;
+
     // ===== 异常/生病追踪状态（对齐小程序首页 fever/diarrhea/other-abnormal 三态） =====
     /// <summary>当前是否有活动异常（发烧/腹泻/其他异常任一）。</summary>
     [ObservableProperty] private bool _hasActiveAbnormal;
@@ -637,10 +644,19 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [RelayCommand]
     private void ToggleVaccinePanel()
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         IsVaccineExpanded = !IsVaccineExpanded;
+        // OnPropertyChanged(VisibleVaccineItems) 在 OnIsVaccineExpandedChanged 中触发，
+        // 同步触发 ItemsControl 重新绑定（后台线程无意义，UI 渲染必须在 UI 线程）。
+        // 埋点放在属性变更后，测量"绑定触发→返回"的同步耗时（不含实际渲染，渲染在布局周期异步进行）
+        DevLogger.Log("VaccinePerf", $"ToggleVaccinePanel: expanded={IsVaccineExpanded}, items={VaccineItems.Count}, notify_ms={sw.ElapsedMilliseconds}");
     }
 
-    partial void OnIsVaccineExpandedChanged(bool value) => OnPropertyChanged(nameof(VisibleVaccineItems));
+    partial void OnIsVaccineExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(VisibleVaccineItems));
+        OnPropertyChanged(nameof(VaccineListMaxHeight));
+    }
 
     [RelayCommand]
     private void GoStatistics()
