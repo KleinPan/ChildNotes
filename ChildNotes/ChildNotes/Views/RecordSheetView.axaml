@@ -54,12 +54,6 @@
             <Setter Property="Padding" Value="12,8"/>
         </Style>
         <!-- 疫苗时间轴样式 -->
-        <!-- 禁用时间轴 ListBox 的选中高亮（这是数据展示区，不是选择列表） -->
-        <Style Selector="ListBox#VaccineTimeline ListBoxItem">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
         <Style Selector="Border.vf-entry">
             <Setter Property="Background" Value="#F8FAFC"/>
             <Setter Property="CornerRadius" Value="10"/>
@@ -788,20 +782,13 @@
                                 </Border>
                             </Grid>
 
-                            <!-- F. 时间轴分组：ListBox + VirtualizingStackPanel 虚拟化
-                                 外层 20 个 Group 按需渲染（通常只可见 3-4 个），避免一次性创建全部 UI 元素。
-                                 内部 FreeDoses/PaidDoses 保持 ItemsControl（每个 group 仅 5-10 项，量可控）。 -->
-                            <ListBox x:Name="VaccineTimeline"
-                                     ItemsSource="{Binding VaccineForm.TimelineGroups}"
-                                     SelectedIndex="-1"
-                                     BorderThickness="0"
-                                     Background="Transparent">
-                                <ListBox.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <VirtualizingStackPanel/>
-                                    </ItemsPanelTemplate>
-                                </ListBox.ItemsPanel>
-                                <ListBox.ItemTemplate>
+                            <!-- F. 时间轴分组：ItemsControl（非虚拟化）
+                                 注意：不用 ListBox/VirtualizingStackPanel，因为：
+                                 1. 外层已有 ContentScroll ScrollViewer，ListBox 会引入嵌套 ScrollViewer 导致滑动卡顿
+                                 2. 20 个 Group 总量不大（~300 卡片），一次性创建可接受
+                                 3. 真正的瓶颈是每个 vf-card 模板复杂度，通过扁平化和 OneTime 绑定优化 -->
+                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
+                                <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="s:VaccineTimelineGroup">
                                         <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0">
                                             <!-- 左：免费疫苗（模板扁平化：合并 TextBlock 减少层级） -->
@@ -920,8 +907,8 @@
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsActivity}}">

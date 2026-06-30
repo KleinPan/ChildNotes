@@ -80,37 +80,26 @@ public partial class DevLogOverlay : UserControl
         {
             var lineCount = text.Count(c => c == '\n') + 1;
 
-            // 尝试通过反射调用剪贴板（Avalonia 12.0.5 API 差异兼容）
-            if (!OperatingSystem.IsAndroid())
+            bool copied = false;
+
+            if (OperatingSystem.IsAndroid())
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel is not null)
-                {
-                    var clipProp = topLevel.GetType().GetProperty("Clipboard");
-                    if (clipProp?.GetValue(topLevel) is object clipboard)
-                    {
-                        // 反射查找 SetTextAsync 方法（不同版本签名可能不同）
-                        foreach (var method in clipboard.GetType().GetMethods())
-                        {
-                            if (method.Name.Contains("Text") && method.Name.Contains("Set") &&
-                                method.ReturnType == typeof(Task))
-                            {
-                                var parameters = method.GetParameters();
-                                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                                {
-                                    await (Task)method.Invoke(clipboard, new object[] { text })!;
-                                    UpdateStatus($"已复制 {lineCount} 行");
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                }
+                // Android: 绕过 Avalonia 的只读 IClipboard，直接调用原生 ClipboardManager
+                copied = await TryCopyToAndroidClipboard(text);
+            }
+            else
+            {
+                // 桌面端: 通过 Avalonia TopLevel.Clipboard 写入
+                copied = await TryCopyToAvaloniaClipboard(text);
             }
 
-            // Android 或剪贴板不可用：导出到文件
-            // Android: Personal → /data/data/com.xxx/files/ （可通过 adb pull 提取）
-            // 桌面回退: %TEMP%/ChildNotes/logs/
+            if (copied)
+            {
+                UpdateStatus($"已复制 {lineCount} 行");
+                return;
+            }
+
+            // 所有剪贴板方式都失败：导出到文件
             var dir = GetExportDirectory();
             System.IO.Directory.CreateDirectory(dir);
             var file = System.IO.Path.Combine(dir, $"devlog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
@@ -129,6 +118,66 @@ public partial class DevLogOverlay : UserControl
         {
             UpdateStatus($"失败: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Android 原生剪贴板写入。通过反射调用 Android.Content.ClipboardManager.SetPrimaryClip，
+    /// 绕过 Avalonia IClipboard 的只读限制。
+    /// </summary>
+    private static Task<bool> TryCopyToAndroidClipboard(string text)
+    {
+        try
+        {
+            // 获取 Android Context: Android.App.Application.Context (静态属性)
+            var appType = Type.GetType("Android.App.Application, Mono.Android") ?? throw new Exception("Mono.Android not found");
+            var context = appType.GetProperty("Context")?.GetValue(null) ?? throw new Exception("Android Context null");
+
+            // context.GetSystemService(CLIPBOARD_SERVICE) → ClipboardManager
+            var clipService = context.GetType().GetMethod("GetSystemService")?.Invoke(context, new object[] { "clipboard" }) ?? throw new Exception("ClipboardService null");
+
+            // 创建 ClipData: ClipData.NewPlainText(label, text)
+            var clipDataType = Type.GetType("Android.Content.ClipData, Mono.Android") ?? throw new Exception("ClipData not found");
+            var newPlainText = clipDataType.GetMethod("NewPlainText", new[] { typeof(string), typeof(string) });
+            var clipData = newPlainText?.Invoke(null, new object[] { "DevLog", text }) ?? throw new Exception("ClipData creation failed");
+
+            // clipboardManager.SetPrimaryClip(clipData)
+            clipService.GetType().GetMethod("SetPrimaryClip")?.Invoke(clipService, new object[] { clipData });
+
+            return Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Clipboard", $"Android native clipboard failed: {ex.Message}");
+            return Task.FromResult(false);
+        }
+    }
+
+    /// <summary>
+    /// 桌面端剪贴板写入。通过 TopLevel.Clipboard 反射调用 SetTextAsync（兼容 Avalonia 12.x 各小版本 API 差异）。
+    /// </summary>
+    private async Task<bool> TryCopyToAvaloniaClipboard(string text)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel is null) return false;
+
+        var clipProp = topLevel.GetType().GetProperty("Clipboard");
+        if (clipProp?.GetValue(topLevel) is not object clipboard) return false;
+
+        foreach (var method in clipboard.GetType().GetMethods(
+                     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (method.Name.Contains("Text") && method.Name.Contains("Set") &&
+                method.ReturnType == typeof(Task))
+            {
+                var parameters = method.GetParameters();
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                {
+                    await (Task)method.Invoke(clipboard, new object[] { text })!;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /// <summary>
