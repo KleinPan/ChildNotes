@@ -183,12 +183,15 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         ApplySleep(snapshot.Stats);
         ApplyGrowth(snapshot.GrowthRecords);
         RefreshAiStatus(snapshot.Stats);
+        var tVac = sw.ElapsedMilliseconds;
         ApplyVaccines(snapshot.VaccineRecords);
+        var tAct = sw.ElapsedMilliseconds;
         ApplyActivity(snapshot.Activities);
+        var tAbn = sw.ElapsedMilliseconds;
         ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
 
         sw.Stop();
-        DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms");
+        DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAct - tVac}ms activity={tAbn - tAct}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
     }
 
     /// <summary>从快照数据应用最近一次喂养信息（不再重复查询 DB）。</summary>

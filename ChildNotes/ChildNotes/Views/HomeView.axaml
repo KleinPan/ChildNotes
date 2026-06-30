@@ -193,32 +193,51 @@
                         <Button Grid.Column="4" Content="补记" Classes="tracker-btn-primary" Margin="6,0,0,0"
                                 Command="{Binding QuickRecordCommand}" CommandParameter="vaccine"/>
                     </Grid>
-                    <!-- 疫苗列表：独立 ScrollViewer + VirtualizingStackPanel 实现虚拟化
-                         折叠态 MaxHeight=180（约 3 项可见），展开态 MaxHeight=360（约 6 项可见，其余滚动查看）
-                         虚拟化仅渲染可见项，52 个剂次不再一次性创建全部 UI 元素 -->
-                    <ScrollViewer MaxHeight="{Binding VaccineListMaxHeight}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <ItemsControl ItemsSource="{Binding VisibleVaccineItems}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <VirtualizingStackPanel CacheLength="0.3" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:VaccineItem">
-                                    <!-- VaccineItem 是只读 POCO，属性创建后不变，全部用 OneTime 绑定跳过变更监听订阅 -->
-                                    <Border Background="{StaticResource WeuiBg1Brush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0">
-                                        <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Border Grid.Column="0" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4" Padding="6,2">
-                                                <TextBlock Text="{Binding Category, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg1Brush}"/>
-                                            </Border>
-                                            <TextBlock Grid.Column="1" Text="{Binding Name, Mode=OneTime}" FontSize="13" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                            <TextBlock Grid.Column="2" Text="{Binding DueText, Mode=OneTime}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                    <!-- 疫苗列表：ListBox 自带虚拟化（VirtualizingStackPanel）
+                         关键：ListBox 内部 ScrollViewer 有约束高度，虚拟化才能生效。
+                         外层 StackPanel 给无限高度会导致 ItemsControl 虚拟化失效（Avalonia 官方文档明确要求）。
+                         折叠态 Height=180（约 3 项可见），展开态 Height=360（约 6 项可见，其余滚动查看）。
+                         SelectionMode=None 禁用选择高亮，保留 ItemsControl 的无选择语义。 -->
+                    <ListBox ItemsSource="{Binding VisibleVaccineItems}"
+                             Height="{Binding VaccineListMaxHeight}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel CacheLength="0.3" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:VaccineItem">
+                                <!-- VaccineItem 是只读 POCO，属性创建后不变，全部用 OneTime 绑定跳过变更监听订阅 -->
+                                <Border Background="{StaticResource WeuiBg1Brush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Border Grid.Column="0" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4" Padding="6,2">
+                                            <TextBlock Text="{Binding Category, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                        </Border>
+                                        <TextBlock Grid.Column="1" Text="{Binding Name, Mode=OneTime}" FontSize="13" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding DueText, Mode=OneTime}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.Styles>
+                            <!-- 禁用 ListBoxItem 的选择/悬停高亮，保持 ItemsControl 视觉 -->
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0"/>
+                            </Style>
+                            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                <Setter Property="Background" Value="Transparent"/>
+                            </Style>
+                        </ListBox.Styles>
+                    </ListBox>
                 </StackPanel>
             </Border>
 
