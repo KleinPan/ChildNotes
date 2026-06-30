@@ -70,60 +70,83 @@ public partial class DevLogOverlay : UserControl
         }
         try
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            bool copied = false;
+            var lineCount = text.Count(c => c == '\n') + 1;
 
-            // 方案 A: Avalonia 12.0.5+ 剪贴板 API（IClipboard.SetTextAsync）
-            // 注意：不同版本 Avalonia 的 IClipboard 方法名可能不同，
-            // 这里用反射调用兼容多个版本（12.0.5 用 SetTextAsync，新版也支持）
-            if (topLevel is not null)
-            {
-                var clipProp = topLevel.GetType().GetProperty("Clipboard");
-                if (clipProp?.GetValue(topLevel) is object clipboard)
-                {
-                    // 反射调用 SetTextAsync 方法（避免版本编译差异）
-                    var setMethod = clipboard.GetType().GetMethod("SetTextAsync");
-                    if (setMethod is not null)
-                    {
-                        var task = (Task)setMethod.Invoke(clipboard, new object[] { text });
-                        await task;
-                        copied = true;
-                    }
-                }
-
-                // 方案 B: 降级到 TopLevel 扩展方法（部分版本可用）
-                if (!copied)
-                {
-                    var extMethod = typeof(TopLevel).GetMethod("SetClipboardTextAsync",
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    if (extMethod is not null)
-                    {
-                        var task = (Task)extMethod.Invoke(null, new object[] { topLevel, text });
-                        await task;
-                        copied = true;
-                    }
-                }
-            }
+            // 尝试系统剪贴板（桌面端 Windows/macOS/Linux 可靠；Android 可能受限）
+            bool copied = await TryCopyToClipboard(text);
 
             if (copied)
             {
-                var lineCount = text.Count(c => c == '\n') + 1;
                 UpdateStatus($"已复制 {lineCount} 行");
+                return;
             }
-            else
-            {
-                // 方案 C: 降级为导出到临时文件（所有平台可靠）
-                var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ChildNotes");
-                System.IO.Directory.CreateDirectory(dir);
-                var file = System.IO.Path.Combine(dir, $"devlog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
-                await System.IO.File.WriteAllTextAsync(file, text);
-                UpdateStatus($"已导出 {file}");
-            }
+
+            // 剪贴板不可用时导出到文件
+            // Android: 用 Personal 目录（/data/data/com.xxx/files/），可通过 adb pull 提取
+            // 桌面: 用 GetTempPath()（%TEMP%/ChildNotes/）
+            var dir = GetExportDirectory();
+            System.IO.Directory.CreateDirectory(dir);
+            var file = System.IO.Path.Combine(dir, $"devlog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+            await System.IO.File.WriteAllTextAsync(file, text);
+            UpdateStatus($"已保存 {lineCount} 行→{file}");
         }
         catch (Exception ex)
         {
-            UpdateStatus($"操作失败: {ex.Message}");
+            UpdateStatus($"失败: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// 尝试写入系统剪贴板。桌面端 Windows/macOS/Linux 通常成功；
+    /// Android 上 Avalonia 12.0.5 的 IClipboard 可能缺少 SetTextAsync 或权限受限，会静默降级为文件导出。
+    /// </summary>
+    private async Task<bool> TryCopyToClipboard(string text)
+    {
+        try
+        {
+            // DevLogOverlay 已在视觉树中，GetTopLevel(this) 最可靠
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel is null) return false;
+
+            // 遍历 Clipboard 对象上所有 public 实例方法，找名字含 Text+Set 且接受 string 参数的异步方法
+            var clipProp = topLevel.GetType().GetProperty("Clipboard");
+            if (clipProp?.GetValue(topLevel) is not object clipboard) return false;
+
+            foreach (var method in clipboard.GetType().GetMethods(
+                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+            {
+                if (method.Name.Contains("Text") && method.Name.Contains("Set") &&
+                    method.ReturnType == typeof(Task))
+                {
+                    var parameters = method.GetParameters();
+                    if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                    {
+                        await (Task)method.Invoke(clipboard, new object[] { text })!;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        catch
+        {
+            return false; // 剪贴板非关键功能，静默降级到文件导出
+        }
+    }
+
+    /// <summary>
+    /// 获取日志导出目录。优先用应用文档目录（Android 可访问），回退到临时目录。
+    /// </summary>
+    private static string GetExportDirectory()
+    {
+        // Android: SpecialFolder.Personal → /data/data/com.xxx/files/
+        // 桌面: SpecialFolder.MyDocuments 或回退到 Temp
+        var personal = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+        if (!string.IsNullOrEmpty(personal) && System.IO.Directory.Exists(personal))
+            return System.IO.Path.Combine(personal, "logs");
+
+        var temp = System.IO.Path.GetTempPath();
+        return System.IO.Path.Combine(temp, "ChildNotes", "logs");
     }
 
     private void OnLogged(DevLogger.LogEntry entry)

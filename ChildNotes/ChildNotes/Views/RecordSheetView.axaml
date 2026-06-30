@@ -792,34 +792,35 @@
                                                 <ItemsControl ItemsSource="{Binding FreeDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone}"
-                                                                    Classes.skipped="{Binding IsSkipped}"
-                                                                    Classes.replaced="{Binding IsReplaced}"
-                                                                    Classes.overdue="{Binding IsOverdue}"
-                                                                    Classes.due="{Binding IsDue}"
-                                                                    Classes.soon="{Binding IsSoon}"
-                                                                    Classes.pending="{Binding IsPending}"
+                                                            <!-- VaccinePlanView 属性创建后不变（操作后整组重建），全部 OneTime 跳过变更监听 -->
+                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone, Mode=OneTime}"
+                                                                    Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
+                                                                    Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
+                                                                    Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
+                                                                    Classes.due="{Binding IsDue, Mode=OneTime}"
+                                                                    Classes.soon="{Binding IsSoon, Mode=OneTime}"
+                                                                    Classes.pending="{Binding IsPending, Mode=OneTime}"
                                                                     PointerPressed="OnVaccineDoseClick">
                                                                 <StackPanel Spacing="2">
-                                                                    <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"/>
                                                                     <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
-                                                                        <Run Text="{Binding DoseLabel}"/>
+                                                                        <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排'}"/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排', Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <TextBlock Text="{Binding Disease}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                                    <TextBlock Text="{Binding Disease, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding NotHandled}">
+                                                                                    IsVisible="{Binding NotHandled, Mode=OneTime}">
                                                                             <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>
                                                                     </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
                                                                     <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
-                                                                                IsVisible="{Binding IsDone}">
+                                                                                IsVisible="{Binding IsDone, Mode=OneTime}">
                                                                         <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
                                                                         <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
                                                                     </StackPanel>
@@ -839,12 +840,12 @@
                                                                        DotSize="0" HalfSpacing="6"/>
                                                 <StackPanel HorizontalAlignment="Center" Spacing="4" Margin="0,0,0,0">
                                                     <Border Classes="vf-dot"/>
-                                                    <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="Medium" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding DateText}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Name, Mode=OneTime}" FontSize="10" FontWeight="Medium" HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding DateText, Mode=OneTime}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
                                                     <TextBlock FontSize="9" Foreground="{StaticResource WeuiFg3Brush}" HorizontalAlignment="Center">
-                                                        <Run Text="{Binding HandledCount}"/>
+                                                        <Run Text="{Binding HandledCount, Mode=OneTime}"/>
                                                         <Run Text="/"/>
-                                                        <Run Text="{Binding TotalCount}"/>
+                                                        <Run Text="{Binding TotalCount, Mode=OneTime}"/>
                                                     </TextBlock>
                                                 </StackPanel>
                                             </Panel>
@@ -854,34 +855,35 @@
                                                 <ItemsControl ItemsSource="{Binding PaidDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone}"
-                                                                    Classes.skipped="{Binding IsSkipped}"
-                                                                    Classes.replaced="{Binding IsReplaced}"
-                                                                    Classes.overdue="{Binding IsOverdue}"
-                                                                    Classes.due="{Binding IsDue}"
-                                                                    Classes.soon="{Binding IsSoon}"
-                                                                    Classes.pending="{Binding IsPending}"
+                                                            <!-- VaccinePlanView 属性创建后不变（操作后整组重建），全部 OneTime 跳过变更监听 -->
+                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone, Mode=OneTime}"
+                                                                    Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
+                                                                    Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
+                                                                    Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
+                                                                    Classes.due="{Binding IsDue, Mode=OneTime}"
+                                                                    Classes.soon="{Binding IsSoon, Mode=OneTime}"
+                                                                    Classes.pending="{Binding IsPending, Mode=OneTime}"
                                                                     PointerPressed="OnVaccineDoseClick">
                                                                 <StackPanel Spacing="2">
-                                                                    <TextBlock Text="{Binding VaccineName}" FontSize="12" FontWeight="Medium"/>
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"/>
                                                                     <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
-                                                                        <Run Text="{Binding DoseLabel}"/>
+                                                                        <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排'}"/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排', Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <TextBlock Text="{Binding Disease}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                                    <TextBlock Text="{Binding Disease, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding NotHandled}">
+                                                                                    IsVisible="{Binding NotHandled, Mode=OneTime}">
                                                                             <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>
                                                                     </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
                                                                     <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
-                                                                                IsVisible="{Binding IsDone}">
+                                                                                IsVisible="{Binding IsDone, Mode=OneTime}">
                                                                         <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
                                                                         <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
                                                                     </StackPanel>
