@@ -323,6 +323,8 @@ public sealed class VaccinePlanView : VaccinePlan
     public string? DoneTime { get; set; }
     public string? SkippedTime { get; set; }
     public string? ReplacedByName { get; set; }
+    /// <summary>已处理剂次对应的数据库记录 ID（用于修改/删除操作），未处理时为 null。</summary>
+    public long? RecordId { get; set; }
 }
 
 /// <summary>自定义疫苗（用户手动添加）</summary>
@@ -452,6 +454,7 @@ public static class VaccineTimelineBuilder
                 view.StatusClass = "done";
                 view.Handled = true;
                 view.DoneTime = FormatRecordTime(doneRec, birthDate);
+                view.RecordId = doneRec.Id;
             }
             else if (skippedMap.TryGetValue(p.Key, out var skippedRec))
             {
@@ -460,6 +463,7 @@ public static class VaccineTimelineBuilder
                 view.StatusClass = "skipped";
                 view.Handled = true;
                 view.SkippedTime = FormatRecordTime(skippedRec, birthDate);
+                view.RecordId = skippedRec.Id;
             }
             else if (replacedSet.Contains(p.Key))
             {

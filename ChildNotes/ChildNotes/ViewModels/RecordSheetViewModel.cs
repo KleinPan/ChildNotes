@@ -12,11 +12,30 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     /// <summary>保存成功后触发（用于刷新首页/喂养页数据）。</summary>
     public event Action? Saved;
 
+    /// <summary>疫苗内联操作（已打/跳过/修改）后触发：刷新首页数据但不关闭抽屉，便于连续操作。</summary>
+    public event Action? VaccineInlineChanged;
+
     /// <summary>抽屉关闭时触发（无论保存还是点 X 关闭，统一通知 Shell 重置 IsRecordSheetOpen）。</summary>
     public event Action? Closed;
 
     /// <summary>是否为编辑模式（true=编辑现有记录，false=新建记录）。</summary>
     [ObservableProperty] private bool _isEditMode;
+
+    // ===== 疫苗修改流程 =====
+    /// <summary>待修改的疫苗剂次（点击"修改"按钮后暂存，确认对话框用）。</summary>
+    private VaccinePlanView? _pendingEditPlan;
+    /// <summary>是否显示修改确认对话框。</summary>
+    [ObservableProperty] private bool _showVaccineEditConfirm;
+    /// <summary>确认对话框中展示的剂次名称。</summary>
+    [ObservableProperty] private string _vaccineEditConfirmTitle = string.Empty;
+
+    // ===== 疫苗取消已打流程 =====
+    /// <summary>待取消的疫苗剂次（点击"取消"按钮后暂存）。</summary>
+    private VaccinePlanView? _pendingCancelPlan;
+    /// <summary>是否显示取消确认对话框。</summary>
+    [ObservableProperty] private bool _showVaccineCancelConfirm;
+    /// <summary>取消确认对话框中展示的剂次名称。</summary>
+    [ObservableProperty] private string _vaccineCancelConfirmTitle = string.Empty;
 
     /// <summary>编辑模式下保存的记录 ID；新建模式为 0。</summary>
     private long _editingId;
@@ -55,7 +74,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         IsVisible = true;
     }
 
-    /// <summary>疫苗专用：标记某剂次为「已打」并保存</summary>
+    /// <summary>疫苗专用：标记某剂次为「已打」并保存（不关闭抽屉，便于连续标记）</summary>
     public async Task<bool> MarkVaccineDoneAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkDone(plan);
@@ -64,7 +83,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         {
             RecordService.AddVaccine(dto);
             await VaccineForm.LoadAsync(); // 刷新时间轴状态
-            Saved?.Invoke();
+            VaccineInlineChanged?.Invoke();
             return true;
         }
         catch (Exception ex)
@@ -74,7 +93,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>疫苗专用：标记某剂次为「跳过」并保存</summary>
+    /// <summary>疫苗专用：标记某剂次为「跳过」并保存（不关闭抽屉）</summary>
     public async Task<bool> MarkVaccineSkippedAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkSkipped(plan);
@@ -83,7 +102,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         {
             RecordService.AddVaccine(dto);
             await VaccineForm.LoadAsync();
-            Saved?.Invoke();
+            VaccineInlineChanged?.Invoke();
             return true;
         }
         catch (Exception ex)
@@ -100,6 +119,93 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         if (!ok) ErrorMessage = error;
         else ErrorMessage = string.Empty;
         return (ok, error);
+    }
+
+    /// <summary>请求修改已打疫苗记录：弹出确认对话框。</summary>
+    public void RequestVaccineEdit(VaccinePlanView plan)
+    {
+        _pendingEditPlan = plan;
+        VaccineEditConfirmTitle = plan.Name;
+        ShowVaccineEditConfirm = true;
+    }
+
+    [RelayCommand]
+    private void CancelVaccineEdit()
+    {
+        ShowVaccineEditConfirm = false;
+        _pendingEditPlan = null;
+    }
+
+    /// <summary>确认修改：用当前选择的日期时间更新已打记录。</summary>
+    [RelayCommand]
+    private async Task ConfirmVaccineEditAsync()
+    {
+        if (_pendingEditPlan is null) return;
+        var plan = _pendingEditPlan;
+        var dto = VaccineForm.BuildUpdateDoneDto(plan);
+        if (dto is null || plan.RecordId is null)
+        {
+            ShowVaccineEditConfirm = false;
+            _pendingEditPlan = null;
+            return;
+        }
+        try
+        {
+            RecordService.UpdateVaccine(plan.RecordId.Value, dto);
+            await VaccineForm.LoadAsync();
+            VaccineInlineChanged?.Invoke();
+            ShowVaccineEditConfirm = false;
+            _pendingEditPlan = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"修改失败：{ex.Message}";
+            ShowVaccineEditConfirm = false;
+            _pendingEditPlan = null;
+        }
+    }
+
+    /// <summary>请求取消已打疫苗记录：弹出二次确认对话框。</summary>
+    public void RequestVaccineCancel(VaccinePlanView plan)
+    {
+        _pendingCancelPlan = plan;
+        VaccineCancelConfirmTitle = plan.Name;
+        ShowVaccineCancelConfirm = true;
+    }
+
+    [RelayCommand]
+    private void CancelVaccineCancel()
+    {
+        ShowVaccineCancelConfirm = false;
+        _pendingCancelPlan = null;
+    }
+
+    /// <summary>确认取消：删除已打记录，恢复剂次为待接种状态。</summary>
+    [RelayCommand]
+    private async Task ConfirmVaccineCancelAsync()
+    {
+        if (_pendingCancelPlan is null) return;
+        var plan = _pendingCancelPlan;
+        if (plan.RecordId is null)
+        {
+            ShowVaccineCancelConfirm = false;
+            _pendingCancelPlan = null;
+            return;
+        }
+        try
+        {
+            RecordService.Delete(plan.RecordId.Value);
+            await VaccineForm.LoadAsync();
+            VaccineInlineChanged?.Invoke();
+            ShowVaccineCancelConfirm = false;
+            _pendingCancelPlan = null;
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"取消失败：{ex.Message}";
+            ShowVaccineCancelConfirm = false;
+            _pendingCancelPlan = null;
+        }
     }
 
     [RelayCommand]

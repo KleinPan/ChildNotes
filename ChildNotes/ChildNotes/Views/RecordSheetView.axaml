@@ -146,6 +146,28 @@
             <Setter Property="BorderBrush" Value="#FA9D3B"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
+        <!-- 改时间按钮：蓝色边框风格，与 vf-skip 对称 -->
+        <Style Selector="Button.vf-edit">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <!-- 取消按钮：灰色边框风格 -->
+        <Style Selector="Button.vf-cancel">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
         <!-- 异常表单 chip 样式：呼吸道多选 chip -->
         <Style Selector="Border.abn-chip">
             <Setter Property="CornerRadius" Value="14"/>
@@ -745,21 +767,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- D. 记录时间（用于已打/跳过） -->
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="接种日期"/>
-                                    <DatePicker SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
-                                </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="接种时间"/>
-                                    <TimePicker SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
-                                </StackPanel>
-                            </Border>
+                            <!-- D. 接种日期/时间已移至"改时间"弹窗中，主页面不再常驻显示 -->
 
                             <!-- E. 时间轴表头 -->
                             <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,4">
@@ -774,7 +782,7 @@
                                 </Border>
                             </Grid>
 
-                            <!-- F. 时间轴分组 -->
+                            <!-- F. 时间轴分组（完整渲染，由外层 ContentScroll ScrollViewer 负责滚动） -->
                             <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="s:VaccineTimelineGroup">
@@ -810,6 +818,11 @@
                                                                     </Grid>
                                                                     <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
+                                                                                IsVisible="{Binding IsDone}">
+                                                                        <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
+                                                                        <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
+                                                                    </StackPanel>
                                                                 </StackPanel>
                                                             </Border>
                                                         </DataTemplate>
@@ -867,6 +880,11 @@
                                                                     </Grid>
                                                                     <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
+                                                                                IsVisible="{Binding IsDone}">
+                                                                        <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
+                                                                        <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
+                                                                    </StackPanel>
                                                                 </StackPanel>
                                                             </Border>
                                                         </DataTemplate>
@@ -937,5 +955,48 @@
                 </Border>
             </Grid>
         </Border>
+        <!-- 改时间弹窗：包含日期/时间选择器 -->
+        <ctrl:DialogHost Title="改时间"
+                         CancelCommand="{Binding CancelVaccineEditCommand}"
+                         CancelText="取消"
+                         ConfirmCommand="{Binding ConfirmVaccineEditCommand}"
+                         ConfirmText="确认"
+                         IsOpen="{Binding ShowVaccineEditConfirm}">
+            <ctrl:DialogHost.MessageContent>
+                <StackPanel Spacing="12" Margin="0,8,0,0">
+                    <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineEditConfirmTitle}" TextAlignment="Center" />
+                    <Border Classes="form-section">
+                        <StackPanel>
+                            <TextBlock Classes="form-label" Text="接种日期"/>
+                            <DatePicker SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                        FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="form-section">
+                        <StackPanel>
+                            <TextBlock Classes="form-label" Text="接种时间"/>
+                            <TimePicker SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
+                                        ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ctrl:DialogHost.MessageContent>
+        </ctrl:DialogHost>
+
+        <!-- 取消已打操作确认弹窗 -->
+        <ctrl:DialogHost Title="确认取消"
+                         CancelCommand="{Binding CancelVaccineCancelCommand}"
+                         CancelText="再想想"
+                         ConfirmCommand="{Binding ConfirmVaccineCancelCommand}"
+                         ConfirmText="确认取消"
+                         IsOpen="{Binding ShowVaccineCancelConfirm}">
+            <ctrl:DialogHost.MessageContent>
+                <StackPanel HorizontalAlignment="Center" Spacing="6">
+                    <TextBlock FontSize="13" Foreground="#666" Text="确定要取消本次操作吗？" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineCancelConfirmTitle}" TextAlignment="Center" />
+                    <TextBlock FontSize="12" Foreground="#999" Text="取消后该剂次将恢复为待接种状态。" TextAlignment="Center" TextWrapping="Wrap" />
+                </StackPanel>
+            </ctrl:DialogHost.MessageContent>
+        </ctrl:DialogHost>
     </Panel>
 </UserControl>

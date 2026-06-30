@@ -153,6 +153,7 @@ public partial class MainShellViewModel : ViewModelBase
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
         _recordSheet.Closed += OnRecordSheetClosed;
+        _recordSheet.VaccineInlineChanged += OnVaccineInlineChanged;
 
         _quickMenu = new QuickMenuViewModel();
         _quickMenu.OpenRecordRequested += OpenQuickRecord;
@@ -375,6 +376,21 @@ public partial class MainShellViewModel : ViewModelBase
     {
         DevLogger.Log("Shell", "OnRecordSheetClosed: setting IsRecordSheetOpen=false -> FAB should reappear");
         IsRecordSheetOpen = false;
+    }
+
+    /// <summary>疫苗内联操作（已打/跳过/修改）后：只刷新首页数据，不关闭抽屉。</summary>
+    private async void OnVaccineInlineChanged()
+    {
+        _savedRefreshCts?.Cancel();
+        _savedRefreshCts?.Dispose();
+        _savedRefreshCts = new CancellationTokenSource();
+        var ct = _savedRefreshCts.Token;
+        try
+        {
+            await Task.Delay(100, ct);
+            await Home.RefreshAsync();
+        }
+        catch (OperationCanceledException) { }
     }
 
     private async void OnRecordSaved()

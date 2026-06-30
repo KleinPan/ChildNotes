@@ -165,6 +165,19 @@ public sealed class RecordService
         return rec.Id;
     }
 
+    /// <summary>更新已有疫苗记录（修改接种时间等）。</summary>
+    public void UpdateVaccine(long id, VaccineRecordDto dto)
+    {
+        var rec = _repo.FindById(id);
+        if (rec is null) return;
+        var time = ParseTime(dto.Time);
+        rec.RecordDate = time.Date;
+        rec.RecordTime = time;
+        rec.PayloadJson = JsonSerializer.Serialize(dto);
+        _repo.Update(rec);
+        NotifyWrite();
+    }
+
     public long AddActivity(ActivityRecordDto dto)
     {
         var rec = NewRecord(RecordType.Activity, dto.Time);

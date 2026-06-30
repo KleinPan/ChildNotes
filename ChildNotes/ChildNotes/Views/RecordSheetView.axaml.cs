@@ -264,6 +264,24 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    /// <summary>点击已打剂次的"改时间"按钮：弹出日期时间选择弹窗。</summary>
+    private void OnVaccineEdit(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.RequestVaccineEdit(plan);
+        }
+    }
+
+    /// <summary>点击已打剂次的"取消"按钮：弹出取消操作确认弹窗。</summary>
+    private void OnVaccineCancelDone(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.RequestVaccineCancel(plan);
+        }
+    }
+
     private void OnVaccineToggleCustomForm(object sender, RoutedEventArgs e)
     {
         if (DataContext is RecordSheetViewModel vm)

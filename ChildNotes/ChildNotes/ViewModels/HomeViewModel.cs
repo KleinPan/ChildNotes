@@ -45,6 +45,16 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _vaccineProgressText = "0/0";
     [ObservableProperty] private bool _isVaccineExpanded;
 
+    /// <summary>疫苗列表默认展示条数（对齐小程序折叠态显示 2-3 条的行为）。</summary>
+    private const int VaccineDefaultVisibleCount = 3;
+
+    /// <summary>疫苗列表实际渲染数据：展开时返回全部，收起时只返回前 N 条。</summary>
+    public IReadOnlyList<VaccineItem> VisibleVaccineItems =>
+        IsVaccineExpanded ? VaccineItems : VaccineItems.Take(VaccineDefaultVisibleCount).ToList();
+
+    /// <summary>是否需要展开/收起按钮（总条数 > 默认显示条数时才显示）。</summary>
+    public bool NeedsVaccineExpand => VaccineItems.Count > VaccineDefaultVisibleCount;
+
     // ===== 异常/生病追踪状态（对齐小程序首页 fever/diarrhea/other-abnormal 三态） =====
     /// <summary>当前是否有活动异常（发烧/腹泻/其他异常任一）。</summary>
     [ObservableProperty] private bool _hasActiveAbnormal;
@@ -386,6 +396,9 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
         var doneCount = VaccineItems.Count(v => v.IsDone);
         VaccineProgressText = $"{doneCount}/{VaccineItems.Count}";
+        // 集合内容变更后需手动通知派生属性（ObservableCollection.Clear/Add 不触发集合引用变更）
+        OnPropertyChanged(nameof(NeedsVaccineExpand));
+        OnPropertyChanged(nameof(VisibleVaccineItems));
     }
 
     private static string NormalizeVaccineName(string s)
@@ -626,6 +639,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     {
         IsVaccineExpanded = !IsVaccineExpanded;
     }
+
+    partial void OnIsVaccineExpandedChanged(bool value) => OnPropertyChanged(nameof(VisibleVaccineItems));
 
     [RelayCommand]
     private void GoStatistics()

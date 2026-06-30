@@ -119,6 +119,13 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         return dto;
     }
 
+    /// <summary>修改已打疫苗记录的接种时间（仅更新时间，保留其他字段）。</summary>
+    public VaccineRecordDto? BuildUpdateDoneDto(VaccinePlanView plan)
+    {
+        if (!plan.Handled || plan.RecordId is null) return null;
+        return BuildDoneDto(plan, RecordDateTimeText);
+    }
+
     private static VaccineRecordDto BuildDoneDto(VaccinePlanView plan, string time)
     {
         return new VaccineRecordDto
