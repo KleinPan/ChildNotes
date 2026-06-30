@@ -181,7 +181,9 @@
                 </StackPanel>
             </Border>
 
-            <Border Classes="weui-card" Margin="12,8,12,0">
+            <!-- 疫苗追踪：延迟显示（首屏构建优化，减少初始控件数 ~110→~60） -->
+            <Border Classes="weui-card" Margin="12,8,12,0"
+                    IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
                 <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                         <PathIcon Grid.Column="0" Data="{StaticResource icon-vaccine}" Width="18" Height="18" VerticalAlignment="Center"/>
@@ -241,8 +243,9 @@
                 </StackPanel>
             </Border>
 
-            <!-- 活动追踪（对齐小程序 activity-tracker 组件） -->
-            <Border Classes="weui-card">
+            <!-- 活动追踪：延迟显示（首屏构建优化） -->
+            <Border Classes="weui-card"
+                    IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
                 <StackPanel Spacing="10">
                     <!-- 头部：🎯 活动追踪 + 展开/收起 + 详情 + 记录 -->
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
@@ -307,9 +310,9 @@
                 </StackPanel>
             </Border>
 
-            <!-- 异常/生病追踪卡片：对齐小程序首页 .abnormal-panel + .other-abnormal-card。
-                 常驻红色入口便于快速记录；当存在活动异常时显示状态摘要与「已恢复」操作。 -->
-            <Border Classes="weui-card" Margin="12,8,12,0" BorderBrush="#FFCDD2" BorderThickness="1">
+            <!-- 异常/生病追踪卡片：延迟显示（首屏构建优化） -->
+            <Border Classes="weui-card" Margin="12,8,12,0" BorderBrush="#FFCDD2" BorderThickness="1"
+                    IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
                 <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                         <TextBlock Grid.Column="0" Text="🚨" FontSize="18" VerticalAlignment="Center"/>

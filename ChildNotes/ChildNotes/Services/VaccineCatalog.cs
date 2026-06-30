@@ -353,9 +353,34 @@ public sealed class CustomVaccine
 /// <summary>疫苗时间轴构建器（对齐小程序 buildTimelineGroups / buildDosePlans 逻辑）</summary>
 public static class VaccineTimelineBuilder
 {
-    /// <summary>构建所有剂次计划（含自定义疫苗），不附带状态</summary>
+    // ===== 缓存：BuildPlans 结果（birthDate + customVaccines 不变时复用）=====
+    private static DateTime? s_cachedBirthDate;
+    private static int s_cachedCustomCount = -1;
+    private static List<VaccinePlan>? s_cachedPlans;
+
+    // ===== 缓存：预编译正则（避免每次 NormalizeName 都 new Regex）=====
+    private static readonly System.Text.RegularExpressions.Regex s_normalizeRegex = new(@"\s+", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>清除 BuildPlans 缓存（在记录/修改疫苗后调用，强制下次重建）。</summary>
+    public static void InvalidateCache()
+    {
+        s_cachedPlans = null;
+        s_cachedBirthDate = null;
+        s_cachedCustomCount = -1;
+    }
+
+    /// <summary>构建所有剂次计划（含自定义疫苗），不附带状态。带缓存：birthDate 和自定义疫苗数量不变时直接返回缓存。</summary>
     public static List<VaccinePlan> BuildPlans(DateTime? birthDate, IReadOnlyList<CustomVaccine> customVaccines)
     {
+        // 命中缓存：birthDate 相同且自定义疫苗数量未变
+        if (s_cachedPlans is not null &&
+            s_cachedBirthDate == birthDate &&
+            s_cachedCustomCount == customVaccines.Count)
+        {
+            DevLogger.Log("VaccinePerf", "BuildPlans CACHE HIT");
+            return s_cachedPlans;
+        }
+
         var plans = new List<VaccinePlan>();
         foreach (var v in VaccineCatalog.All)
         {
@@ -403,6 +428,12 @@ public static class VaccineTimelineBuilder
             }
             plans.Add(plan);
         }
+
+        // 写入缓存
+        s_cachedBirthDate = birthDate;
+        s_cachedCustomCount = customVaccines.Count;
+        s_cachedPlans = plans;
+
         return plans;
     }
 
@@ -554,7 +585,7 @@ public static class VaccineTimelineBuilder
     private static string NormalizeName(string s)
     {
         if (string.IsNullOrEmpty(s)) return string.Empty;
-        return System.Text.RegularExpressions.Regex.Replace(s, @"\s+", "")
+        return s_normalizeRegex.Replace(s, "")
             .Replace("针", "剂")
             .ToLowerInvariant();
     }

@@ -398,6 +398,9 @@ public partial class MainShellViewModel : ViewModelBase
         DevLogger.Log("Shell", "OnRecordSaved: closing sheet, debouncing Home/Feeding refresh");
         IsRecordSheetOpen = false;
 
+        // 清除疫苗时间轴缓存，确保下次打开补记面板时重建最新数据
+        ChildNotes.Services.VaccineTimelineBuilder.InvalidateCache();
+
         // 防抖 100ms：快速连续保存（如批量补记）只触发一次刷新
         _savedRefreshCts?.Cancel();
         _savedRefreshCts?.Dispose();

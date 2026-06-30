@@ -44,6 +44,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private ObservableCollection<VaccineItem> _vaccineItems = new();
     [ObservableProperty] private string _vaccineProgressText = "0/0";
     [ObservableProperty] private bool _isVaccineExpanded;
+    [ObservableProperty] private bool _isInitialLayoutDone;
 
     /// <summary>疫苗列表默认展示条数（对齐小程序折叠态显示 2-3 条的行为）。</summary>
     private const int VaccineDefaultVisibleCount = 3;
@@ -97,6 +98,12 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         try
         {
             _ = RefreshAsync();
+            // 首屏布局完成后，再显示非关键卡片（疫苗/活动追踪），减少初始构建时间
+            DispatcherTimer.RunOnce(() =>
+            {
+                IsInitialLayoutDone = true;
+                DevLogger.Log("Home", "IsInitialLayoutDone=true (非关键卡片展开)");
+            }, TimeSpan.FromMilliseconds(100));
             DevLogger.Log("Home", "Activate done");
         }
         catch (Exception ex)
@@ -106,18 +113,35 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         }
     }
 
-    /// <summary>RefreshAsync 防重复令牌：启动时 ActivateHome 被调用 2-3 次（ctor + OnDataContextChanged + ActivateHomeAfterLogin），
-    /// 每次都触发 RefreshAsync，导致 ~1300ms 的 DB 查询被执行多次。此字段确保同一时刻只有一个 RefreshAsync 在跑。/// </summary>
+    /// <summary>RefreshAsync 防重复令牌：启动时多个事件（Activate + BabySetup + BabyChanged）在 5 秒内依次触发，
+    /// 每次都执行完整 DB 查询（~140ms），浪费 ~280ms。此字段确保同一时刻只有一个 RefreshAsync 在跑。/// </summary>
     private CancellationTokenSource? _refreshCts;
+
+    /// <summary>上次 RefreshAsync 完成的 UTC 时间戳（用于最小间隔防抖）。
+    /// 启动时多个事件串行触发 RefreshAsync，CTS 只能取消并发重叠的调用，
+    /// 对"完成→立即再调用"的场景无效。此字段在调用前检查间隔，
+    /// 若距上次完成不足 2 秒则跳过（数据不可能在这 2 秒内变化）。/// </summary>
+    private static DateTime s_lastRefreshCompletedUtc = DateTime.MinValue;
+    private const int MinRefreshIntervalMs = 2000;
 
     /// <summary>
     /// 异步刷新首页：后台线程批量查询所有 DB 数据，UI 线程仅做属性赋值。
     /// 把原先 Refresh + RefreshLastFeed + RefreshVaccines + RefreshActivity + RefreshAbnormal
     /// 的 8+ 次串行同步 DB 查询合并为 1 次后台批量查询，UI 线程阻塞从 200-500ms 降至 &lt;50ms。
-    /// 含防重复机制：若已有 RefreshAsync 在执行，取消旧任务后重新开始（最新数据优先）。
+    /// 含双重防重复：
+    ///   1) CTS 取消：并发调用时取消旧任务
+    ///   2) 最小间隔：串行调用时跳过距上次不足 2s 的请求
     /// </summary>
     public async Task RefreshAsync()
     {
+        // 防抖：若距上次完成不足 2 秒，跳过（启动时多个事件触发、保存记录后的冗余刷新等场景）
+        var elapsedSinceLast = (DateTime.UtcNow - s_lastRefreshCompletedUtc).TotalMilliseconds;
+        if (elapsedSinceLast < MinRefreshIntervalMs && elapsedSinceLast > 0)
+        {
+            DevLogger.Log("Home", $"RefreshAsync skipped ({elapsedSinceLast:F0}ms since last)");
+            return;
+        }
+
         // 防重复：取消上一次未完成的刷新
         _refreshCts?.Cancel();
         _refreshCts?.Dispose();
@@ -206,11 +230,13 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
 
             sw.Stop();
+            s_lastRefreshCompletedUtc = DateTime.UtcNow; // 记录完成时间，用于最小间隔防抖
             DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAct - tVac}ms activity={tAbn - tAct}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
         }
         catch (OperationCanceledException)
         {
             DevLogger.Log("Home", "RefreshAsync cancelled (superseded by newer refresh)");
+            // 不更新 s_lastRefreshCompletedUtc：被取消说明有新任务在跑，让新任务的完成时间作为基准
         }
         finally
         {

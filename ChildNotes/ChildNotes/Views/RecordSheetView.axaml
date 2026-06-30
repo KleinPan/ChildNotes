@@ -54,6 +54,12 @@
             <Setter Property="Padding" Value="12,8"/>
         </Style>
         <!-- 疫苗时间轴样式 -->
+        <!-- 禁用时间轴 ListBox 的选中高亮（这是数据展示区，不是选择列表） -->
+        <Style Selector="ListBox#VaccineTimeline ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
         <Style Selector="Border.vf-entry">
             <Setter Property="Background" Value="#F8FAFC"/>
             <Setter Property="CornerRadius" Value="10"/>
@@ -782,18 +788,29 @@
                                 </Border>
                             </Grid>
 
-                            <!-- F. 时间轴分组（完整渲染，由外层 ContentScroll ScrollViewer 负责滚动） -->
-                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
-                                <ItemsControl.ItemTemplate>
+                            <!-- F. 时间轴分组：ListBox + VirtualizingStackPanel 虚拟化
+                                 外层 20 个 Group 按需渲染（通常只可见 3-4 个），避免一次性创建全部 UI 元素。
+                                 内部 FreeDoses/PaidDoses 保持 ItemsControl（每个 group 仅 5-10 项，量可控）。 -->
+                            <ListBox x:Name="VaccineTimeline"
+                                     ItemsSource="{Binding VaccineForm.TimelineGroups}"
+                                     SelectedIndex="-1"
+                                     BorderThickness="0"
+                                     Background="Transparent">
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <VirtualizingStackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
                                     <DataTemplate x:DataType="s:VaccineTimelineGroup">
                                         <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0">
-                                            <!-- 左：免费疫苗 -->
-                                            <StackPanel Grid.Column="0" Spacing="4">
+                                            <!-- 左：免费疫苗（模板扁平化：合并 TextBlock 减少层级） -->
+                                            <StackPanel Grid.Column="0" Spacing="2">
                                                 <ItemsControl ItemsSource="{Binding FreeDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <!-- VaccinePlanView 属性创建后不变（操作后整组重建），全部 OneTime 跳过变更监听 -->
-                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone, Mode=OneTime}"
+                                                            <Border Classes="vf-card"
+                                                                    Classes.done="{Binding IsDone, Mode=OneTime}"
                                                                     Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
                                                                     Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
                                                                     Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
@@ -801,14 +818,18 @@
                                                                     Classes.soon="{Binding IsSoon, Mode=OneTime}"
                                                                     Classes.pending="{Binding IsPending, Mode=OneTime}"
                                                                     PointerPressed="OnVaccineDoseClick">
-                                                                <StackPanel Spacing="2">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"/>
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
+                                                                <!-- 扁平化：原 9 个元素 → 6 个，减少 ~33% 控件数 -->
+                                                                <StackPanel Spacing="0">
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium" Margin="0,6,0,0"/>
+                                                                    <!-- 合并 剂次·日期 + 疾病 为一行 -->
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0">
                                                                         <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排', Mode=OneTime}"/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
+                                                                        <Run Text="  "/>
+                                                                        <Run Text="{Binding Disease, Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <TextBlock Text="{Binding Disease, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                                    <!-- 状态行：状态文本 + 操作按钮 -->
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                                                         <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
@@ -817,9 +838,10 @@
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>
                                                                     </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                    <!-- 完成时间 / 编辑按钮（二选一） -->
+                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0"
                                                                                 IsVisible="{Binding IsDone, Mode=OneTime}">
                                                                         <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
                                                                         <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
@@ -833,12 +855,12 @@
                                                            HorizontalAlignment="Center" IsVisible="{Binding !HasFree}"/>
                                             </StackPanel>
 
-                                            <!-- 中：时间轴节点（连贯竖线 + 圆点 + 标签） -->
+                                            <!-- 中：时间轴节点 -->
                                             <Panel Grid.Column="1" Width="60">
                                                 <ctrl:TimelineAxisItem HorizontalAlignment="Center"
                                                                        LineBrush="#E5E7EB" LineWidth="2"
                                                                        DotSize="0" HalfSpacing="6"/>
-                                                <StackPanel HorizontalAlignment="Center" Spacing="4" Margin="0,0,0,0">
+                                                <StackPanel HorizontalAlignment="Center" Spacing="2" Margin="0,0,0,0">
                                                     <Border Classes="vf-dot"/>
                                                     <TextBlock Text="{Binding Name, Mode=OneTime}" FontSize="10" FontWeight="Medium" HorizontalAlignment="Center"/>
                                                     <TextBlock Text="{Binding DateText, Mode=OneTime}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
@@ -850,13 +872,13 @@
                                                 </StackPanel>
                                             </Panel>
 
-                                            <!-- 右：自费疫苗 -->
-                                            <StackPanel Grid.Column="2" Spacing="4">
+                                            <!-- 右：自费疫苗（与左对称，同样扁平化） -->
+                                            <StackPanel Grid.Column="2" Spacing="2">
                                                 <ItemsControl ItemsSource="{Binding PaidDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <!-- VaccinePlanView 属性创建后不变（操作后整组重建），全部 OneTime 跳过变更监听 -->
-                                                            <Border Classes="vf-card" Classes.done="{Binding IsDone, Mode=OneTime}"
+                                                            <Border Classes="vf-card"
+                                                                    Classes.done="{Binding IsDone, Mode=OneTime}"
                                                                     Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
                                                                     Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
                                                                     Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
@@ -864,14 +886,15 @@
                                                                     Classes.soon="{Binding IsSoon, Mode=OneTime}"
                                                                     Classes.pending="{Binding IsPending, Mode=OneTime}"
                                                                     PointerPressed="OnVaccineDoseClick">
-                                                                <StackPanel Spacing="2">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"/>
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}">
+                                                                <StackPanel Spacing="0">
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium" Margin="0,6,0,0"/>
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0">
                                                                         <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='按门诊安排', Mode=OneTime}"/>
+                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
+                                                                        <Run Text="  "/>
+                                                                        <Run Text="{Binding Disease, Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <TextBlock Text="{Binding Disease, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"/>
                                                                     <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
                                                                         <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
@@ -880,9 +903,9 @@
                                                                             <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
                                                                         </StackPanel>
                                                                     </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1"
+                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0"
+                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0"
                                                                                 IsVisible="{Binding IsDone, Mode=OneTime}">
                                                                         <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
                                                                         <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
@@ -897,8 +920,8 @@
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsActivity}}">

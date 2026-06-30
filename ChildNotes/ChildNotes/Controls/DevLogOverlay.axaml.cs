@@ -56,8 +56,16 @@ public partial class DevLogOverlay : UserControl
 
     private void OnSelectAll(object? sender, RoutedEventArgs e)
     {
-        // SelectableTextBlock.SelectAll 选中全部文本，用户随后可 Ctrl+C 复制
+        // SelectableTextBlock.SelectAll 在桌面端有效；Android 上选择功能不可靠，
+        // 改为直接聚焦 + 全选文本内容，让用户感知到已选中
+        LogText.Focus();
         LogText.SelectAll();
+
+        // Android 上额外提示用户使用"复制"按钮
+        if (OperatingSystem.IsAndroid())
+        {
+            UpdateStatus("已全选→请点「复制」导出");
+        }
     }
 
     private async void OnCopy(object? sender, RoutedEventArgs e)
@@ -72,65 +80,54 @@ public partial class DevLogOverlay : UserControl
         {
             var lineCount = text.Count(c => c == '\n') + 1;
 
-            // 尝试系统剪贴板（桌面端 Windows/macOS/Linux 可靠；Android 可能受限）
-            bool copied = await TryCopyToClipboard(text);
-
-            if (copied)
+            // 尝试通过反射调用剪贴板（Avalonia 12.0.5 API 差异兼容）
+            if (!OperatingSystem.IsAndroid())
             {
-                UpdateStatus($"已复制 {lineCount} 行");
-                return;
+                var topLevel = TopLevel.GetTopLevel(this);
+                if (topLevel is not null)
+                {
+                    var clipProp = topLevel.GetType().GetProperty("Clipboard");
+                    if (clipProp?.GetValue(topLevel) is object clipboard)
+                    {
+                        // 反射查找 SetTextAsync 方法（不同版本签名可能不同）
+                        foreach (var method in clipboard.GetType().GetMethods())
+                        {
+                            if (method.Name.Contains("Text") && method.Name.Contains("Set") &&
+                                method.ReturnType == typeof(Task))
+                            {
+                                var parameters = method.GetParameters();
+                                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+                                {
+                                    await (Task)method.Invoke(clipboard, new object[] { text })!;
+                                    UpdateStatus($"已复制 {lineCount} 行");
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
-            // 剪贴板不可用时导出到文件
-            // Android: 用 Personal 目录（/data/data/com.xxx/files/），可通过 adb pull 提取
-            // 桌面: 用 GetTempPath()（%TEMP%/ChildNotes/）
+            // Android 或剪贴板不可用：导出到文件
+            // Android: Personal → /data/data/com.xxx/files/ （可通过 adb pull 提取）
+            // 桌面回退: %TEMP%/ChildNotes/logs/
             var dir = GetExportDirectory();
             System.IO.Directory.CreateDirectory(dir);
             var file = System.IO.Path.Combine(dir, $"devlog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
             await System.IO.File.WriteAllTextAsync(file, text);
-            UpdateStatus($"已保存 {lineCount} 行→{file}");
+
+            if (OperatingSystem.IsAndroid())
+            {
+                UpdateStatus($"已保存 {lineCount} 行→文件");
+            }
+            else
+            {
+                UpdateStatus($"已保存 {lineCount} 行→{file}");
+            }
         }
         catch (Exception ex)
         {
             UpdateStatus($"失败: {ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// 尝试写入系统剪贴板。桌面端 Windows/macOS/Linux 通常成功；
-    /// Android 上 Avalonia 12.0.5 的 IClipboard 可能缺少 SetTextAsync 或权限受限，会静默降级为文件导出。
-    /// </summary>
-    private async Task<bool> TryCopyToClipboard(string text)
-    {
-        try
-        {
-            // DevLogOverlay 已在视觉树中，GetTopLevel(this) 最可靠
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel is null) return false;
-
-            // 遍历 Clipboard 对象上所有 public 实例方法，找名字含 Text+Set 且接受 string 参数的异步方法
-            var clipProp = topLevel.GetType().GetProperty("Clipboard");
-            if (clipProp?.GetValue(topLevel) is not object clipboard) return false;
-
-            foreach (var method in clipboard.GetType().GetMethods(
-                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
-            {
-                if (method.Name.Contains("Text") && method.Name.Contains("Set") &&
-                    method.ReturnType == typeof(Task))
-                {
-                    var parameters = method.GetParameters();
-                    if (parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-                    {
-                        await (Task)method.Invoke(clipboard, new object[] { text })!;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        catch
-        {
-            return false; // 剪贴板非关键功能，静默降级到文件导出
         }
     }
 
