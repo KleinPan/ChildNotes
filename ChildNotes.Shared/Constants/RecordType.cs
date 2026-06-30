@@ -18,7 +18,6 @@ public static class RecordType
     public const string Complementary = "complementary";
     public const string Abnormal = "abnormal";
     public const string Activity = "activity";
-    public const string MaternalFood = "maternal-food";
     public const string FeverResolved = "fever_resolved";
     public const string DiarrheaResolved = "diarrhea_resolved";
     public const string AbnormalResolved = "abnormal_resolved";
@@ -30,7 +29,7 @@ public static class RecordType
     public static readonly IReadOnlySet<string> All = new HashSet<string>
     {
         Feed, Sleep, Diaper, Growth, Temperature, Vaccine, Milestone,
-        Supplement, Pump, Complementary, Abnormal, Activity, MaternalFood,
+        Supplement, Pump, Complementary, Abnormal, Activity,
         FeverResolved, DiarrheaResolved, AbnormalResolved,
     };
 }

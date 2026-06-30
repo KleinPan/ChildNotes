@@ -33,6 +33,13 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private Bitmap? _avatarBitmap;
     [ObservableProperty] private bool _hasAvatar;
 
+    /// <summary>无头像时显示的性别 emoji 占位符。</summary>
+    public string GenderEmoji => Gender switch
+    {
+        "girl" => "\U0001F467",  // 👧
+        _ => "\U0001F466",        // 👦
+    };
+
     public event Action? BabyChanged;        // 增删改后通知外部刷新
 
     public void Load()

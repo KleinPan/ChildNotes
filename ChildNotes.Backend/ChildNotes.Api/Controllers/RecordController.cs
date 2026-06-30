@@ -57,7 +57,6 @@ public class RecordController : AppBaseController
             RecordType.Complementary => payload.Deserialize<ComplementaryRecordDto>()!,
             RecordType.Vaccine => payload.Deserialize<VaccineRecordDto>()!,
             RecordType.Activity => payload.Deserialize<ActivityRecordDto>()!,
-            RecordType.MaternalFood => payload.Deserialize<MaternalFoodRecordDto>()!,
             _ => payload,
         };
     }
