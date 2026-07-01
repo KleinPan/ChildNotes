@@ -11,6 +11,7 @@ public partial class DiaperFormViewModel : ObservableObject, IRecordFormViewMode
     [ObservableProperty] private string _selectedStoolColor = string.Empty;
     [ObservableProperty] private string _selectedConsistency = string.Empty;
     [ObservableProperty] private bool _abnormal;
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
 
     public void SelectType(string type) => DiaperType = type;
@@ -28,6 +29,6 @@ public partial class DiaperFormViewModel : ObservableObject, IRecordFormViewMode
         Color = SelectedStoolColor,
         Consistency = SelectedConsistency,
         Abnormal = Abnormal,
-        Time = TimeText,
+        Time = $"{DateText} {TimeText}",
     };
 }

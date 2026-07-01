@@ -63,7 +63,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     /// 配合 VirtualizingStackPanel 实现虚拟化：仅渲染可见区域内的项，52 个剂次不再一次性创建全部 UI 元素。
     /// 展开时通过滚动查看剩余项，而非一次性渲染全部。
     /// </summary>
-    public double VaccineListMaxHeight => IsVaccineExpanded ? 360 : 180;
+    public double VaccineListMaxHeight => IsVaccineExpanded ? 360 : 120;
 
     // ===== 异常/生病追踪状态（对齐小程序首页 fever/diarrhea/other-abnormal 三态） =====
     /// <summary>当前是否有活动异常（发烧/腹泻/其他异常任一）。</summary>
@@ -433,45 +433,109 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         AiTipText = _currentTipPool[_tipCarouselIndex];
     }
 
-    /// <summary>从快照数据应用疫苗进度（不再重复查询 DB）。</summary>
+    /// <summary>从快照数据应用疫苗进度（对齐小程序 findNextDosePlans 逻辑：只显示未处理且未到期的下一剂推荐）。</summary>
     private void ApplyVaccines(List<ChildRecord> vaccineRecords)
     {
         VaccineItems.Clear();
 
-        // 已接种的疫苗名称集合（规范化：去除空格、括号、针→剂）
-        var completedSet = new HashSet<string>(vaccineRecords.Select(v =>
+        // 已处理（已打/已跳过）的疫苗 key 集合
+        var handledKeys = new HashSet<string>();
+        foreach (var v in vaccineRecords)
         {
-            try { return v.GetPayload<VaccineRecordDto>()?.Name ?? ""; } catch { return ""; }
-        }).Where(n => !string.IsNullOrEmpty(n)).Select(NormalizeVaccineName));
+            try
+            {
+                var dto = v.GetPayload<VaccineRecordDto>();
+                if (dto is null) continue;
+                var key = $"{dto.VaccineId}:{dto.DoseId}";
+                if (!string.IsNullOrEmpty(dto.VaccineId) && !string.IsNullOrEmpty(dto.DoseId))
+                    handledKeys.Add(key);
+                // 也通过名称规范化匹配（兼容历史数据无 vaccineId/doseId 的情况）
+                if (!string.IsNullOrEmpty(dto.Name))
+                    handledKeys.Add("name:" + NormalizeVaccineName(dto.Name));
+            }
+            catch { }
+        }
 
         var birthDate = ServiceProvider.Instance.AppState.CurrentBaby?.BirthDate;
         var today = DateTime.Today;
 
-        foreach (var (name, ageLabel, dueDays) in VaccineCatalog.FlattenDoses())
+        // 收集所有未处理且未到期的候选剂次，按分类分开
+        var freeCandidates = new List<(string Key, string Name, string AgeLabel, int? DueDays, string Category)>();
+        var paidCandidates = new List<(string Key, string Name, string AgeLabel, int? DueDays, string Category)>();
+
+        foreach (var item in VaccineCatalog.FlattenDoses())
         {
-            var done = completedSet.Contains(NormalizeVaccineName(name));
-            int daysLater;
-            if (done)
-            {
-                daysLater = 0;
-            }
-            else if (birthDate.HasValue && dueDays.HasValue)
+            var (key, name, ageLabel, dueDays, category) = item;
+
+            // 跳过已处理的（已打/已跳过）
+            if (handledKeys.Contains(key) || handledKeys.Contains("name:" + NormalizeVaccineName(name)))
+                continue;
+
+            // 计算推荐日期，跳过已过期的（recommendedDate < today）
+            if (birthDate.HasValue && dueDays.HasValue)
             {
                 var recommendedDate = birthDate.Value.AddDays(dueDays.Value).Date;
-                daysLater = (int)(today - recommendedDate).TotalDays;
+                if (recommendedDate < today)
+                    continue;
             }
-            else
-            {
-                daysLater = -1; // 未知出生日期或无推荐日，标记为待安排
-            }
-            VaccineItems.Add(new VaccineItem(name, ageLabel, daysLater, done));
+            // 无出生日期或无推荐日的仍保留（标记为待安排）
+
+            if (category == "free")
+                freeCandidates.Add(item);
+            else if (category == "paid")
+                paidCandidates.Add(item);
         }
 
-        var doneCount = VaccineItems.Count(v => v.IsDone);
-        VaccineProgressText = $"{doneCount}/{VaccineItems.Count}";
-        // 集合内容变更后需手动通知派生属性（ObservableCollection.Clear/Add 不触发集合引用变更）
+        // 按 DueDays 升序排列（DueDays 越小 = 越早接种），取第一条
+        // null DueDays 排在最后（无推荐日期，标记为待安排）
+        int CompareByDueDays(
+            (string, string, string, int?, string) a,
+            (string, string, string, int?, string) b)
+        {
+            if (a.Item4.HasValue && b.Item4.HasValue)
+                return a.Item4.Value.CompareTo(b.Item4.Value);
+            if (a.Item4.HasValue) return -1;
+            if (b.Item4.HasValue) return 1;
+            return 0;
+        }
+
+        freeCandidates.Sort(CompareByDueDays);
+        paidCandidates.Sort(CompareByDueDays);
+
+        var freePick = freeCandidates.FirstOrDefault();
+        var paidPick = paidCandidates.FirstOrDefault();
+
+        if (freePick != default)
+            VaccineItems.Add(CreateVaccineItem(freePick.Name, freePick.AgeLabel, freePick.Category, freePick.DueDays, birthDate, today));
+        if (paidPick != default)
+            VaccineItems.Add(CreateVaccineItem(paidPick.Name, paidPick.AgeLabel, paidPick.Category, paidPick.DueDays, birthDate, today));
+
+        // 统计全部剂次的完成进度
+        var totalCount = VaccineCatalog.FlattenDoses().Count;
+        var doneCount = 0;
+        foreach (var (key, name, _, _, _) in VaccineCatalog.FlattenDoses())
+        {
+            if (handledKeys.Contains(key) || handledKeys.Contains("name:" + NormalizeVaccineName(name)))
+                doneCount++;
+        }
+        VaccineProgressText = $"{doneCount}/{totalCount}";
         OnPropertyChanged(nameof(NeedsVaccineExpand));
         OnPropertyChanged(nameof(VisibleVaccineItems));
+    }
+
+    private static VaccineItem CreateVaccineItem(string name, string ageLabel, string category, int? dueDays, DateTime? birthDate, DateTime today)
+    {
+        int daysLater;
+        if (birthDate.HasValue && dueDays.HasValue)
+        {
+            var recommendedDate = birthDate.Value.AddDays(dueDays.Value).Date;
+            daysLater = (int)(today - recommendedDate).TotalDays;
+        }
+        else
+        {
+            daysLater = -1;
+        }
+        return new VaccineItem(name, category, daysLater, false);
     }
 
     private static string NormalizeVaccineName(string s)
@@ -834,6 +898,7 @@ public sealed class QuickActionItem
 public sealed class VaccineItem
 {
     public string Name { get; }
+    /// <summary>分类标签："免费"/"自费"</summary>
     public string Category { get; }
     public int DaysLater { get; }
     public bool IsDone { get; }
@@ -844,11 +909,14 @@ public sealed class VaccineItem
             : DaysLater == 0
                 ? "今天可打"
                 : DaysLater == -1
-                    ? Category
+                    ? "待安排"
                     : $"{-DaysLater}天后";
     public VaccineItem(string name, string category, int daysLater, bool isDone)
     {
-        Name = name; Category = category; DaysLater = daysLater; IsDone = isDone;
+        Name = name;
+        Category = category == "free" ? "免费" : category == "paid" ? "自费" : category;
+        DaysLater = daysLater;
+        IsDone = isDone;
     }
 }
 

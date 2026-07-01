@@ -25,6 +25,22 @@ public partial class RecordSheetView : UserControl
         InitializeComponent();
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
+        // 动态绑定疫苗 Grid 的 MaxWidth 到父容器宽度（自适应不同屏幕尺寸）
+        ContentStackPanel.SizeChanged += OnContentStackSizeChanged;
+    }
+
+    /// <summary>
+    /// 疫苗容器 Grid 的 * 列计算依赖有限宽度约束。
+    /// ScrollViewer 给子元素无限宽度约束，导致 Grid DesiredSize 偏大。
+    /// 通过动态设置 MaxWidth = ContentStackPanel.ActualWidth 来修复此问题，
+    /// 同时保证在不同屏幕尺寸下自适应。
+    /// </summary>
+    private void OnContentStackSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (VaccineGrid is not null && e.NewSize.Width > 0)
+        {
+            VaccineGrid.MaxWidth = e.NewSize.Width;
+        }
     }
 
     // 通用：非 null 转换器（用于 SelectedPlan 可见性）

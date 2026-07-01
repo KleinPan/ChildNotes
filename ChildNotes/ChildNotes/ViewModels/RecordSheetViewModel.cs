@@ -74,15 +74,16 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         IsVisible = true;
     }
 
-    /// <summary>疫苗专用：标记某剂次为「已打」并保存（不关闭抽屉，便于连续标记）</summary>
+    /// <summary>疫苗专用：标记某剂次为「已打」并保存（原地更新 UI，不重建时间轴避免抖动）</summary>
     public async Task<bool> MarkVaccineDoneAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkDone(plan);
         if (dto is null) return false;
         try
         {
-            RecordService.AddVaccine(dto);
-            await VaccineForm.LoadAsync(); // 刷新时间轴状态
+            var recordId = RecordService.AddVaccine(dto);
+            // 原地更新该卡片状态（只触发该卡片的 INPC 通知，不影响其他卡片）
+            VaccineForm.MarkDoneInline(plan, dto.Time, recordId);
             VaccineInlineChanged?.Invoke();
             return true;
         }
@@ -93,15 +94,15 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>疫苗专用：标记某剂次为「跳过」并保存（不关闭抽屉）</summary>
+    /// <summary>疫苗专用：标记某剂次为「跳过」并保存（原地更新 UI）</summary>
     public async Task<bool> MarkVaccineSkippedAsync(VaccinePlanView plan)
     {
         var dto = VaccineForm.MarkSkipped(plan);
         if (dto is null) return false;
         try
         {
-            RecordService.AddVaccine(dto);
-            await VaccineForm.LoadAsync();
+            var recordId = RecordService.AddVaccine(dto);
+            VaccineForm.MarkSkippedInline(plan, dto.Time, recordId);
             VaccineInlineChanged?.Invoke();
             return true;
         }
@@ -346,6 +347,11 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
 
     private static DateTime ParseTime(string timeStr, DateTime date)
     {
+        if (string.IsNullOrEmpty(timeStr)) return date;
+        // Try full datetime format first (e.g. "yyyy-MM-dd HH:mm" from combined date+time)
+        if (DateTime.TryParse(timeStr, out var dt))
+            return dt;
+        // Fallback to time-only format (e.g. "HH:mm")
         if (TimeSpan.TryParse(timeStr, out var ts))
             return date.Date + ts;
         return date;

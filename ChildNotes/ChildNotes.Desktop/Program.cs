@@ -1,6 +1,9 @@
-﻿﻿using System;
 using Avalonia;
 using Avalonia.Media;
+
+using Keincheck;
+
+﻿using System;
 
 namespace ChildNotes.Desktop;
 
@@ -19,6 +22,7 @@ sealed class Program
             .UsePlatformDetect()
 #if DEBUG
             .WithDeveloperTools()
+            .UseMcpServer()
 #endif
             .With(new FontManagerOptions
             {

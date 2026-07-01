@@ -68,6 +68,12 @@
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <!-- 默认：白色背景 + 浅灰边框（与小程序 vf-time-dose 基础样式一致）
+                 对应"将来要打"的默认状态 -->
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="BorderBrush" Value="#EDF1F7"/>
+            <!-- 确保卡片不超出 Grid 列宽 -->
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
         <Style Selector="Border.vf-card.done">
             <Setter Property="Background" Value="#EDFDF5"/>
@@ -78,13 +84,15 @@
             <Setter Property="BorderBrush" Value="#D0D5DD"/>
         </Style>
         <Style Selector="Border.vf-card.replaced">
-            <Setter Property="Background" Value="#EDFDF5"/>
+            <Setter Property="Background" Value="#ECFDF3"/>
             <Setter Property="BorderBrush" Value="#9EE6C1"/>
         </Style>
+        <!-- 已到期：橘红色系 -->
         <Style Selector="Border.vf-card.overdue">
             <Setter Property="Background" Value="#FFF4ED"/>
             <Setter Property="BorderBrush" Value="#FFBF9B"/>
         </Style>
+        <!-- 即将要打：淡黄色系 -->
         <Style Selector="Border.vf-card.due">
             <Setter Property="Background" Value="#FFFBE8"/>
             <Setter Property="BorderBrush" Value="#F4D35E"/>
@@ -93,9 +101,11 @@
             <Setter Property="Background" Value="#FFFBE8"/>
             <Setter Property="BorderBrush" Value="#F4D35E"/>
         </Style>
+        <!-- 将来要打：与基础样式一致（白色背景 + 浅灰边框）
+             小程序 vf-time-dose 无单独 pending 样式，默认即为此效果 -->
         <Style Selector="Border.vf-card.pending">
             <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+            <Setter Property="BorderBrush" Value="#EDF1F7"/>
         </Style>
         <Style Selector="Panel.vf-axis">
             <Setter Property="Width" Value="60"/>
@@ -234,7 +244,7 @@
                 </Border>
 
                 <ScrollViewer x:Name="ContentScroll" Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
+                    <StackPanel x:Name="ContentStackPanel">
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
                             <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,16">
@@ -279,6 +289,13 @@
                                 </Border>
                             </StackPanel>
 
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                </StackPanel>
+                            </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="记录时间"/>
@@ -327,6 +344,13 @@
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="备注（选填）"/>
                                     <TextBox Classes="form-input" Text="{Binding DiaperForm.SelectedConsistency}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -686,9 +710,22 @@
                             </Border>
                         </StackPanel>
 
-                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsVaccine}}">
+                        <!-- 用 Grid+RowDefinitions 替代 StackPanel：
+                             Grid 会正确传递有限宽度约束给子元素，让内部 Grid 的 * 列基于可用宽度计算。
+                             MaxWidth 在 code-behind 中动态绑定 ContentStackPanel.ActualWidth（自适应不同屏幕尺寸）
+                             解决 ScrollViewer 给无限宽度约束导致 Grid * 列计算偏大的问题 -->
+                        <Grid x:Name="VaccineGrid"
+                              IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsVaccine}}"
+                              HorizontalAlignment="Stretch">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
                             <!-- A. 添加自定义疫苗入口 -->
-                            <Border Classes="vf-entry" PointerPressed="OnVaccineToggleCustomForm">
+                            <Border Grid.Row="0" Classes="vf-entry" PointerPressed="OnVaccineToggleCustomForm">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock Text="添加自定义疫苗" FontSize="14" FontWeight="Medium"/>
@@ -702,7 +739,7 @@
                             </Border>
 
                             <!-- B. 自定义疫苗表单（折叠） -->
-                            <StackPanel IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Margin="0,0,0,12" Spacing="10">
+                            <StackPanel Grid.Row="1" IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Margin="0,0,0,12" Spacing="10">
                                 <Border Classes="form-section">
                                     <StackPanel>
                                         <TextBlock Classes="form-label" Text="疫苗名称"/>
@@ -749,7 +786,7 @@
                             </StackPanel>
 
                             <!-- C. 已选剂次卡片 -->
-                            <Border Classes="vf-entry" Background="#EEF8FF" BorderBrush="#BFE8FF"
+                            <Border Grid.Row="2" Classes="vf-entry" Background="#EEF8FF" BorderBrush="#BFE8FF"
                                     IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}"
                                     Margin="0,0,0,12">
                                 <Grid ColumnDefinitions="*,Auto">
@@ -770,8 +807,8 @@
 
                             <!-- D. 接种日期/时间已移至"改时间"弹窗中，主页面不再常驻显示 -->
 
-                            <!-- E. 时间轴表头 -->
-                            <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,4">
+                            <!-- E. 时间轴表头（三列 Grid，与分组模板完全对称） -->
+                            <Grid Grid.Row="3" ColumnDefinitions="*,60,*" Margin="0,4,0,4" ClipToBounds="True">
                                 <Border Grid.Column="0" Background="#EEF8FF" CornerRadius="6" Padding="8,6">
                                     <TextBlock Text="免费疫苗" FontSize="12" Foreground="#0675B8" HorizontalAlignment="Center" FontWeight="Medium"/>
                                 </Border>
@@ -787,53 +824,70 @@
                                  注意：不用 ListBox/VirtualizingStackPanel，因为：
                                  1. 外层已有 ContentScroll ScrollViewer，ListBox 会引入嵌套 ScrollViewer 导致滑动卡顿
                                  2. 20 个 Group 总量不大（~300 卡片），一次性创建可接受
-                                 3. 真正的瓶颈是每个 vf-card 模板复杂度，通过扁平化和 OneTime 绑定优化 -->
-                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}">
+                                 3. 真正的瓶颈是每个 vf-card 模板复杂度，通过扁平化和 OneTime 绑定优化
+                                 
+                                 布局策略：Grid 两列 *,* 强制 50/50 等分，中间竖线用 HorizontalAlignment=Center
+                                 的覆盖层定位，避免 Grid 三列分配受子元素 DesiredSize 影响导致偏移。 -->
+                            <Grid Grid.Row="4" HorizontalAlignment="Stretch">
+                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}"
+                                          HorizontalAlignment="Stretch">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="s:VaccineTimelineGroup">
-                                        <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0">
-                                            <!-- 左：免费疫苗（模板扁平化：合并 TextBlock 减少层级） -->
+                                        <!-- 三列 Grid：左右 * 等分，中间 60px 固定宽度放竖线 -->
+                                        <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0" ClipToBounds="True">
+                                            <!-- 左：免费疫苗 -->
                                             <StackPanel Grid.Column="0" Spacing="2">
                                                 <ItemsControl ItemsSource="{Binding FreeDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
+                                                            <!-- 状态类绑定用 OneWay（默认），支持点击后 INPC 原地更新；
+                                                                 静态数据保持 OneTime，减少初始加载时的订阅开销。 -->
                                                             <Border Classes="vf-card"
-                                                                    Classes.done="{Binding IsDone, Mode=OneTime}"
-                                                                    Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
-                                                                    Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
-                                                                    Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
-                                                                    Classes.due="{Binding IsDue, Mode=OneTime}"
-                                                                    Classes.soon="{Binding IsSoon, Mode=OneTime}"
-                                                                    Classes.pending="{Binding IsPending, Mode=OneTime}"
+                                                                    Classes.done="{Binding IsDone}"
+                                                                    Classes.skipped="{Binding IsSkipped}"
+                                                                    Classes.replaced="{Binding IsReplaced}"
+                                                                    Classes.overdue="{Binding IsOverdue}"
+                                                                    Classes.due="{Binding IsDue}"
+                                                                    Classes.soon="{Binding IsSoon}"
+                                                                    Classes.pending="{Binding IsPending}"
                                                                     PointerPressed="OnVaccineDoseClick">
-                                                                <!-- 扁平化：原 9 个元素 → 6 个，减少 ~33% 控件数 -->
+                                                                <!-- 文本截断防溢出：长疫苗名/疾病名不会撑开超出 Grid 列宽 -->
                                                                 <StackPanel Spacing="0">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium" Margin="0,6,0,0"/>
-                                                                    <!-- 合并 剂次·日期 + 疾病 为一行 -->
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0">
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"
+                                                                               Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                                                                               MaxWidth="200" HorizontalAlignment="Left"/>
+                                                                    <!-- 合并 剂次·日期 + 疾病 为一行（静态数据 OneTime） -->
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"
+                                                                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                                                                               MaxWidth="220">
                                                                         <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
                                                                         <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
                                                                         <Run Text="  "/>
                                                                         <Run Text="{Binding Disease, Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <!-- 状态行：状态文本 + 操作按钮 -->
-                                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
-                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding NotHandled, Mode=OneTime}">
-                                                                            <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
-                                                                            <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
-                                                                        </StackPanel>
+                                                                    <!-- 状态文本（独立一行） -->
+                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"
+                                                                               Margin="0,4,0,0"/>
+                                                                    <!-- 操作按钮：独立一行，等宽平分（与小程序 vf-time-actions 一致） -->
+                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding NotHandled}">
+                                                                        <Button Grid.Column="0" Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                        <Button Grid.Column="1" Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"
+                                                                                HorizontalAlignment="Stretch"/>
                                                                     </Grid>
-                                                                    <!-- 完成时间 / 编辑按钮（二选一） -->
-                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0"
-                                                                                IsVisible="{Binding IsDone, Mode=OneTime}">
-                                                                        <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
-                                                                        <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
-                                                                    </StackPanel>
+                                                                    <!-- 完成时间 -->
+                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <!-- 编辑按钮：等宽平分 -->
+                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding IsDone}">
+                                                                        <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                        <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                    </Grid>
                                                                 </StackPanel>
                                                             </Border>
                                                         </DataTemplate>
@@ -843,7 +897,7 @@
                                                            HorizontalAlignment="Center" IsVisible="{Binding !HasFree}"/>
                                             </StackPanel>
 
-                                            <!-- 中：时间轴节点 -->
+                                            <!-- 中：时间轴节点（固定 60px 宽度，竖线在这里） -->
                                             <Panel Grid.Column="1" Width="60">
                                                 <ctrl:TimelineAxisItem HorizontalAlignment="Center"
                                                                        LineBrush="#E5E7EB" LineWidth="2"
@@ -860,44 +914,56 @@
                                                 </StackPanel>
                                             </Panel>
 
-                                            <!-- 右：自费疫苗（与左对称，同样扁平化） -->
+                                            <!-- 右：自费疫苗 -->
                                             <StackPanel Grid.Column="2" Spacing="2">
                                                 <ItemsControl ItemsSource="{Binding PaidDoses}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="s:VaccinePlanView">
+                                                            <!-- 状态类 OneWay，静态数据 OneTime（与左侧对称） -->
                                                             <Border Classes="vf-card"
-                                                                    Classes.done="{Binding IsDone, Mode=OneTime}"
-                                                                    Classes.skipped="{Binding IsSkipped, Mode=OneTime}"
-                                                                    Classes.replaced="{Binding IsReplaced, Mode=OneTime}"
-                                                                    Classes.overdue="{Binding IsOverdue, Mode=OneTime}"
-                                                                    Classes.due="{Binding IsDue, Mode=OneTime}"
-                                                                    Classes.soon="{Binding IsSoon, Mode=OneTime}"
-                                                                    Classes.pending="{Binding IsPending, Mode=OneTime}"
+                                                                    Classes.done="{Binding IsDone}"
+                                                                    Classes.skipped="{Binding IsSkipped}"
+                                                                    Classes.replaced="{Binding IsReplaced}"
+                                                                    Classes.overdue="{Binding IsOverdue}"
+                                                                    Classes.due="{Binding IsDue}"
+                                                                    Classes.soon="{Binding IsSoon}"
+                                                                    Classes.pending="{Binding IsPending}"
                                                                     PointerPressed="OnVaccineDoseClick">
+                                                                <!-- 文本截断防溢出 -->
                                                                 <StackPanel Spacing="0">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium" Margin="0,6,0,0"/>
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0">
+                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"
+                                                                               Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                                                                               MaxWidth="200" HorizontalAlignment="Left"/>
+                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"
+                                                                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
+                                                                               MaxWidth="220">
                                                                         <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
                                                                         <Run Text=" · "/>
                                                                         <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
                                                                         <Run Text="  "/>
                                                                         <Run Text="{Binding Disease, Mode=OneTime}"/>
                                                                     </TextBlock>
-                                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
-                                                                        <TextBlock Grid.Column="0" Text="{Binding StatusText, Mode=OneTime}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
-                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
-                                                                                    IsVisible="{Binding NotHandled, Mode=OneTime}">
-                                                                            <Button Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"/>
-                                                                            <Button Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"/>
-                                                                        </StackPanel>
+                                                                    <!-- 状态文本（独立一行） -->
+                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"
+                                                                               Margin="0,4,0,0"/>
+                                                                    <!-- 操作按钮：独立一行，等宽平分 -->
+                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding NotHandled}">
+                                                                        <Button Grid.Column="0" Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                        <Button Grid.Column="1" Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"
+                                                                                HorizontalAlignment="Stretch"/>
                                                                     </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime, Mode=OneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}, Mode=OneTime}"/>
-                                                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0"
-                                                                                IsVisible="{Binding IsDone, Mode=OneTime}">
-                                                                        <Button Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"/>
-                                                                        <Button Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"/>
-                                                                    </StackPanel>
+                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
+                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <!-- 编辑按钮：等宽平分 -->
+                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding IsDone}">
+                                                                        <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                        <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                    </Grid>
                                                                 </StackPanel>
                                                             </Border>
                                                         </DataTemplate>
@@ -910,7 +976,8 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </StackPanel>
+                            </Grid>
+                        </Grid>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsActivity}}">
                             <Border Classes="form-section">

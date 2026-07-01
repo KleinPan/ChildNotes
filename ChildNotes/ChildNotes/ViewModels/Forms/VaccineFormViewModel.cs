@@ -176,7 +176,25 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         SelectedPlan = plan;
     }
 
-    /// <summary>标记「已打」某剂次</summary>
+    /// <summary>原地标记「已打」（保存 DB 成功后调用，只更新该卡片 UI，不重建整个时间轴）。</summary>
+    public void MarkDoneInline(VaccinePlanView plan, string time, long recordId)
+    {
+        plan.UpdateForDone(time, recordId);
+    }
+
+    /// <summary>原地标记「跳过」。</summary>
+    public void MarkSkippedInline(VaccinePlanView plan, string time, long recordId)
+    {
+        plan.UpdateForSkipped(time, recordId);
+    }
+
+    /// <summary>原地取消已打/跳过状态。</summary>
+    public void CancelInline(VaccinePlanView plan)
+    {
+        plan.UpdateForCancel();
+    }
+
+    /// <summary>标记「已打」某剂次（构建 DTO，不修改 UI）</summary>
     public VaccineRecordDto? MarkDone(VaccinePlanView plan)
     {
         if (plan.Handled) return null;

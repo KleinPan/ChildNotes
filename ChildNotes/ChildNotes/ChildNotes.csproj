@@ -19,6 +19,7 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Keincheck" />
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Semi.Avalonia" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />

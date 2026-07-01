@@ -209,31 +209,32 @@ public static class VaccineCatalog
     };
 
     /// <summary>
-    /// 缓存的剂次展开列表。疫苗目录是静态数据（All 在类型初始化时固定），
-    /// FlattenDoses 结果不可变，缓存后避免每次 RefreshAsync 重新枚举 52 项 + 字符串拼接。
+    /// 缓存的剂次展开列表（含分类信息）。疫苗目录是静态数据，
+    /// 结果不可变，缓存后避免每次 RefreshAsync 重新枚举 52 项 + 字符串拼接。
     /// </summary>
-    private static readonly List<(string Name, string AgeLabel, int? DueDays)> FlattenedDosesCache =
+    private static readonly List<(string Key, string Name, string AgeLabel, int? DueDays, string Category)> FlattenedDosesCache =
         BuildFlattenedDosesCache();
 
-    private static List<(string Name, string AgeLabel, int? DueDays)> BuildFlattenedDosesCache()
+    private static List<(string Key, string Name, string AgeLabel, int? DueDays, string Category)> BuildFlattenedDosesCache()
     {
-        var list = new List<(string, string, int?)>(64);
+        var list = new List<(string, string, string, int?, string)>(64);
         foreach (var v in All)
         {
             foreach (var d in v.Doses)
             {
                 var name = string.IsNullOrEmpty(d.Label) ? v.Name : $"{v.Name} {d.Label}";
-                list.Add((name, d.AgeLabel, d.DueDays));
+                list.Add(($"{v.Id}:{d.Id}", name, d.AgeLabel, d.DueDays, v.Category));
             }
         }
         return list;
     }
 
     /// <summary>
-    /// 展开所有剂次，返回 (疫苗名+剂次, 月龄标签, 距出生天数) 列表。
+    /// 展开所有剂次，返回 (Key, 疫苗名+剂次, 月龄标签, 距出生天数, 分类) 列表。
+    /// Key 格式为 "vaccineId:doseId"，Category 为 "free"/"paid"。
     /// 结果在首次调用时构建并缓存，后续调用直接返回缓存引用（疫苗目录是静态数据）。
     /// </summary>
-    public static IReadOnlyList<(string Name, string AgeLabel, int? DueDays)> FlattenDoses() => FlattenedDosesCache;
+    public static IReadOnlyList<(string Key, string Name, string AgeLabel, int? DueDays, string Category)> FlattenDoses() => FlattenedDosesCache;
 
     /// <summary>自费疫苗替代免费疫苗的映射：key=自费剂次key，value=被替代的免费剂次key列表</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Replacements = new Dictionary<string, IReadOnlyList<string>>
@@ -312,31 +313,115 @@ public sealed class VaccineTimelineGroup
     public int TotalCount => FreeDoses.Count + PaidDoses.Count;
 }
 
-/// <summary>带状态的剂次计划（时间轴渲染用）</summary>
-public sealed class VaccinePlanView : VaccinePlan
+/// <summary>带状态的剂次计划（时间轴渲染用）
+/// 实现 INPC 以支持原地更新单个卡片状态（避免全量重建时间轴导致抖动）。</summary>
+public sealed class VaccinePlanView : VaccinePlan, System.ComponentModel.INotifyPropertyChanged
 {
-    public string Status { get; set; } = VaccineDoseStatus.Pending;
-    public string StatusText { get; set; } = string.Empty;
-    public string StatusClass { get; set; } = string.Empty;
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+
+    private string _status = VaccineDoseStatus.Pending;
+    public string Status { get => _status; set { if (_status != value) { _status = value; OnPropertyChanged(nameof(Status)); UpdateBoolProps(); } } }
+
+    private string _statusText = string.Empty;
+    public string StatusText { get => _statusText; set { if (_statusText != value) { _statusText = value; OnPropertyChanged(nameof(StatusText)); } } }
+
+    private string _statusClass = string.Empty;
+    public string StatusClass { get => _statusClass; set { if (_statusClass != value) { _statusClass = value; OnPropertyChanged(nameof(StatusClass)); } } }
+
     /// <summary>
     /// 预计算的状态 bool 属性，供 AXAML Classes.xxx 绑定直接使用，
     /// 替代原先通过 EqualsConverter 对 StatusClass 字符串求值的方式。
     /// 每个剂次卡片减少 7 次转换器实例调用（ToString + 字符串比较）。
     /// </summary>
-    public bool IsDone => Status == VaccineDoseStatus.Done;
-    public bool IsSkipped => Status == VaccineDoseStatus.Skipped;
-    public bool IsReplaced => Status == VaccineDoseStatus.Replaced;
-    public bool IsOverdue => Status == VaccineDoseStatus.Overdue;
-    public bool IsDue => Status == VaccineDoseStatus.Due;
-    public bool IsSoon => Status == VaccineDoseStatus.Soon;
-    public bool IsPending => Status == VaccineDoseStatus.Pending;
-    public bool Handled { get; set; }
+    public bool IsDone { get; private set; }
+    public bool IsSkipped { get; private set; }
+    public bool IsReplaced { get; private set; }
+    public bool IsOverdue { get; private set; }
+    public bool IsDue { get; private set; }
+    public bool IsSoon { get; private set; }
+    public bool IsPending { get; private set; }
+
+    private void UpdateBoolProps()
+    {
+        var oldDone = IsDone; var oldSkipped = IsSkipped; var oldReplaced = IsReplaced;
+        var oldOverdue = IsOverdue; var oldDue = IsDue; var oldSoon = IsSoon; var oldPending = IsPending;
+
+        IsDone = Status == VaccineDoseStatus.Done;
+        IsSkipped = Status == VaccineDoseStatus.Skipped;
+        IsReplaced = Status == VaccineDoseStatus.Replaced;
+        IsOverdue = Status == VaccineDoseStatus.Overdue;
+        IsDue = Status == VaccineDoseStatus.Due;
+        IsSoon = Status == VaccineDoseStatus.Soon;
+        IsPending = Status == VaccineDoseStatus.Pending;
+
+        // 只通知实际变化的属性，减少不必要的绑定刷新
+        if (oldDone != IsDone) OnPropertyChanged(nameof(IsDone));
+        if (oldSkipped != IsSkipped) OnPropertyChanged(nameof(IsSkipped));
+        if (oldReplaced != IsReplaced) OnPropertyChanged(nameof(IsReplaced));
+        if (oldOverdue != IsOverdue) OnPropertyChanged(nameof(IsOverdue));
+        if (oldDue != IsDue) OnPropertyChanged(nameof(IsDue));
+        if (oldSoon != IsSoon) OnPropertyChanged(nameof(IsSoon));
+        if (oldPending != IsPending) OnPropertyChanged(nameof(IsPending));
+
+        // 联动 NotHandled / Handled
+        var newHandled = IsDone || IsSkipped || IsReplaced;
+        if (Handled != newHandled)
+        {
+            Handled = newHandled;
+            OnPropertyChanged(nameof(Handled));
+            OnPropertyChanged(nameof(NotHandled));
+        }
+    }
+
+    private bool _handled;
+    public bool Handled { get => _handled; set { if (_handled != value) { _handled = value; OnPropertyChanged(nameof(Handled)); OnPropertyChanged(nameof(NotHandled)); } } }
     public bool NotHandled => !Handled;
-    public string? DoneTime { get; set; }
-    public string? SkippedTime { get; set; }
-    public string? ReplacedByName { get; set; }
+
+    private string? _doneTime;
+    public string? DoneTime { get => _doneTime; set { if (_doneTime != value) { _doneTime = value; OnPropertyChanged(nameof(DoneTime)); } } }
+
+    private string? _skippedTime;
+    public string? SkippedTime { get => _skippedTime; set { if (_skippedTime != value) { _skippedTime = value; OnPropertyChanged(nameof(SkippedTime)); } } }
+
+    private string? _replacedByName;
+    public string? ReplacedByName { get => _replacedByName; set { if (_replacedByName != value) { _replacedByName = value; OnPropertyChanged(nameof(ReplacedByName)); } } }
+
+    private long? _recordId;
     /// <summary>已处理剂次对应的数据库记录 ID（用于修改/删除操作），未处理时为 null。</summary>
-    public long? RecordId { get; set; }
+    public long? RecordId { get => _recordId; set { if (_recordId != value) { _recordId = value; OnPropertyChanged(nameof(RecordId)); } } }
+
+    /// <summary>原地更新为"已打"状态（避免 LoadAsync 全量重建导致时间轴抖动）。</summary>
+    public void UpdateForDone(string time, long recordId)
+    {
+        Status = VaccineDoseStatus.Done;
+        StatusText = "已打";
+        StatusClass = "done";
+        DoneTime = ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(DateTime.Parse(time));
+        RecordId = recordId;
+    }
+
+    /// <summary>原地更新为"跳过"状态。</summary>
+    public void UpdateForSkipped(string time, long recordId)
+    {
+        Status = VaccineDoseStatus.Skipped;
+        StatusText = "已跳过";
+        StatusClass = "skipped";
+        SkippedTime = ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(DateTime.Parse(time));
+        RecordId = recordId;
+    }
+
+    /// <summary>原地取消已打/跳过状态，恢复为待安排。</summary>
+    public void UpdateForCancel()
+    {
+        Status = VaccineDoseStatus.Pending;
+        StatusText = "待安排";
+        StatusClass = "pending";
+        DoneTime = null;
+        SkippedTime = null;
+        RecordId = null;
+    }
 }
 
 /// <summary>自定义疫苗（用户手动添加）</summary>

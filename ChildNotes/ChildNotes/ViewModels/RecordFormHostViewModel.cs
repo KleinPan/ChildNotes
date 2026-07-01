@@ -94,10 +94,12 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 FeedForm.AmountText = r.AmountMl?.ToString() ?? string.Empty;
                 FeedForm.LeftDurationText = (r.LeftDurationSec / 60).ToString();
                 FeedForm.RightDurationText = (r.RightDurationSec / 60).ToString();
+                FeedForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 FeedForm.TimeText = time;
                 break;
             case RecordType.Diaper:
                 DiaperForm.SelectType(r.RecordSubType ?? "wet");
+                DiaperForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 DiaperForm.TimeText = time;
                 break;
             case RecordType.Sleep:
