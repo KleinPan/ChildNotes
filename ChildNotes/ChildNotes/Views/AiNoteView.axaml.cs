@@ -17,8 +17,8 @@ public partial class AiNoteView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
-    // ★ baseline：无键盘时的父容器高度，用于自动补偿 adjustResize 的窗口压缩
-    private double _baselineContainerHeight;
+    // ★ baseline：无键盘时的 TopLevel 客户区高度（adjustResize 压缩的就是这个）
+    private double _baselineClientHeight;
 
     public AiNoteView()
     {
@@ -33,7 +33,7 @@ public partial class AiNoteView : UserControl
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
 
-        // 弹窗打开时记录初始容器高度作为 baseline
+        // 记录初始 TopLevel 客户区高度作为 baseline
         UpdateBaseline();
 
         DevLogger.Log("AiNoteView", "Attached: listeners added");
@@ -47,15 +47,14 @@ public partial class AiNoteView : UserControl
         DevLogger.Log("AiNoteView", "Detached: listeners removed");
     }
 
-    /// <summary>更新 baseline（在弹窗打开/键盘收回时调用）</summary>
+    /// <summary>更新 baseline（使用 TopLevel.ClientSize，这是 adjustResize 实际压缩的对象）</summary>
     private void UpdateBaseline()
     {
-        if (SheetRoot is null) return;
-        var parent = SheetRoot.Parent as Layoutable;
-        if (parent?.Bounds.Height > 0)
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.ClientSize.Height > 0)
         {
-            _baselineContainerHeight = parent.Bounds.Height;
-            DevLogger.Log("AiNoteView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
+            _baselineClientHeight = topLevel.ClientSize.Height;
+            DevLogger.Log("AiNoteView", $"Baseline updated: {_baselineClientHeight:F1}lp (TopLevel.ClientSize)");
         }
     }
 
@@ -105,9 +104,12 @@ public partial class AiNoteView : UserControl
     /// <summary>
     /// 核心逻辑：
     ///   1. 用 TranslateTransform.Y 做视觉偏移（不参与布局，避免与 adjustResize 叠加）
-    ///   2. 自动补偿 adjustResize 已处理的窗口压缩量（baseline 方案）
+    ///   2. 自动补偿 adjustResize 已处理的 TopLevel 压缩量
     ///
-    /// 补偿公式：actualOffset = measuredKbH - (baselineH - currentContainerH)
+    /// 补偿公式：actualOffset = measuredKbH - (baselineClientH - currentClientH)
+    ///   baselineClientH = 键盘弹出前的 TopLevel.ClientSize.Height
+    ///   currentClientH = 键盘弹出后的 TopLevel.ClientSize.Height
+    ///   差值就是系统已经帮我们做的抬升量
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -115,6 +117,10 @@ public partial class AiNoteView : UserControl
         if (!OperatingSystem.IsAndroid()) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
+
+        // ★ 获取 TopLevel.ClientSize（adjustResize 改变的是这个）
+        var topLevel = TopLevel.GetTopLevel(this);
+        var currentClientH = topLevel?.ClientSize.Height ?? 0;
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
@@ -139,13 +145,12 @@ public partial class AiNoteView : UserControl
             return;
         }
 
-        // ★ 自动补偿：adjustResize 模式下系统已压缩了窗口，
-        //   压缩量 = baseline - currentContainerHeight
-        //   这部分不需要我们再推，从原始测量值中扣除
+        // ★ 自动补偿：adjustResize 模式下系统已压缩了 TopLevel，
+        //   压缩量 = baselineClientH - currentClientH
         double compensation = 0;
-        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
+        if (_baselineClientHeight > 0 && currentClientH > 0 && currentClientH < _baselineClientHeight)
         {
-            compensation = _baselineContainerHeight - containerHeight;
+            compensation = _baselineClientHeight - currentClientH;
         }
 
         var offset = Math.Max(0, rawOffset - compensation);
@@ -174,9 +179,9 @@ public partial class AiNoteView : UserControl
         DevLogger.Log("AiNoteView",
             $"ApplyOffset | {reason} | src={offsetSource} | " +
             $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | " +
-            $"MaxH={SheetRoot.MaxHeight:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
-            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+            $"clientH={currentClientH:F1}lp | baseline={_baselineClientHeight:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
+            $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
     }
 

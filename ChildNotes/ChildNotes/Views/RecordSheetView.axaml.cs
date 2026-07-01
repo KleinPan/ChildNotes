@@ -20,8 +20,8 @@ public partial class RecordSheetView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
-    // ★ baseline：无键盘时的父容器高度，用于自动补偿 adjustResize 的窗口压缩
-    private double _baselineContainerHeight;
+    // ★ baseline：无键盘时的 TopLevel 客户区高度（adjustResize 压缩的就是这个）
+    private double _baselineClientHeight;
 
     public RecordSheetView()
     {
@@ -62,7 +62,6 @@ public partial class RecordSheetView : UserControl
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
 
-        // 弹窗打开时记录初始容器高度作为 baseline
         UpdateBaseline();
 
         DevLogger.Log("SheetView", "Attached: listeners added");
@@ -76,15 +75,14 @@ public partial class RecordSheetView : UserControl
         DevLogger.Log("SheetView", "Detached: listeners removed");
     }
 
-    /// <summary>更新 baseline（在弹窗打开/键盘收回时调用）</summary>
+    /// <summary>更新 baseline（使用 TopLevel.ClientSize）</summary>
     private void UpdateBaseline()
     {
-        if (SheetRoot is null) return;
-        var parent = SheetRoot.Parent as Layoutable;
-        if (parent?.Bounds.Height > 0)
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.ClientSize.Height > 0)
         {
-            _baselineContainerHeight = parent.Bounds.Height;
-            DevLogger.Log("SheetView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
+            _baselineClientHeight = topLevel.ClientSize.Height;
+            DevLogger.Log("SheetView", $"Baseline updated: {_baselineClientHeight:F1}lp (TopLevel.ClientSize)");
         }
     }
 
@@ -136,6 +134,10 @@ public partial class RecordSheetView : UserControl
         if (!OperatingSystem.IsAndroid()) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
+
+        // ★ 获取 TopLevel.ClientSize（adjustResize 改变的是这个）
+        var topLevel = TopLevel.GetTopLevel(this);
+        var currentClientH = topLevel?.ClientSize.Height ?? 0;
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
@@ -160,12 +162,11 @@ public partial class RecordSheetView : UserControl
             return;
         }
 
-        // ★ 自动补偿：adjustResize 模式下系统已压缩了窗口，
-        //   压缩量 = baseline - currentContainerHeight
+        // ★ 自动补偿：adjustResize 模式下系统已压缩了 TopLevel
         double compensation = 0;
-        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
+        if (_baselineClientHeight > 0 && currentClientH > 0 && currentClientH < _baselineClientHeight)
         {
-            compensation = _baselineContainerHeight - containerHeight;
+            compensation = _baselineClientHeight - currentClientH;
         }
 
         var offset = Math.Max(0, rawOffset - compensation);
@@ -193,9 +194,9 @@ public partial class RecordSheetView : UserControl
         DevLogger.Log("SheetView",
             $"ApplyOffset | {reason} | src={offsetSource} | " +
             $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | " +
-            $"MaxH={SheetRoot.MaxHeight:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
-            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+            $"clientH={currentClientH:F1}lp | baseline={_baselineClientHeight:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
+            $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
     }
 
@@ -207,7 +208,6 @@ public partial class RecordSheetView : UserControl
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
 
-        // 键盘收回后重新记录基准高度
         UpdateBaseline();
 
         DevLogger.Log("SheetView", $"ClearOffset | {reason}");
