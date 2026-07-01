@@ -130,8 +130,16 @@ public partial class AiNoteView : UserControl
         }
         else
         {
-            DevLogger.Log("AiNoteView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
-            return; // 无键盘、无焦点，不需要偏移
+            // 键盘已收回且无焦点：清除偏移，让卡片回弹到原始位置
+            if (_lastKbOffset > 0)
+            {
+                ClearKeyboardOffset(reason: $"keyboard dismissed ({reason})");
+            }
+            else
+            {
+                DevLogger.Log("AiNoteView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
+            }
+            return;
         }
 
         // 安全上限：抽屉顶部不超过容器的 8% 位置

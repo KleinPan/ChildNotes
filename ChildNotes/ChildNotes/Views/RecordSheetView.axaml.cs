@@ -166,7 +166,15 @@ public partial class RecordSheetView : UserControl
         }
         else
         {
-            DevLogger.Log("SheetView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
+            // 键盘已收回且无焦点：清除偏移，让卡片回弹到原始位置
+            if (_lastKbOffset > 0)
+            {
+                ClearKeyboardOffset(reason: $"keyboard dismissed ({reason})");
+            }
+            else
+            {
+                DevLogger.Log("SheetView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
+            }
             return;
         }
 

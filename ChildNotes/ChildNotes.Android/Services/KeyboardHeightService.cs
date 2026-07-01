@@ -10,13 +10,14 @@ namespace ChildNotes.Android.Services;
 /// <summary>
 /// 安卓端软键盘高度监听服务。
 ///
-/// 使用 AndroidX WindowInsetsCompat.Type.ime() 获取精确的 IME 高度（Google 官方推荐方案），
-/// 替代旧式 ViewTreeObserver screenHeight-rectBottom 计算。
+/// 采用双轨方案：
+/// 1. 主方案：WindowInsetsCompat.Type.ime()（AndroidX Core，Google 官方推荐）
+/// 2. 回退方案：ViewTreeObserver.OnGlobalLayoutListener（兼容老设备）
 ///
-/// 旧方案问题：在部分设备上（尤其是带导航栏/手势导航的机型），
-/// screenHeight - rectBottom 的值略小于实际键盘高度，导致 Avalonia 层偏移不足、弹窗与键盘间出现间隙。
-///
-/// WindowInsets.Type.ime() 直接报告系统级 IME inset，精度更高且不受导航栏干扰。
+/// ★ 重要：adjustResize 模式下，系统会消费 IME insets 来压缩窗口内容，
+///   导致部分设备上 imeInsets.Bottom 返回 0。因此主方案失效时自动降级到回退方案。
+///   回退方案的关键改进：使用 displayMetrics 而非 RootView.Height 作为屏幕基准，
+///   避免状态栏/导航栏导致的偏小计算。
 /// </summary>
 public static class KeyboardHeightService
 {
@@ -25,14 +26,14 @@ public static class KeyboardHeightService
     private static View? _decorView;
     private static AndroidActivity? _activity;
 
-    /// <summary>当前软键盘高度（像素），键盘隐藏时为 0。</summary>
-    public static int KeyboardHeightPx { get; private set; }
+    /// <summary>当前软键盘高度（逻辑像素），键盘隐藏时为 0。</summary>
+    public static int KeyboardHeightLp { get; private set; }
 
-    /// <summary>键盘高度变化回调（高度像素值）。</summary>
+    /// <summary>键盘高度变化回调（参数为逻辑像素高度）。</summary>
     public static Action<int>? OnKeyboardHeightChanged;
 
     /// <summary>上次报告的高度（用于防重复回调）</summary>
-    private static int _lastReportedHeight;
+    private static int _lastReportedHeightLp;
 
     public static void StartObserving(AndroidActivity activity)
     {
@@ -42,28 +43,29 @@ public static class KeyboardHeightService
         _decorView = activity.Window?.DecorView;
         if (_decorView is null) return;
 
-        // ★ 主方案：WindowInsetsCompat.Type.ime()（Android 21+ via AndroidX Core）
-        // 这是 Google 官方推荐的获取 IME 高度的方式，比 ViewTreeObserver 更精确
+        // 同时启用两个方案：
+        // - WindowInsetsCompat 用于精确获取 IME 高度（Android 21+）
+        // - ViewTreeObserver 作为回退（当 adjustResize 消费了 IME insets 时）
         try
         {
             _insetsListener = new InsetsListener();
             ViewCompat.SetOnApplyWindowInsetsListener(_decorView, _insetsListener);
-            // 请求重新分发 insets 以立即获取当前状态
             ViewCompat.RequestApplyInsets(_decorView);
-            Debug.WriteLine("[KbSvc] Started with WindowInsetsCompat (modern path)");
+            Debug.WriteLine("[KbSvc] WindowInsetsCompat listener registered");
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[KbSvc] WindowInsetsCompat failed, falling back: {ex.Message}");
-            StartFallbackObserver();
+            Debug.WriteLine($"[KbSvc] WindowInsetsCompat failed: {ex.Message}");
         }
+
+        // 始终启用 ViewTreeObserver 作为回退方案
+        StartFallbackObserver();
     }
 
     public static void StopObserving()
     {
         if (_decorView is null) return;
 
-        // 清理主监听器
         if (_insetsListener is not null)
         {
             try { ViewCompat.SetOnApplyWindowInsetsListener(_decorView, null); }
@@ -71,8 +73,7 @@ public static class KeyboardHeightService
             _insetsListener = null;
         }
 
-        // 清理 fallback 监听器
-        if (_fallbackListener is not null && _decorView.Handler != null)
+        if (_fallbackListener is not null)
         {
             try { _decorView.ViewTreeObserver.RemoveOnGlobalLayoutListener(_fallbackListener); }
             catch { /* ignore */ }
@@ -82,72 +83,67 @@ public static class KeyboardHeightService
 
         _decorView = null;
         _activity = null;
-        KeyboardHeightPx = 0;
-        _lastReportedHeight = 0;
+        KeyboardHeightLp = 0;
+        _lastReportedHeightLp = 0;
     }
 
-    /// <summary>回退方案：使用传统 ViewTreeObserver 方式（当 WindowInsets 不可用时）</summary>
     private static void StartFallbackObserver()
     {
         if (_decorView is null || _fallbackListener is not null) return;
         _fallbackListener = new GlobalLayoutListener();
         _decorView.ViewTreeObserver.AddOnGlobalLayoutListener(_fallbackListener);
-        Debug.WriteLine("[KbSvc] Fallback to ViewTreeObserver (legacy path)");
+        Debug.WriteLine("[KbSvc] ViewTreeObserver fallback listener registered");
     }
 
-    /// <summary>处理高度变化并通知上层</summary>
+    /// <summary>处理高度变化并通知上层（参数为物理像素）</summary>
     private static void ReportHeight(int heightPx, string source)
     {
-        if (heightPx == _lastReportedHeight) return;
+        // 转换为 Avalonia 逻辑像素
+        var density = _decorView?.Resources?.DisplayMetrics?.Density ?? 2.0f;
+        var heightLp = (int)(heightPx / density);
 
-        _lastReportedHeight = heightPx;
-        KeyboardHeightPx = heightPx;
+        if (heightLp == _lastReportedHeightLp) return;
 
-        if (heightPx > 0)
-        {
-            // 用设备真实 DPI 将物理像素转换为 Avalonia 逻辑像素
-            var density = _decorView?.Resources?.DisplayMetrics?.Density ?? 2.0f;
-            var keyboardHeightLp = (int)(heightPx / density);
+        _lastReportedHeightLp = heightLp;
+        KeyboardHeightLp = heightLp;
 
-            Debug.WriteLine(
-                $"[KbSvc] {source} | px={heightPx} lp={keyboardHeightLp} density={density}");
+        Debug.WriteLine($"[KbSvc] {source} | px={heightPx} lp={heightLp} density={density}");
 
-            try { OnKeyboardHeightChanged?.Invoke(keyboardHeightLp); }
-            catch { /* 回调异常不影响主流程 */ }
-        }
-        else
-        {
-            Debug.WriteLine($"[KbSvc] {source} | keyboard hidden");
-            try { OnKeyboardHeightChanged?.Invoke(0); }
-            catch { /* ignore */ }
-        }
+        try { OnKeyboardHeightChanged?.Invoke(heightLp); }
+        catch { /* 回调异常不影响主流程 */ }
     }
 
     /// <summary>
     /// 主方案：基于 WindowInsetsCompat.Type.ime() 的 IME 高度监听器。
-    /// 这是 Google 官方推荐方式，直接从系统获取 IME inset 值，精度最高。
+    /// 注意：adjustResize 模式下此回调可能返回 0（系统已消费 insets），
+    /// 此时由 ViewTreeObserver 回退方案接管。
     /// </summary>
     private class InsetsListener : Java.Lang.Object, IOnApplyWindowInsetsListener
     {
         public WindowInsetsCompat OnApplyWindowInsets(View v, WindowInsetsCompat insets)
         {
-            // 获取 IME 类型的 inset（即软键盘高度）
             var imeInsets = insets.GetInsets(WindowInsetsCompat.Type.Ime());
             var imeHeightPx = imeInsets.Bottom;
 
-            // 过小值视为无键盘（避免误判）
-            if (imeHeightPx < 50) imeHeightPx = 0;
+            // 仅在确实有值时报告（adjustResize 下可能为 0，交给 fallback 处理）
+            if (imeHeightPx >= 50)
+            {
+                ReportHeight(imeHeightPx, "IME-insets");
+            }
 
-            ReportHeight(imeHeightPx, "IME-insets");
-
-            // 不消费 insets，让系统继续分发给子 View
             return insets;
         }
     }
 
     /// <summary>
     /// 回退方案：基于 ViewTreeObserver 的传统高度计算。
-    /// 仅当 WindowInsets API 不可用时使用。
+    ///
+    /// ★ 关键修正（参考 AndroidBug5497Workaround 经典方案）：
+    ///   键盘高度 = 屏幕高度 - 可见区域高度(rect.bottom - rect.top)
+    ///   而非 键盘高度 = 屏幕高度 - rect.bottom
+    ///
+    /// 原代码漏减了 rect.top（状态栏高度），导致算出的键盘高度偏大一个状态栏高度，
+    /// 弹窗被推得过高，与键盘间出现间隙。
     /// </summary>
     private class GlobalLayoutListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
@@ -159,26 +155,33 @@ public static class KeyboardHeightService
             if (_decorView is null) return;
 
             _decorView.GetWindowVisibleDisplayFrame(_rect);
+
+            // DecorView 的 RootView 始终是全屏高度（adjustResize 压缩的是子 View）
             var screenHeight = _decorView.RootView.Height;
-            var rawHeight = screenHeight - _rect.Bottom;
+            // 可见区域高度 = rect.bottom - rect.top（rect.top 通常是状态栏高度）
+            var visibleHeight = _rect.Height();
+            // 键盘高度 = 屏幕高度 - 可见区域高度
+            var rawHeight = screenHeight - visibleHeight;
 
             // 过小值视为无键盘
             var keyboardHeightPx = rawHeight < 100 ? 0 : rawHeight;
 
             // 防抖：忽略短时间内从正值跳回 0 的抖动
-            if (keyboardHeightPx == 0 && KeyboardHeightPx > 0)
+            if (keyboardHeightPx == 0 && KeyboardHeightLp > 0)
             {
                 var now = Stopwatch.GetTimestamp();
                 var elapsedMs = (now - _lastPositiveTickMs) * 1000 / Stopwatch.Frequency;
                 if (elapsedMs < 200) return;
             }
 
-            if (keyboardHeightPx != KeyboardHeightPx)
+            if (keyboardHeightPx > 0)
             {
-                if (keyboardHeightPx > 0)
-                    _lastPositiveTickMs = Stopwatch.GetTimestamp();
-
-                ReportHeight(keyboardHeightPx, "GlobalLayout-fallback");
+                _lastPositiveTickMs = Stopwatch.GetTimestamp();
+                ReportHeight(keyboardHeightPx, "GlobalLayout");
+            }
+            else if (KeyboardHeightLp > 0)
+            {
+                ReportHeight(0, "GlobalLayout");
             }
         }
     }
