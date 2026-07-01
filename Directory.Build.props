@@ -15,9 +15,16 @@
          ApplicationDisplayVersion = 版本字符串（如 0.3.2），对应 android:versionName
          ApplicationVersion = 整数 versionCode，Android 要求 > 0。
          用 Major*10000 + Minor*100 + Patch 计算，保证单调递增且永远 >= 1
-         （Version=0.0.0 时回退为 1，避免 versionCode=0 触发 "invalid android:versionCode"）。 -->
-    <ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">$(Version)</ApplicationDisplayVersion>
-    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Minor), 100)))), $([System.Version]::Parse('$(Version)').Build)))</ApplicationVersion>
+         （Version=0.0.0 时回退为 1，避免 versionCode=0 触发 "invalid android:versionCode"）。
+
+         ★ 重要：Version 在 Debug 构建时会被 SDK 追加源版本控制后缀（如 0.0.0+53），
+           System.Version.Parse 不支持 SemVer 的 +metadata，会抛 FormatException。
+           因此用字符串 Split('+') 取第一段，再用 System.Version.Parse 解析纯净版本号。
+           最终 ApplicationDisplayVersion 用 CleanVersion 直接赋值（如 0.0.0），
+           避免 versionName 出现 "0.0.0+53..." 这样的非法字符串。 -->
+    <CleanVersion>$([System.String]::Copy('$(Version)').Split('+')[0])</CleanVersion>
+    <ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">$(CleanVersion)</ApplicationDisplayVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(CleanVersion)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(CleanVersion)').Minor), 100)))), $([System.Version]::Parse('$(CleanVersion)').Build)))</ApplicationVersion>
     <ApplicationVersion Condition="'$(ApplicationVersion)' == '0'">1</ApplicationVersion>
   </PropertyGroup>
 

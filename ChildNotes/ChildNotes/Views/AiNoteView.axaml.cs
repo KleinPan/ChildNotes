@@ -118,13 +118,13 @@ public partial class AiNoteView : UserControl
         string offsetSource;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：仅用于记录和日志，实际不设 Margin
+            // 有真实键盘高度：直接用键盘高度作为偏移量
             offset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            // 已聚焦但还没收到原生回调：保守估算
+            // 已聚焦但还没收到原生回调：用容器高度的 45% 做保守估算
             offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
@@ -142,17 +142,21 @@ public partial class AiNoteView : UserControl
             return;
         }
 
-        // ★ adjustResize 模式下系统已自动压缩容器高度，
-        //   SheetRoot（VerticalAlignment=Bottom）的底部已被抬到键盘上方。
-        //   再设 Margin.Bottom 会导致双重抬升，产生间隙！
-        //   因此只设 MaxHeight 限制抽屉高度，不设 Margin。
-        SheetRoot.Margin = new Thickness(0);
+        // 安全上限：抽屉顶部不超过容器的 8% 位置
+        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
+        if (offset > maxOffset)
+        {
+            offset = maxOffset;
+            offsetSource += "(clamped)";
+        }
 
-        // 限制 MaxHeight：adjustResize 下 containerHeight 已被压缩，
-        // 直接用 containerHeight 作为上限即可
+        // 应用底部 margin 将抽屉上推（必须设 Margin，adjustResize 对 Avalonia 嵌套弹窗无效）
+        SheetRoot.Margin = new Thickness(0, 0, 0, offset);
+
+        // 限制 MaxHeight：确保抽屉不超出容器可见区
         if (containerHeight > 0)
         {
-            SheetRoot.MaxHeight = Math.Max(280, containerHeight);
+            SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
         }
 
         DevLogger.Log("AiNoteView",
