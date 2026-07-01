@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    强制清除 InformationalVersion 中的 Git 源版本控制后缀。
+    .NET SDK 在 GenerateAssemblyInfo 目标中会自动将 SourceRevisionId（Git 提交哈希）
+    追加到 InformationalVersion 后面（如 0.0.0 → 0.0.0+14a6b2c），
+    即使在 csproj / Directory.Build.props 中已设置 SourceRevisionId 为空也不一定生效。
+    此目标在 SDK 隐式目标执行完毕后运行，确保最终值干净。
+  -->
+  <Target Name="StripGitSuffixFromInformationalVersion"
+          AfterTargets="GenerateAssemblyInfo"
+          Condition=" '$(InformationalVersion)' != '' And $(InformationalVersion.Contains('+')) ">
+    <PropertyGroup>
+      <InformationalVersion>$([System.Text.RegularExpressions.Regex]::Replace($(InformationalVersion), '\+.*', ''))</InformationalVersion>
+    </PropertyGroup>
+    <Message Importance="high" Text="[VersionFix] 清除 Git 后缀: InformationalVersion = $(InformationalVersion)" />
+  </Target>
+
+</Project>
