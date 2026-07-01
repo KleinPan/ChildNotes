@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 using ChildNotes.ViewModels;
@@ -84,7 +85,7 @@ public partial class RecordSheetView : UserControl
             var shell = this.FindAncestorOfType<MainShellView>();
             if (shell is not null)
             {
-                var tabBar = shell.GetTemplateChildren()
+                var tabBar = shell.GetVisualDescendants()
                     .FirstOrDefault(c => c is Border b && b.Classes.Contains("tab-bar")) as Border;
                 if (tabBar?.Bounds.Height > 0)
                 {

@@ -5,6 +5,7 @@ using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 
@@ -58,8 +59,8 @@ public partial class AiNoteView : UserControl
             var shell = this.FindAncestorOfType<MainShellView>();
             if (shell is not null)
             {
-                // MainShellView 的 TabBar 是 Border.tab-bar（Grid.Row=1）
-                var tabBar = shell.GetTemplateChildren()
+                // 用 VisualTreeHelper 或 LINQ 遍历查找 tab-bar
+                var tabBar = shell.GetVisualDescendants()
                     .FirstOrDefault(c => c is Border b && b.Classes.Contains("tab-bar")) as Border;
                 if (tabBar?.Bounds.Height > 0)
                 {
