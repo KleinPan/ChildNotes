@@ -67,7 +67,17 @@ public partial class AiNoteView : UserControl
         // 桌面端不会触发此回调（KeyboardHeightService 只在安卓端注册），但防御性判断
         if (!OperatingSystem.IsAndroid()) return;
 
-        // 无论是否 focused 都响应——用户可能在键盘已弹出时切换表单类型
+        // ★ 键盘收回（height=0）：立即清除偏移让卡片回弹
+        //   这是最可靠的回弹触发点，不依赖 TextBox 焦点状态
+        //   （LostFocus 有 200ms 延迟，可能晚于键盘收回事件）
+        if (keyboardHeightLp <= 0 && _lastKbOffset > 0 && IsVisible)
+        {
+            ClearKeyboardOffset(reason: "keyboard dismissed (native callback)");
+            DevLogger.Log("AiNoteView", $"OnKeyboardHeightChanged | height=0 → cleared offset");
+            return;
+        }
+
+        // 键盘弹出/变化：应用偏移
         if (IsVisible)
         {
             ApplyKeyboardOffset(reason: $"NativeKeyboard height={keyboardHeightLp:F0}lp");
