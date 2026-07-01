@@ -130,12 +130,15 @@ jobs:
         working-directory: ChildNotes
         run: |
           # .NET 10 + Avalonia.Android，产出 APK（默认 debug 签名，可自行重签）
+          # 显式传入 ApplicationDisplayVersion 覆盖 csproj 默认值（0.0.0），
+          # 确保 release 版本号与 git tag 一致
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:Version=${{ steps.version.outputs.version }} \
+            -p:ApplicationDisplayVersion=${{ steps.version.outputs.version }} \
             -o ../artifacts/android
 
       - name: Collect Android APK

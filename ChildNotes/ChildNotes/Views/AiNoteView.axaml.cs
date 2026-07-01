@@ -15,8 +15,13 @@ public partial class AiNoteView : UserControl
 
     // 当前是否有 TextBox 处于焦点状态（用于判断是否要保持键盘规避）
     private bool _textBoxFocused;
-    // 上一次应用的键盘偏移量（用于日志对比）
+    // 上一次应用的键盘偏移量（用于日志对比和回弹判断）
     private double _lastKbOffset;
+
+    // ★ 自动补偿：记录无键盘时的父容器高度作为基准。
+    //   adjustResize 模式下系统会压缩容器，基准 - 当前高度 = 系统已处理的抬升量，
+    //   用它补偿 offset 可避免双重抬升导致的间隙。
+    private double _baselineContainerHeight;
 
     public AiNoteView()
     {
@@ -30,6 +35,10 @@ public partial class AiNoteView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+
+        // 记录初始容器高度作为基准（此时通常无键盘）
+        UpdateBaseline();
+
         DevLogger.Log("AiNoteView", "Attached: GotFocus/LostFocus/KeyboardHeight listeners added");
     }
 
@@ -39,6 +48,18 @@ public partial class AiNoteView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("AiNoteView", "Detached: listeners removed");
+    }
+
+    /// <summary>更新容器高度基准（在弹窗打开/键盘收回时调用）</summary>
+    private void UpdateBaseline()
+    {
+        if (SheetRoot is null) return;
+        var parent = SheetRoot.Parent as Layoutable;
+        if (parent?.Bounds.Height > 0)
+        {
+            _baselineContainerHeight = parent.Bounds.Height;
+            DevLogger.Log("AiNoteView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
+        }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -80,12 +101,17 @@ public partial class AiNoteView : UserControl
     }
 
     /// <summary>
-    /// 核心修复：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
-    /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网（防止长表单溢出到键盘区域）。
+    /// 核心逻辑：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
+    /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网。
     ///
-    /// 关键修正：使用 SheetRoot 父容器（Panel）的 Bounds.Height 作为可用高度基准，
-    /// 而非 TopLevel.ClientSize.Height（后者包含 TabBar 等非内容区域，
-    /// 导致基于窗口高度的偏移量计算不准——抽屉无法紧贴键盘上方）。
+    /// ★ 自动补偿机制：
+    ///   adjustResize 模式下系统会压缩 Avalonia TopLevel（窗口），
+    ///   导致父容器高度从 baseline 缩小。这部分缩小值就是系统已经帮我们做的抬升。
+    ///   如果我们再设 Margin.Bottom = 完整键盘高度，就等于双重抬升 → 产生间隙。
+    ///
+    ///   补偿公式：actualOffset = measuredKbHeight - (baselineH - currentContainerH)
+    ///   - 当 adjustResize 未生效：差值为 0，offset 不变
+    ///   - 当 adjustResize 生效：差值正好抵消多余抬升，间隙消除
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -104,28 +130,26 @@ public partial class AiNoteView : UserControl
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
 
-        // ★ 关键：使用父容器（Panel）的实际高度而非窗口高度。
-        //   MainShellView 中 AiNoteView 放在 Grid.Row=0（TabBar 上方区域），
-        //   所以父容器高度 < ClientSize.Height。用错误的基准会导致偏移不足。
+        // 使用父容器（Panel）的实际高度作为可用高度基准
         var parent = SheetRoot.Parent as Avalonia.Layout.Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        // 窗口高度仅用于 fallback 估算和安全上限
+        // 窗口高度仅用于日志对比
         var topLevel = TopLevel.GetTopLevel(this);
         var windowHeight = topLevel?.ClientSize.Height ?? 0;
 
-        double offset;
+        double rawOffset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            // 有真实键盘高度：直接用键盘高度作为偏移量
-            offset = kbHeight;
+            // 有真实键盘高度：直接用键盘高度作为原始偏移量
+            rawOffset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
             // 已聚焦但还没收到原生回调：用容器高度的 45% 做保守估算
-            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
+            rawOffset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
@@ -142,6 +166,22 @@ public partial class AiNoteView : UserControl
             return;
         }
 
+        // ★ 自动补偿：减去 adjustResize 已处理的压缩量
+        //   baselineContainerHeight 是无键盘时记录的容器高度
+        //   如果当前容器高度 < baseline，说明 adjustResize 已经把内容区上推了
+        //   这部分上推量需要从 offset 中扣除，避免双重抬升导致间隙
+        double compensation = 0;
+        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
+        {
+            compensation = _baselineContainerHeight - containerHeight;
+        }
+
+        var offset = Math.Max(0, rawOffset - compensation);
+        if (compensation > 0)
+        {
+            offsetSource += $"+auto(-{compensation:F0}lp)";
+        }
+
         // 安全上限：抽屉顶部不超过容器的 8% 位置
         var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         if (offset > maxOffset)
@@ -150,7 +190,7 @@ public partial class AiNoteView : UserControl
             offsetSource += "(clamped)";
         }
 
-        // 应用底部 margin 将抽屉上推（必须设 Margin，adjustResize 对 Avalonia 嵌套弹窗无效）
+        // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);
 
         // 限制 MaxHeight：确保抽屉不超出容器可见区
@@ -161,7 +201,8 @@ public partial class AiNoteView : UserControl
 
         DevLogger.Log("AiNoteView",
             $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | " +
-            $"offset={offset:F1}lp | containerH={containerHeight:F1}lp | winH={windowHeight:F1}lp | " +
+            $"raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | winH={windowHeight:F1}lp | " +
             $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
             $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
             $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
@@ -175,7 +216,11 @@ public partial class AiNoteView : UserControl
         SheetRoot.Margin = new Thickness(0);
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
-        DevLogger.Log("AiNoteView", $"ClearOffset | {reason} | restored default");
+
+        // 键盘收回后重新记录基准高度（下次弹出时用于计算补偿）
+        UpdateBaseline();
+
+        DevLogger.Log("AiNoteView", $"ClearOffset | {reason} | restored default, baseline reset");
     }
 
     private void ScrollFocusedIntoView(TextBox tb)

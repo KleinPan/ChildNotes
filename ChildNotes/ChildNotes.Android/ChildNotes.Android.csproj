@@ -11,6 +11,14 @@
     <!-- .NET 10 Android SDK 在 Release 下默认启用 RunAOTCompilation，但要求 PublishTrimmed=true。
          本项目未启用 trimming，故显式关闭 AOT，避免 XA1030 错误。 -->
     <RunAOTCompilation>false</RunAOTCompilation>
+
+    <!-- ★ Android 版本号：强制覆盖以确保 versionName 不含 SemVer 后缀
+         问题背景：.NET SDK 在 Debug 构建时会自动给 Version 追加源版本控制后缀
+         （如 0.0.0 变成 0.0.0+53...），Android 不支持这种格式，会导致安装失败。
+         解决方案：在此处无条件覆盖 ApplicationDisplayVersion，确保始终是纯净三段版本号。
+         - Debug/本地构建：固定显示 0.0.0
+         - CI Release 构建：通过 -p:ApplicationDisplayVersion=x.y.z 参数覆盖（release.yml 已配置） -->
+    <ApplicationDisplayVersion>0.0.0</ApplicationDisplayVersion>
   </PropertyGroup>
 
   <ItemGroup>
