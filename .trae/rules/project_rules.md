@@ -53,6 +53,49 @@
 - 不要在提交中包含 `.env`、凭据文件、`bin/`、`obj/`、运行产物（如 `ui-check-reports/`）。
 - 重大重构打 tag（如 `v0.2.0`），annotated tag，附简短说明。
 
+## 版本号管理（.NET SDK Git 后缀问题）
+
+### 问题
+
+.NET SDK 的 `GenerateAssemblyInfo` 目标会自动将 Git 提交哈希追加到 `InformationalVersion`，
+形成 `0.3.0+14a6b2c` 格式。Android 的 `android:versionName` 不支持此格式，
+前端 UI 读取的版本号也会显示带后缀的值。
+
+### 解决方案
+
+在仓库根目录 [Directory.Build.targets](file:///e:/0_Code/5_Git/AiJi/Directory.Build.targets) 中设置官方属性：
+
+```xml
+<PropertyGroup>
+  <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+</PropertyGroup>
+```
+
+**为什么不用其他方式：**
+- `<SourceRevisionId></SourceRevisionId>` — 在某些 SDK 版本中不可靠
+- MSBuild Target 正则替换 — 时机太晚，程序集源码已生成
+- `IncludeSourceRevisionInInformationalVersion` — 从源头关闭，SDK 生成 AssemblyInfo.cs 时就不写入后缀
+
+### 相关文件
+
+| 文件 | 作用 |
+|------|------|
+| [Directory.Build.targets](file:///e:/0_Code/5_Git/AiJi/Directory.Build.targets) | 全局关闭 Git 后缀追加 |
+| [Directory.Build.props](file:///e:/0_Code/5_Git/AiJi/Directory.Build.props) | 统一版本号默认值（回退到 0.0.0） |
+| [ChildNotes.Android.csproj](file:///e:/0_Code/5_Git/AiJi/ChildNotes/ChildNotes.Android/ChildNotes.Android.csproj) | Android 专用版本属性 |
+| [release.yml](file:///e:/0_Code/5_Git/AiJi/.github/workflows/release.yml) | CI Release 构建时用 tag 覆盖版本号 |
+
+### CI Release 构建命令示例
+
+```bash
+dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
+  -c Release \
+  -p:SourceRevisionId= \
+  -p:Version=0.3.0 \
+  -p:InformationalVersion=0.3.0 \
+  -p:ApplicationDisplayVersion=0.3.0
+```
+
 ## 移动端 Release 构建注意事项（.NET 10 SDK）
 
 - **Android**：`Microsoft.Android.Sdk` 在 Release 配置下默认启用 `RunAOTCompilation`，但该属性要求 `PublishTrimmed=true`。本项目未启用 trimming，必须在 csproj 显式设置 `<RunAOTCompilation>false</RunAOTCompilation>`，否则报 `XA1030` 错误。

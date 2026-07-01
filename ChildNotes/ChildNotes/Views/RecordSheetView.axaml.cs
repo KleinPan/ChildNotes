@@ -1,11 +1,11 @@
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Platform;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
@@ -17,7 +17,7 @@ public partial class RecordSheetView : UserControl
 {
     private const double DefaultMaxHeight = 600;
 
-    // 上一次应用的键盘偏移量
+    private bool _textBoxFocused;
     private double _lastKbOffset;
 
     public RecordSheetView()
@@ -25,16 +25,9 @@ public partial class RecordSheetView : UserControl
         InitializeComponent();
         AttachedToVisualTree += OnAttached;
         DetachedFromVisualTree += OnDetached;
-        // 动态绑定疫苗 Grid 的 MaxWidth 到父容器宽度（自适应不同屏幕尺寸）
         ContentStackPanel.SizeChanged += OnContentStackSizeChanged;
     }
 
-    /// <summary>
-    /// 疫苗容器 Grid 的 * 列计算依赖有限宽度约束。
-    /// ScrollViewer 给子元素无限宽度约束，导致 Grid DesiredSize 偏大。
-    /// 通过动态设置 MaxWidth = ContentStackPanel.ActualWidth 来修复此问题，
-    /// 同时保证在不同屏幕尺寸下自适应。
-    /// </summary>
     private void OnContentStackSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (VaccineGrid is not null && e.NewSize.Width > 0)
@@ -43,16 +36,10 @@ public partial class RecordSheetView : UserControl
         }
     }
 
-    // 通用：非 null 转换器（用于 SelectedPlan 可见性）
     public static readonly IValueConverter IsNotNullConverter = new FuncValueConverter<object?, bool>(o => o is not null);
-
-    // 疫苗折叠按钮文案：true→收起，false→+ 添加
     public static readonly IValueConverter VaccineToggleTextConverter = new FuncValueConverter<bool, string>(
         isExpanded => isExpanded ? "收起" : "+ 添加");
 
-    // ===== 异常记录：呼吸道症状多选高亮转换器 =====
-    // 呼吸道症状以中文文案为 key（与小程序 abnormal-form 选项一致），
-    // 保存在 AbnormalForm.Respiratory 集合中。
     public static readonly IValueConverter RespiratoryContainsCough =
         new FuncValueConverter<ObservableCollection<string>, bool>(c => c is not null && c.Contains("咳嗽(轻微)"));
     public static readonly IValueConverter RespiratoryContainsCoughFreq =
@@ -66,49 +53,36 @@ public partial class RecordSheetView : UserControl
     public static readonly IValueConverter RespiratoryContainsTachypnea =
         new FuncValueConverter<ObservableCollection<string>, bool>(c => c is not null && c.Contains("呼吸急促"));
 
-    private void OnAttached(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
+    private void OnAttached(object? sender, VisualTreeAttachmentEventArgs e)
     {
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
-
-        // ★ 使用 Avalonia 内置 InputPane API 监听键盘（跨平台，坐标系统一为 lp）
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel?.InputPane != null)
-        {
-            topLevel.InputPane.StateChanged += OnInputPaneStateChanged;
-        }
-
+        KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Attached: listeners added");
     }
 
-    private void OnDetached(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
+    private void OnDetached(object? sender, VisualTreeAttachmentEventArgs e)
     {
         RemoveHandler(InputElement.GotFocusEvent, OnGotFocus);
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
-
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel?.InputPane != null)
-        {
-            topLevel.InputPane.StateChanged -= OnInputPaneStateChanged;
-        }
-
+        KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
     }
 
-    /// <summary>★ 核心回调：Avalonia InputPane 键盘状态变化</summary>
-    private void OnInputPaneStateChanged(object? sender, InputPaneStateEventArgs e)
+    private void OnKeyboardHeightChanged(double keyboardHeightLp)
     {
-        if (SheetRoot is null || !IsVisible) return;
+        if (!OperatingSystem.IsAndroid()) return;
 
-        if (e.NewState == InputPaneState.Closed)
+        // ★ 键盘收回：立即清除偏移让卡片回弹
+        if (keyboardHeightLp <= 0 && _lastKbOffset > 0 && IsVisible)
         {
-            ClearKeyboardOffset(reason: "InputPane.Closed");
+            ClearKeyboardOffset(reason: "keyboard dismissed (native callback)");
             return;
         }
 
-        if (e.NewState == InputPaneState.Open && e.EndRect.Height > 0)
+        if (IsVisible)
         {
-            ApplyKeyboardOffset(e.EndRect.Height, reason: "InputPane.Open");
+            ApplyKeyboardOffset(reason: $"NativeKeyboard height={keyboardHeightLp:F0}lp");
         }
     }
 
@@ -116,49 +90,87 @@ public partial class RecordSheetView : UserControl
     {
         if (e.Source is TextBox tb)
         {
+            _textBoxFocused = true;
+            ApplyKeyboardOffset(reason: $"TextBox focused");
             DispatcherTimer.RunOnce(() => ScrollFocusedIntoView(tb), TimeSpan.FromMilliseconds(100));
         }
     }
 
     private void OnLostFocus(object? sender, RoutedEventArgs e)
     {
-        // 由 InputPane.Closed 统一处理回弹
+        if (e.Source is TextBox)
+        {
+            _textBoxFocused = false;
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (!_textBoxFocused && _lastKbOffset > 0)
+                {
+                    ClearKeyboardOffset(reason: "TextBox lost focus (deferred)");
+                }
+            }, TimeSpan.FromMilliseconds(200));
+        }
     }
 
-    /// <summary>应用键盘偏移（使用 InputPane 的 lp 坐标）</summary>
-    private void ApplyKeyboardOffset(double keyboardHeightLp, string reason)
+    private void ApplyKeyboardOffset(string reason)
     {
         if (SheetRoot is null) return;
+        if (!OperatingSystem.IsAndroid()) return;
 
+        var kbHeight = KeyboardHeightProvider.CurrentHeight;
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        var maxOffset = containerHeight > 0 ? containerHeight * 0.9 : 800;
-        var offset = Math.Min(keyboardHeightLp, maxOffset);
+        double offset;
+        string offsetSource;
+        if (kbHeight > 10)
+        {
+            offset = kbHeight;
+            offsetSource = "native";
+        }
+        else if (_textBoxFocused)
+        {
+            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
+            offsetSource = "fallback";
+        }
+        else
+        {
+            if (_lastKbOffset > 0)
+            {
+                ClearKeyboardOffset(reason: $"keyboard dismissed ({reason})");
+            }
+            return;
+        }
 
-        SheetRoot.Margin = new Thickness(0, 0, 0, offset);
+        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
+        if (offset > maxOffset)
+        {
+            offset = maxOffset;
+            offsetSource += "(clamped)";
+        }
+
+        // ★ 用 TranslateTransform 替代 Margin —— 不触发布局重算，避免与 adjustResize 叠加
+        SheetRoot.RenderTransform = new TranslateTransform(0, -offset);
+        SheetRoot.Margin = new Thickness(0);
 
         if (containerHeight > 0)
         {
             SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
         }
 
-        _lastKbOffset = offset;
-
         DevLogger.Log("SheetView",
-            $"ApplyOffset | {reason} | kbH={keyboardHeightLp:F1}lp | offset={offset:F1}lp | " +
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
             $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
             $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+        _lastKbOffset = offset;
     }
 
-    /// <summary>清除键盘偏移</summary>
     private void ClearKeyboardOffset(string reason)
     {
         if (SheetRoot is null) return;
+        SheetRoot.RenderTransform = null;  // 清除 Transform
         SheetRoot.Margin = new Thickness(0);
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
-
         DevLogger.Log("SheetView", $"ClearOffset | {reason}");
     }
 
@@ -168,10 +180,7 @@ public partial class RecordSheetView : UserControl
         {
             if (ContentScroll is null) return;
             var bounds = tb.Bounds;
-            tb.BringIntoView(new Avalonia.Rect(0, -12, bounds.Width, bounds.Height));
-            DevLogger.Log("SheetView",
-                $"BringIntoView | tb.Y={bounds.Y:F0} tb.H={bounds.Height:F0} | " +
-                $"scrollOff={ContentScroll.Offset.Y:F0} sheetY={SheetRoot?.Bounds.Y:F0}");
+            tb.BringIntoView(new Rect(0, -12, bounds.Width, bounds.Height));
         }
         catch (Exception ex)
         {
@@ -179,6 +188,7 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    // ===== 喂养/尿布/补充剂等快捷按钮 =====
     private void OnFeedBottle(object sender, PointerPressedEventArgs e) => SwitchFeed("bottle");
     private void OnFeedBreast(object sender, PointerPressedEventArgs e) => SwitchFeed("breast");
     private void OnFeedExpressed(object sender, PointerPressedEventArgs e) => SwitchFeed("expressed");
@@ -211,7 +221,7 @@ public partial class RecordSheetView : UserControl
     private void OnCategoryExercise(object sender, PointerPressedEventArgs e) => SwitchCategory("exercise");
     private void SwitchCategory(string c) { if (DataContext is RecordSheetViewModel vm) vm.ActivityForm.SelectCategory(c); }
 
-    // ===== 疫苗时间轴相关 =====
+    // ===== 疫苗相关 =====
     private void OnVaccineDoseClick(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
@@ -236,7 +246,6 @@ public partial class RecordSheetView : UserControl
         }
     }
 
-    /// <summary>点击已打剂次的"改时间"按钮：弹出日期时间选择弹窗。</summary>
     private void OnVaccineEdit(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
@@ -245,7 +254,6 @@ public partial class RecordSheetView : UserControl
         }
     }
 
-    /// <summary>点击已打剂次的"取消"按钮：弹出取消操作确认弹窗。</summary>
     private void OnVaccineCancelDone(object sender, RoutedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
