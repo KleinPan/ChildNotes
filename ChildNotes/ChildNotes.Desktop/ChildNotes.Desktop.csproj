@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!--If you are willing to use platform-specific APIs, use conditional compilation.
@@ -14,6 +14,13 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" >
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <!-- Keincheck 依赖 ASP.NET Core（MCP HTTP server），仅 Desktop 项目使用（Program.cs 中 #if DEBUG 调用 UseMcpServer）。
+         放在共享库 ChildNotes.csproj 会导致 Android/iOS 还原时拉取 AspNetCore runtime pack（android-arm64 不存在，报错）。
+         放在 Desktop 项目里，Android/iOS 根本不会还原这个包。 -->
+    <PackageReference Include="Keincheck">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
