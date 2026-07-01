@@ -11,9 +11,14 @@
     <FileVersion Condition="'$(FileVersion)' == ''">$(Version).0</FileVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
 
-    <!-- Android 版本号：从 Version 派生 -->
+    <!-- Android 版本号：从 Version 派生
+         ApplicationDisplayVersion = 版本字符串（如 0.3.2），对应 android:versionName
+         ApplicationVersion = 整数 versionCode，Android 要求 > 0。
+         用 Major*10000 + Minor*100 + Patch 计算，保证单调递增且永远 >= 1
+         （Version=0.0.0 时回退为 1，避免 versionCode=0 触发 "invalid android:versionCode"）。 -->
     <ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">$(Version)</ApplicationDisplayVersion>
-    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([System.Version]::Parse('$(Version)').Build)</ApplicationVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Major), 10000)), $([MSBuild]::Multiply($([System.Version]::Parse('$(Version)').Minor), 100)))), $([System.Version]::Parse('$(Version)').Build)))</ApplicationVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == '0'">1</ApplicationVersion>
   </PropertyGroup>
 
 </Project>
