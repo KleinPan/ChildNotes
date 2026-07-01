@@ -6,6 +6,7 @@ namespace ChildNotes.ViewModels;
 
 public partial class TemperatureFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _temperatureText = string.Empty;
     [ObservableProperty] private bool _isAbnormal;
     [ObservableProperty] private string _note = string.Empty;
@@ -37,6 +38,6 @@ public partial class TemperatureFormViewModel : ObservableObject, IRecordFormVie
         Temperature = decimal.TryParse(TemperatureText, out var t) ? t : 0,
         IsAbnormal = IsAbnormal,
         Note = Note,
-        Time = TimeText,
+        Time = $"{DateText} {TimeText}",
     };
 }

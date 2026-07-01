@@ -1,0 +1,15 @@
+bin/
+obj/
+*.user
+*.suo
+*.cache
+.DS_Store
+Thumbs.db
+uploads/
+.github/
+.vs/
+**/*.Tests/
+docker-compose.yml
+Dockerfile
+.dockerignore
+.env

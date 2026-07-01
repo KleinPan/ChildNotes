@@ -1,0 +1,57 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: childnotes-api
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      # 数据库连接（使用 compose 服务名作为 host）
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=${DB_NAME:-child_notes};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-childnotes123};"
+      # JWT
+      Jwt__Secret: "${JWT_SECRET:-change-this-jwt-secret-before-deploy-at-least-32-chars}"
+      Jwt__ExpireDays: "30"
+      # DeepSeek（可选，不配则 AI 分析不可用）
+      DeepSeek__BaseUrl: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
+      DeepSeek__ApiKey: "${DEEPSEEK_API_KEY:-}"
+      DeepSeek__Model: "deepseek-chat"
+      # 限流
+      RateLimit__Enabled: "true"
+      RateLimit__MaxRequestsPerSecond: "5"
+      RateLimit__TrustProxyHeaders: "true"
+      # Admin 初始账号
+      Admin__InitUsername: "admin"
+      Admin__InitPassword: "${ADMIN_PASSWORD:-change-this-admin-password}"
+      # ASP.NET Core 环境变量
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+    volumes:
+      # 上传文件持久化
+      - uploads-data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: childnotes-db
+    environment:
+      POSTGRES_DB: ${DB_NAME:-child_notes}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-childnotes123}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-child_notes}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads-data:

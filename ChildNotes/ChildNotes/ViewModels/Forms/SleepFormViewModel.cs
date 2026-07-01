@@ -6,6 +6,7 @@ namespace ChildNotes.ViewModels;
 
 public partial class SleepFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _startTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now.AddHours(-1));
     [ObservableProperty] private string _endTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
     [ObservableProperty] private string _durationText = string.Empty;
@@ -18,7 +19,7 @@ public partial class SleepFormViewModel : ObservableObject, IRecordFormViewModel
 
     public SleepRecordDto BuildDto()
     {
-        var dto = new SleepRecordDto { StartTime = StartTimeText, EndTime = EndTimeText, Time = StartTimeText };
+        var dto = new SleepRecordDto { StartTime = StartTimeText, EndTime = EndTimeText, Time = $"{DateText} {StartTimeText}" };
         if (TimeSpan.TryParse(StartTimeText, out var s) && TimeSpan.TryParse(EndTimeText, out var e))
         {
             var diff = e - s;

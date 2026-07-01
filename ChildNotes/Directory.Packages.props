@@ -21,6 +21,8 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageVersion Include="Semi.Avalonia" Version="12.0.3" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+    <!-- AndroidX Core：用于 WindowInsetsCompat API 获取精确键盘高度（与 Avalonia.Android 传递依赖一致） -->
+    <PackageVersion Include="Xamarin.AndroidX.Core" Version="1.17.0.2" />
     <!-- Test packages -->
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

@@ -6,6 +6,7 @@ namespace ChildNotes.ViewModels;
 
 public partial class PumpFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _leftDurationText = string.Empty;
     [ObservableProperty] private string _rightDurationText = string.Empty;
     [ObservableProperty] private string _leftAmountText = string.Empty;
@@ -37,7 +38,7 @@ public partial class PumpFormViewModel : ObservableObject, IRecordFormViewModel
             LeftAmount = int.TryParse(LeftAmountText, out var la) ? la : 0,
             RightAmount = int.TryParse(RightAmountText, out var ra) ? ra : 0,
             Note = Note,
-            Time = TimeText,
+            Time = $"{DateText} {TimeText}",
         };
         if (int.TryParse(TotalAmountText, out var total) && total > 0)
             dto.TotalAmount = total;

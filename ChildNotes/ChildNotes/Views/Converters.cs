@@ -69,6 +69,7 @@ public static class AppConverters
 
     // ===== 补给类型 =====
     public static readonly IValueConverter IsMedicine = new EqualsConverter("medicine");
+    public static readonly IValueConverter IsSupplementType = new EqualsConverter("supplement");
     public static readonly IValueConverter IsNutrition = new EqualsConverter("nutrition");
 
     // ===== 辅食形态 =====

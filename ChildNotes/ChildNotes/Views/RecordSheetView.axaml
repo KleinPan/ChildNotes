@@ -365,6 +365,13 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSleep}}">
                             <Border Classes="form-section">
                                 <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
                                     <TextBlock Classes="form-label" Text="开始时间"/>
                                     <TimePicker SelectedTime="{Binding SleepForm.StartTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
                                                 ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
@@ -394,6 +401,13 @@
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="备注（选填）"/>
                                     <TextBox Classes="form-input" Text="{Binding TemperatureForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -430,6 +444,13 @@
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
                                     <TextBlock Classes="form-label" Text="记录时间"/>
                                     <TimePicker SelectedTime="{Binding GrowthForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
                                                 ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
@@ -440,20 +461,59 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSupplement}}">
                             <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
                                 <Border Grid.Column="0" Classes="type-tab"
+                                        Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsSupplementType}}"
+                                        PointerPressed="OnSuppSupplement">
+                                    <TextBlock Text="� 补充剂"/>
+                                </Border>
+                                <Border Grid.Column="1" Classes="type-tab" Margin="12,0,0,0"
                                         Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsMedicine}}"
                                         PointerPressed="OnSuppMedicine">
                                     <TextBlock Text="💊 用药"/>
                                 </Border>
-                                <Border Grid.Column="1" Classes="type-tab" Margin="12,0,0,0"
-                                        Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsNutrition}}"
-                                        PointerPressed="OnSuppNutrition">
-                                    <TextBlock Text="🥗 营养"/>
-                                </Border>
                             </Grid>
+
+                            <!-- 常用选择区域 -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="名称"/>
-                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Name}" PlaceholderText="如：维生素D、退烧药..."/>
+                                    <TextBlock Classes="form-label" Text="常用内容（可多选）"/>
+                                    <ItemsControl ItemsSource="{Binding SupplementForm.CurrentCommonItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:CommonItemViewModel">
+                                                <CheckBox Content="{Binding Name}"
+                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                         Theme="{StaticResource PureCardCheckBox}"
+                                                         Margin="0,0,4,4"
+                                                         Padding="8,4"
+                                                         FontSize="12"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 自定义输入 -->
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="自定义添加"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding SupplementForm.CustomItem}"
+                                                 PlaceholderText="输入其他补充剂/药品..."
+                                                 Classes="form-input"/>
+                                        <Button Grid.Column="1"
+                                                Content="+ 添加"
+                                                Margin="8,0,0,0"
+                                                Command="{Binding SupplementForm.AddCustomCommand}"
+                                                Background="{StaticResource WeuiGreenBrush}"
+                                                Foreground="White"
+                                                BorderThickness="0"
+                                                CornerRadius="8"/>
+                                    </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -466,6 +526,13 @@
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="备注（选填）"/>
                                     <TextBox Classes="form-input" Text="{Binding SupplementForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -520,6 +587,13 @@
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
                                     <TextBlock Classes="form-label" Text="记录时间"/>
                                     <TimePicker SelectedTime="{Binding PumpForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
                                                 ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
@@ -528,10 +602,49 @@
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsComplementary}}">
+
+                            <!-- 常用辅食选择区域 -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="食物名称"/>
-                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.FoodName}" PlaceholderText="如：南瓜泥、米粉..."/>
+                                    <TextBlock Classes="form-label" Text="常用辅食（可多选）"/>
+                                    <ItemsControl ItemsSource="{Binding ComplementaryForm.AllCommonFoodItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:CommonItemViewModel">
+                                                <CheckBox Content="{Binding Name}"
+                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                         Theme="{StaticResource PureCardCheckBox}"
+                                                         Margin="0,0,4,4"
+                                                         Padding="8,4"
+                                                         FontSize="12"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 自定义输入 -->
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="自定义添加"/>
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBox Grid.Column="0"
+                                                 Text="{Binding ComplementaryForm.CustomFood}"
+                                                 PlaceholderText="输入其他辅食名称..."
+                                                 Classes="form-input"/>
+                                        <Button Grid.Column="1"
+                                                Content="+ 添加"
+                                                Margin="8,0,0,0"
+                                                Command="{Binding ComplementaryForm.AddCustomCommand}"
+                                                Background="{StaticResource WeuiGreenBrush}"
+                                                Foreground="White"
+                                                BorderThickness="0"
+                                                CornerRadius="8"/>
+                                    </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -593,6 +706,13 @@
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="备注（选填）"/>
                                     <TextBox Classes="form-input" Text="{Binding ComplementaryForm.Note}" PlaceholderText="补充说明..."/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -701,6 +821,13 @@
                                 </StackPanel>
                             </Border>
 
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                </StackPanel>
+                            </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="记录时间"/>
@@ -1012,6 +1139,13 @@
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="时长（分钟，选填）"/>
                                     <TextBox Classes="form-input" Text="{Binding ActivityForm.DurationText}" PlaceholderText="0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="记录日期"/>
+                                    <DatePicker SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
+                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">

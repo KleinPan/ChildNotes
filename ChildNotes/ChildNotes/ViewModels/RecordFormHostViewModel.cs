@@ -103,35 +103,42 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 DiaperForm.TimeText = time;
                 break;
             case RecordType.Sleep:
+                SleepForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 SleepForm.StartTimeText = time;
                 var dur = r.DurationSec ?? 0;
                 SleepForm.EndTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(r.RecordTime.AddSeconds(dur));
                 SleepForm.DurationText = (dur / 60).ToString();
                 break;
             case RecordType.Temperature:
+                TemperatureForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 TemperatureForm.TemperatureText = r.TemperatureValue?.ToString("F1") ?? string.Empty;
                 TemperatureForm.Note = string.Empty;
                 TemperatureForm.TimeText = time;
                 break;
             case RecordType.Growth:
+                GrowthForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 GrowthForm.HeightText = r.HeightCm?.ToString() ?? string.Empty;
                 GrowthForm.WeightText = r.WeightKg?.ToString() ?? string.Empty;
                 GrowthForm.TimeText = time;
                 break;
             case RecordType.Supplement:
-                SupplementForm.SwitchType(r.RecordSubType ?? "medicine");
+                SupplementForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
+                SupplementForm.SwitchType(r.RecordSubType ?? "supplement");
                 SupplementForm.TimeText = time;
                 break;
             case RecordType.Pump:
+                PumpForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 PumpForm.LeftDurationText = (r.LeftDurationSec / 60).ToString();
                 PumpForm.RightDurationText = (r.RightDurationSec / 60).ToString();
                 PumpForm.TotalAmountText = r.AmountMl?.ToString() ?? string.Empty;
                 PumpForm.TimeText = time;
                 break;
             case RecordType.Complementary:
+                ComplementaryForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 ComplementaryForm.TimeText = time;
                 break;
             case RecordType.Abnormal:
+                AbnormalForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 AbnormalForm.TemperatureText = r.TemperatureValue?.ToString("F1") ?? string.Empty;
                 AbnormalForm.TimeText = time;
                 AbnormalForm.Respiratory.Clear();
@@ -153,6 +160,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 VaccineForm.RecordTimeText = time;
                 break;
             case RecordType.Activity:
+                ActivityForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 ActivityForm.DurationText = ((r.DurationSec ?? 0) / 60).ToString();
                 ActivityForm.TimeText = time;
                 break;

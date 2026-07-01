@@ -26,7 +26,7 @@ var jwtSecret = builder.Configuration["Jwt:Secret"]
 
 // 数据库
 var connStr = builder.Configuration.GetConnectionString("Default")
-    ?? "Server=127.0.0.1;Port=3306;Database=child_notes;Uid=root;Pwd=;";
+    ?? "Host=127.0.0.1;Port=5432;Database=child_notes;Username=postgres;Password=;";
 if (builder.Environment.IsEnvironment("Testing"))
 {
     builder.Services.AddDbContext<ChildNotesDbContext>(opt =>
@@ -35,7 +35,7 @@ if (builder.Environment.IsEnvironment("Testing"))
 else
 {
     builder.Services.AddDbContext<ChildNotesDbContext>(opt =>
-        opt.UseMySql(connStr, ServerVersion.AutoDetect(connStr))
+        opt.UseNpgsql(connStr)
           .AddInterceptors(new AuditableSaveChangesInterceptor()));
 }
 

@@ -6,6 +6,7 @@ namespace ChildNotes.ViewModels;
 
 public partial class GrowthFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _heightText = string.Empty;
     [ObservableProperty] private string _weightText = string.Empty;
     [ObservableProperty] private string _note = string.Empty;
@@ -28,6 +29,6 @@ public partial class GrowthFormViewModel : ObservableObject, IRecordFormViewMode
     {
         Height = decimal.TryParse(HeightText, out var h) ? h : null,
         Weight = decimal.TryParse(WeightText, out var w) ? w : null,
-        Time = TimeText,
+        Time = $"{DateText} {TimeText}",
     };
 }

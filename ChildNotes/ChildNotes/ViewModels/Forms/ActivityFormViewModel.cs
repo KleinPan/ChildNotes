@@ -6,6 +6,7 @@ namespace ChildNotes.ViewModels;
 
 public partial class ActivityFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _selectedCategory = "play";
     [ObservableProperty] private string _durationText = string.Empty;
@@ -29,6 +30,6 @@ public partial class ActivityFormViewModel : ObservableObject, IRecordFormViewMo
         Name = Name,
         Category = SelectedCategory,
         Duration = int.TryParse(DurationText, out var d) ? d : 0,
-        Time = TimeText,
+        Time = $"{DateText} {TimeText}",
     };
 }

@@ -25,6 +25,7 @@ public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewMo
     // ===== 是否用药 =====
     [ObservableProperty] private bool _hasMedicine;
 
+    [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
 
     public bool IsFeverWarning
@@ -87,7 +88,7 @@ public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewMo
             Vomit = !string.IsNullOrEmpty(VomitType),
             Medicine = HasMedicine,
             Note = string.IsNullOrWhiteSpace(Other) ? Note : Other,
-            Time = TimeText,
+            Time = $"{DateText} {TimeText}",
         };
     }
 }

@@ -235,6 +235,7 @@ public partial class RecordSheetView : UserControl
     private void OnDiaperDry(object sender, PointerPressedEventArgs e) => SwitchDiaper("dry");
     private void SwitchDiaper(string t) { if (DataContext is RecordSheetViewModel vm) vm.DiaperForm.SelectType(t); }
 
+    private void OnSuppSupplement(object sender, PointerPressedEventArgs e) => SwitchSupp("supplement");
     private void OnSuppMedicine(object sender, PointerPressedEventArgs e) => SwitchSupp("medicine");
     private void OnSuppNutrition(object sender, PointerPressedEventArgs e) => SwitchSupp("nutrition");
     private void SwitchSupp(string t) { if (DataContext is RecordSheetViewModel vm) vm.SupplementForm.SwitchType(t); }

@@ -208,11 +208,70 @@ jobs:
           }
 
   # -----------------------------------------------------------------
-  # 发布 Release：所有平台构建成功后，将压缩包作为 GitHub Release 资源发布
+  # Docker 构建与推送：后端 API 镜像推送到 GHCR（GitHub Container Registry）
+  # -----------------------------------------------------------------
+  docker:
+    name: Build & Push Docker Image
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && startsWith(github.ref, 'refs/tags/')
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/api
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+            latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ChildNotes.Backend
+          file: ./ChildNotes.Backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Docker summary
+        if: always()
+        shell: bash
+        run: |
+          echo "::notice::Docker 镜像已推送至 GHCR，标签列表："
+          echo "${{ steps.meta.outputs.tags }}"
+
+  # -----------------------------------------------------------------
+  # 发布 Release：所有平台构建 + Docker 推送完成后，将压缩包作为 GitHub Release 资源发布
   # -----------------------------------------------------------------
   release:
     name: Publish GitHub Release
-    needs: build
+    needs: [build, docker]
     runs-on: ubuntu-latest
     if: always() && startsWith(github.ref, 'refs/tags/')
     timeout-minutes: 10
@@ -261,10 +320,31 @@ jobs:
             | Windows 桌面 | `ChildNotes-windows-*.zip` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |
             | Android | `ChildNotes-android-*.apk` | APK 安装包（debug 签名），生产环境请用正式签名重签 |
             | 服务端 | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |
+            | Docker 镜像 | `ghcr.io/${{ github.repository }}/api:*` | 推送至 GitHub Container Registry |
 
-            ### 服务端部署要点
-            - 解压后编辑 `appsettings.json`，填写数据库连接串、JWT Secret、DeepSeek ApiKey 等敏感配置。
-            - 运行：`./ChildNotes.Api`（监听端口见 `ASPNETCORE_URLS` 环境变量或默认 5000）。
+            ### Docker 部署（推荐）
+            ```bash
+            # 1. 在服务器上创建 .env 文件
+            cat > ChildNotes.Backend/.env << 'EOF'
+            DB_PASSWORD=your-strong-password
+            JWT_SECRET=your-production-jwt-secret-at-least-32-chars
+            ADMIN_PASSWORD=your-admin-password
+            DEEPSEEK_API_KEY=sk-xxx
+            EOF
+
+            # 2. 拉取代码中的 docker-compose.yml 并启动
+            git clone --depth 1 -b ${{ github.ref_name }} {{ github.server_url }}/{{ github.repository }}.git repo
+            cd repo/ChildNotes.Backend
+            cp ../.env .
+            docker compose up -d
+
+            # 或直接拉取镜像手动运行
+            docker pull ghcr.io/${{ github.repository }}/api:${{ github.ref_name }}
+            ```
+
+            ### 服务端传统部署
+            - 解压 `ChildNotes-backend-*.tar.gz` 后编辑 `appsettings.json`，填写数据库连接串、JWT Secret、DeepSeek ApiKey 等敏感配置。
+            - 运行：`./ChildNotes.Api`
             - 目标机器为 Linux Ubuntu，无需额外安装 .NET 运行时。
 
             ### iOS 构建说明

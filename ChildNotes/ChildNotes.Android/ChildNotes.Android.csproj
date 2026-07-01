@@ -23,8 +23,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />
-    <!-- 移除 Xamarin.AndroidX.Core.SplashScreen：从未在 C# 代码中调用 InstallSplashScreen，
-         styles.xml 的 windowSplashScreen* 属性是 Android 12+ 原生支持，不需要此包 -->
+    <!-- AndroidX.Core：用于 WindowInsetsCompat.Type.ime() 获取精确键盘高度，
+         替代旧式 ViewTreeObserver screenHeight-rectBottom 计算（后者在部分设备上偏小导致间隙） -->
+    <PackageReference Include="Xamarin.AndroidX.Core" />
   </ItemGroup>
 
   <ItemGroup>
