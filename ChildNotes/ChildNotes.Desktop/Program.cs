@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Media;
 
+#if DEBUG
 using Keincheck;
+#endif
 
 ﻿using System;
 
