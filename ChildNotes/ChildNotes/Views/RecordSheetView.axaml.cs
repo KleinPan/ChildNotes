@@ -1,9 +1,11 @@
 using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Platform;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Layout;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
@@ -15,13 +17,8 @@ public partial class RecordSheetView : UserControl
 {
     private const double DefaultMaxHeight = 600;
 
-    // 当前是否有 TextBox 处于焦点状态（用于判断是否要保持键盘规避）
-    private bool _textBoxFocused;
-    // 上一次应用的键盘偏移量（用于日志对比和回弹判断）
+    // 上一次应用的键盘偏移量
     private double _lastKbOffset;
-
-    // ★ 自动补偿：记录无键盘时的父容器高度作为基准
-    private double _baselineContainerHeight;
 
     public RecordSheetView()
     {
@@ -73,161 +70,72 @@ public partial class RecordSheetView : UserControl
     {
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
-        KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
-        UpdateBaseline();
-        DevLogger.Log("SheetView", "Attached: GotFocus/LostFocus/KeyboardHeight listeners added");
+
+        // ★ 使用 Avalonia 内置 InputPane API 监听键盘（跨平台，坐标系统一为 lp）
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.InputPane != null)
+        {
+            topLevel.InputPane.StateChanged += OnInputPaneStateChanged;
+        }
+
+        DevLogger.Log("SheetView", "Attached: listeners added");
     }
 
     private void OnDetached(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
     {
         RemoveHandler(InputElement.GotFocusEvent, OnGotFocus);
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
-        KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
+
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.InputPane != null)
+        {
+            topLevel.InputPane.StateChanged -= OnInputPaneStateChanged;
+        }
+
         DevLogger.Log("SheetView", "Detached: listeners removed");
     }
 
-    private void OnKeyboardHeightChanged(double keyboardHeightLp)
+    /// <summary>★ 核心回调：Avalonia InputPane 键盘状态变化</summary>
+    private void OnInputPaneStateChanged(object? sender, InputPaneStateEventArgs e)
     {
-        // 桌面端不会触发此回调（KeyboardHeightService 只在安卓端注册），但防御性判断
-        if (!OperatingSystem.IsAndroid()) return;
+        if (SheetRoot is null || !IsVisible) return;
 
-        // ★ 键盘收回（height=0）：立即清除偏移让卡片回弹
-        if (keyboardHeightLp <= 0 && _lastKbOffset > 0 && IsVisible)
+        if (e.NewState == InputPaneState.Closed)
         {
-            ClearKeyboardOffset(reason: "keyboard dismissed (native callback)");
-            DevLogger.Log("SheetView", $"OnKeyboardHeightChanged | height=0 → cleared offset");
+            ClearKeyboardOffset(reason: "InputPane.Closed");
             return;
         }
 
-        // 键盘弹出/变化：应用偏移
-        if (IsVisible)
+        if (e.NewState == InputPaneState.Open && e.EndRect.Height > 0)
         {
-            ApplyKeyboardOffset(reason: $"NativeKeyboard height={keyboardHeightLp:F0}lp");
+            ApplyKeyboardOffset(e.EndRect.Height, reason: "InputPane.Open");
         }
-        DevLogger.Log("SheetView", $"OnKeyboardHeightChanged | height={keyboardHeightLp:F0}lp | visible={IsVisible}");
     }
 
     private void OnGotFocus(object? sender, RoutedEventArgs e)
     {
         if (e.Source is TextBox tb)
         {
-            _textBoxFocused = true;
-            ApplyKeyboardOffset(reason: $"TextBox focused: {(tb.Name ?? tb.Text ?? "<empty>")}");
             DispatcherTimer.RunOnce(() => ScrollFocusedIntoView(tb), TimeSpan.FromMilliseconds(100));
         }
     }
 
     private void OnLostFocus(object? sender, RoutedEventArgs e)
     {
-        if (e.Source is TextBox)
-        {
-            _textBoxFocused = false;
-            DispatcherTimer.RunOnce(() =>
-            {
-                if (!_textBoxFocused)
-                {
-                    ClearKeyboardOffset(reason: "TextBox lost focus (deferred)");
-                }
-            }, TimeSpan.FromMilliseconds(200));
-        }
+        // 由 InputPane.Closed 统一处理回弹
     }
 
-    /// <summary>更新容器高度基准（在弹窗打开/键盘收回时调用）</summary>
-    private void UpdateBaseline()
+    /// <summary>应用键盘偏移（使用 InputPane 的 lp 坐标）</summary>
+    private void ApplyKeyboardOffset(double keyboardHeightLp, string reason)
     {
         if (SheetRoot is null) return;
-        var parent = SheetRoot.Parent as Avalonia.Layout.Layoutable;
-        if (parent?.Bounds.Height > 0)
-        {
-            _baselineContainerHeight = parent.Bounds.Height;
-            DevLogger.Log("SheetView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
-        }
-    }
 
-    /// <summary>
-    /// 核心逻辑：通过设置 SheetRoot 的 Margin.Bottom 将整个抽屉向上推移，
-    /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网。
-    ///
-    /// ★ 自动补偿机制：
-    ///   adjustResize 模式下系统会压缩 Avalonia TopLevel（窗口），
-    ///   导致父容器高度从 baseline 缩小。这部分缩小值就是系统已经帮我们做的抬升。
-    ///   补偿公式：actualOffset = measuredKbHeight - (baselineH - currentContainerH)
-    /// </summary>
-    private void ApplyKeyboardOffset(string reason)
-    {
-        if (SheetRoot is null)
-        {
-            DevLogger.Log("SheetView", "ApplyOffset SKIP: SheetRoot is null");
-            return;
-        }
-
-        // 桌面端无软键盘，跳过偏移逻辑
-        if (!OperatingSystem.IsAndroid())
-        {
-            DevLogger.Log("SheetView", $"ApplyOffset SKIP: not Android (reason={reason})");
-            return;
-        }
-
-        var kbHeight = KeyboardHeightProvider.CurrentHeight;
-
-        // 使用父容器实际高度而非窗口高度
-        var parent = SheetRoot.Parent as Avalonia.Layout.Layoutable;
+        var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        // 窗口高度仅用于日志对比
-        var topLevel = TopLevel.GetTopLevel(this);
-        var windowHeight = topLevel?.ClientSize.Height ?? 0;
+        var maxOffset = containerHeight > 0 ? containerHeight * 0.9 : 800;
+        var offset = Math.Min(keyboardHeightLp, maxOffset);
 
-        double rawOffset;
-        string offsetSource;
-        if (kbHeight > 10)
-        {
-            rawOffset = kbHeight;
-            offsetSource = "native";
-        }
-        else if (_textBoxFocused)
-        {
-            rawOffset = containerHeight > 0 ? containerHeight * 0.45 : 350;
-            offsetSource = "fallback";
-        }
-        else
-        {
-            // 键盘已收回且无焦点：清除偏移，让卡片回弹到原始位置
-            if (_lastKbOffset > 0)
-            {
-                ClearKeyboardOffset(reason: $"keyboard dismissed ({reason})");
-            }
-            else
-            {
-                DevLogger.Log("SheetView", $"ApplyOffset SKIP: no keyboard & no focus (reason={reason})");
-            }
-            return;
-        }
-
-        // ★ 自动补偿：减去 adjustResize 已处理的压缩量
-        double compensation = 0;
-        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
-        {
-            compensation = _baselineContainerHeight - containerHeight;
-        }
-
-        var offset = Math.Max(0, rawOffset - compensation);
-        if (compensation > 0)
-        {
-            offsetSource += $"+auto(-{compensation:F0}lp)";
-        }
-
-        // 安全上限
-        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
-        var clamped = false;
-        if (offset > maxOffset)
-        {
-            offset = maxOffset;
-            offsetSource += "(clamped)";
-            clamped = true;
-        }
-
-        // 应用底部 margin 将抽屉上推
         SheetRoot.Margin = new Thickness(0, 0, 0, offset);
 
         if (containerHeight > 0)
@@ -235,17 +143,15 @@ public partial class RecordSheetView : UserControl
             SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
         }
 
-        DevLogger.Log("SheetView",
-            $"ApplyOffset | {reason} | src={offsetSource} | " +
-            $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | winH={windowHeight:F1}lp | clamped={clamped} | " +
-            $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
-            $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
-            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
+
+        DevLogger.Log("SheetView",
+            $"ApplyOffset | {reason} | kbH={keyboardHeightLp:F1}lp | offset={offset:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
+            $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
     }
 
-    /// <summary>清除键盘偏移，恢复默认状态。</summary>
+    /// <summary>清除键盘偏移</summary>
     private void ClearKeyboardOffset(string reason)
     {
         if (SheetRoot is null) return;
@@ -253,10 +159,7 @@ public partial class RecordSheetView : UserControl
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
 
-        // 键盘收回后重新记录基准高度（下次弹出时用于计算补偿）
-        UpdateBaseline();
-
-        DevLogger.Log("SheetView", $"ClearOffset | {reason} | restored default, baseline reset");
+        DevLogger.Log("SheetView", $"ClearOffset | {reason}");
     }
 
     private void ScrollFocusedIntoView(TextBox tb)

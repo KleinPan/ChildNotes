@@ -17,13 +17,11 @@
 		     windowSoftInputMode 通过 C# 特性无法稳定设置（.NET 10 Android 枚举绑定变化），
 		     故在此显式声明。android:name 必须与 ApplicationId 匹配，.NET Android 会做包名映射
 
-		     ★ 使用 adjustNothing（关键选择！）：
-		     - adjustResize：系统压缩窗口 → 与我们的 Margin.Bottom 叠加 → 间隙
-		     - adjustPan：系统平移内容   → 与我们的 Margin.Bottom 叠加 → 间隙/被推飞
-		     - adjustNothing：系统不做任何处理 → 我们的代码是唯一偏移机制 → 无叠加 -->
+		     使用 adjustResize：系统会调整窗口大小以适应键盘，
+		     配合 Avalonia 内置 InputPane API 获取精确键盘高度（lp 坐标系）。 -->
 		<activity
 			android:name="com.CompanyName.ChildNotes.MainActivity"
-			android:windowSoftInputMode="adjustNothing"
+			android:windowSoftInputMode="adjustResize"
 			android:exported="true" />
 	</application>
 </manifest>
