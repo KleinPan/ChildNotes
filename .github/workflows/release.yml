@@ -137,7 +137,9 @@ jobs:
             -f net10.0-android \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
+            -p:SourceRevisionId= \
             -p:Version=${{ steps.version.outputs.version }} \
+            -p:InformationalVersion=${{ steps.version.outputs.version }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.version }} \
             -o ../artifacts/android
 

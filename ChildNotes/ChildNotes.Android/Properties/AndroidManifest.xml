@@ -14,11 +14,15 @@
 		android:icon="@drawable/icon"
 		android:enableOnBackInvokedCallback="true">
 		<!-- MainActivity 由 C# [Activity] 特性自动生成 <activity> 节点，
-		     windowSoftInputMode=adjustResize 通过 C# 特性无法稳定设置（.NET 10 Android 枚举绑定变化），
-		     故在此显式声明。android:name 必须与 ApplicationId 匹配，.NET Android 会做包名映射 -->
+		     windowSoftInputMode 通过 C# 特性无法稳定设置（.NET 10 Android 枚举绑定变化），
+		     故在此显式声明。android:name 必须与 ApplicationId 匹配，.NET Android 会做包名映射
+
+		     ★ 使用 adjustPan（而非 adjustResize）：
+		     - adjustResize：系统压缩窗口大小 → 与我们的 Margin.Bottom 叠加产生间隙
+		     - adjustPan：系统平移内容但不改变大小 → 我们的 Margin 是唯一偏移机制，无间隙 -->
 		<activity
 			android:name="com.CompanyName.ChildNotes.MainActivity"
-			android:windowSoftInputMode="adjustResize"
+			android:windowSoftInputMode="adjustPan"
 			android:exported="true" />
 	</application>
 </manifest>

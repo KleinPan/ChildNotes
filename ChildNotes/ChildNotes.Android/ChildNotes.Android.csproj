@@ -20,6 +20,7 @@
            2. 显式设置 ApplicationDisplayVersion 为纯净值
            3. CI Release 通过 -p:ApplicationDisplayVersion=x.y.z 覆盖 -->
     <SourceRevisionId></SourceRevisionId>
+    <InformationalVersion>0.0.0</InformationalVersion>
     <ApplicationDisplayVersion>0.0.0</ApplicationDisplayVersion>
   </PropertyGroup>
 
