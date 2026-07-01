@@ -178,27 +178,21 @@ public partial class RecordSheetView : UserControl
             return;
         }
 
-        // 安全上限
-        var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
-        var clamped = false;
-        if (offset > maxOffset)
-        {
-            offset = maxOffset;
-            offsetSource += "(clamped)";
-            clamped = true;
-        }
-
-        SheetRoot.Margin = new Thickness(0, 0, 0, offset);
+        // ★ adjustResize 模式下系统已自动压缩容器高度，
+        //   SheetRoot（VerticalAlignment=Bottom）的底部已被抬到键盘上方。
+        //   再设 Margin.Bottom 会导致双重抬升，产生间隙！
+        //   因此只设 MaxHeight 限制抽屉高度，不设 Margin。
+        SheetRoot.Margin = new Thickness(0);
 
         if (containerHeight > 0)
         {
-            SheetRoot.MaxHeight = Math.Max(280, containerHeight - offset);
+            SheetRoot.MaxHeight = Math.Max(280, containerHeight);
         }
 
         DevLogger.Log("SheetView",
             $"ApplyOffset | {reason} | src={offsetSource} | " +
             $"kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | winH={windowHeight:F1}lp | clamped={clamped} | " +
+            $"containerH={containerHeight:F1}lp | winH={windowHeight:F1}lp | " +
             $"MaxH={SheetRoot.MaxHeight:F0} | margin={SheetRoot.Margin.Bottom:F0} | " +
             $"sheetH={SheetRoot.Bounds.Height:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
             $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");

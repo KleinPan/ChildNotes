@@ -137,13 +137,7 @@ public static class KeyboardHeightService
 
     /// <summary>
     /// 回退方案：基于 ViewTreeObserver 的传统高度计算。
-    ///
-    /// ★ 关键修正（参考 AndroidBug5497Workaround 经典方案）：
-    ///   键盘高度 = 屏幕高度 - 可见区域高度(rect.bottom - rect.top)
-    ///   而非 键盘高度 = 屏幕高度 - rect.bottom
-    ///
-    /// 原代码漏减了 rect.top（状态栏高度），导致算出的键盘高度偏大一个状态栏高度，
-    /// 弹窗被推得过高，与键盘间出现间隙。
+    /// 使用经典公式：键盘高度 = 屏幕高度 - 可见区域底部位置
     /// </summary>
     private class GlobalLayoutListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
@@ -156,12 +150,8 @@ public static class KeyboardHeightService
 
             _decorView.GetWindowVisibleDisplayFrame(_rect);
 
-            // DecorView 的 RootView 始终是全屏高度（adjustResize 压缩的是子 View）
             var screenHeight = _decorView.RootView.Height;
-            // 可见区域高度 = rect.bottom - rect.top（rect.top 通常是状态栏高度）
-            var visibleHeight = _rect.Height();
-            // 键盘高度 = 屏幕高度 - 可见区域高度
-            var rawHeight = screenHeight - visibleHeight;
+            var rawHeight = screenHeight - _rect.Bottom;
 
             // 过小值视为无键盘
             var keyboardHeightPx = rawHeight < 100 ? 0 : rawHeight;
