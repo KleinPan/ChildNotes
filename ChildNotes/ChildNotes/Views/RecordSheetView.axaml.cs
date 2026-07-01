@@ -20,6 +20,9 @@ public partial class RecordSheetView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
+    // ★ baseline：无键盘时的父容器高度，用于自动补偿 adjustResize 的窗口压缩
+    private double _baselineContainerHeight;
+
     public RecordSheetView()
     {
         InitializeComponent();
@@ -58,6 +61,10 @@ public partial class RecordSheetView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+
+        // 弹窗打开时记录初始容器高度作为 baseline
+        UpdateBaseline();
+
         DevLogger.Log("SheetView", "Attached: listeners added");
     }
 
@@ -67,6 +74,18 @@ public partial class RecordSheetView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
+    }
+
+    /// <summary>更新 baseline（在弹窗打开/键盘收回时调用）</summary>
+    private void UpdateBaseline()
+    {
+        if (SheetRoot is null) return;
+        var parent = SheetRoot.Parent as Layoutable;
+        if (parent?.Bounds.Height > 0)
+        {
+            _baselineContainerHeight = parent.Bounds.Height;
+            DevLogger.Log("SheetView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
+        }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -120,16 +139,16 @@ public partial class RecordSheetView : UserControl
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        double offset;
+        double rawOffset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            offset = kbHeight;
+            rawOffset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
+            rawOffset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
@@ -141,6 +160,20 @@ public partial class RecordSheetView : UserControl
             return;
         }
 
+        // ★ 自动补偿：adjustResize 模式下系统已压缩了窗口，
+        //   压缩量 = baseline - currentContainerHeight
+        double compensation = 0;
+        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
+        {
+            compensation = _baselineContainerHeight - containerHeight;
+        }
+
+        var offset = Math.Max(0, rawOffset - compensation);
+        if (compensation > 0)
+        {
+            offsetSource += $"+auto(-{compensation:F0}lp)";
+        }
+
         var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         if (offset > maxOffset)
         {
@@ -148,7 +181,7 @@ public partial class RecordSheetView : UserControl
             offsetSource += "(clamped)";
         }
 
-        // ★ 用 TranslateTransform 替代 Margin —— 不触发布局重算，避免与 adjustResize 叠加
+        // ★ TranslateTransform：纯视觉偏移，不触发布局重算
         SheetRoot.RenderTransform = new TranslateTransform(0, -offset);
         SheetRoot.Margin = new Thickness(0);
 
@@ -158,19 +191,25 @@ public partial class RecordSheetView : UserControl
         }
 
         DevLogger.Log("SheetView",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
-            $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+            $"ApplyOffset | {reason} | src={offsetSource} | " +
+            $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | " +
+            $"MaxH={SheetRoot.MaxHeight:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
+            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
     }
 
     private void ClearKeyboardOffset(string reason)
     {
         if (SheetRoot is null) return;
-        SheetRoot.RenderTransform = null;  // 清除 Transform
+        SheetRoot.RenderTransform = null;
         SheetRoot.Margin = new Thickness(0);
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
+
+        // 键盘收回后重新记录基准高度
+        UpdateBaseline();
+
         DevLogger.Log("SheetView", $"ClearOffset | {reason}");
     }
 

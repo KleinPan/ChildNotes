@@ -14,10 +14,11 @@ public partial class AiNoteView : UserControl
 {
     private const double DefaultMaxHeight = 600;
 
-    // 当前是否有 TextBox 处于焦点状态
     private bool _textBoxFocused;
-    // 上一次应用的键盘偏移量
     private double _lastKbOffset;
+
+    // ★ baseline：无键盘时的父容器高度，用于自动补偿 adjustResize 的窗口压缩
+    private double _baselineContainerHeight;
 
     public AiNoteView()
     {
@@ -31,6 +32,10 @@ public partial class AiNoteView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+
+        // 弹窗打开时记录初始容器高度作为 baseline
+        UpdateBaseline();
+
         DevLogger.Log("AiNoteView", "Attached: listeners added");
     }
 
@@ -40,6 +45,18 @@ public partial class AiNoteView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("AiNoteView", "Detached: listeners removed");
+    }
+
+    /// <summary>更新 baseline（在弹窗打开/键盘收回时调用）</summary>
+    private void UpdateBaseline()
+    {
+        if (SheetRoot is null) return;
+        var parent = SheetRoot.Parent as Layoutable;
+        if (parent?.Bounds.Height > 0)
+        {
+            _baselineContainerHeight = parent.Bounds.Height;
+            DevLogger.Log("AiNoteView", $"Baseline updated: {_baselineContainerHeight:F1}lp");
+        }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -86,13 +103,11 @@ public partial class AiNoteView : UserControl
     }
 
     /// <summary>
-    /// 核心逻辑：通过 TranslateTransform.Y 将整个抽屉向上推移，
-    /// 避开软键盘遮挡。同时限制 MaxHeight 作为安全网。
+    /// 核心逻辑：
+    ///   1. 用 TranslateTransform.Y 做视觉偏移（不参与布局，避免与 adjustResize 叠加）
+    ///   2. 自动补偿 adjustResize 已处理的窗口压缩量（baseline 方案）
     ///
-    /// ★ 使用 RenderTransform（TranslateTransform）而非 Margin.Bottom：
-    ///   - Margin 会触发布局重算，与 adjustResize 的窗口压缩叠加 → 产生间隙
-    ///   - TranslateTransform 只是视觉偏移，不参与布局 → 无叠加，无间隙
-    ///   - 参考 ChatGPT/Avalonia 社区推荐方案
+    /// 补偿公式：actualOffset = measuredKbH - (baselineH - currentContainerH)
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -103,17 +118,16 @@ public partial class AiNoteView : UserControl
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        double offset;
+        double rawOffset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            offset = kbHeight;
+            rawOffset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            // 已聚焦但还没收到原生回调：用容器高度的 45% 做保守估算
-            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
+            rawOffset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
@@ -125,6 +139,21 @@ public partial class AiNoteView : UserControl
             return;
         }
 
+        // ★ 自动补偿：adjustResize 模式下系统已压缩了窗口，
+        //   压缩量 = baseline - currentContainerHeight
+        //   这部分不需要我们再推，从原始测量值中扣除
+        double compensation = 0;
+        if (_baselineContainerHeight > 0 && containerHeight > 0 && containerHeight < _baselineContainerHeight)
+        {
+            compensation = _baselineContainerHeight - containerHeight;
+        }
+
+        var offset = Math.Max(0, rawOffset - compensation);
+        if (compensation > 0)
+        {
+            offsetSource += $"+auto(-{compensation:F0}lp)";
+        }
+
         // 安全上限
         var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         if (offset > maxOffset)
@@ -133,9 +162,9 @@ public partial class AiNoteView : UserControl
             offsetSource += "(clamped)";
         }
 
-        // ★ 用 TranslateTransform 替代 Margin —— 不触发布局重算，避免与 adjustResize 叠加
+        // ★ TranslateTransform：纯视觉偏移，不触发布局重算
         SheetRoot.RenderTransform = new TranslateTransform(0, -offset);
-        SheetRoot.Margin = new Thickness(0);  // 确保 Margin 为零
+        SheetRoot.Margin = new Thickness(0);
 
         if (containerHeight > 0)
         {
@@ -143,9 +172,11 @@ public partial class AiNoteView : UserControl
         }
 
         DevLogger.Log("AiNoteView",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
-            $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
-            $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
+            $"ApplyOffset | {reason} | src={offsetSource} | " +
+            $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
+            $"containerH={containerHeight:F1}lp | baseline={_baselineContainerHeight:F1}lp | " +
+            $"MaxH={SheetRoot.MaxHeight:F0} | sheetY={SheetRoot.Bounds.Y:F0} | " +
+            $"sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
     }
 
@@ -153,10 +184,14 @@ public partial class AiNoteView : UserControl
     private void ClearKeyboardOffset(string reason)
     {
         if (SheetRoot is null) return;
-        SheetRoot.RenderTransform = null;  // 清除 Transform
+        SheetRoot.RenderTransform = null;
         SheetRoot.Margin = new Thickness(0);
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
+
+        // 键盘收回后重新记录基准高度（下次弹出时用于计算补偿）
+        UpdateBaseline();
+
         DevLogger.Log("AiNoteView", $"ClearOffset | {reason}");
     }
 
