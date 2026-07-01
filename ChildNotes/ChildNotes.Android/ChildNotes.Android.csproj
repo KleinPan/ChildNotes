@@ -12,12 +12,14 @@
          本项目未启用 trimming，故显式关闭 AOT，避免 XA1030 错误。 -->
     <RunAOTCompilation>false</RunAOTCompilation>
 
-    <!-- ★ Android 版本号：强制覆盖以确保 versionName 不含 SemVer 后缀
-         问题背景：.NET SDK 在 Debug 构建时会自动给 Version 追加源版本控制后缀
-         （如 0.0.0 变成 0.0.0+53...），Android 不支持这种格式，会导致安装失败。
-         解决方案：在此处无条件覆盖 ApplicationDisplayVersion，确保始终是纯净三段版本号。
-         - Debug/本地构建：固定显示 0.0.0
-         - CI Release 构建：通过 -p:ApplicationDisplayVersion=x.y.z 参数覆盖（release.yml 已配置） -->
+    <!-- ★ Android 版本号修复（三管齐下确保 versionName 干净）
+         问题：.NET SDK 在 Debug 构建时自动追加源版本控制后缀到 Version 属性
+               （如 0.0.0 → 0.0.0+14a6b2c），Android 的 android:versionName 不支持此格式。
+         方案：
+           1. 禁用源版本控制后缀生成（SourceRevisionId 设为空）
+           2. 显式设置 ApplicationDisplayVersion 为纯净值
+           3. CI Release 通过 -p:ApplicationDisplayVersion=x.y.z 覆盖 -->
+    <SourceRevisionId></SourceRevisionId>
     <ApplicationDisplayVersion>0.0.0</ApplicationDisplayVersion>
   </PropertyGroup>
 
