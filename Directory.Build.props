@@ -1,0 +1,19 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+      统一版本号管理：从 git tag 解析后通过 VERSION 环境变量注入
+      - CI/CD 构建时：dotnet build -p:Version=$(VERSION)
+      - 本地开发时：未设置则回退到 0.0.0
+    -->
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
+    <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(Version)</AssemblyVersion>
+    <FileVersion Condition="'$(FileVersion)' == ''">$(Version).0</FileVersion>
+    <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
+
+    <!-- Android 版本号：从 Version 派生 -->
+    <ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">$(Version)</ApplicationDisplayVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">$([System.Version]::Parse('$(Version)').Build)</ApplicationVersion>
+  </PropertyGroup>
+
+</Project>

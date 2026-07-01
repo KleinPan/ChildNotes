@@ -17,6 +17,22 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _roleText = "家长";
     [ObservableProperty] private int _babyCount;
 
+    /// <summary>
+    /// 应用版本号（从程序集 InformationalVersion 读取，CI 构建时由 git tag 注入）
+    /// </summary>
+    public string AppVersion
+    {
+        get
+        {
+            var attr = (System.Reflection.AssemblyInformationalVersionAttribute[])
+                System.Attribute.GetCustomAttributes(
+                    System.Reflection.Assembly.GetExecutingAssembly(),
+                    typeof(System.Reflection.AssemblyInformationalVersionAttribute));
+            var ver = attr.Length > 0 ? attr[0].InformationalVersion : "0.0.0";
+            return $"v{ver}";
+        }
+    }
+
     public ObservableCollection<Baby> BabyList { get; } = new();
 
     public event Action? LogoutRequested;

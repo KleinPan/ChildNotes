@@ -20,10 +20,11 @@
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Keincheck">
-      <!-- Keincheck 依赖 ASP.NET Core（MCP HTTP server），
-           Android/iOS 无对应 runtime pack，仅 Debug 配置引入 -->
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+      <!-- Keincheck 依赖 ASP.NET Core（MCP HTTP server），Android/iOS 无对应 runtime pack。
+           仅在桌面端 Debug 配置下引入（Keincheck 仅用于 Windows 桌面 MCP 调试）。
+           Android/iOS 即使 Debug 也必须排除，否则还原时找不到 android-arm64 的 AspNetCore runtime pack。 -->
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug' OR ('$(RuntimeIdentifier)' != '' AND ($(RuntimeIdentifier.StartsWith('android')) OR $(RuntimeIdentifier.StartsWith('ios'))))">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug' OR ('$(RuntimeIdentifier)' != '' AND ($(RuntimeIdentifier.StartsWith('android')) OR $(RuntimeIdentifier.StartsWith('ios'))))">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Semi.Avalonia" />

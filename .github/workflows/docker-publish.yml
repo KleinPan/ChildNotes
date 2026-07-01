@@ -50,6 +50,16 @@ jobs:
             type=sha,prefix=
             latest
 
+      - name: Parse version from git tag
+        id: version
+        shell: bash
+        run: |
+          RAW_TAG="${{ github.ref_name }}"
+          VERSION="${RAW_TAG#v}"
+          VERSION="${VERSION%%-*}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Parsed version: $VERSION"
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -58,14 +68,35 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+
+      - name: Verify Docker image version
+        shell: bash
+        run: |
+          EXPECTED="${{ steps.version.outputs.version }}"
+          IMAGE="ghcr.io/${{ github.repository }}/api:latest"
+
+          # 从镜像标签中读取版本号
+          ACTUAL=$(docker inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' 2>/dev/null || echo "unknown")
+          echo "Docker image version label: $ACTUAL"
+
+          if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+            echo "::error::Docker 镜像版本号不匹配！期望: $EXPECTED, 实际: $ACTUAL"
+            exit 1
+          fi
+
+          echo "::notice::Docker 镜像版本号验证通过: $ACTUAL"
 
       - name: Summary
         if: always()
         shell: bash
         run: |
           echo "### Docker 镜像已推送至 GHCR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "版本号: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY

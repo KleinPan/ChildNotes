@@ -149,7 +149,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="ℹ️" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
                         <TextBlock Grid.Column="1" Text="关于" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="v1.0.0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="{Binding AppVersion}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
                     </Grid>
                 </StackPanel>
             </Border>

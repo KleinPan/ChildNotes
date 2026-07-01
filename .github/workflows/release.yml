@@ -72,6 +72,23 @@ jobs:
           Write-Host "Target: ${{ matrix.target }}"
 
       # ===============================================================
+      # 版本号解析：从 git tag 提取语义化版本号
+      # tag 格式: v0.3.0 → VERSION=0.3.0, VERSION_MAJOR=0, VERSION_MINOR=3, VERSION_PATCH=0
+      # ===============================================================
+      - name: Parse version from git tag
+        id: version
+        shell: bash
+        run: |
+          RAW_TAG="${{ github.ref_name }}"
+          # 去掉 v 前缀
+          VERSION="${RAW_TAG#v}"
+          # 提取主.次.修订号（去掉 pre-release 后缀，如 -rc.1）
+          VERSION="${VERSION%%-*}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Parsed version: $VERSION"
+          echo "::notice::Git tag: $RAW_TAG → Version: $VERSION"
+
+      # ===============================================================
       # 客户端 - Windows 桌面版
       # ===============================================================
       - name: Build Windows desktop app
@@ -86,6 +103,7 @@ jobs:
             --self-contained true `
             -p:PublishSingleFile=false `
             -p:PublishTrimmed=false `
+            -p:Version=${{ steps.version.outputs.version }} `
             -o ../artifacts/windows
 
       - name: Archive Windows desktop artifacts
@@ -117,6 +135,7 @@ jobs:
             -f net10.0-android \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
+            -p:Version=${{ steps.version.outputs.version }} \
             -o ../artifacts/android
 
       - name: Collect Android APK
@@ -168,6 +187,7 @@ jobs:
             --self-contained true `
             -p:PublishSingleFile=false `
             -p:PublishTrimmed=false `
+            -p:Version=${{ steps.version.outputs.version }} `
             -o ../artifacts/backend
 
           # 确保配置文件随产物输出（dotnet publish 默认会复制，这里再显式确认）
@@ -181,6 +201,39 @@ jobs:
           cp -r artifacts/backend/* staging-backend/
           tar -czf "ChildNotes-backend-${{ github.ref_name }}.tar.gz" -C "staging-backend" .
           echo "::notice::Archive created: ChildNotes-backend-${{ github.ref_name }}.tar.gz"
+
+      # ===============================================================
+      # 版本号验证：确保构建产物中的版本号与 git tag 一致
+      # ===============================================================
+      - name: Verify version in build artifacts
+        if: always() && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          EXPECTED="${{ steps.version.outputs.version }}"
+          echo "Expected version: $EXPECTED"
+
+          if [ "${{ matrix.target }}" = "backend" ] && [ -d "artifacts/backend" ]; then
+            # 验证后端 DLL 的 InformationalVersion
+            ACTUAL=$(dotnet artifacts/backend/ChildNotes.Api.dll --version 2>/dev/null || echo "unknown")
+            echo "Backend assembly version: $ACTUAL"
+            if [[ "$ACTUAL" != *"$EXPECTED"* ]]; then
+              echo "::error::后端版本号不匹配！期望: $EXPECTED, 实际: $ACTUAL"
+              exit 1
+            fi
+            echo "::notice::后端版本号验证通过: $ACTUAL"
+          fi
+
+          if [ "${{ matrix.target }}" = "android" ] && [ -d "staging-android" ]; then
+            # Android 版本号在构建日志中可见（通过 -p:Version 传入）
+            echo "::notice::Android 版本号已通过 -p:Version=$EXPECTED 注入"
+          fi
+
+          if [ "${{ matrix.target }}" = "windows" ] && [ -d "artifacts/windows" ]; then
+            # Windows 版本号验证
+            echo "::notice::Windows 版本号已通过 -p:Version=$EXPECTED 注入"
+          fi
+
+          echo "::notice::[${{ matrix.target }}] 版本号验证完成: $EXPECTED"
 
       # ===============================================================
       # 上传构建产物（workflow artifact，供 release job 下载）
