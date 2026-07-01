@@ -20,6 +20,8 @@
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <!-- 移除 SemiTheme 默认蓝色边框，避免溢出圆角 -->
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
     </UserControl.Styles>
 
@@ -51,9 +53,9 @@
                 </Border>
 
                 <!--  可滚动内容区  -->
-                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled"
+                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="12">
+                    <StackPanel Margin="16,16" Spacing="12">
                         <!--  输入框  -->
                         <TextBox VerticalContentAlignment="Top" Classes="ai-input" PlaceholderText="{Binding Placeholder}" Text="{Binding InputText}" />
 

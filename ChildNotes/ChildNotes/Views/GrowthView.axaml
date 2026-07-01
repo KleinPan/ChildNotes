@@ -160,9 +160,9 @@
                     </Border>
 
                     <!--  表单内容（可滚动）  -->
-                    <ScrollViewer Grid.Row="1" MinHeight="300" Padding="16,16" HorizontalScrollBarVisibility="Disabled"
+                    <ScrollViewer Grid.Row="1" MinHeight="300" HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="16">
+                        <StackPanel Margin="16,16" Spacing="16">
                             <!--
                                 日期选择放在最前面：DatePicker 弹出面板向下展开，
                                 放在表单顶部可确保展开时有充足空间，不会被底部保存按钮遮挡

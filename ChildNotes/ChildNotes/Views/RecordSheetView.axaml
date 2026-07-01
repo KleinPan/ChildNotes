@@ -243,8 +243,8 @@
                     </Grid>
                 </Border>
 
-                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" Padding="16,16" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                    <StackPanel x:Name="ContentStackPanel">
+                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel x:Name="ContentStackPanel" Margin="16,16">
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
                             <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,16">
