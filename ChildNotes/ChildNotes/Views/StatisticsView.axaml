@@ -6,6 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel"
+             x:CompileBindings="True"
              Background="{StaticResource WeuiBg0Brush}">
 
     <UserControl.Styles>

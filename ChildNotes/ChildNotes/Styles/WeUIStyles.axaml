@@ -31,21 +31,9 @@
         <Setter Property="Background" Value="#80000000" />
     </Style>
 
-    <!-- 原版 baby-status-bar 统计区 mini-card -->
-    <Style Selector="Border.mini-card">
-        <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}" />
-        <Setter Property="CornerRadius" Value="6" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Margin" Value="0,0,0,7" />
-        <Setter Property="BoxShadow" Value="0 0 0 1 #08000000" />
-    </Style>
-
-    <!-- 原版快捷记录按钮项 -->
-    <Style Selector="Border.quick-action-bg">
-        <Setter Property="Width" Value="36" />
-        <Setter Property="Height" Value="36" />
-        <Setter Property="CornerRadius" Value="9" />
-    </Style>
+    <!-- 注：Border.mini-card / Border.quick-action-bg / Border.chip(.active) 原 Style 已删除，
+         经全项目 grep 验证从未被任何 axaml 引用（HomeView/StatisticsView/RecordSheetView 均自定义了局部样式）。
+         若后续需统一这些样式，应在 View 内显式声明 Classes，避免死代码堆积。 -->
 
     <Style Selector="Button.weui-btn">
         <Setter Property="CornerRadius" Value="{StaticResource WeuiBtnRadius}" />
@@ -119,22 +107,8 @@
         <Setter Property="FontWeight" Value="Medium" />
     </Style>
 
-    <Style Selector="Border.chip">
-        <Setter Property="CornerRadius" Value="14" />
-        <Setter Property="Padding" Value="12,5" />
-        <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
-        <Setter Property="Margin" Value="0,0,8,0" />
-    </Style>
-    <Style Selector="Border.chip.active">
-        <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
-    </Style>
-    <Style Selector="Border.chip TextBlock">
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
-    </Style>
-    <Style Selector="Border.chip.active TextBlock">
-        <Setter Property="Foreground" Value="White" />
-    </Style>
+    <!-- 注：原 Border.chip / Border.chip.active / Border.chip TextBlock 系列 Style 已删除，
+         全项目 grep 验证从未引用（StatisticsView/RecordSheetView 各自定义 stat-chip/abn-chip 局部样式）。 -->
 
     <Style Selector="Border.section-title">
         <Setter Property="Margin" Value="16,12,16,4" />

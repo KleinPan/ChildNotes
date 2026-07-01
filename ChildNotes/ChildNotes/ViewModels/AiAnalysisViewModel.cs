@@ -41,25 +41,10 @@ public partial class AiAnalysisViewModel : ViewModelBase
     /// <summary>请求跳转到 AI 分析设置页（由 MainShellViewModel 订阅）。</summary>
     public event Action? ConfigRequired;
 
-    public void Load()
-    {
-        var baby = _state.CurrentBaby;
-        BabyName = baby?.Name ?? string.Empty;
-
-        // 显式指定 Local Kind，避免 CalendarDatePicker 双向绑定回传时
-        // 丢失 Kind 信息导致后续与 DateTime.Today 做差值运算抛 DateTimeKind 异常
-        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
-        StartDate = today.AddDays(-6);
-        EndDate = today;
-        UpdateRangeTip();
-
-        Records.Clear();
-        foreach (var r in _aiService.ListRecords()) Records.Add(r);
-    }
-
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// 修复：原还有同步 Load() 重复实现，已删除（死代码）。
     /// </summary>
     public async Task LoadAsync()
     {
@@ -123,7 +108,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         var config = _aiService.GetLlmConfig();
         if (!config.Enabled)
         {
-            ShowToastMessage("请先在设置中启用大模型");
+            DisplayToast("请先在设置中启用大模型");
             ConfigRequired?.Invoke();
             return;
         }
@@ -148,16 +133,16 @@ public partial class AiAnalysisViewModel : ViewModelBase
             DetailCreatedLabel = record.CreatedAtLabel;
             DetailQualityTip = record.DataQualityTip;
             UpdateRangeTip();
-            ShowToastMessage("分析完成");
+            DisplayToast("分析完成");
         }
         catch (OperationCanceledException)
         {
-            ShowToastMessage("已取消分析");
+            DisplayToast("已取消分析");
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
-            ShowToastMessage("分析失败：" + ex.Message);
+            DisplayToast("分析失败：" + ex.Message);
         }
         finally
         {
@@ -201,7 +186,4 @@ public partial class AiAnalysisViewModel : ViewModelBase
     {
         ConfigRequired?.Invoke();
     }
-
-    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（沿用 2500ms 时长由 ToastDurationMs 覆写控制）
-    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }

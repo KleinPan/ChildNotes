@@ -9,6 +9,7 @@
              d:DesignHeight="844"
              d:DesignWidth="390"
              x:DataType="vm:GrowthViewModel"
+             x:CompileBindings="True"
              mc:Ignorable="d">
 
     <UserControl.Styles>

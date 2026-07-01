@@ -25,8 +25,6 @@ public partial class FamilyViewModel : ViewModelBase
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasData;
     [ObservableProperty] private string _emptyHint = "尚未加载";
-    [ObservableProperty] private string _toast = string.Empty;
-    [ObservableProperty] private bool _showToast;
 
     // 加入家庭表单
     [ObservableProperty] private bool _isJoinOpen;
@@ -79,7 +77,7 @@ public partial class FamilyViewModel : ViewModelBase
     private async Task Refresh()
     {
         await LoadAsync();
-        ShowToastMsg("已刷新");
+        DisplayToast("已刷新");
     }
 
     // ===== 加入家庭 =====
@@ -112,7 +110,7 @@ public partial class FamilyViewModel : ViewModelBase
             return;
         }
         IsJoinOpen = false;
-        ShowToastMsg($"已加入，角色：{FamilyRoles.GetRoleName(JoinRoleCode)}");
+        DisplayToast($"已加入，角色：{FamilyRoles.GetRoleName(JoinRoleCode)}");
         await LoadAsync();
     }
 
@@ -138,14 +136,11 @@ public partial class FamilyViewModel : ViewModelBase
         var result = await _api.UpdateMyRoleAsync(EditingBabyId, EditingRoleCode);
         if (result is null)
         {
-            ShowToastMsg("保存失败");
+            DisplayToast("保存失败");
             return;
         }
         IsRoleEditorOpen = false;
         DisplayToast($"角色已更新为：{FamilyRoles.GetRoleName(EditingRoleCode)}");
         await LoadAsync();
     }
-
-    // DisplayToast 由基类提供；历史代码中 ShowToastMsg 改为调用 DisplayToast
-    private void ShowToastMsg(string msg) => DisplayToast(msg);
 }

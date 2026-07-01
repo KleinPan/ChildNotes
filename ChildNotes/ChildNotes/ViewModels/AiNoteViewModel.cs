@@ -114,13 +114,17 @@ note, summary(<=30字一句话), confidence(0~1)。
             DisplayToast("保存成功：" + ResultSummary);
             Saved?.Invoke();
 
-            // 关闭模态窗口
+            // 关闭模态窗口：延迟 800ms 后续操作必须切回 UI 线程，
+            // 否则在 ThreadPool 上修改 ObservableProperty 会触发跨线程绑定异常
             _ = Task.Delay(800).ContinueWith(_ =>
-            {
-                InputText = string.Empty;
-                ShowResult = false;
-                RaiseBackRequested();
-            });
+                {
+                    InputText = string.Empty;
+                    ShowResult = false;
+                    RaiseBackRequested();
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.FromCurrentSynchronizationContext());
         }
         catch (Exception ex)
         {

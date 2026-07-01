@@ -1,10 +1,12 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using ChildNotes.Data;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Shared.Sync;
+using Microsoft.Data.Sqlite;
 
 namespace ChildNotes.Services;
 
@@ -100,30 +102,39 @@ public sealed class ApiSyncService : BaseApiClient
 
             // 2. Pull：以 last_sync_at 为起点分页拉取远端增量（带重试与切备用地址）
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
+            //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
             int pulledBabies = 0, pulledRecords = 0, pullPages = 0;
             DateTime? cursor = since;
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
-            while (cursor is not null && pullPages < maxPages)
+            using (var pullConn = _dbFactory!.Create())
+            using (var pullTx = pullConn.BeginTransaction())
             {
-                var pageResp = await PullWithRetryAsync(serverUrl, token, cursor.Value, pageSize, ct);
-                if (pageResp is null)
-                    return Finish(false, "拉取失败，已自动重试，请稍后再试", cfg, SyncErrorKind.Network);
+                while (cursor is not null && pullPages < maxPages)
+                {
+                    var pageResp = await PullWithRetryAsync(serverUrl, token, cursor.Value, pageSize, ct);
+                    if (pageResp is null)
+                    {
+                        pullTx.Rollback();
+                        return Finish(false, "拉取失败，已自动重试，请稍后再试", cfg, SyncErrorKind.Network);
+                    }
 
-                foreach (var b in pageResp.Babies)
-                    if (_babyRepo.UpsertFromSync(MapToBaby(b))) pulledBabies++;
-                foreach (var r in pageResp.Records)
-                    if (_recordRepo.UpsertFromSync(MapToRecord(r))) pulledRecords++;
+                    foreach (var b in pageResp.Babies)
+                        if (_babyRepo.UpsertFromSync(MapToBaby(b), pullConn, pullTx)) pulledBabies++;
+                    foreach (var r in pageResp.Records)
+                        if (_recordRepo.UpsertFromSync(MapToRecord(r), pullConn, pullTx)) pulledRecords++;
 
-                pullPages++;
-                DevLogger.Log("Sync",
-                    $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, hasMore={pageResp.HasMore}");
+                    pullPages++;
+                    DevLogger.Log("Sync",
+                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, hasMore={pageResp.HasMore}");
 
-                // HasMore 为 false 或无数据时终止；游标推进到 NextCursor
-                if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0))
-                    break;
-                cursor = pageResp.NextCursor ?? cursor.Value;
+                    // HasMore 为 false 或无数据时终止；游标推进到 NextCursor
+                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0))
+                        break;
+                    cursor = pageResp.NextCursor ?? cursor.Value;
+                }
+                pullTx.Commit();
             }
 
             // 3. Push：把本地 updated_at > since 的数据上送（带重试与切备用地址）

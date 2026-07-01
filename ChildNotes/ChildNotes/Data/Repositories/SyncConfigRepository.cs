@@ -7,6 +7,8 @@ namespace ChildNotes.Data.Repositories;
 /// sync_config 表的访问器。该表只有一行（id=1）。
 /// 注：ServerUrl 由 <see cref="ChildNotes.Services.ServerEndpoints"/> 硬编码，
 /// 此字段仅作运行时探测地址缓存，外部 Save 不再持久化该字段。
+/// 优化：单行配置表加内存缓存，避免 ApiSyncService 单次同步流程 4-6 次 Get() 各开连接 + PRAGMA 往返。
+///      任何写操作（Save/UpdateSyncResult/UpdateToken/UpdateDeviceId）自动失效缓存。
 /// </summary>
 public sealed class SyncConfigRepository : BaseRepository
 {
@@ -16,11 +18,24 @@ public sealed class SyncConfigRepository : BaseRepository
         "SELECT id, enabled, server_url, username, password, token, " +
         "last_sync_at, last_sync_status, last_sync_msg, device_id FROM sync_config WHERE id=1";
 
+    /// <summary>内存缓存：单行配置表极少变化，仅在写操作后失效。</summary>
+    private SyncConfig? _cached;
+    private readonly object _cacheLock = new();
+
     public SyncConfig Get()
-        => QueryFirstOrDefault(SelectSql, _ => { }, Map) ?? new SyncConfig();
+    {
+        lock (_cacheLock)
+        {
+            if (_cached is not null) return _cached;
+        }
+        var cfg = QueryFirstOrDefault(SelectSql, _ => { }, Map) ?? new SyncConfig();
+        lock (_cacheLock) { _cached = cfg; }
+        return cfg;
+    }
 
     public void Save(SyncConfig cfg)
-        => ExecuteNonQuery(
+    {
+        ExecuteNonQuery(
             @"INSERT OR REPLACE INTO sync_config
               (id, enabled, server_url, username, password, token,
                last_sync_at, last_sync_status, last_sync_msg, device_id)
@@ -38,22 +53,38 @@ public sealed class SyncConfigRepository : BaseRepository
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
                    .AddString("@did", cfg.DeviceId, emptyAsNull: true);
             });
+        InvalidateCache();
+    }
 
     public void UpdateSyncResult(DateTime syncAt, string status, string msg)
-        => ExecuteNonQuery(
+    {
+        ExecuteNonQuery(
             "UPDATE sync_config SET last_sync_at=@t, last_sync_status=@s, last_sync_msg=@m WHERE id=1",
             cmd => cmd.AddUtc("@t", syncAt).AddString("@s", status, emptyAsNull: true).AddString("@m", msg, emptyAsNull: true));
+        InvalidateCache();
+    }
 
     public void UpdateToken(string token)
-        => ExecuteNonQuery(
+    {
+        ExecuteNonQuery(
             "UPDATE sync_config SET token=@t WHERE id=1",
             cmd => cmd.AddString("@t", token, emptyAsNull: true));
+        InvalidateCache();
+    }
 
     /// <summary>更新设备标识。首次启动时由 ServiceProvider 调用。</summary>
     public void UpdateDeviceId(string deviceId)
-        => ExecuteNonQuery(
+    {
+        ExecuteNonQuery(
             "UPDATE sync_config SET device_id=@d WHERE id=1",
             cmd => cmd.AddString("@d", deviceId, emptyAsNull: true));
+        InvalidateCache();
+    }
+
+    private void InvalidateCache()
+    {
+        lock (_cacheLock) { _cached = null; }
+    }
 
     private static SyncConfig Map(SqliteDataReader r) => new()
     {

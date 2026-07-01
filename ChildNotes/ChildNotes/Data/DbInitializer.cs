@@ -226,6 +226,11 @@ VALUES (1, 0, '', '', '', '');
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_updated ON child_record (updated_at);");
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_baby_updated ON baby (updated_at);");
 
+        // child_record 按类型查询索引：GetByType 使用 (user_id, record_type) 过滤，
+        // 已有的 (user_id, record_date, record_type) 复合索引因中间列是 record_date
+        // 无法高效支持仅按 user_id + record_type 的查询，故补建专用索引。
+        conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_user_type ON child_record (user_id, record_type);");
+
         // ===== 登录会话持久化表（单行，id=1）=====
         // 用于实现关闭应用后自动登录；30 天滑动过期，每次启动续期。
         conn.ExecuteNonQuery(@"

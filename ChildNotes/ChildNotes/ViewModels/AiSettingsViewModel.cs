@@ -181,7 +181,4 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
     }
 
     private bool CanTest() => !IsTesting;
-
-    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（沿用 2500ms 时长由 ToastDurationMs 覆写控制）
-    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }

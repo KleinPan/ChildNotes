@@ -37,7 +37,9 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _aiTipText = DailyTipsCatalog.Current.DefaultTip;
 
     // 轮播提示相关：对齐小程序 good-status 组件 <swiper interval=5000> 行为
-    private readonly DispatcherTimer _tipCarouselTimer = new(TimeSpan.FromSeconds(5), DispatcherPriority.Normal, (_, _) => { });
+    // 修复：原实现传入空 lambda 作为构造回调，实际工作靠 Tick += 重复订阅，每次 Tick 触发两个回调。
+    //       改为构造时直接传真正回调，去掉 StartTipCarousel 中的 -=/+ = 模式。
+    private readonly DispatcherTimer _tipCarouselTimer;
     private IReadOnlyList<string> _currentTipPool = Array.Empty<string>();
     private int _tipCarouselIndex;
 
@@ -81,7 +83,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private bool _isActivityLoading;
 
     // 距上次活动时间实时刷新（对齐小程序 startTimer 30 秒间隔）
-    private readonly DispatcherTimer _activitySinceTimer = new(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, (_, _) => { });
+    // 修复：同 _tipCarouselTimer，去掉空 lambda + 重复订阅模式
+    private readonly DispatcherTimer _activitySinceTimer;
     private DateTime? _lastActivityTime;
 
     public event Action? StatisticsRequested;
@@ -90,6 +93,9 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
     public HomeViewModel()
     {
+        // 构造时直接传入真正回调，避免空 lambda + Tick += 重复订阅模式
+        _tipCarouselTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Normal, OnTipCarouselTick);
+        _activitySinceTimer = new DispatcherTimer(TimeSpan.FromSeconds(30), DispatcherPriority.Normal, OnActivitySinceTick);
     }
 
     public void Activate()
@@ -104,6 +110,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
                 IsInitialLayoutDone = true;
                 DevLogger.Log("Home", "IsInitialLayoutDone=true (非关键卡片展开)");
             }, TimeSpan.FromMilliseconds(100));
+            // 后台预加载疫苗时间轴数据（用户点"补记"时直接用）
+            _ = ChildNotes.ViewModels.VaccineFormViewModel.PreloadAsync();
             DevLogger.Log("Home", "Activate done");
         }
         catch (Exception ex)
@@ -153,6 +161,9 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
         var appState = ServiceProvider.Instance.AppState;
         var currentBabyId = appState.CurrentBabyId;
+
+        // 失效活动时间轴缓存：保存记录后 RefreshAsync 会触发，下次打开活动面板需重查 DB 取最新数据
+        _activityCache = null;
 
         // 后台线程：一次性查询所有需要的数据（可被后续 RefreshAsync 取消）
         var snapshot = await Task.Run(() =>
@@ -410,13 +421,12 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
         AiTipText = _currentTipPool[_tipCarouselIndex];
 
+        // 构造时已订阅 Tick 回调，这里只需 Stop+Start 重置计时周期
         _tipCarouselTimer.Stop();
-        _tipCarouselTimer.Tick -= OnTipCarouselTick!;
-        _tipCarouselTimer.Tick += OnTipCarouselTick!;
         _tipCarouselTimer.Start();
     }
 
-    private void OnTipCarouselTick(object sender, EventArgs e)
+    private void OnTipCarouselTick(object? sender, EventArgs e)
     {
         if (_currentTipPool.Count == 0) return;
         _tipCarouselIndex = (_tipCarouselIndex + 1) % _currentTipPool.Count;
@@ -549,19 +559,17 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
     private void StartActivitySinceTimer()
     {
+        // 构造时已订阅 Tick 回调，这里只需 Stop+Start 重置计时周期
         _activitySinceTimer.Stop();
-        _activitySinceTimer.Tick -= OnActivitySinceTick!;
-        _activitySinceTimer.Tick += OnActivitySinceTick!;
         _activitySinceTimer.Start();
     }
 
     private void StopActivitySinceTimer()
     {
         _activitySinceTimer.Stop();
-        _activitySinceTimer.Tick -= OnActivitySinceTick!;
     }
 
-    private void OnActivitySinceTick(object sender, EventArgs e)
+    private void OnActivitySinceTick(object? sender, EventArgs e)
     {
         UpdateActivityTimeSince();
     }
@@ -572,6 +580,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     /// </summary>
     private const int ActivityPageSize = 20;
     private int _activityLoadedCount;
+    /// <summary>活动记录全量缓存：BuildActivityTimelineAsync 查询一次后，LoadMoreActivities 直接从缓存切片，避免重复 DB 查询。</summary>
+    private List<ChildRecord>? _activityCache;
 
     /// <summary>
     /// 异步构建活动时间轴分组（对齐小程序 buildTimeline）。
@@ -584,14 +594,14 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         var sw = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            // 后台线程查询 DB（避免阻塞 UI 线程）
-            var activities = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
-            DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: DB query {activities.Count} items in {sw.ElapsedMilliseconds}ms");
+            // 后台线程查询 DB（避免阻塞 UI 线程），结果缓存供 LoadMoreActivities 复用
+            _activityCache = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
+            DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: DB query {_activityCache.Count} items in {sw.ElapsedMilliseconds}ms");
 
             // UI 线程：分页填充首屏
             ActivityTimelineGroups.Clear();
             _activityLoadedCount = 0;
-            AppendActivityPage(activities, ActivityPageSize);
+            AppendActivityPage(_activityCache, ActivityPageSize);
             DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: first page rendered, total={sw.ElapsedMilliseconds}ms, items={_activityLoadedCount}");
         }
         finally
@@ -643,11 +653,24 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     private async Task LoadMoreActivities()
     {
         if (IsActivityLoading) return;
+        // 缓存未命中（理论上不会发生，BuildActivityTimelineAsync 总会先调用）：兜底查一次
+        if (_activityCache is null)
+        {
+            IsActivityLoading = true;
+            try
+            {
+                _activityCache = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
+            }
+            finally
+            {
+                IsActivityLoading = false;
+            }
+        }
         IsActivityLoading = true;
         try
         {
-            var activities = await Task.Run(() => _recordService.GetByType(RecordType.Activity, 100));
-            AppendActivityPage(activities, ActivityPageSize);
+            // 直接从缓存切片，避免每次"加载更多"都重查 DB
+            AppendActivityPage(_activityCache, ActivityPageSize);
             LoadMoreActivitiesCommand.NotifyCanExecuteChanged();
         }
         finally

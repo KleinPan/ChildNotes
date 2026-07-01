@@ -87,39 +87,52 @@ public sealed class RecordRepository : BaseRepository
         => Query(SelectBase + " WHERE updated_at > @s ORDER BY updated_at",
             cmd => cmd.AddUtc("@s", since), Map);
 
-    /// <summary>以 LWW（updated_at 比较）合并远端下发的记录。返回是否实际写入。</summary>
+    /// <summary>
+    /// 以 LWW（updated_at 比较）合并远端下发的记录。返回是否实际写入。
+    /// 优化：原实现 SELECT + UPDATE/INSERT 两次往返，改用单条 INSERT ON CONFLICT 一次完成。
+    /// </summary>
     public bool UpsertFromSync(ChildRecord item)
     {
         using var conn = OpenConnection();
-        using var check = conn.CreateCommand();
-        check.CommandText = "SELECT updated_at FROM child_record WHERE id=@i";
-        check.Add("@i", item.Id);
-        var existing = check.ExecuteScalar() as string;
-        if (existing is not null)
-        {
-            var existingAt = DateTimeExtensions.ParseDb(existing);
-            if (item.UpdatedAt <= existingAt) return false; // 本地较新，跳过
-            using var upd = conn.CreateCommand();
-            upd.CommandText = @"UPDATE child_record SET
-                user_id=@uid, baby_id=@bid, record_type=@rt, record_sub_type=@rst,
-                record_date=@rd, record_time=@rtm, amount_ml=@aml, duration_sec=@ds,
-                left_duration_sec=@lds, right_duration_sec=@rds, abnormal_flag=@af,
-                temperature_value=@tv, height_cm=@hc, weight_kg=@wk, payload_json=@pj,
-                deleted=@d, updated_at=@t WHERE id=@id";
-            AddSyncParams(upd, item);
-            upd.ExecuteNonQuery();
-            return true;
-        }
-        using var ins = conn.CreateCommand();
-        ins.CommandText = @"INSERT INTO child_record
+        return UpsertFromSync(item, conn, null);
+    }
+
+    /// <summary>
+    /// 在指定连接/事务上执行 LWW 合并。Pull 循环通过此重载共享同一事务，避免每行重新开连。
+    /// </summary>
+    public bool UpsertFromSync(ChildRecord item, SqliteConnection conn, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        // INSERT ... ON CONFLICT(id) DO UPDATE：仅在 excluded.updated_at > child_record.updated_at 时更新
+        cmd.CommandText = @"
+            INSERT INTO child_record
             (id, user_id, baby_id, record_type, record_sub_type, record_date, record_time,
              amount_ml, duration_sec, left_duration_sec, right_duration_sec, abnormal_flag,
              temperature_value, height_cm, weight_kg, payload_json, deleted, created_at, updated_at)
-            VALUES (@id, @uid, @bid, @rt, @rst, @rd, @rtm, @aml, @ds, @lds, @rds, @af, @tv, @hc, @wk, @pj, @d, @c, @t)";
-        AddSyncParams(ins, item);
-        ins.AddUtc("@c", item.CreatedAt);
-        ins.ExecuteNonQuery();
-        return true;
+            VALUES (@id, @uid, @bid, @rt, @rst, @rd, @rtm, @aml, @ds, @lds, @rds, @af, @tv, @hc, @wk, @pj, @d, @c, @t)
+            ON CONFLICT(id) DO UPDATE SET
+                user_id = excluded.user_id,
+                baby_id = excluded.baby_id,
+                record_type = excluded.record_type,
+                record_sub_type = excluded.record_sub_type,
+                record_date = excluded.record_date,
+                record_time = excluded.record_time,
+                amount_ml = excluded.amount_ml,
+                duration_sec = excluded.duration_sec,
+                left_duration_sec = excluded.left_duration_sec,
+                right_duration_sec = excluded.right_duration_sec,
+                abnormal_flag = excluded.abnormal_flag,
+                temperature_value = excluded.temperature_value,
+                height_cm = excluded.height_cm,
+                weight_kg = excluded.weight_kg,
+                payload_json = excluded.payload_json,
+                deleted = excluded.deleted,
+                updated_at = excluded.updated_at
+            WHERE excluded.updated_at > child_record.updated_at";
+        AddSyncParams(cmd, item);
+        cmd.AddUtc("@c", item.CreatedAt);
+        return cmd.ExecuteNonQuery() > 0;
     }
 
     private List<ChildRecord> QueryRecords(long userId, long? babyId, string condition, Action<SqliteCommand> addExtra)
@@ -183,6 +196,7 @@ public sealed class RecordRepository : BaseRepository
 
     /// <summary>
     /// 批量标记记录为"已上送"（更新 synced_at）。Push 成功后调用，防止崩溃导致重推。
+    /// 优化：原实现逐条 UPDATE，500 条 = 500 次往返。改为按 500 个 id 一批的 IN 子句批量 UPDATE。
     /// </summary>
     public void MarkSynced(IEnumerable<long> ids, DateTime syncedAt)
     {
@@ -190,14 +204,17 @@ public sealed class RecordRepository : BaseRepository
         if (idList.Count == 0) return;
         using var conn = OpenConnection();
         using var tx = conn.BeginTransaction();
-        using var cmd = conn.CreateCommand();
-        cmd.Transaction = tx;
-        cmd.CommandText = "UPDATE child_record SET synced_at=@t WHERE id=@id";
-        cmd.AddUtc("@t", syncedAt);
-        var idParam = cmd.Parameters.AddWithValue("@id", (long)0);
-        foreach (var id in idList)
+        const int BatchSize = 500;
+        for (var i = 0; i < idList.Count; i += BatchSize)
         {
-            idParam.Value = id;
+            var batch = idList.Skip(i).Take(BatchSize).ToList();
+            var paramNames = Enumerable.Range(0, batch.Count).Select(k => "@id" + k).ToList();
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = $"UPDATE child_record SET synced_at=@t WHERE id IN ({string.Join(",", paramNames)})";
+            cmd.AddUtc("@t", syncedAt);
+            for (var j = 0; j < batch.Count; j++)
+                cmd.Parameters.AddWithValue(paramNames[j], batch[j]);
             cmd.ExecuteNonQuery();
         }
         tx.Commit();

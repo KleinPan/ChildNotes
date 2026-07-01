@@ -276,23 +276,31 @@ public partial class MainShellViewModel : ViewModelBase
 
     public async void OpenQuickRecord(string recordType)
     {
-        DevLogger.Log("Shell", $"OpenQuickRecord type={recordType}");
-        if (ServiceProvider.Instance.AppState.CurrentBaby is null)
+        try
         {
-            DevLogger.Log("Shell", "OpenQuickRecord: no current baby, open BabySetup");
-            OpenBabySetup();
-            return;
+            DevLogger.Log("Shell", $"OpenQuickRecord type={recordType}");
+            if (ServiceProvider.Instance.AppState.CurrentBaby is null)
+            {
+                DevLogger.Log("Shell", "OpenQuickRecord: no current baby, open BabySetup");
+                OpenBabySetup();
+                return;
+            }
+            // Ai 记走单独的模态窗口，不走底部抽屉
+            if (recordType == RecordType.AiNote)
+            {
+                OpenAiNote();
+                return;
+            }
+            // 先设置抽屉可见（占位立即响应），再异步打开（疫苗类型会异步加载数据）
+            IsRecordSheetOpen = true;
+            await RecordSheet.OpenAsync(recordType);
+            DevLogger.Log("Shell", $"OpenQuickRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
         }
-        // Ai 记走单独的模态窗口，不走底部抽屉
-        if (recordType == RecordType.AiNote)
+        catch (Exception ex)
         {
-            OpenAiNote();
-            return;
+            DevLogger.Log("Shell", "OpenQuickRecord failed: " + ex);
+            IsRecordSheetOpen = false;
         }
-        // 先设置抽屉可见（占位立即响应），再异步打开（疫苗类型会异步加载数据）
-        IsRecordSheetOpen = true;
-        await RecordSheet.OpenAsync(recordType);
-        DevLogger.Log("Shell", $"OpenQuickRecord done: IsRecordSheetOpen={IsRecordSheetOpen}, SheetTitle={RecordSheet.SheetTitle}");
     }
 
     /// <summary>
@@ -315,26 +323,42 @@ public partial class MainShellViewModel : ViewModelBase
 
     public async void OpenBabyManager()
     {
-        IsBabyManagerOpen = true;
-        await BabyManager.LoadAsync();
+        try
+        {
+            IsBabyManagerOpen = true;
+            await BabyManager.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenBabyManager failed: " + ex); }
     }
 
     public async void OpenStatistics()
     {
-        IsStatisticsOpen = true;
-        await Statistics.LoadAsync();
+        try
+        {
+            IsStatisticsOpen = true;
+            await Statistics.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenStatistics failed: " + ex); }
     }
 
     public async void OpenPoints()
     {
-        IsPointsOpen = true;
-        await Points.LoadAsync();
+        try
+        {
+            IsPointsOpen = true;
+            await Points.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenPoints failed: " + ex); }
     }
 
     public async void OpenAiAnalysis()
     {
-        IsAiAnalysisOpen = true;
-        await AiAnalysis.LoadAsync();
+        try
+        {
+            IsAiAnalysisOpen = true;
+            await AiAnalysis.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenAiAnalysis failed: " + ex); }
     }
 
     public void OpenAiSettings()
@@ -350,8 +374,12 @@ public partial class MainShellViewModel : ViewModelBase
 
     public async void OpenFamily()
     {
-        IsFamilyOpen = true;
-        await Family.LoadAsync();
+        try
+        {
+            IsFamilyOpen = true;
+            await Family.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenFamily failed: " + ex); }
     }
 
     public void OpenDeveloperOptions()
@@ -398,8 +426,9 @@ public partial class MainShellViewModel : ViewModelBase
         DevLogger.Log("Shell", "OnRecordSaved: closing sheet, debouncing Home/Feeding refresh");
         IsRecordSheetOpen = false;
 
-        // 清除疫苗时间轴缓存，确保下次打开补记面板时重建最新数据
+        // 清除疫苗时间轴缓存（BuildPlans + 预加载），确保下次打开补记面板时重建最新数据
         ChildNotes.Services.VaccineTimelineBuilder.InvalidateCache();
+        ChildNotes.ViewModels.VaccineFormViewModel.InvalidatePreload();
 
         // 防抖 100ms：快速连续保存（如批量补记）只触发一次刷新
         _savedRefreshCts?.Cancel();
@@ -426,14 +455,22 @@ public partial class MainShellViewModel : ViewModelBase
 
     private async void OnBabySetupCompleted()
     {
-        IsBabySetupOpen = false;
-        await Home.RefreshAsync();
+        try
+        {
+            IsBabySetupOpen = false;
+            await Home.RefreshAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OnBabySetupCompleted failed: " + ex); }
     }
 
     private async void OnBabyChanged()
     {
-        await Home.RefreshAsync();
-        if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
+        try
+        {
+            await Home.RefreshAsync();
+            if (CurrentTab is FeedingViewModel feeding) feeding.Activate();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OnBabyChanged failed: " + ex); }
     }
 
     private void OnLogout()

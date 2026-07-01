@@ -24,14 +24,10 @@ public partial class PointsViewModel : ViewModelBase
     /// <summary>沿用历史 2000ms 显示时长。</summary>
     protected override int ToastDurationMs => 2000;
 
-    public void Load()
-    {
-        Refresh();
-    }
-
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做属性赋值。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// 修复：原还有同步 Load() / Refresh() 重复实现，已删除（死代码）。
     /// </summary>
     public async Task LoadAsync()
     {
@@ -55,18 +51,13 @@ public partial class PointsViewModel : ViewModelBase
         foreach (var t in dashboard.Tasks) Tasks.Add(new TaskDisplayItem(t));
     }
 
-    private void Refresh()
-    {
-        var dashboard = _pointsService.GetDashboard();
-        ApplyDashboard(dashboard);
-    }
-
+    /// <summary>修复：原 SignIn 同步调 _pointsService.SignIn 阻塞 UI，改为后台线程执行。</summary>
     [RelayCommand]
-    private void SignIn()
+    private async Task SignIn()
     {
         if (Signing || TodaySigned) return;
         Signing = true;
-        var dashboard = _pointsService.SignIn();
+        var dashboard = await Task.Run(() => _pointsService.SignIn());
         Points = dashboard.Points;
         TotalEarned = dashboard.TotalEarned;
         TodaySigned = dashboard.TodaySigned;
@@ -76,12 +67,9 @@ public partial class PointsViewModel : ViewModelBase
         Timeline.Clear();
         foreach (var item in dashboard.Timeline) Timeline.Add(item);
 
-        ShowToastMessage($"签到成功 +{dashboard.TodayRewardPoints}分");
+        DisplayToast($"签到成功 +{dashboard.TodayRewardPoints}分");
         Signing = false;
     }
-
-    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（2000ms 时长由 ToastDurationMs 覆写控制）
-    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }
 
 public sealed class TaskDisplayItem

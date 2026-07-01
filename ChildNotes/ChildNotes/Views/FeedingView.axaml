@@ -8,6 +8,7 @@
              d:DesignHeight="844"
              d:DesignWidth="390"
              x:DataType="vm:FeedingViewModel"
+             x:CompileBindings="True"
              Background="{StaticResource WeuiBg0Brush}"
              mc:Ignorable="d">
 

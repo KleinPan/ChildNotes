@@ -22,8 +22,6 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private bool _isNextDayEnabled;
     [ObservableProperty] private bool _showDeleteConfirm;
     [ObservableProperty] private string _deleteItemTitle = string.Empty;
-    [ObservableProperty] private string _toastMessage = string.Empty;
-    [ObservableProperty] private bool _showToast;
 
     public ObservableCollection<RecordDisplayItem> Records { get; } = new();
 
@@ -41,18 +39,26 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
 
     public void Activate()
     {
-        LoadData();
+        _ = LoadDataAsync();
     }
 
-    private void LoadData()
+    /// <summary>
+    /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI 100-300ms。
+    /// 修复：原 LoadData 在 UI 线程同步调 GetDayStats + GetByDate。
+    /// </summary>
+    private async Task LoadDataAsync()
     {
-        DisplayDate = ServiceProvider.Instance.DateTimeFormatter.FormatChineseMonthDay(SelectedDate) + " " + GetWeekday(SelectedDate);
-        IsToday = SelectedDate.Date == DateTime.Today;
-        IsNextDayEnabled = SelectedDate.Date < DateTime.Today;
-        DayStats = _statsService.GetDayStats(SelectedDate);
+        var date = SelectedDate;
+        // 后台线程执行 DB 查询，UI 线程并行准备日期显示
+        var (stats, records) = await Task.Run(() =>
+            (_statsService.GetDayStats(date), _recordService.GetByDate(date)));
+
+        DisplayDate = ServiceProvider.Instance.DateTimeFormatter.FormatChineseMonthDay(date) + " " + GetWeekday(date);
+        IsToday = date.Date == DateTime.Today;
+        IsNextDayEnabled = date.Date < DateTime.Today;
+        DayStats = stats;
 
         Records.Clear();
-        var records = _recordService.GetByDate(SelectedDate);
         // 疫苗记录仅在首页"疫苗追踪"模块展示，不在喂养页面记录列表中显示
         foreach (var r in records.OrderBy(x => x.RecordTime).Where(x => x.RecordType != RecordType.Vaccine))
         {
@@ -75,7 +81,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     private void PrevDay()
     {
         SelectedDate = SelectedDate.AddDays(-1);
-        LoadData();
+        _ = LoadDataAsync();
     }
 
     [RelayCommand]
@@ -84,7 +90,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         if (SelectedDate < DateTime.Today)
         {
             SelectedDate = SelectedDate.AddDays(1);
-            LoadData();
+            _ = LoadDataAsync();
         }
     }
 
@@ -92,7 +98,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     private void GoToday()
     {
         SelectedDate = DateTime.Today;
-        LoadData();
+        _ = LoadDataAsync();
     }
 
     public void RequestDelete(RecordDisplayItem item)
@@ -128,12 +134,9 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     {
         _recordService.Delete(_deletingRecordId);
         ShowDeleteConfirm = false;
-        LoadData();
-        ShowToastMessage("已删除记录");
+        _ = LoadDataAsync();
+        DisplayToast("已删除记录");
     }
-
-    // 历史调用 ShowToastMessage，统一改走基类 DisplayToast（2000ms 时长由 ToastDurationMs 覆写控制）
-    private void ShowToastMessage(string msg) => DisplayToast(msg);
 }
 
 public sealed partial class RecordDisplayItem : ObservableObject

@@ -48,15 +48,10 @@ public partial class StatisticsViewModel : ViewModelBase
 
     public ObservableCollection<ChartBarItem> ChartBars { get; } = new();
 
-    public void Load()
-    {
-        UpdateSelections();
-        Rebuild();
-    }
-
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做属性赋值。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
+    /// 修复：原还有同步 Load() 和 Rebuild() 重复实现，已删除（死代码 + 性能问题）。
     /// </summary>
     public async Task LoadAsync()
     {
@@ -142,67 +137,20 @@ public partial class StatisticsViewModel : ViewModelBase
         };
     }
 
-    private void Rebuild()
-    {
-        var (start, end) = GetRange();
-        var today = DateTime.Today;
-        RangeLabel = SelectedRange switch
-        {
-            "day" => $"{today:yyyy年M月d日}",
-            "threeDays" => "最近3天",
-            "week" => "最近一周",
-            "month" => $"{start:yyyy年M月}",
-            "range" => $"{start:MM-dd} 至 {end:MM-dd}",
-            _ => "最近一周",
-        };
-        AverageLabel = SelectedRange == "month" ? "月均" : "日均";
-
-        var aggregates = _statsService.GetDailyAggregates(start, end);
-        var typeOpt = TypeOptions.First(t => t.Key == SelectedType);
-        CurrentTypeLabel = typeOpt.Label;
-        CurrentTypeColor = typeOpt.Color;
-
-        var values = aggregates.Select(a => new
-        {
-            a.Date,
-            Value = StatisticsService.ExtractValue(a, SelectedType),
-        }).ToList();
-
-        var max = values.Max(v => v.Value);
-        ChartBars.Clear();
-        foreach (var v in values)
-        {
-            ChartBars.Add(new ChartBarItem
-            {
-                Label = SelectedRange == "month" ? $"{v.Date.Month}月" : v.Date.ToString("M/d"),
-                ValueText = StatisticsService.FormatMetric(v.Value, SelectedType, typeOpt.Unit),
-                HeightPct = max > 0 && v.Value > 0 ? Math.Max(4, (v.Value / max) * 100) : 0,
-                BarColor = typeOpt.Color,
-                IsToday = v.Date.Date == DateTime.Today,
-            });
-        }
-
-        var total = values.Sum(v => v.Value);
-        var avg = values.Count > 0 ? total / values.Count : 0;
-        TotalText = StatisticsService.FormatMetric(total, SelectedType, typeOpt.Unit);
-        AverageText = StatisticsService.FormatMetric(avg, SelectedType, typeOpt.Unit);
-        MaxText = StatisticsService.FormatMetric(max, SelectedType, typeOpt.Unit);
-    }
-
+    /// <summary>修复：原 SelectType 调 Rebuild() 在 UI 线程同步 DB 查询，改为 async 调 LoadAsync。</summary>
     [RelayCommand]
-    private void SelectType(string key)
+    private async Task SelectType(string key)
     {
         SelectedType = key;
-        UpdateSelections();
-        Rebuild();
+        await LoadAsync();
     }
 
+    /// <summary>修复：原 SelectRange 调 Rebuild() 在 UI 线程同步 DB 查询，改为 async 调 LoadAsync。</summary>
     [RelayCommand]
-    private void SelectRange(string key)
+    private async Task SelectRange(string key)
     {
         SelectedRange = key;
-        UpdateSelections();
-        Rebuild();
+        await LoadAsync();
     }
 }
 

@@ -12,18 +12,23 @@ namespace ChildNotes.ViewModels;
 /// 服务器地址由 <see cref="ServerEndpoints"/> 硬编码，登录凭据由登录流程自动写入，
 /// UI 不再提供账号/密码/服务器编辑入口。
 /// </summary>
-public partial class SyncSettingsViewModel : ViewModelBase
+/// <remarks>
+/// 修复：原实现订阅了外部单例（NetworkMonitor / SyncTrigger）事件但从未退订，
+/// 若 VM 被多次创建会叠加订阅。现实现 IDisposable 在 Dispose 中退订。
+/// 同时移除与基类 ViewModelBase 冲突的 _toast / _showToast 字段（基类已有 _toastMessage / _showToast），
+/// 并删除 ShowToastMsg 包装方法（直接调用基类 DisplayToast）。
+/// </remarks>
+public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
     private readonly SyncTrigger _trigger = ServiceProvider.Instance.SyncTrigger;
     private readonly NetworkMonitor _networkMonitor = ServiceProvider.Instance.NetworkMonitor;
+    private bool _disposed;
 
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private string _lastSyncText = "尚未同步";
     [ObservableProperty] private string _statusText = string.Empty;
     [ObservableProperty] private bool _isSyncing;
-    [ObservableProperty] private string _toast = string.Empty;
-    [ObservableProperty] private bool _showToast;
 
     /// <summary>网络状态文案（绑定到 UI 徽标）。</summary>
     [ObservableProperty] private string _networkStateText = "检测中…";
@@ -49,6 +54,18 @@ public partial class SyncSettingsViewModel : ViewModelBase
         _trigger.SyncCompleted += OnSyncCompleted;
     }
 
+    /// <summary>
+    /// 退订外部单例事件，避免内存泄漏。
+    /// 调用时机：MainShell 关闭 SyncSettings overlay 时（或应用退出时）。
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _networkMonitor.StateChanged -= OnNetworkStateChanged;
+        _trigger.SyncCompleted -= OnSyncCompleted;
+        _disposed = true;
+    }
+
     private bool _loading = true;
 
     private void Load()
@@ -67,7 +84,7 @@ public partial class SyncSettingsViewModel : ViewModelBase
         if (cfg.Enabled == Enabled) return;
         cfg.Enabled = Enabled;
         _cfgRepo.Save(cfg);
-        ShowToastMsg(Enabled ? "已启用云同步" : "已关闭云同步");
+        DisplayToast(Enabled ? "已启用云同步" : "已关闭云同步");
     }
 
     private void UpdateLastSyncText(SyncConfig cfg)
@@ -116,14 +133,11 @@ public partial class SyncSettingsViewModel : ViewModelBase
             var result = await _trigger.RunNowAsync();
             StatusText = result.Success ? "同步成功" : "同步失败";
             UpdateLastSyncText(_cfgRepo.Get());
-            ShowToastMsg(result.Success ? result.Message : ("失败：" + result.Message));
+            DisplayToast(result.Success ? result.Message : ("失败：" + result.Message));
         }
         finally
         {
             IsSyncing = false;
         }
     }
-
-    // 历史调用 ShowToastMsg，统一改走基类 DisplayToast
-    private void ShowToastMsg(string msg) => DisplayToast(msg);
 }

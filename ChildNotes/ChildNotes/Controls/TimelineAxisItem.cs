@@ -58,8 +58,12 @@ public class TimelineAxisItem : Control
 
     static TimelineAxisItem()
     {
-        AffectsRender<TimelineAxisItem>(LineBrushProperty, LineWidthProperty, DotBrushProperty,
-            DotSizeProperty, DotBorderBrushProperty, DotBorderThicknessProperty);
+        // 修复：原实现漏注册 HalfSpacing / DotTopMargin，导致修改这两个属性不会触发重绘。
+        // 这两个属性在 Render() 中被读取（竖线段长度 / 圆点 Y 偏移），必须包含在 AffectsRender 中。
+        AffectsRender<TimelineAxisItem>(
+            LineBrushProperty, LineWidthProperty, DotBrushProperty,
+            DotSizeProperty, DotBorderBrushProperty, DotBorderThicknessProperty,
+            HalfSpacingProperty, DotTopMarginProperty);
     }
 
     public TimelineAxisItem()

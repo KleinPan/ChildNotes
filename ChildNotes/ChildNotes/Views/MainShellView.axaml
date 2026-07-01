@@ -8,17 +8,11 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.MainShellView"
              x:DataType="vm:MainShellViewModel"
+             x:CompileBindings="True"
              Background="{StaticResource WeuiBg0Brush}">
 
-    <UserControl.Styles>
-        <Style Selector="Button.tab-item TextBlock.tab-text">
-            <Setter Property="Foreground" Value="#999999"/>
-        </Style>
-        <Style Selector="Button.tab-item.active TextBlock.tab-text">
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-        </Style>
-    </UserControl.Styles>
+    <!-- 注：原 UserControl.Styles 中 tab-text 重复定义已删除，
+         WeUIStyles.axaml 中已有完全相同的 Style（Button.tab-item[.active] TextBlock.tab-text）。 -->
 
     <Grid RowDefinitions="*,Auto">
 

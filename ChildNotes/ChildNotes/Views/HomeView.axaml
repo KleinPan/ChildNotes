@@ -7,6 +7,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.HomeView"
              x:DataType="vm:HomeViewModel"
+             x:CompileBindings="True"
              UseLayoutRounding="True"
              Background="{StaticResource WeuiBg0Brush}">
 

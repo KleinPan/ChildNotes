@@ -5,10 +5,8 @@
     <Color x:Key="WeuiBg0">#EDEDED</Color>
     <Color x:Key="WeuiBg1">#F7F7F7</Color>
     <Color x:Key="WeuiBg2">#FFFFFF</Color>
-    <Color x:Key="WeuiBg3">#F7F7F7</Color>
 
     <Color x:Key="WeuiFg0">#E6000000</Color>
-    <Color x:Key="WeuiFgHalf">#E6000000</Color>
     <Color x:Key="WeuiFg1">#8C000000</Color>
     <Color x:Key="WeuiFg2">#4D000000</Color>
     <Color x:Key="WeuiFg3">#1A000000</Color>
@@ -16,7 +14,6 @@
     <SolidColorBrush x:Key="WeuiBg0Brush" Color="{StaticResource WeuiBg0}" />
     <SolidColorBrush x:Key="WeuiBg1Brush" Color="{StaticResource WeuiBg1}" />
     <SolidColorBrush x:Key="WeuiBg2Brush" Color="{StaticResource WeuiBg2}" />
-    <SolidColorBrush x:Key="WeuiBg3Brush" Color="{StaticResource WeuiBg3}" />
 
     <SolidColorBrush x:Key="WeuiFg0Brush" Color="{StaticResource WeuiFg0}" />
     <SolidColorBrush x:Key="WeuiFg1Brush" Color="{StaticResource WeuiFg1}" />
@@ -27,12 +24,7 @@
     <SolidColorBrush x:Key="WeuiOrangeBrush" Color="#FA9D3B" />
     <SolidColorBrush x:Key="WeuiYellowBrush" Color="#FFC300" />
     <SolidColorBrush x:Key="WeuiGreenBrush" Color="#07C160" />
-    <SolidColorBrush x:Key="WeuiGreenDarkBrush" Color="#06AD56" />
-    <SolidColorBrush x:Key="WeuiGreenLightBrush" Color="#E8F9EF" />
     <SolidColorBrush x:Key="WeuiBlueBrush" Color="#10AEFF" />
-    <SolidColorBrush x:Key="WeuiIndigoBrush" Color="#1485EE" />
-    <SolidColorBrush x:Key="WeuiPurpleBrush" Color="#6467F0" />
-    <SolidColorBrush x:Key="WeuiLinkBrush" Color="#576B95" />
 
     <SolidColorBrush x:Key="WeuiBgColorActiveBrush" Color="#ECECEC" />
     <SolidColorBrush x:Key="WeuiSeparatorBrush" Color="#1A000000" />
@@ -65,5 +57,4 @@
 
     <CornerRadius x:Key="WeuiCardRadius">8</CornerRadius>
     <CornerRadius x:Key="WeuiBtnRadius">6</CornerRadius>
-    <CornerRadius x:Key="WeuiSheetRadius">16,16,0,0</CornerRadius>
 </ResourceDictionary>

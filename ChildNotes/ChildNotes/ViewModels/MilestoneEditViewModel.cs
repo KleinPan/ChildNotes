@@ -22,11 +22,6 @@ public partial class MilestoneEditViewModel : ViewModelBase
 
     public event Action? Saved;
 
-    partial void OnRecordDateChanged(DateTimeOffset value)
-    {
-        // Semi DatePicker 双向绑定已处理显示，此处无需额外逻辑
-    }
-
     public void InitForAdd()
     {
         _editingId = 0;

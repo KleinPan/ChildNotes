@@ -22,19 +22,24 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
 
     public void Activate()
     {
-        LoadData();
+        _ = LoadDataAsync();
     }
 
-    private void LoadData()
+    /// <summary>
+    /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI。
+    /// 修复：原 LoadData 在 UI 线程同步调 _milestoneRepo.GetAll。
+    /// </summary>
+    private async Task LoadDataAsync()
     {
         var state = ServiceProvider.Instance.AppState;
+        var babyId = state.CurrentBabyId;
+        var userId = state.UserId;
+        // 后台线程执行 DB 查询
+        var list = await Task.Run(() => _milestoneRepo.GetAll(userId, babyId)
+                                                  .OrderBy(x => x.RecordDate)
+                                                  .ThenBy(x => x.Id)
+                                                  .ToList());
         Milestones.Clear();
-        // 仓库返回 DESC（最新在前）。此处按日期升序展示，
-        // 让最新记录显示在时间轴底部，与小程序端展示逻辑一致。
-        var list = _milestoneRepo.GetAll(state.UserId, state.CurrentBabyId)
-                               .OrderBy(x => x.RecordDate)
-                               .ThenBy(x => x.Id)
-                               .ToList();
         foreach (var m in list)
         {
             Milestones.Add(new MilestoneDisplayItem(m));
@@ -57,12 +62,12 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
     public void DeleteMilestone(MilestoneDisplayItem item)
     {
         _milestoneRepo.Delete(item.Milestone.Id);
-        LoadData();
+        _ = LoadDataAsync();
     }
 
     public void OnMilestoneSaved()
     {
-        LoadData();
+        _ = LoadDataAsync();
     }
 }
 

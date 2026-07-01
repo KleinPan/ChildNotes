@@ -41,30 +41,47 @@ public sealed class AiAnalysisRepository : BaseRepository
     public void Delete(long id)
         => ExecuteNonQuery("DELETE FROM ai_analysis_record WHERE id = @i", cmd => cmd.Add("@i", id));
 
+    /// <summary>LlmConfig 内存缓存：单行配置表，仅在 SaveLlmConfig 后失效。</summary>
+    private LlmConfig? _llmCached;
+    private readonly object _llmCacheLock = new();
+
     public LlmConfig GetLlmConfig()
     {
-        using var conn = OpenConnection();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source FROM llm_config WHERE id = 1";
-        using var r = cmd.ExecuteReader();
-        if (r.Read())
+        lock (_llmCacheLock)
         {
-            return new LlmConfig
-            {
-                ApiBaseUrl = r.GetString(0),
-                ApiKey = r.GetString(1),
-                ModelName = r.GetString(2),
-                Temperature = r.GetDouble(3),
-                MaxTokens = r.GetInt32(4),
-                Enabled = r.GetInt32(5) == 1,
-                NoteSource = r.IsDBNull(6) ? "local" : r.GetString(6),
-            };
+            if (_llmCached is not null) return _llmCached;
         }
-        return new LlmConfig();
+        LlmConfig cfg;
+        using (var conn = OpenConnection())
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source FROM llm_config WHERE id = 1";
+            using var r = cmd.ExecuteReader();
+            if (r.Read())
+            {
+                cfg = new LlmConfig
+                {
+                    ApiBaseUrl = r.GetString(0),
+                    ApiKey = r.GetString(1),
+                    ModelName = r.GetString(2),
+                    Temperature = r.GetDouble(3),
+                    MaxTokens = r.GetInt32(4),
+                    Enabled = r.GetInt32(5) == 1,
+                    NoteSource = r.IsDBNull(6) ? "local" : r.GetString(6),
+                };
+            }
+            else
+            {
+                cfg = new LlmConfig();
+            }
+        }
+        lock (_llmCacheLock) { _llmCached = cfg; }
+        return cfg;
     }
 
     public void SaveLlmConfig(LlmConfig config)
-        => ExecuteNonQuery(
+    {
+        ExecuteNonQuery(
             @"INSERT INTO llm_config (id, api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source, updated_at)
               VALUES (1, @u, @k, @m, @t, @mt, @e, @ns, @now)
               ON CONFLICT(id) DO UPDATE SET api_base_url=@u, api_key=@k, model_name=@m, temperature=@t, max_tokens=@mt, enabled=@e, note_source=@ns, updated_at=@now",
@@ -77,6 +94,8 @@ public sealed class AiAnalysisRepository : BaseRepository
                 .Add("@e", config.Enabled ? 1 : 0)
                 .Add("@ns", string.IsNullOrEmpty(config.NoteSource) ? "local" : config.NoteSource)
                 .AddUtc("@now", DateTime.UtcNow));
+        lock (_llmCacheLock) { _llmCached = null; }
+    }
 
     private static AiAnalysisRecord Map(SqliteDataReader r) => new()
     {

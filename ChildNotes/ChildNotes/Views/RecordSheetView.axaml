@@ -9,6 +9,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.RecordSheetView"
              x:DataType="vm:RecordSheetViewModel"
+             x:CompileBindings="True"
              IsVisible="{Binding IsVisible}">
 
     <UserControl.Styles>

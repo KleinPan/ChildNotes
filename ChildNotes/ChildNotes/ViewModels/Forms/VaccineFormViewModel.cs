@@ -26,6 +26,11 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
     }
     public ObservableCollection<CustomVaccine> CustomVaccines { get; } = new();
 
+    // ===== 预加载缓存：Home.Activate 时后台构建，点"补记"时直接用 =====
+    private static IReadOnlyList<VaccineTimelineGroup>? s_preloadedGroups;
+    private static DateTime? s_preloadedBirthDate;
+    private static int s_preloadedCustomCount = -1;
+
     // 已选剂次（点击时间轴上某个剂次后高亮）
     [ObservableProperty] private VaccinePlanView? _selectedPlan;
     [ObservableProperty] private string _recordDateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
@@ -52,41 +57,117 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
 
     public IReadOnlyList<string> CustomVaccineAgeUnits { get; } = new[] { "日龄", "周龄", "月龄", "周岁" };
 
-    /// <summary>初始化时间轴（在 Open 时调用）。异步执行：后台线程构建数据，UI 线程仅做集合同步。</summary>
+    /// <summary>预加载时间轴数据（在 Home.Activate 时后台调用，用户还没点"补记"）。</summary>
+    public static async Task PreloadAsync()
+    {
+        var appState = ServiceProvider.Instance.AppState;
+        var birthDate = appState.CurrentBaby?.BirthDate;
+        if (birthDate is null) return;
+
+        // 检查是否已有有效缓存（只检查 birthDate，自定义疫苗变化时由 LoadAsync 重新构建）
+        if (s_preloadedGroups is not null && s_preloadedBirthDate == birthDate)
+        {
+            DevLogger.Log("VaccinePerf", "Preload: cache hit, skipped");
+            return;
+        }
+
+        await Task.Run(() =>
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var today = DateTime.Today;
+            var recordService = ServiceProvider.Instance.RecordService;
+            var vaccineRecords = recordService.GetByType(RecordType.Vaccine, 1000);
+            // 预加载时自定义疫苗用空列表（用户还未添加自定义疫苗时这是正确的；
+            // 若已添加，LoadAsync 会检测到 customCount 不匹配而重建）
+            var plans = VaccineTimelineBuilder.BuildPlans(birthDate, Array.Empty<CustomVaccine>());
+            var views = VaccineTimelineBuilder.BuildPlanViews(plans, vaccineRecords, birthDate, today);
+            var result = VaccineTimelineBuilder.BuildGroups(views);
+            sw.Stop();
+
+            s_preloadedGroups = result;
+            s_preloadedBirthDate = birthDate;
+            s_preloadedCustomCount = 0;  // 预加载时按 0 个自定义疫苗
+            DevLogger.Log("VaccinePerf", $"Preload done | total={sw.ElapsedMilliseconds}ms | groups={result.Count}");
+        });
+    }
+
+    /// <summary>清除预加载缓存（记录疫苗后调用）。</summary>
+    public static void InvalidatePreload()
+    {
+        s_preloadedGroups = null;
+        s_preloadedBirthDate = null;
+        s_preloadedCustomCount = -1;
+    }
+
+    /// <summary>初始化时间轴（在 Open 时调用）。优先使用预加载缓存，否则后台构建。</summary>
     public async Task LoadAsync()
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var appState = ServiceProvider.Instance.AppState;
         var birthDate = appState.CurrentBaby?.BirthDate;
         var today = DateTime.Today;
-        // 拷贝 CustomVaccines 快照，避免后台线程与 UI 集合并发访问
         var customSnapshot = CustomVaccines.ToList();
 
-        // 后台线程执行：DB 读取 + 计划构建 + 状态计算 + 分组
-        var groups = await Task.Run(() =>
-        {
-            var dbSw = System.Diagnostics.Stopwatch.StartNew();
-            var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 1000);
-            dbSw.Stop();
-            var buildSw = System.Diagnostics.Stopwatch.StartNew();
-            var plans = VaccineTimelineBuilder.BuildPlans(birthDate, customSnapshot);
-            var views = VaccineTimelineBuilder.BuildPlanViews(plans, vaccineRecords, birthDate, today);
-            var result = VaccineTimelineBuilder.BuildGroups(views);
-            buildSw.Stop();
-            DevLogger.Log("VaccinePerf",
-                $"LoadAsync(background) | db={dbSw.ElapsedMilliseconds}ms | build={buildSw.ElapsedMilliseconds}ms | groups={result.Count} | views={views.Count}");
-            return result;
-        });
+        IReadOnlyList<VaccineTimelineGroup> groups;
 
-        // UI 线程：单次属性赋值（1 次 PropertyChanged vs 20 次 CollectionChanged，
-        // ItemsControl 整体刷新而非逐项重建子树，ui-sync 从 346ms 降至 ~50ms）
+        // 优先使用预加载缓存（命中时几乎无延迟）
+        if (s_preloadedGroups is not null &&
+            s_preloadedBirthDate == birthDate &&
+            s_preloadedCustomCount == customSnapshot.Count)
+        {
+            groups = s_preloadedGroups;
+            DevLogger.Log("VaccinePerf", "LoadAsync: PRELOAD HIT");
+        }
+        else
+        {
+            // 缓存未命中，后台构建
+            groups = await Task.Run(() =>
+            {
+                var dbSw = System.Diagnostics.Stopwatch.StartNew();
+                var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 1000);
+                dbSw.Stop();
+                var buildSw = System.Diagnostics.Stopwatch.StartNew();
+                var plans = VaccineTimelineBuilder.BuildPlans(birthDate, customSnapshot);
+                var views = VaccineTimelineBuilder.BuildPlanViews(plans, vaccineRecords, birthDate, today);
+                var result = VaccineTimelineBuilder.BuildGroups(views);
+                buildSw.Stop();
+                DevLogger.Log("VaccinePerf",
+                    $"LoadAsync(background) | db={dbSw.ElapsedMilliseconds}ms | build={buildSw.ElapsedMilliseconds}ms | groups={result.Count}");
+                return result;
+            });
+        }
+
+        // 渐进式显示：先显示前 4 个 group（~100ms ui-sync），让用户快速看到内容
+        var initialCount = Math.Min(4, groups.Count);
+        var previewGroups = groups.Take(initialCount).ToList();
+
         var uiSw = System.Diagnostics.Stopwatch.StartNew();
-        TimelineGroups = groups;   // 单次赋值，1 次通知
+        TimelineGroups = previewGroups;
         SelectedPlan = null;
         uiSw.Stop();
-        sw.Stop();
         DevLogger.Log("VaccinePerf",
-            $"LoadAsync(total) | total={sw.ElapsedMilliseconds}ms | ui-sync={uiSw.ElapsedMilliseconds}ms | groups={TimelineGroups.Count}");
+            $"LoadAsync(phase1) | total={sw.ElapsedMilliseconds}ms | ui-sync={uiSw.ElapsedMilliseconds}ms | shown={initialCount}/{groups.Count}");
+
+        // 剩余 group 在下一帧追加（不阻塞当前渲染）
+        if (groups.Count > initialCount)
+        {
+            var remaining = groups.Skip(initialCount).ToList();
+            _ = Avalonia.Threading.DispatcherTimer.RunOnce(() =>
+            {
+                var currentList = TimelineGroups.ToList();
+                currentList.AddRange(remaining);
+                TimelineGroups = currentList;
+                sw.Stop();
+                DevLogger.Log("VaccinePerf",
+                    $"LoadAsync(phase2 done) | total={sw.ElapsedMilliseconds}ms | groups={TimelineGroups.Count}");
+            }, TimeSpan.FromMilliseconds(16));  // 下一帧 (~60fps)
+        }
+        else
+        {
+            sw.Stop();
+            DevLogger.Log("VaccinePerf",
+                $"LoadAsync(total) | total={sw.ElapsedMilliseconds}ms | ui-sync={uiSw.ElapsedMilliseconds}ms");
+        }
     }
 
     /// <summary>点击时间轴上的剂次：选中并展示</summary>
