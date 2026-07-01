@@ -161,8 +161,8 @@ public static class KeyboardHeightService
             // ★ 获取底部系统栏（导航栏）高度，从可见区域中扣除
             //   GetWindowVisibleDisplayFrame 返回的不含状态栏但可能包含导航栏区域
             var windowInsets = ViewCompat.GetRootWindowInsets(_decorView);
-            var systemBarInsets = windowInsets?.GetInsets(WindowInsetsCompat.Type.SystemBars()) ?? new global::Android.Graphics.Insets(0, 0, 0, 0);
-            var bottomNavBarPx = systemBarInsets.Bottom;  // 底部导航栏高度（可能为0=手势导航）
+            var systemBarInsets = windowInsets?.GetInsets(WindowInsetsCompat.Type.SystemBars());
+            var bottomNavBarPx = systemBarInsets?.Bottom ?? 0;  // 底部导航栏高度（手势导航时=0）
 
             // 改进后的计算：真实屏幕高 - 可见区底部 - 底部导航栏
             var rawHeight = realScreenHeight - _rect.Bottom - bottomNavBarPx;
