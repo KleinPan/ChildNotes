@@ -20,9 +20,6 @@ public partial class RecordSheetView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
-    // ★ baseline：无键盘时的 TopLevel 客户区高度（adjustResize 压缩的就是这个）
-    private double _baselineClientHeight;
-
     public RecordSheetView()
     {
         InitializeComponent();
@@ -61,9 +58,6 @@ public partial class RecordSheetView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
-
-        UpdateBaseline();
-
         DevLogger.Log("SheetView", "Attached: listeners added");
     }
 
@@ -73,17 +67,6 @@ public partial class RecordSheetView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
-    }
-
-    /// <summary>更新 baseline（使用 TopLevel.ClientSize）</summary>
-    private void UpdateBaseline()
-    {
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel?.ClientSize.Height > 0)
-        {
-            _baselineClientHeight = topLevel.ClientSize.Height;
-            DevLogger.Log("SheetView", $"Baseline updated: {_baselineClientHeight:F1}lp (TopLevel.ClientSize)");
-        }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -134,23 +117,19 @@ public partial class RecordSheetView : UserControl
         if (!OperatingSystem.IsAndroid()) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
-
-        // ★ 获取 TopLevel.ClientSize（adjustResize 改变的是这个）
-        var topLevel = TopLevel.GetTopLevel(this);
-        var currentClientH = topLevel?.ClientSize.Height ?? 0;
         var parent = SheetRoot.Parent as Layoutable;
         var containerHeight = parent?.Bounds.Height ?? 0;
 
-        double rawOffset;
+        double offset;
         string offsetSource;
         if (kbHeight > 10)
         {
-            rawOffset = kbHeight;
+            offset = kbHeight;
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
-            rawOffset = containerHeight > 0 ? containerHeight * 0.45 : 350;
+            offset = containerHeight > 0 ? containerHeight * 0.45 : 350;
             offsetSource = "fallback";
         }
         else
@@ -162,19 +141,6 @@ public partial class RecordSheetView : UserControl
             return;
         }
 
-        // ★ 自动补偿：adjustResize 模式下系统已压缩了 TopLevel
-        double compensation = 0;
-        if (_baselineClientHeight > 0 && currentClientH > 0 && currentClientH < _baselineClientHeight)
-        {
-            compensation = _baselineClientHeight - currentClientH;
-        }
-
-        var offset = Math.Max(0, rawOffset - compensation);
-        if (compensation > 0)
-        {
-            offsetSource += $"+auto(-{compensation:F0}lp)";
-        }
-
         var maxOffset = containerHeight > 0 ? containerHeight * 0.92 : 800;
         if (offset > maxOffset)
         {
@@ -182,7 +148,7 @@ public partial class RecordSheetView : UserControl
             offsetSource += "(clamped)";
         }
 
-        // ★ TranslateTransform：纯视觉偏移，不触发布局重算
+        // TranslateTransform：纯视觉偏移
         SheetRoot.RenderTransform = new TranslateTransform(0, -offset);
         SheetRoot.Margin = new Thickness(0);
 
@@ -192,9 +158,7 @@ public partial class RecordSheetView : UserControl
         }
 
         DevLogger.Log("SheetView",
-            $"ApplyOffset | {reason} | src={offsetSource} | " +
-            $"kbH={kbHeight:F1}lp | raw={rawOffset:F1}lp | comp={compensation:F0}lp | offset={offset:F1}lp | " +
-            $"clientH={currentClientH:F1}lp | baseline={_baselineClientHeight:F1}lp | " +
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
             $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
             $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
@@ -207,9 +171,6 @@ public partial class RecordSheetView : UserControl
         SheetRoot.Margin = new Thickness(0);
         SheetRoot.MaxHeight = DefaultMaxHeight;
         _lastKbOffset = 0;
-
-        UpdateBaseline();
-
         DevLogger.Log("SheetView", $"ClearOffset | {reason}");
     }
 

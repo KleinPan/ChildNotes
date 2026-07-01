@@ -137,7 +137,10 @@ public static class KeyboardHeightService
 
     /// <summary>
     /// 回退方案：基于 ViewTreeObserver 的传统高度计算。
-    /// 使用经典公式：键盘高度 = 屏幕高度 - 可见区域底部位置
+    /// 改进公式：使用 displayMetrics 真实屏幕高度，并扣除底部系统栏（导航栏），
+    /// 避免将导航栏高度误计入键盘高度。
+    ///
+    /// 公式：keyboardHeight = realScreenHeight - visibleFrameBottom - bottomSystemBarInset
     /// </summary>
     private class GlobalLayoutListener : Java.Lang.Object, ViewTreeObserver.IOnGlobalLayoutListener
     {
@@ -150,8 +153,19 @@ public static class KeyboardHeightService
 
             _decorView.GetWindowVisibleDisplayFrame(_rect);
 
-            var screenHeight = _decorView.RootView.Height;
-            var rawHeight = screenHeight - _rect.Bottom;
+            // ★ 使用 DisplayMetrics 真实屏幕高度（不含/含系统装饰的物理像素）
+            var metrics = _decorView.Resources?.DisplayMetrics;
+            if (metrics is null) return;
+            var realScreenHeight = metrics.HeightPixels;  // 真实屏幕像素高
+
+            // ★ 获取底部系统栏（导航栏）高度，从可见区域中扣除
+            //   GetWindowVisibleDisplayFrame 返回的不含状态栏但可能包含导航栏区域
+            var windowInsets = ViewCompat.GetRootWindowInsets(_decorView);
+            var systemBarInsets = windowInsets?.GetInsets(WindowInsetsCompat.Type.SystemBars()) ?? new global::Android.Graphics.Insets(0, 0, 0, 0);
+            var bottomNavBarPx = systemBarInsets.Bottom;  // 底部导航栏高度（可能为0=手势导航）
+
+            // 改进后的计算：真实屏幕高 - 可见区底部 - 底部导航栏
+            var rawHeight = realScreenHeight - _rect.Bottom - bottomNavBarPx;
 
             // 过小值视为无键盘
             var keyboardHeightPx = rawHeight < 100 ? 0 : rawHeight;
