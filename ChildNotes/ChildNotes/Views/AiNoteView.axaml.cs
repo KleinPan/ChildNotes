@@ -17,6 +17,9 @@ public partial class AiNoteView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
+    // ★ TabBar 高度（从 MainShellView 动态获取，用于扣除测量值中多算的 TabBar 部分）
+    private double _tabBarHeight;
+
     public AiNoteView()
     {
         InitializeComponent();
@@ -29,6 +32,10 @@ public partial class AiNoteView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+
+        // ★ 尝试获取 MainShellView 的 TabBar 高度
+        UpdateTabBarHeight();
+
         DevLogger.Log("AiNoteView", "Attached: listeners added");
     }
 
@@ -38,6 +45,30 @@ public partial class AiNoteView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("AiNoteView", "Detached: listeners removed");
+    }
+
+    /// <summary>向上查找 MainShellView 并获取其 TabBar 高度</summary>
+    private void UpdateTabBarHeight()
+    {
+        _tabBarHeight = 0;
+        try
+        {
+            // 弹窗在 MainShellView > Grid.Row=0 > ContentControl 内部
+            // 向上查找 MainShellView
+            var shell = this.FindAncestorOfType<MainShellView>();
+            if (shell is not null)
+            {
+                // MainShellView 的 TabBar 是 Border.tab-bar（Grid.Row=1）
+                var tabBar = shell.GetTemplateChildren()
+                    .FirstOrDefault(c => c is Border b && b.Classes.Contains("tab-bar")) as Border;
+                if (tabBar?.Bounds.Height > 0)
+                {
+                    _tabBarHeight = tabBar.Bounds.Height;
+                    DevLogger.Log("AiNoteView", $"TabBar height: {_tabBarHeight:F1}lp");
+                }
+            }
+        }
+        catch { /* 查找失败时保持为0 */ }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -85,7 +116,10 @@ public partial class AiNoteView : UserControl
 
     /// <summary>
     /// 核心逻辑：通过 TranslateTransform.Y 将弹窗推到键盘上方。
-    /// 键盘高度由 KeyboardHeightService 精确测量（已扣除导航栏等系统栏）。
+    ///
+    /// ★ 关键修正：键盘高度测量值是从屏幕底部到可见区域底部的距离，
+    ///   这包含了 TabBar 的高度。但弹窗在 TabBar 上方的 overlay 中，
+    ///   不需要为 TabBar 预留空间，所以需要扣除 TabBar 高度。
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
@@ -100,7 +134,8 @@ public partial class AiNoteView : UserControl
         string offsetSource;
         if (kbHeight > 10)
         {
-            offset = kbHeight;
+            // ★ 扣除 TabBar 高度（测量值包含 TabBar，但弹窗不需要为它预留空间）
+            offset = Math.Max(0, kbHeight - _tabBarHeight);
             offsetSource = "native";
         }
         else if (_textBoxFocused)
@@ -135,7 +170,7 @@ public partial class AiNoteView : UserControl
         }
 
         DevLogger.Log("AiNoteView",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | " +
             $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
             $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;

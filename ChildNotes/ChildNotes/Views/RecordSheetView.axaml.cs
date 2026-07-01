@@ -20,6 +20,9 @@ public partial class RecordSheetView : UserControl
     private bool _textBoxFocused;
     private double _lastKbOffset;
 
+    // ★ TabBar 高度（从 MainShellView 动态获取）
+    private double _tabBarHeight;
+
     public RecordSheetView()
     {
         InitializeComponent();
@@ -58,6 +61,9 @@ public partial class RecordSheetView : UserControl
         AddHandler(InputElement.GotFocusEvent, OnGotFocus, RoutingStrategies.Bubble);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Bubble);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
+
+        UpdateTabBarHeight();
+
         DevLogger.Log("SheetView", "Attached: listeners added");
     }
 
@@ -67,6 +73,27 @@ public partial class RecordSheetView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
+    }
+
+    /// <summary>向上查找 MainShellView 并获取其 TabBar 高度</summary>
+    private void UpdateTabBarHeight()
+    {
+        _tabBarHeight = 0;
+        try
+        {
+            var shell = this.FindAncestorOfType<MainShellView>();
+            if (shell is not null)
+            {
+                var tabBar = shell.GetTemplateChildren()
+                    .FirstOrDefault(c => c is Border b && b.Classes.Contains("tab-bar")) as Border;
+                if (tabBar?.Bounds.Height > 0)
+                {
+                    _tabBarHeight = tabBar.Bounds.Height;
+                    DevLogger.Log("SheetView", $"TabBar height: {_tabBarHeight:F1}lp");
+                }
+            }
+        }
+        catch { /* 查找失败时保持为0 */ }
     }
 
     private void OnKeyboardHeightChanged(double keyboardHeightLp)
@@ -124,7 +151,8 @@ public partial class RecordSheetView : UserControl
         string offsetSource;
         if (kbHeight > 10)
         {
-            offset = kbHeight;
+            // ★ 扣除 TabBar 高度
+            offset = Math.Max(0, kbHeight - _tabBarHeight);
             offsetSource = "native";
         }
         else if (_textBoxFocused)
@@ -158,7 +186,7 @@ public partial class RecordSheetView : UserControl
         }
 
         DevLogger.Log("SheetView",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | offset={offset:F1}lp | " +
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | " +
             $"containerH={containerHeight:F1}lp | MaxH={SheetRoot.MaxHeight:F0} | " +
             $"sheetY={SheetRoot.Bounds.Y:F0} | sheetBottom={SheetRoot.Bounds.Y + SheetRoot.Bounds.Height:F0}");
         _lastKbOffset = offset;
