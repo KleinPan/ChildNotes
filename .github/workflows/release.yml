@@ -208,70 +208,12 @@ jobs:
           }
 
   # -----------------------------------------------------------------
-  # Docker 构建与推送：后端 API 镜像推送到 GHCR（GitHub Container Registry）
-  # -----------------------------------------------------------------
-  docker:
-    name: Build & Push Docker Image
-    needs: build
-    runs-on: ubuntu-latest
-    if: always() && startsWith(github.ref, 'refs/tags/')
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}/api
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=
-            latest
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./ChildNotes.Backend/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-
-      - name: Docker summary
-        if: always()
-        shell: bash
-        run: |
-          echo "::notice::Docker 镜像已推送至 GHCR，标签列表："
-          echo "${{ steps.meta.outputs.tags }}"
-
-  # -----------------------------------------------------------------
-  # 发布 Release：所有平台构建 + Docker 推送完成后，将压缩包作为 GitHub Release 资源发布
+  # 发布 Release：所有平台构建完成后，将压缩包作为 GitHub Release 资源发布
+  # （Docker 镜像由独立 workflow docker-publish.yml 并行构建）
   # -----------------------------------------------------------------
   release:
     name: Publish GitHub Release
-    needs: [build, docker]
+    needs: build
     runs-on: ubuntu-latest
     if: always() && startsWith(github.ref, 'refs/tags/')
     timeout-minutes: 10
