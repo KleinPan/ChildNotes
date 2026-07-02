@@ -22,21 +22,25 @@ public sealed class ApiSyncService : BaseApiClient
     private readonly SyncConfigRepository _cfgRepo;
     private readonly BabyRepository _babyRepo;
     private readonly RecordRepository _recordRepo;
+    private readonly MilestoneRepository _milestoneRepo;
     private readonly Data.DbConnectionFactory? _dbFactory;
 
     /// <summary>同步过程依赖的网络监测器（可选，由 ServiceProvider 注入）。</summary>
     public NetworkMonitor? NetworkMonitor { get; set; }
 
-    public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo)
+    public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo,
+        MilestoneRepository milestoneRepo)
     {
         _cfgRepo = cfgRepo;
         _babyRepo = babyRepo;
         _recordRepo = recordRepo;
+        _milestoneRepo = milestoneRepo;
     }
 
     /// <summary>带 DbConnectionFactory 的构造函数，启用同步前备份能力。</summary>
-    public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo, Data.DbConnectionFactory dbFactory)
-        : this(cfgRepo, babyRepo, recordRepo)
+    public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo,
+        MilestoneRepository milestoneRepo, Data.DbConnectionFactory dbFactory)
+        : this(cfgRepo, babyRepo, recordRepo, milestoneRepo)
     {
         _dbFactory = dbFactory;
     }
@@ -51,8 +55,10 @@ public sealed class ApiSyncService : BaseApiClient
         public string Message { get; init; } = "";
         public int PulledBabies { get; init; }
         public int PulledRecords { get; init; }
+        public int PulledMilestones { get; init; }
         public int PushedBabies { get; init; }
         public int PushedRecords { get; init; }
+        public int PushedMilestones { get; init; }
         public DateTime DoneAt { get; init; }
         /// <summary>错误分类（失败时填充），供 UI 决定是否显示重试按钮。</summary>
         public SyncErrorKind? ErrorKind { get; init; }
@@ -104,7 +110,7 @@ public sealed class ApiSyncService : BaseApiClient
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
             //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
-            int pulledBabies = 0, pulledRecords = 0, pullPages = 0;
+            int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pullPages = 0;
             DateTime? cursor = since;
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
@@ -124,13 +130,15 @@ public sealed class ApiSyncService : BaseApiClient
                         if (_babyRepo.UpsertFromSync(MapToBaby(b), pullConn, pullTx)) pulledBabies++;
                     foreach (var r in pageResp.Records)
                         if (_recordRepo.UpsertFromSync(MapToRecord(r), pullConn, pullTx)) pulledRecords++;
+                    foreach (var m in pageResp.Milestones)
+                        if (_milestoneRepo.UpsertFromSync(MapToMilestone(m), pullConn, pullTx)) pulledMilestones++;
 
                     pullPages++;
                     DevLogger.Log("Sync",
-                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, hasMore={pageResp.HasMore}");
+                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, hasMore={pageResp.HasMore}");
 
-                    // HasMore 为 false 或无数据时终止；游标推进到 NextCursor
-                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0))
+                    // HasMore 为 false 或三类都无数据时终止；游标推进到 NextCursor
+                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0))
                         break;
                     cursor = pageResp.NextCursor ?? cursor.Value;
                 }
@@ -143,11 +151,13 @@ public sealed class ApiSyncService : BaseApiClient
             var pushSince = since;
             var localBabies = _babyRepo.GetByUpdatedAt(pushSince);
             var localRecords = _recordRepo.GetByUpdatedAt(pushSince);
+            var localMilestones = _milestoneRepo.GetByUpdatedAt(pushSince);
 
             var pushReq = new SyncBatchRequest
             {
                 Babies = localBabies.Select(MapToBabyItem).ToList(),
                 Records = localRecords.Select(MapToRecordItem).ToList(),
+                Milestones = localMilestones.Select(MapToMilestoneItem).ToList(),
             };
             var pushResp = await PushWithRetryAsync(serverUrl, token, pushReq, ct);
             if (pushResp is null)
@@ -158,6 +168,7 @@ public sealed class ApiSyncService : BaseApiClient
             {
                 _babyRepo.MarkSynced(localBabies.Select(b => b.Id), pushResp.ServerTime);
                 _recordRepo.MarkSynced(localRecords.Select(r => r.Id), pushResp.ServerTime);
+                _milestoneRepo.MarkSynced(localMilestones.Select(m => m.Id), pushResp.ServerTime);
             }
             catch (Exception ex)
             {
@@ -168,7 +179,7 @@ public sealed class ApiSyncService : BaseApiClient
             // 5. 更新本地同步时间戳
             cfg.LastSyncAt = pushResp.ServerTime;
             cfg.LastSyncStatus = "ok";
-            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条";
+            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑";
             _cfgRepo.Save(cfg);
 
             // 6. 通知网络监测器本次成功，加速从 OfflineServer 恢复
@@ -180,8 +191,10 @@ public sealed class ApiSyncService : BaseApiClient
                 Message = cfg.LastSyncMsg!,
                 PulledBabies = pulledBabies,
                 PulledRecords = pulledRecords,
+                PulledMilestones = pulledMilestones,
                 PushedBabies = pushResp.BabiesUpserted,
                 PushedRecords = pushResp.RecordsUpserted,
+                PushedMilestones = pushResp.MilestonesUpserted,
                 DoneAt = DateTime.Now,
                 PullPages = pullPages,
             };
@@ -367,5 +380,25 @@ public sealed class ApiSyncService : BaseApiClient
         HeightCm = r.HeightCm, WeightKg = r.WeightKg,
         PayloadJson = r.PayloadJson ?? "{}", Deleted = r.Deleted,
         CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+    };
+
+    private static Milestone MapToMilestone(SyncMilestoneItem i) => new()
+    {
+        Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
+        Title = i.Title, Content = i.Content,
+        RecordDate = i.RecordDate,
+        PhotosJson = string.IsNullOrEmpty(i.PhotosJson) ? "[]" : i.PhotosJson,
+        Deleted = i.Deleted,
+        CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
+    };
+
+    private static SyncMilestoneItem MapToMilestoneItem(Milestone m) => new()
+    {
+        Id = m.Id, UserId = m.UserId, BabyId = m.BabyId,
+        Title = m.Title, Content = m.Content,
+        RecordDate = m.RecordDate,
+        PhotosJson = m.PhotosJson ?? "[]",
+        Deleted = m.Deleted,
+        CreatedAt = m.CreatedAt, UpdatedAt = m.UpdatedAt,
     };
 }

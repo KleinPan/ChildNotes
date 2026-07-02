@@ -1,3 +1,8 @@
+using System.Collections.ObjectModel;
+using System.Text.Json;
+using System.IO;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Data.Repositories;
@@ -7,16 +12,73 @@ using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
 
+/// <summary>
+/// 单张待保存照片的视图项。
+/// <list type="bullet">
+///   <item><description>Source: 显示用路径（本地路径或远程 URL，UI 据此加载 Bitmap）</description></item>
+///   <item><description>LocalPath: 本地持久化路径；新增时与 Source 相同；编辑加载远程 URL 时为 null</description></item>
+///   <item><description>RemoteUrl: 异步上传成功后的服务器 URL；尚未上传或上传失败为 null</description></item>
+/// </list>
+/// 序列化到 PhotosJson 时优先用 RemoteUrl，回退 LocalPath。
+/// </summary>
+public sealed class MilestonePhotoItem : ObservableObject
+{
+    public string Source { get; }
+    public string? LocalPath { get; }
+    public string? RemoteUrl { get; private set; }
+
+    private Bitmap? _bitmap;
+    public Bitmap? Bitmap
+    {
+        get => _bitmap;
+        set => SetProperty(ref _bitmap, value);
+    }
+
+    private bool _isUploading;
+    public bool IsUploading
+    {
+        get => _isUploading;
+        set => SetProperty(ref _isUploading, value);
+    }
+
+    public MilestonePhotoItem(string source, string? localPath, string? remoteUrl = null)
+    {
+        Source = source;
+        LocalPath = localPath;
+        RemoteUrl = remoteUrl;
+    }
+
+    /// <summary>标记异步上传已完成（成功则更新 RemoteUrl）。</summary>
+    public void MarkUploaded(string? url)
+    {
+        RemoteUrl = url;
+        IsUploading = false;
+    }
+
+    /// <summary>序列化时使用的最终路径：优先远程 URL，回退本地路径。</summary>
+    public string ToStoredPath() => !string.IsNullOrWhiteSpace(RemoteUrl) ? RemoteUrl : Source;
+}
+
 public partial class MilestoneEditViewModel : ViewModelBase
 {
     private readonly MilestoneRepository _repo = ServiceProvider.Instance.MilestoneRepository;
     private readonly AppState _state = ServiceProvider.Instance.AppState;
+    private readonly UploadService _upload = ServiceProvider.Instance.UploadService;
+    private readonly SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
+
+    private const int MaxPhotos = 4;
 
     [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private string _content = string.Empty;
     [ObservableProperty] private DateTimeOffset _recordDate = DateTimeOffset.Now;
     [ObservableProperty] private string _sheetTitle = "添加成长时刻";
     [ObservableProperty] private bool _isVisible;
+
+    /// <summary>表单内编辑中的照片列表。</summary>
+    public ObservableCollection<MilestonePhotoItem> Photos { get; } = new();
+
+    /// <summary>是否还能继续添加照片（达到上限时隐藏"+"按钮）。</summary>
+    public bool CanAddPhoto => Photos.Count < MaxPhotos;
 
     private long _editingId;
 
@@ -31,6 +93,8 @@ public partial class MilestoneEditViewModel : ViewModelBase
         RecordDate = new DateTimeOffset(localDate);
         SheetTitle = "添加成长时刻";
         ErrorMessage = string.Empty;
+        Photos.Clear();
+        RefreshCanAddPhoto();
     }
 
     public void InitForEdit(Milestone m)
@@ -42,6 +106,14 @@ public partial class MilestoneEditViewModel : ViewModelBase
         RecordDate = new DateTimeOffset(localDate);
         SheetTitle = "编辑成长时刻";
         ErrorMessage = string.Empty;
+        Photos.Clear();
+        foreach (var path in DeserializePhotos(m.PhotosJson))
+        {
+            var item = new MilestonePhotoItem(path, localPath: IsLocalPath(path) ? path : null, remoteUrl: IsRemoteUrl(path) ? path : null);
+            LoadBitmapAsync(item);
+            Photos.Add(item);
+        }
+        RefreshCanAddPhoto();
     }
 
     public void Show() => IsVisible = true;
@@ -50,6 +122,81 @@ public partial class MilestoneEditViewModel : ViewModelBase
     private void Close()
     {
         IsVisible = false;
+    }
+
+    /// <summary>
+    /// 添加图片：由 View 调用，传入文件选择器返回的 IStorageFile。
+    /// 流程：1) 立即复制到本地 images 目录（本地优先）；2) 加入 Photos 集合立即显示；
+    ///       3) 后台异步上传到服务器，成功后用 URL 替换 Source（用户可见性无变化，但 PhotosJson 序列化为 URL）。
+    /// </summary>
+    public async Task AddPhotoAsync(IStorageFile file)
+    {
+        if (Photos.Count >= MaxPhotos) return;
+
+        // 1. 复制到本地持久化目录
+        var localPath = await _upload.SaveImageAsync(file);
+        if (localPath is null)
+        {
+            ErrorMessage = "图片保存失败";
+            return;
+        }
+
+        // 2. 加入集合立即显示
+        var item = new MilestonePhotoItem(localPath, localPath: localPath);
+        LoadBitmapAsync(item);
+        Photos.Add(item);
+        RefreshCanAddPhoto();
+
+        // 3. 后台异步上传到服务器（不阻塞 UI，失败静默保留本地路径）
+        item.IsUploading = true;
+        _ = UploadPhotoAsync(item);
+    }
+
+    private async Task UploadPhotoAsync(MilestonePhotoItem item)
+    {
+        try
+        {
+            // 未配置同步或无 token 时跳过上传，保留本地路径
+            var url = await _upload.UploadToServerAsync(item.LocalPath ?? item.Source);
+            item.MarkUploaded(url);
+            if (url is null)
+            {
+                DevLogger.Log("MilestoneEdit", "图片异步上传未完成（未配置同步或失败），保留本地路径");
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("MilestoneEdit", "图片异步上传异常: " + ex.Message);
+            item.MarkUploaded(null);
+        }
+    }
+
+    [RelayCommand]
+    private void RemovePhoto(MilestonePhotoItem? item)
+    {
+        if (item is null) return;
+        Photos.Remove(item);
+        RefreshCanAddPhoto();
+        // 注：与小程序一致，删除仅从本地数组移除，不通知后端清理已上传文件（可能产生孤儿文件）
+    }
+
+    private void RefreshCanAddPhoto() => OnPropertyChanged(nameof(CanAddPhoto));
+
+    /// <summary>异步加载本地图片为 Bitmap（后台线程解码，避免阻塞 UI）。</summary>
+    private static async void LoadBitmapAsync(MilestonePhotoItem item)
+    {
+        var path = item.Source;
+        try
+        {
+            // 远程 URL 不在此加载（UI 层用 Image 异步加载或显示占位）
+            if (!File.Exists(path)) return;
+            await using var fs = File.OpenRead(path);
+            item.Bitmap = await Task.Run(() => new Bitmap(fs));
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("MilestoneEdit", $"加载图片失败: {ex.Message}");
+        }
     }
 
     [RelayCommand]
@@ -67,6 +214,10 @@ public partial class MilestoneEditViewModel : ViewModelBase
             return;
         }
 
+        // 等待所有正在上传的图片完成（最多等待 5 秒，超时则用本地路径保存）
+        WaitForUploads(TimeSpan.FromSeconds(5));
+
+        var photos = Photos.Select(p => p.ToStoredPath()).ToList();
         var m = new Milestone
         {
             Id = _editingId,
@@ -75,7 +226,8 @@ public partial class MilestoneEditViewModel : ViewModelBase
             Title = Title.Trim(),
             Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
             RecordDate = RecordDate.LocalDateTime.Date,
-            PhotosJson = "[]",
+            PhotosJson = JsonSerializer.Serialize(photos),
+            DeviceId = _cfgRepo.Get().DeviceId,
         };
 
         if (_editingId == 0)
@@ -87,6 +239,16 @@ public partial class MilestoneEditViewModel : ViewModelBase
         Saved?.Invoke();
     }
 
+    /// <summary>等待所有 IsUploading=true 的图片完成上传。超时后强制结束。</summary>
+    private void WaitForUploads(TimeSpan timeout)
+    {
+        var deadline = DateTime.Now + timeout;
+        while (DateTime.Now < deadline && Photos.Any(p => p.IsUploading))
+        {
+            Thread.Sleep(100);
+        }
+    }
+
     [RelayCommand]
     private void Delete()
     {
@@ -95,4 +257,14 @@ public partial class MilestoneEditViewModel : ViewModelBase
         IsVisible = false;
         Saved?.Invoke();
     }
+
+    private static List<string> DeserializePhotos(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return new();
+        try { return JsonSerializer.Deserialize<List<string>>(json) ?? new(); }
+        catch { return new(); }
+    }
+
+    private static bool IsLocalPath(string s) => !string.IsNullOrWhiteSpace(s) && !s.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+    private static bool IsRemoteUrl(string s) => s.StartsWith("http", StringComparison.OrdinalIgnoreCase);
 }

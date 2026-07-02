@@ -46,6 +46,10 @@ public sealed class ServiceProvider
 
         var imageDir = Path.Combine(appDir, "images");
 
+        // SyncConfigRepository 提前初始化：UploadService 依赖它做异步上传
+        SyncConfigRepository = new SyncConfigRepository(DbFactory);
+        EnsureDeviceId();
+
         AppState = new AppState();
         var userRepo = new UserRepository(DbFactory);
         var babyRepo = new BabyRepository(DbFactory);
@@ -58,15 +62,13 @@ public sealed class ServiceProvider
         PointsRepository = new PointsRepository(DbFactory);
         PointsService = new PointsService(PointsRepository, RecordService, AppState);
         MilestoneRepository = new MilestoneRepository(DbFactory);
-        UploadService = new UploadService(imageDir);
+        UploadService = new UploadService(imageDir, SyncConfigRepository);
         AiAnalysisRepository = new AiAnalysisRepository(DbFactory);
         LlmClient = new LlmClient();
         AiAnalysisService = new AiAnalysisService(AiAnalysisRepository, RecordService, BabyService, AppState, LlmClient);
 
-        SyncConfigRepository = new SyncConfigRepository(DbFactory);
-        EnsureDeviceId();
         NetworkMonitor = new NetworkMonitor();
-        ApiSyncService = new ApiSyncService(SyncConfigRepository, babyRepo, recordRepo, DbFactory);
+        ApiSyncService = new ApiSyncService(SyncConfigRepository, babyRepo, recordRepo, MilestoneRepository, DbFactory);
         ApiSyncService.NetworkMonitor = NetworkMonitor;
         SyncTrigger = new SyncTrigger(ApiSyncService);
         SyncTrigger.NetworkMonitor = NetworkMonitor;

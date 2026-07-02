@@ -31,11 +31,30 @@ public class SyncPullResponse
 {
     public List<SyncRecordItem> Records { get; set; } = new();
     public List<SyncBabyItem> Babies { get; set; } = new();
+    public List<SyncMilestoneItem> Milestones { get; set; } = new();
     public DateTime ServerTime { get; set; }
     /// <summary>是否还有更多数据可拉取（分页用）。true 时客户端应继续请求下一页。</summary>
     public bool HasMore { get; set; }
     /// <summary>下一页游标（已拉取记录的最大 updated_at）。客户端下次请求作为 since 之外的偏移基准。</summary>
     public DateTime? NextCursor { get; set; }
+}
+
+/// <summary>
+/// 成长时刻（里程碑）同步项。与 <see cref="SyncRecordItem"/> 平行，独立同步通道。
+/// PhotosJson 透传图片 URL 数组字符串，前后端不解析。
+/// </summary>
+public class SyncMilestoneItem
+{
+    public long Id { get; set; }
+    public long UserId { get; set; }
+    public long? BabyId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string? Content { get; set; }
+    public DateTime RecordDate { get; set; }
+    public string PhotosJson { get; set; } = "[]";
+    public bool Deleted { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class SyncBabyItem
@@ -54,11 +73,13 @@ public class SyncBatchRequest
 {
     public List<SyncRecordItem> Records { get; set; } = new();
     public List<SyncBabyItem> Babies { get; set; } = new();
+    public List<SyncMilestoneItem> Milestones { get; set; } = new();
 }
 
 public class SyncBatchResponse
 {
     public int RecordsUpserted { get; set; }
     public int BabiesUpserted { get; set; }
+    public int MilestonesUpserted { get; set; }
     public DateTime ServerTime { get; set; }
 }

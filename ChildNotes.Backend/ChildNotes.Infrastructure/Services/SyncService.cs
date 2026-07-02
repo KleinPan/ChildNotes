@@ -49,9 +49,16 @@ public class SyncService : ISyncService
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
+        // 里程碑：仅同步当前用户自己创建的（不受 baby_member 跨用户共享约束，与小程序一致）
+        var milestones = await _db.Milestones.AsNoTracking()
+            .Where(m => m.UserId == uid && m.UpdatedAt > sinceUtc)
+            .OrderBy(m => m.UpdatedAt)
+            .Take(pageLimit)
+            .ToListAsync(ct);
+
         // 分页判定：任一类型达到上限即认为可能有更多数据
-        var hasMore = babies.Count == pageLimit || records.Count == pageLimit;
-        // 游标取已拉取数据中最大的 updated_at（两类取较新者）
+        var hasMore = babies.Count == pageLimit || records.Count == pageLimit || milestones.Count == pageLimit;
+        // 游标取已拉取数据中最大的 updated_at（三类取较新者）
         DateTime? nextCursor = null;
         if (records.Count > 0) nextCursor = records.Max(r => r.UpdatedAt);
         if (babies.Count > 0)
@@ -59,11 +66,17 @@ public class SyncService : ISyncService
             var babyMax = babies.Max(b => b.UpdatedAt);
             nextCursor = nextCursor.HasValue ? (babyMax > nextCursor ? babyMax : nextCursor) : babyMax;
         }
+        if (milestones.Count > 0)
+        {
+            var msMax = milestones.Max(m => m.UpdatedAt);
+            nextCursor = nextCursor.HasValue ? (msMax > nextCursor ? msMax : nextCursor) : msMax;
+        }
 
         return new SyncPullResponse
         {
             Babies = babies.Select(ToBabyItem).ToList(),
             Records = records.Select(ToRecordItem).ToList(),
+            Milestones = milestones.Select(ToMilestoneItem).ToList(),
             ServerTime = DateTime.UtcNow,
             HasMore = hasMore,
             NextCursor = nextCursor,
@@ -120,11 +133,31 @@ public class SyncService : ISyncService
             }
         }
 
+        var milestonesUpserted = 0;
+        foreach (var item in req.Milestones ?? new())
+        {
+            // 权限：只能 upsert 自己创建的里程碑
+            if (item.UserId != uid) continue;
+
+            var existing = await _db.Milestones.FirstOrDefaultAsync(m => m.Id == item.Id, ct);
+            if (existing is null)
+            {
+                _db.Milestones.Add(FromItem(item));
+                milestonesUpserted++;
+            }
+            else if (item.UpdatedAt > existing.UpdatedAt)
+            {
+                CopyTo(existing, item);
+                milestonesUpserted++;
+            }
+        }
+
         await _db.SaveChangesAsync(ct);
         return new SyncBatchResponse
         {
             RecordsUpserted = recordsUpserted,
             BabiesUpserted = babiesUpserted,
+            MilestonesUpserted = milestonesUpserted,
             ServerTime = DateTime.UtcNow,
         };
     }
@@ -214,6 +247,45 @@ public class SyncService : ISyncService
         existing.HeightCm = src.HeightCm;
         existing.WeightKg = src.WeightKg;
         existing.PayloadJson = src.PayloadJson;
+        existing.Deleted = src.Deleted;
+        existing.UpdatedAt = src.UpdatedAt;
+    }
+
+    private static SyncMilestoneItem ToMilestoneItem(Milestone m) => new()
+    {
+        Id = m.Id,
+        UserId = m.UserId,
+        BabyId = m.BabyId,
+        Title = m.Title,
+        Content = m.Content,
+        RecordDate = m.RecordDate,
+        PhotosJson = m.PhotosJson,
+        Deleted = m.Deleted,
+        CreatedAt = m.CreatedAt,
+        UpdatedAt = m.UpdatedAt,
+    };
+
+    private static Milestone FromItem(SyncMilestoneItem i) => new()
+    {
+        Id = i.Id,
+        UserId = i.UserId,
+        BabyId = i.BabyId,
+        Title = i.Title,
+        Content = i.Content,
+        RecordDate = DateTime.SpecifyKind(i.RecordDate, DateTimeKind.Utc),
+        PhotosJson = i.PhotosJson ?? "[]",
+        Deleted = i.Deleted,
+        CreatedAt = i.CreatedAt,
+        UpdatedAt = i.UpdatedAt,
+    };
+
+    private static void CopyTo(Milestone existing, SyncMilestoneItem src)
+    {
+        existing.Title = src.Title;
+        existing.Content = src.Content;
+        existing.RecordDate = DateTime.SpecifyKind(src.RecordDate, DateTimeKind.Utc);
+        existing.PhotosJson = src.PhotosJson ?? "[]";
+        existing.BabyId = src.BabyId;
         existing.Deleted = src.Deleted;
         existing.UpdatedAt = src.UpdatedAt;
     }

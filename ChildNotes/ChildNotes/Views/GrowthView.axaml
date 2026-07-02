@@ -76,6 +76,45 @@
             <Setter Property="BorderBrush" Value="#CCC" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
+
+        <!--  照片删除按钮：圆形半透明黑底白字（对齐小程序 .g-photo-del）。
+              覆盖 Button 默认主题，避免出现边框/默认背景。  -->
+        <Style Selector="Button.photo-del-btn">
+            <Setter Property="Background" Value="#80000000" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="11" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.photo-del-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#A0000000" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.photo-del-btn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#CC000000" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
+        <!--  照片添加按钮：虚线边框浅灰底（对齐小程序 .g-photo-add）  -->
+        <Style Selector="Button.photo-add-btn">
+            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.photo-add-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#F0F0F0" />
+            <Setter Property="BorderBrush" Value="#CCC" />
+        </Style>
     </UserControl.Styles>
 
     <Panel>
@@ -108,6 +147,22 @@
                                         <Border Padding="10,8" Background="#F5F5F5" CornerRadius="4" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Classes="growth-content" Text="{Binding Content}" />
                                         </Border>
+                                        <!--  照片缩略图网格（最多 4 张）  -->
+                                        <ItemsControl IsVisible="{Binding HasPhotos}" ItemsSource="{Binding PhotoThumbnails}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="x:String">
+                                                    <Border Width="72" Height="72" Margin="0,0,6,6" CornerRadius="6" ClipToBounds="True">
+                                                        <Image Source="{Binding Converter={x:Static v:GrowthView.LocalPathToBitmapConverter}}"
+                                                               Stretch="UniformToFill" />
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -185,6 +240,54 @@
                                          Text="{Binding MilestoneEdit.Content}"
                                          TextWrapping="Wrap" />
                             </StackPanel>
+                            <!--  照片编辑区：网格 + 添加按钮，最多 4 张  -->
+                            <StackPanel>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="照片（选填，最多4张）" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11"
+                                               Foreground="{StaticResource WeuiFg2Brush}"
+                                               IsVisible="{Binding MilestoneEdit.CanAddPhoto}"
+                                               Text="点击 + 添加" />
+                                </Grid>
+                                <WrapPanel>
+                                    <ItemsControl HorizontalAlignment="Left" ItemsSource="{Binding MilestoneEdit.Photos}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:MilestonePhotoItem">
+                                                <Grid Width="80" Height="80" Margin="0,0,8,8">
+                                                    <Border CornerRadius="6" ClipToBounds="True">
+                                                        <!--  本地路径直接绑定 Bitmap；远程 URL 用 Image 异步加载  -->
+                                                        <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
+                                                    </Border>
+                                                    <!--  上传中指示器  -->
+                                                    <Border Background="#80000000" CornerRadius="6" IsVisible="{Binding IsUploading}">
+                                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   FontSize="10" Foreground="White" Text="上传中" />
+                                                    </Border>
+                                                    <!--  删除按钮（右上角内侧，对齐小程序 top:4rpx right:4rpx）  -->
+                                                <Button Width="22" Height="22" Margin="0,3,3,0"
+                                                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                        Classes="photo-del-btn"
+                                                        Click="OnRemovePhotoClick"
+                                                        Tag="{Binding .}"
+                                                        Content="✕" FontSize="11" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <!--  添加按钮：与照片同处一个 WrapPanel，跟随最后一张照片右侧；达到上限时隐藏  -->
+                                    <Button Width="80" Height="80" Margin="0,0,0,8"
+                                            Classes="photo-add-btn"
+                                            Click="OnAddPhotoClick"
+                                            IsVisible="{Binding MilestoneEdit.CanAddPhoto}">
+                                        <TextBlock FontSize="28" Foreground="#CCC" Text="+" />
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
                             <TextBlock FontSize="13" Foreground="{StaticResource WeuiRedBrush}" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding MilestoneEdit.ErrorMessage}" />
                         </StackPanel>
                     </ScrollViewer>
@@ -203,6 +306,20 @@
                     </Border>
                 </Grid>
             </Border>
+        </Panel>
+
+        <!--  全屏图片预览弹窗（点击缩略图触发）  -->
+        <Panel x:Name="PhotoPreviewPanel" IsVisible="False" Background="#CC000000">
+            <Grid>
+                <Image x:Name="PreviewImage" Width="900" Height="700"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Stretch="Uniform" />
+                <Button Width="44" Height="44" Margin="0,24,24,0"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Click="OnClosePreview"
+                        Content="✕" FontSize="18" Foreground="Black" />
+            </Grid>
         </Panel>
 
     </Panel>

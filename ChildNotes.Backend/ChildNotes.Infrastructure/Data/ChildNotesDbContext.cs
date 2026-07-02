@@ -23,6 +23,7 @@ public class ChildNotesDbContext : DbContext
     public DbSet<AdminAccount> AdminAccounts => Set<AdminAccount>();
     public DbSet<AdminLotteryActivity> AdminLotteryActivities => Set<AdminLotteryActivity>();
     public DbSet<AdminLotteryPrize> AdminLotteryPrizes => Set<AdminLotteryPrize>();
+    public DbSet<Milestone> Milestones => Set<Milestone>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -290,6 +291,26 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => x.ActivityId);
+        });
+
+        modelBuilder.Entity<Milestone>(e =>
+        {
+            e.ToTable("milestone");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.BabyId).HasColumnName("baby_id");
+            e.Property(x => x.Title).HasColumnName("title").IsRequired();
+            e.Property(x => x.Content).HasColumnName("content");
+            e.Property(x => x.RecordDate).HasColumnName("record_date");
+            e.Property(x => x.PhotosJson).HasColumnName("photos_json").IsRequired().HasDefaultValue("[]");
+            e.Property(x => x.Deleted).HasColumnName("deleted").HasDefaultValue(false);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasQueryFilter(x => !x.Deleted);
+            e.HasIndex(x => new { x.UserId, x.RecordDate });
+            e.HasIndex(x => x.BabyId);
+            e.HasIndex(x => x.UpdatedAt);
         });
     }
 }

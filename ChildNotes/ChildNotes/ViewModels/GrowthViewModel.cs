@@ -80,6 +80,9 @@ public sealed class MilestoneDisplayItem
     public List<string> Photos => string.IsNullOrEmpty(Milestone.PhotosJson)
         ? new()
         : JsonSerializer.Deserialize<List<string>>(Milestone.PhotosJson) ?? new();
+    public bool HasPhotos => Photos.Count > 0;
+    /// <summary>卡片缩略图最多展示 4 张（与表单上限对齐）。</summary>
+    public List<string> PhotoThumbnails => Photos.Take(4).ToList();
 
     public MilestoneDisplayItem(Milestone m) => Milestone = m;
 }

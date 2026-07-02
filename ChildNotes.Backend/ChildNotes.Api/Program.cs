@@ -84,6 +84,7 @@ builder.Services.AddScoped<IAdminAuthService, AdminAuthService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminLotteryService, AdminLotteryService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 
 // Controllers + 过滤器
 builder.Services.AddControllers(opt =>
