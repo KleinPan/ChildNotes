@@ -59,8 +59,10 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         DayStats = stats;
 
         Records.Clear();
-        // 疫苗记录仅在首页"疫苗追踪"模块展示，不在喂养页面记录列表中显示
-        foreach (var r in records.OrderBy(x => x.RecordTime).Where(x => x.RecordType != RecordType.Vaccine))
+        // 疫苗记录仅在首页"疫苗追踪"模块展示，活动记录仅在首页"活动追踪"模块展示，
+        // 两者均不在喂养页面记录列表中显示（对齐小程序 buildRecordList 只处理 feeds/diapers/sleeps 等的逻辑）
+        foreach (var r in records.OrderBy(x => x.RecordTime)
+                     .Where(x => x.RecordType != RecordType.Vaccine && x.RecordType != RecordType.Activity))
         {
             Records.Add(new RecordDisplayItem(r));
         }

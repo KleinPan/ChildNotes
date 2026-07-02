@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -35,6 +36,17 @@
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDevLogOverlay}"/>
                         </Grid>
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="导出运行日志" FontSize="15"/>
+                                <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="{Binding IsExporting, Converter={x:Static v:DeveloperOptionsView.ExportingTextConverter}}"
+                                    Classes="weui-btn mini primary"
+                                    Command="{Binding ExportLogCommand}"
+                                    IsEnabled="{Binding !IsExporting}"/>
+                        </Grid>
                     </StackPanel>
                 </Border>
 
@@ -47,15 +59,17 @@
                         <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 日志悬浮层默认关闭，开启后立即生效，无需重启应用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 开关状态会自动保存，下次启动保持上次设置" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 导出的日志文件位于系统 Download 目录，可通过文件管理器查看" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"
+                       TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>
 </UserControl>

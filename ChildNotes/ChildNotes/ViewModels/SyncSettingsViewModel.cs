@@ -8,9 +8,8 @@ using ChildNotes.Services;
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 同步设置页 ViewModel：管理 sync_config 的 enabled 开关 + 手动触发同步。
-/// 服务器地址由 <see cref="ServerEndpoints"/> 硬编码，登录凭据由登录流程自动写入，
-/// UI 不再提供账号/密码/服务器编辑入口。
+/// 同步设置页 ViewModel：管理 sync_config 的 enabled 开关 + 服务器地址配置 + 手动触发同步。
+/// 服务器地址可编辑可保存（持久化到 sync_config），后期可通过隐藏 UI 编辑入口改为只读展示。
 /// </summary>
 /// <remarks>
 /// 修复：原实现订阅了外部单例（NetworkMonitor / SyncTrigger）事件但从未退订，
@@ -35,7 +34,41 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
     /// <summary>是否在线（用于徽标颜色绑定）。</summary>
     [ObservableProperty] private bool _isOnline;
 
-    /// <summary>服务器地址只读展示。</summary>
+    /// <summary>可编辑的服务器地址（双向绑定 TextBox）。</summary>
+    [ObservableProperty] private string _serverUrlInput = string.Empty;
+
+    /// <summary>服务器地址是否已修改（控制"保存"按钮可见性）。</summary>
+    [ObservableProperty] private bool _isServerUrlDirty;
+
+    partial void OnServerUrlInputChanged(string value)
+    {
+        if (_loading) return;
+        // 比较与已保存值是否不同，标记 dirty
+        var saved = _cfgRepo.Get().ServerUrl ?? string.Empty;
+        IsServerUrlDirty = !string.Equals(value?.Trim(), saved, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>保存服务器地址到 sync_config。</summary>
+    [RelayCommand]
+    private void SaveServerUrl()
+    {
+        var url = (ServerUrlInput ?? string.Empty).Trim();
+        // 简单校验：空值=回退默认，非空需以 http:// 或 https:// 开头
+        if (!string.IsNullOrEmpty(url) &&
+            !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            DisplayToast("地址需以 http:// 或 https:// 开头");
+            return;
+        }
+        var cfg = _cfgRepo.Get();
+        cfg.ServerUrl = url;
+        _cfgRepo.Save(cfg);
+        IsServerUrlDirty = false;
+        DisplayToast(url.Length > 0 ? "服务器地址已保存" : "已恢复默认服务器地址");
+    }
+
+    /// <summary>服务器地址只读展示（当前生效值，含回退逻辑）。</summary>
     public string ServerUrlDisplay => ServerEndpoints.Primary;
 
     public string SyncButtonText => IsSyncing ? "同步中…" : "立即同步";
@@ -72,6 +105,7 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
     {
         var cfg = _cfgRepo.Get();
         Enabled = cfg.Enabled;
+        ServerUrlInput = cfg.ServerUrl ?? string.Empty;
         UpdateLastSyncText(cfg);
         _loading = false;
     }

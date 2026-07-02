@@ -250,7 +250,7 @@
                 <StackPanel Spacing="10">
                     <!-- 头部：🎯 活动追踪 + 展开/收起 + 详情 + 记录 -->
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                        <PathIcon Grid.Column="0" Data="{StaticResource icon-activity}" Foreground="{StaticResource WeuiRedBrush}" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Text="🎯" FontSize="18" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="活动追踪" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center" Margin="6,0,0,0"/>
                         <Button Grid.Column="2" Content="{Binding IsActivityExpanded, Converter={x:Static v:HomeView.ExpandTextConverter}}"
                                 Classes="tracker-btn-outline" Margin="8,0,0,0"

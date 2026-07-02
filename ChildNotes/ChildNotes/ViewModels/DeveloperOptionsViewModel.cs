@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
@@ -9,6 +10,9 @@ namespace ChildNotes.ViewModels;
 public partial class DeveloperOptionsViewModel : ViewModelBase
 {
     [ObservableProperty] private bool _showDevLogOverlay;
+
+    /// <summary>是否正在导出日志（防止重复点击）。</summary>
+    [ObservableProperty] private bool _isExporting;
 
     public DeveloperOptionsViewModel()
     {
@@ -37,6 +41,45 @@ public partial class DeveloperOptionsViewModel : ViewModelBase
         DevLogOverlayVisibilityChanged?.Invoke(value);
     }
 
+    /// <summary>导出当前运行日志到 .txt 文件。</summary>
+    [RelayCommand(CanExecute = nameof(CanExportLog))]
+    private async Task ExportLogAsync()
+    {
+        if (IsExporting) return;
+        IsExporting = true;
+        try
+        {
+            var result = await LogExportService.ExportAsync();
+            if (result.Success)
+            {
+                // Android 端路径为相对展示路径（Download/xxx.txt），桌面端为绝对路径
+                var location = OperatingSystem.IsAndroid()
+                    ? $"Download/{result.FilePath}"
+                    : result.FilePath;
+                DisplayToast($"已导出 {result.LineCount} 行日志到：{location}");
+            }
+            else
+            {
+                DisplayToast("导出失败：" + result.ErrorMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            DisplayToast("导出失败：" + ex.Message);
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+    }
+
+    private bool CanExportLog() => !IsExporting;
+
+    /// <summary>导出结果提示需要更长时间让用户看清文件路径。</summary>
+    protected override int ToastDurationMs => 5000;
+
     /// <summary>悬浮层可见性变更事件，供 MainShellViewModel 订阅以实时更新 UI。</summary>
     public event Action<bool>? DevLogOverlayVisibilityChanged;
+
+    partial void OnIsExportingChanged(bool value) => ExportLogCommand.NotifyCanExecuteChanged();
 }

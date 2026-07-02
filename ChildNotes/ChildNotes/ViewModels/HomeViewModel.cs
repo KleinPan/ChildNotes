@@ -666,6 +666,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             ActivityTimelineGroups.Clear();
             _activityLoadedCount = 0;
             AppendActivityPage(_activityCache, ActivityPageSize);
+            OnPropertyChanged(nameof(HasMoreActivities));
             DevLogger.Log("ActivityPerf", $"BuildActivityTimelineAsync: first page rendered, total={sw.ElapsedMilliseconds}ms, items={_activityLoadedCount}");
         }
         finally
@@ -710,8 +711,12 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         _activityLoadedCount = endIndex;
     }
 
-    /// <summary>是否还有更多活动记录可加载（用于"加载更多"按钮显隐）。</summary>
-    public bool HasMoreActivities => _activityLoadedCount < 100;
+    /// <summary>
+    /// 是否还有更多活动记录可加载（用于"加载更多"按钮显隐）。
+    /// 基于实际缓存数量判断：已加载数 &lt; 缓存总数时才显示按钮。
+    /// 无记录或已全部加载完成时返回 false。
+    /// </summary>
+    public bool HasMoreActivities => _activityCache is not null && _activityLoadedCount < _activityCache.Count;
 
     [RelayCommand(CanExecute = nameof(CanLoadMoreActivities))]
     private async Task LoadMoreActivities()
@@ -735,6 +740,7 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         {
             // 直接从缓存切片，避免每次"加载更多"都重查 DB
             AppendActivityPage(_activityCache, ActivityPageSize);
+            OnPropertyChanged(nameof(HasMoreActivities));
             LoadMoreActivitiesCommand.NotifyCanExecuteChanged();
         }
         finally

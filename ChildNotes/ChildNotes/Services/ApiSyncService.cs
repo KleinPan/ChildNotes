@@ -69,7 +69,7 @@ public sealed class ApiSyncService : BaseApiClient
         if (string.IsNullOrWhiteSpace(cfg.Username))
             return new SyncResult { Success = false, Message = "同步配置不完整" };
 
-        // 服务器地址来自硬编码 ServerEndpoints，覆盖任何历史残留
+        // 服务器地址从 sync_config 读取（用户可在数据同步页配置），为空时回退到默认地址
         var serverUrl = ServerEndpoints.Primary;
 
         // 网络监测器判定为本地无网时直接跳过，避免无谓请求

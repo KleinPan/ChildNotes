@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -48,16 +49,33 @@
                         Classes="weui-btn primary" Margin="12,8,12,16" HorizontalAlignment="Stretch"
                         Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}"/>
 
-                <!-- 服务器（地址内置，只读展示） -->
+                <!-- 服务器（地址可配置，后期可隐藏编辑入口改为只读） -->
                 <Border Classes="section-title">
                     <TextBlock Text="服务器"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
-                    <Grid Margin="14,12" ColumnDefinitions="80,*">
-                        <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                    </Grid>
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="80,*,Auto">
+                            <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="13"
+                                     Watermark="https://api.example.com"
+                                     VerticalAlignment="Center"
+                                     BorderThickness="0" Padding="0"/>
+                            <Button Grid.Column="2" Content="保存" Classes="weui-btn mini primary"
+                                    Command="{Binding SaveServerUrlCommand}"
+                                    IsVisible="{Binding IsServerUrlDirty}"
+                                    Margin="8,0,0,0"/>
+                        </Grid>
+                        <!-- 当前生效地址（含回退到默认值的提示） -->
+                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"
+                                IsVisible="{Binding IsServerUrlDirty}"/>
+                        <Grid Margin="14,8" ColumnDefinitions="80,*"
+                              IsVisible="{Binding IsServerUrlDirty}">
+                            <TextBlock Grid.Column="0" Text="当前生效" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="12"
+                                       Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </StackPanel>
                 </Border>
 
                 <!-- 网络状态 -->
@@ -67,7 +85,8 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding NetworkStateText}" FontSize="14"/>
-                        <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center" Fill="#07C160"/>
+                        <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center"
+                                 Fill="{Binding IsOnline, Converter={x:Static v:SyncSettingsView.OnlineColorConverter}}"/>
                     </Grid>
                 </Border>
 
