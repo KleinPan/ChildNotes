@@ -198,6 +198,9 @@ jobs:
           # 确保配置文件随产物输出（dotnet publish 默认会复制，这里再显式确认）
           Copy-Item ChildNotes.Api/appsettings.json ../artifacts/backend/ -Force -ErrorAction SilentlyContinue
 
+          # 写入版本号文件，供后续验证步骤读取（不依赖运行 DLL，避免 Web 应用启动卡住）
+          '${{ steps.version.outputs.version }}' | Set-Content -NoNewline ../artifacts/backend/version.txt
+
       - name: Archive backend artifacts
         if: matrix.target == 'backend'
         shell: bash
@@ -218,10 +221,14 @@ jobs:
           echo "Expected version: $EXPECTED"
 
           if [ "${{ matrix.target }}" = "backend" ] && [ -d "artifacts/backend" ]; then
-            # 验证后端 DLL 的 InformationalVersion
-            ACTUAL=$(dotnet artifacts/backend/ChildNotes.Api.dll --version 2>/dev/null || echo "unknown")
-            echo "Backend assembly version: $ACTUAL"
-            if [[ "$ACTUAL" != *"$EXPECTED"* ]]; then
+            # 读取构建时写入的 version.txt，避免运行 DLL（Web 应用会启动主机不退出）
+            if [ ! -f "artifacts/backend/version.txt" ]; then
+              echo "::error::后端版本号文件不存在: artifacts/backend/version.txt"
+              exit 1
+            fi
+            ACTUAL=$(cat artifacts/backend/version.txt | tr -d '[:space:]')
+            echo "Backend version (from version.txt): $ACTUAL"
+            if [[ "$ACTUAL" != "$EXPECTED" ]]; then
               echo "::error::后端版本号不匹配！期望: $EXPECTED, 实际: $ACTUAL"
               exit 1
             fi

@@ -73,12 +73,22 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          # 单平台构建时加载到本地 docker daemon，供后续验证步骤 inspect
+          # 注意：多平台时需移除此项并改用 docker pull + inspect
+          load: true
 
       - name: Verify Docker image version
         shell: bash
         run: |
           EXPECTED="${{ steps.version.outputs.version }}"
           IMAGE="ghcr.io/${{ github.repository }}/api:latest"
+
+          # buildx 推送后本地无镜像，load:true 已将单平台镜像加载到本地 daemon
+          # 若 inspect 仍失败，回退到 pull 远程镜像
+          if ! docker inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "本地未找到镜像，尝试拉取..."
+            docker pull "$IMAGE"
+          fi
 
           # 从镜像标签中读取版本号
           ACTUAL=$(docker inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' 2>/dev/null || echo "unknown")
