@@ -39,17 +39,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}/api
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=
-            latest
-
       - name: Parse version from git tag
         id: version
         shell: bash
@@ -59,6 +48,28 @@ jobs:
           VERSION="${VERSION%%-*}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Parsed version: $VERSION"
+
+      # GHCR 镜像名必须全小写：github.repository 可能含大写字母（如 KleinPan/ChildNotes）
+      # docker/metadata-action 内部会小写化，但后续 inspect/pull 步骤需用同样的小写形式
+      - name: Compute lowercase image name
+        id: image
+        shell: bash
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${REPO_LC}/api"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "Computed image: $IMAGE"
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.image.outputs.image }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=
+            latest
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -81,7 +92,7 @@ jobs:
         shell: bash
         run: |
           EXPECTED="${{ steps.version.outputs.version }}"
-          IMAGE="ghcr.io/${{ github.repository }}/api:latest"
+          IMAGE="${{ steps.image.outputs.image }}:latest"
 
           # buildx 推送后本地无镜像，load:true 已将单平台镜像加载到本地 daemon
           # 若 inspect 仍失败，回退到 pull 远程镜像
