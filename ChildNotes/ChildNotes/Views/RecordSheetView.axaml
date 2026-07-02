@@ -1007,12 +1007,21 @@
                                                                     <!-- 完成时间 -->
                                                                     <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 编辑按钮：等宽平分 -->
+                                                                    <!-- 跳过时间 -->
+                                                                    <TextBlock Text="{Binding SkippedTime}" FontSize="10" Foreground="#B0B0B0" Margin="0,2,0,0"
+                                                                               IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <!-- 已打：改时间 / 取消 -->
                                                                     <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
                                                                           IsVisible="{Binding IsDone}">
                                                                         <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
                                                                                 HorizontalAlignment="Stretch"/>
                                                                         <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                    </Grid>
+                                                                    <!-- 已跳过：取消跳过（直接执行，不弹窗） -->
+                                                                    <Grid ColumnDefinitions="*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding IsSkipped}">
+                                                                        <Button Grid.Column="0" Classes="vf-cancel" Content="取消跳过" Click="OnVaccineCancelSkipped"
                                                                                 HorizontalAlignment="Stretch"/>
                                                                     </Grid>
                                                                 </StackPanel>
@@ -1083,12 +1092,21 @@
                                                                     </Grid>
                                                                     <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
                                                                                IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 编辑按钮：等宽平分 -->
+                                                                    <!-- 跳过时间 -->
+                                                                    <TextBlock Text="{Binding SkippedTime}" FontSize="10" Foreground="#B0B0B0" Margin="0,2,0,0"
+                                                                               IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                    <!-- 已打：改时间 / 取消 -->
                                                                     <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
                                                                           IsVisible="{Binding IsDone}">
                                                                         <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
                                                                                 HorizontalAlignment="Stretch"/>
                                                                         <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
+                                                                                HorizontalAlignment="Stretch"/>
+                                                                    </Grid>
+                                                                    <!-- 已跳过：取消跳过（直接执行，不弹窗） -->
+                                                                    <Grid ColumnDefinitions="*" Margin="0,6,0,0"
+                                                                          IsVisible="{Binding IsSkipped}">
+                                                                        <Button Grid.Column="0" Classes="vf-cancel" Content="取消跳过" Click="OnVaccineCancelSkipped"
                                                                                 HorizontalAlignment="Stretch"/>
                                                                     </Grid>
                                                                 </StackPanel>

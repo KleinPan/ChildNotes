@@ -153,6 +153,8 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         try
         {
             RecordService.UpdateVaccine(plan.RecordId.Value, dto);
+            // 清预加载缓存，确保 LoadAsync 从 DB 重建（改时间后状态可能联动变化，不能用原地更新）
+            ChildNotes.ViewModels.VaccineFormViewModel.InvalidatePreload();
             await VaccineForm.LoadAsync();
             VaccineInlineChanged?.Invoke();
             ShowVaccineEditConfirm = false;
@@ -166,12 +168,29 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
     }
 
-    /// <summary>请求取消已打疫苗记录：弹出二次确认对话框。</summary>
+    /// <summary>请求取消已打疫苗记录：弹出二次确认对话框（已打记录有真实时间数据，需防误删）。</summary>
     public void RequestVaccineCancel(VaccinePlanView plan)
     {
         _pendingCancelPlan = plan;
         VaccineCancelConfirmTitle = plan.Name;
         ShowVaccineCancelConfirm = true;
+    }
+
+    /// <summary>直接取消已跳过剂次：无数据损失（跳过仅标记状态），与"跳过"操作对称，不弹窗。
+    /// 删除 DB 记录并原地恢复为待接种状态。</summary>
+    public void CancelVaccineSkippedDirect(VaccinePlanView plan)
+    {
+        if (plan.RecordId is null) return;
+        try
+        {
+            RecordService.Delete(plan.RecordId.Value);
+            VaccineForm.CancelInline(plan);
+            VaccineInlineChanged?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"取消失败：{ex.Message}";
+        }
     }
 
     [RelayCommand]
@@ -181,7 +200,9 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         _pendingCancelPlan = null;
     }
 
-    /// <summary>确认取消：删除已打记录，恢复剂次为待接种状态。</summary>
+    /// <summary>确认取消：删除已打/已跳过记录，原地恢复剂次为待接种状态。
+    /// 采用 CancelInline 原地更新（与 MarkDoneInline/MarkSkippedInline 对称），
+    /// 避免 LoadAsync 命中预加载缓存导致 UI 仍显示旧状态。</summary>
     [RelayCommand]
     private async Task ConfirmVaccineCancelAsync()
     {
@@ -196,7 +217,8 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         try
         {
             RecordService.Delete(plan.RecordId.Value);
-            await VaccineForm.LoadAsync();
+            // 原地更新该卡片状态为待接种（INPC 通知触发 UI 刷新），不依赖 LoadAsync 重建
+            VaccineForm.CancelInline(plan);
             VaccineInlineChanged?.Invoke();
             ShowVaccineCancelConfirm = false;
             _pendingCancelPlan = null;

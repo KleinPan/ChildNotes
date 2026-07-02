@@ -406,9 +406,14 @@ public partial class MainShellViewModel : ViewModelBase
         IsRecordSheetOpen = false;
     }
 
-    /// <summary>疫苗内联操作（已打/跳过/修改）后：只刷新首页数据，不关闭抽屉。</summary>
+    /// <summary>疫苗内联操作（已打/跳过/取消）后：清除疫苗时间轴缓存并刷新首页数据，不关闭抽屉。
+    /// 必须清缓存，否则下次打开补记面板 LoadAsync 会命中 s_preloadedGroups 返回旧状态。</summary>
     private async void OnVaccineInlineChanged()
     {
+        // 清除疫苗时间轴缓存（BuildPlans + 预加载），确保下次打开补记面板从 DB 重建
+        ChildNotes.Services.VaccineTimelineBuilder.InvalidateCache();
+        ChildNotes.ViewModels.VaccineFormViewModel.InvalidatePreload();
+
         _savedRefreshCts?.Cancel();
         _savedRefreshCts?.Dispose();
         _savedRefreshCts = new CancellationTokenSource();

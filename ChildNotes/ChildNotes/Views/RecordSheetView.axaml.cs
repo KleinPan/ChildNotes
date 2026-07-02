@@ -291,6 +291,15 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    /// <summary>已跳过剂次的直接取消（不弹窗，与跳过操作对称）。</summary>
+    private void OnVaccineCancelSkipped(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
+        {
+            vm.CancelVaccineSkippedDirect(plan);
+        }
+    }
+
     private void OnVaccineToggleCustomForm(object sender, RoutedEventArgs e)
     {
         if (DataContext is RecordSheetViewModel vm)

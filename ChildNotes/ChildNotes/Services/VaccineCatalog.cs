@@ -329,6 +329,24 @@ public static class VaccineDoseStatus
     public const string Pending = "pending";
 }
 
+/// <summary>未处理剂次的状态计算（按推荐日期与今天的天数差）。
+/// 供 BuildPlanViews 初始化和 UpdateForCancel 恢复状态复用，确保取消后状态与初次构建一致。</summary>
+public static class VaccineStatusCalculator
+{
+    /// <summary>根据推荐日期计算未处理剂次的状态文本与样式类。无推荐日期时返回 Pending。</summary>
+    public static (string Status, string StatusText, string StatusClass) ComputePending(DateTime? recommendedDate, DateTime today)
+    {
+        if (!recommendedDate.HasValue)
+            return (VaccineDoseStatus.Pending, "待安排", "pending");
+
+        var diff = (recommendedDate.Value - today).Days;
+        if (diff < 0) return (VaccineDoseStatus.Overdue, $"已过期{-diff}天", "overdue");
+        if (diff == 0) return (VaccineDoseStatus.Due, "今天可打", "due");
+        if (diff <= 30) return (VaccineDoseStatus.Soon, $"{diff}天后", "soon");
+        return (VaccineDoseStatus.Pending, "待安排", "pending");
+    }
+}
+
 /// <summary>时间轴分组（一个年龄段一行，含左免费/右自费两列）</summary>
 public sealed class VaccineTimelineGroup
 {
@@ -353,7 +371,27 @@ public sealed class VaccinePlanView : VaccinePlan, System.ComponentModel.INotify
     private void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(name));
 
     private string _status = VaccineDoseStatus.Pending;
-    public string Status { get => _status; set { if (_status != value) { _status = value; OnPropertyChanged(nameof(Status)); UpdateBoolProps(); } } }
+    public string Status
+    {
+        get => _status;
+        set
+        {
+            if (_status != value)
+            {
+                _status = value;
+                OnPropertyChanged(nameof(Status));
+                UpdateBoolProps();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 构造时调用 UpdateBoolProps 让 IsPending 等属性与默认 _status=Pending 一致。
+    /// 否则通过对象初始化器 new VaccinePlanView { Status = "pending" } 时，
+    /// 因新值等于默认值，setter 中 if (_status != value) 为 false，UpdateBoolProps 不会执行，
+    /// 导致 IsPending 永远为 false（默认 bool 值），与 StatusClass 契约不一致。
+    /// </summary>
+    public VaccinePlanView() => UpdateBoolProps();
 
     private string _statusText = string.Empty;
     public string StatusText { get => _statusText; set { if (_statusText != value) { _statusText = value; OnPropertyChanged(nameof(StatusText)); } } }
@@ -443,12 +481,14 @@ public sealed class VaccinePlanView : VaccinePlan, System.ComponentModel.INotify
         RecordId = recordId;
     }
 
-    /// <summary>原地取消已打/跳过状态，恢复为待安排。</summary>
+    /// <summary>原地取消已打/跳过状态，按推荐日期重新计算恢复为正确的未处理状态
+    /// （Overdue/Due/Soon/Pending），与 BuildPlanViews 初次构建逻辑一致。</summary>
     public void UpdateForCancel()
     {
-        Status = VaccineDoseStatus.Pending;
-        StatusText = "待安排";
-        StatusClass = "pending";
+        var (st, stText, stClass) = VaccineStatusCalculator.ComputePending(RecommendedDate, DateTime.Today);
+        Status = st;
+        StatusText = stText;
+        StatusClass = stClass;
         DoneTime = null;
         SkippedTime = null;
         RecordId = null;
@@ -634,21 +674,11 @@ public static class VaccineTimelineBuilder
             }
             else
             {
-                // 未处理：按推荐日期计算
-                if (p.RecommendedDate.HasValue)
-                {
-                    var diff = (p.RecommendedDate.Value - today).Days;
-                    if (diff < 0) { view.Status = VaccineDoseStatus.Overdue; view.StatusText = $"已过期{-diff}天"; view.StatusClass = "overdue"; }
-                    else if (diff == 0) { view.Status = VaccineDoseStatus.Due; view.StatusText = "今天可打"; view.StatusClass = "due"; }
-                    else if (diff <= 30) { view.Status = VaccineDoseStatus.Soon; view.StatusText = $"{diff}天后"; view.StatusClass = "soon"; }
-                    else { view.Status = VaccineDoseStatus.Pending; view.StatusText = "待安排"; view.StatusClass = "pending"; }
-                }
-                else
-                {
-                    view.Status = VaccineDoseStatus.Pending;
-                    view.StatusText = "待安排";
-                    view.StatusClass = "pending";
-                }
+                // 未处理：按推荐日期计算（复用 VaccineStatusCalculator，与 UpdateForCancel 恢复状态一致）
+                var (st, stText, stClass) = VaccineStatusCalculator.ComputePending(p.RecommendedDate, today);
+                view.Status = st;
+                view.StatusText = stText;
+                view.StatusClass = stClass;
             }
             views.Add(view);
         }
