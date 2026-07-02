@@ -25,7 +25,7 @@ public class RecordService : IRecordService
         _babyAccess = babyAccess;
     }
 
-    public async Task<long> AddRecordAsync(string recordType, object dto, CancellationToken ct = default)
+    public async Task<string> AddRecordAsync(string recordType, object dto, CancellationToken ct = default)
     {
         if (!RecordType.All.Contains(recordType))
             throw new BusinessException($"不支持的记录类型: {recordType}", 400, "UNSUPPORTED_RECORD_TYPE");
@@ -35,6 +35,7 @@ public class RecordService : IRecordService
         var time = ExtractTime(dto);
         var rec = new ChildRecord
         {
+            Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
             BabyId = baby?.Id,
             RecordType = recordType,
@@ -48,10 +49,10 @@ public class RecordService : IRecordService
         return rec.Id;
     }
 
-    public async Task<DailyRecordsResponse> GetTodayRecordsAsync(long? babyId, CancellationToken ct = default)
+    public async Task<DailyRecordsResponse> GetTodayRecordsAsync(string? babyId, CancellationToken ct = default)
         => await GetRecordsByDateAsync(DateTime.Today, babyId, ct);
 
-    public async Task<DailyRecordsResponse> GetRecordsByDateAsync(DateTime date, long? babyId, CancellationToken ct = default)
+    public async Task<DailyRecordsResponse> GetRecordsByDateAsync(DateTime date, string? babyId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var targetBabyId = await ResolveBabyIdAsync(uid, babyId, ct);
@@ -62,7 +63,7 @@ public class RecordService : IRecordService
         return BuildDailyResponse(dateOnly, records);
     }
 
-    public async Task<List<DailyRecordsResponse>> GetHistoryRecordsAsync(long? babyId, int limit = 30, CancellationToken ct = default)
+    public async Task<List<DailyRecordsResponse>> GetHistoryRecordsAsync(string? babyId, int limit = 30, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var targetBabyId = await ResolveBabyIdAsync(uid, babyId, ct);
@@ -81,7 +82,7 @@ public class RecordService : IRecordService
         return result;
     }
 
-    public async Task DeleteRecordAsync(long id, CancellationToken ct = default)
+    public async Task DeleteRecordAsync(string id, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var rec = await _db.ChildRecords.FirstOrDefaultAsync(r => r.Id == id && r.UserId == uid, ct)
@@ -90,7 +91,7 @@ public class RecordService : IRecordService
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task WakeUpSleepAsync(long sleepId, CancellationToken ct = default)
+    public async Task WakeUpSleepAsync(string sleepId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var rec = await _db.ChildRecords.FirstOrDefaultAsync(
@@ -171,11 +172,11 @@ public class RecordService : IRecordService
         return DateTime.Now;
     }
 
-    private async Task<long?> ResolveBabyIdAsync(long userId, long? babyId, CancellationToken ct)
+    private async Task<string?> ResolveBabyIdAsync(string userId, string? babyId, CancellationToken ct)
     {
-        if (babyId.HasValue)
+        if (!string.IsNullOrEmpty(babyId))
         {
-            await _babyAccess.EnsureAccessAsync(userId, babyId.Value, ct);
+            await _babyAccess.EnsureAccessAsync(userId, babyId, ct);
             return babyId;
         }
         var baby = await _babyAccess.GetDefaultBabyAsync(userId, ct);

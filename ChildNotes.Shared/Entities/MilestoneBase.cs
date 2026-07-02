@@ -7,9 +7,9 @@ namespace ChildNotes.Shared.Entities;
 /// </summary>
 public abstract class MilestoneBase
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long? BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string? BabyId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public DateTime RecordDate { get; set; }

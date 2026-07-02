@@ -8,14 +8,14 @@ namespace ChildNotes.Core.Services;
 public interface IMilestoneService
 {
     /// <summary>查询当前用户可访问宝宝的所有里程碑（按日期倒序）。</summary>
-    Task<List<MilestoneRecordDto>> ListAsync(long? babyId, CancellationToken ct = default);
+    Task<List<MilestoneRecordDto>> ListAsync(string? babyId, CancellationToken ct = default);
 
     /// <summary>新增里程碑。返回新记录 Id。</summary>
-    Task<long> AddAsync(MilestoneRecordDto dto, CancellationToken ct = default);
+    Task<string> AddAsync(MilestoneRecordDto dto, CancellationToken ct = default);
 
     /// <summary>更新里程碑。返回是否实际更新（找不到返回 false）。</summary>
-    Task<bool> UpdateAsync(long id, MilestoneRecordDto dto, CancellationToken ct = default);
+    Task<bool> UpdateAsync(string id, MilestoneRecordDto dto, CancellationToken ct = default);
 
     /// <summary>软删里程碑。</summary>
-    Task<bool> DeleteAsync(long id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string id, CancellationToken ct = default);
 }

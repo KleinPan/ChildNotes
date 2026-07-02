@@ -9,6 +9,6 @@ public interface ILotteryService
     /// 参与抽奖并扣减积分。不返回 Dashboard——由调用方（Controller）随后调用
     /// <see cref="IPointsService.GetDashboardAsync"/> 以保持 HTTP 响应契约。
     /// </summary>
-    Task JoinLotteryAsync(long activityId, CancellationToken ct = default);
+    Task JoinLotteryAsync(string activityId, CancellationToken ct = default);
     Task<List<LotteryHistoryItemDto>> GetLotteryHistoryAsync(CancellationToken ct = default);
 }

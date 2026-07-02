@@ -1,5 +1,6 @@
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChildNotes.Api.Controllers;
@@ -10,10 +11,12 @@ public class AuthController : AppBaseController
     private readonly IAuthService _auth;
     public AuthController(IAuthService auth) => _auth = auth;
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<LoginResponse> Register([FromBody] RegisterRequest req, CancellationToken ct)
         => await _auth.RegisterAsync(req, ct);
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<LoginResponse> Login([FromBody] LoginRequest req, CancellationToken ct)
         => await _auth.LoginAsync(req, ct);

@@ -6,9 +6,9 @@ namespace ChildNotes.Shared.Sync;
 /// </summary>
 public class SyncRecordItem
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long? BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string? BabyId { get; set; }
     public string RecordType { get; set; } = string.Empty;
     public string? RecordSubType { get; set; }
     public DateTime RecordDate { get; set; }
@@ -45,9 +45,9 @@ public class SyncPullResponse
 /// </summary>
 public class SyncMilestoneItem
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long? BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string? BabyId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public DateTime RecordDate { get; set; }
@@ -59,12 +59,14 @@ public class SyncMilestoneItem
 
 public class SyncBabyItem
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
     public DateTime? BirthDate { get; set; }
+    /// <summary>软删除标记：true 表示已删除。多设备同步时传递此字段以避免删除"复活"。</summary>
+    public bool Deleted { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

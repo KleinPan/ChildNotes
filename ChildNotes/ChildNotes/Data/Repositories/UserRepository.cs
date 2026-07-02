@@ -20,24 +20,26 @@ public sealed class UserRepository : BaseRepository
         return user;
     }
 
-    public AppUser? FindById(long id)
+    public AppUser? FindById(string id)
         => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
-    public long Insert(AppUser user)
+    public string Insert(AppUser user)
     {
         DevLogger.Log("UserRepo", $"Insert: username={user.Username}");
-        var id = (long)ExecuteScalar(
-            @"INSERT INTO app_user (username, password_hash, nick_name, avatar_url, gender, created_at, updated_at)
-              VALUES (@u, @p, @n, @a, @g, @c, @c); SELECT last_insert_rowid();",
+        user.Id = Guid.NewGuid().ToString("N");
+        ExecuteNonQuery(
+            @"INSERT INTO app_user (id, username, password_hash, nick_name, avatar_url, gender, created_at, updated_at)
+              VALUES (@i, @u, @p, @n, @a, @g, @c, @c)",
             cmd => cmd
+                .Add("@i", user.Id)
                 .Add("@u", user.Username)
                 .Add("@p", user.PasswordHash)
                 .Add("@n", user.NickName)
                 .Add("@a", user.AvatarUrl)
                 .Add("@g", user.Gender)
-                .AddUtc("@c", DateTime.UtcNow))!;
-        DevLogger.Log("UserRepo", $"Insert done: id={id}");
-        return id;
+                .AddUtc("@c", DateTime.UtcNow));
+        DevLogger.Log("UserRepo", $"Insert done: id={user.Id}");
+        return user.Id;
     }
 
     public void UpdateProfile(AppUser user)
@@ -52,7 +54,7 @@ public sealed class UserRepository : BaseRepository
 
     private static AppUser Map(SqliteDataReader r) => new()
     {
-        Id = r.GetInt64(0),
+        Id = r.GetString(0),
         Username = r.GetString(1),
         PasswordHash = r.GetString(2),
         NickName = r.IsDBNull(3) ? string.Empty : r.GetString(3),

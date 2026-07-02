@@ -36,21 +36,21 @@ public class SyncService : ISyncService
         var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
 
         var babies = babyIds.Count == 0 ? new() :
-            await _db.Babies.AsNoTracking()
+            await _db.Babies.AsNoTracking().IgnoreQueryFilters()
                 .Where(b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc)
                 .OrderBy(b => b.UpdatedAt)
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
         var records = babyIds.Count == 0 ? new() :
-            await _db.ChildRecords.AsNoTracking()
-                .Where(r => babyIds.Contains(r.BabyId ?? 0) && r.UpdatedAt > sinceUtc)
+            await _db.ChildRecords.AsNoTracking().IgnoreQueryFilters()
+                .Where(r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc)
                 .OrderBy(r => r.UpdatedAt)
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
         // 里程碑：仅同步当前用户自己创建的（不受 baby_member 跨用户共享约束，与小程序一致）
-        var milestones = await _db.Milestones.AsNoTracking()
+        var milestones = await _db.Milestones.AsNoTracking().IgnoreQueryFilters()
             .Where(m => m.UserId == uid && m.UpdatedAt > sinceUtc)
             .OrderBy(m => m.UpdatedAt)
             .Take(pageLimit)
@@ -94,9 +94,9 @@ public class SyncService : ISyncService
         {
             // 权限：记录必须属于当前用户可访问的宝宝，且 user_id 必须是当前用户
             if (item.UserId != uid) continue;
-            if (item.BabyId.HasValue && !babyIds.Contains(item.BabyId.Value)) continue;
+            if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId)) continue;
 
-            var existing = await _db.ChildRecords.FirstOrDefaultAsync(r => r.Id == item.Id, ct);
+            var existing = await _db.ChildRecords.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == item.Id, ct);
             if (existing is null)
             {
                 _db.ChildRecords.Add(FromItem(item));
@@ -116,7 +116,8 @@ public class SyncService : ISyncService
             // 权限：只能 upsert 自己创建的宝宝
             if (item.UserId != uid) continue;
 
-            var existing = await _db.Babies.FirstOrDefaultAsync(b => b.Id == item.Id, ct);
+            // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
+            var existing = await _db.Babies.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == item.Id, ct);
             if (existing is null)
             {
                 _db.Babies.Add(FromItem(item));
@@ -128,6 +129,7 @@ public class SyncService : ISyncService
                 existing.Avatar = item.Avatar;
                 existing.Gender = item.Gender;
                 existing.BirthDate = item.BirthDate;
+                existing.Deleted = item.Deleted;
                 existing.UpdatedAt = item.UpdatedAt;
                 babiesUpserted++;
             }
@@ -139,7 +141,7 @@ public class SyncService : ISyncService
             // 权限：只能 upsert 自己创建的里程碑
             if (item.UserId != uid) continue;
 
-            var existing = await _db.Milestones.FirstOrDefaultAsync(m => m.Id == item.Id, ct);
+            var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
             if (existing is null)
             {
                 _db.Milestones.Add(FromItem(item));
@@ -170,6 +172,7 @@ public class SyncService : ISyncService
         Avatar = b.Avatar ?? "",
         Gender = b.Gender ?? "",
         BirthDate = b.BirthDate,
+        Deleted = b.Deleted,
         CreatedAt = b.CreatedAt,
         UpdatedAt = b.UpdatedAt,
     };
@@ -205,6 +208,7 @@ public class SyncService : ISyncService
         Avatar = i.Avatar,
         Gender = i.Gender,
         BirthDate = i.BirthDate,
+        Deleted = i.Deleted,
         CreatedAt = i.CreatedAt,
         UpdatedAt = i.UpdatedAt,
     };

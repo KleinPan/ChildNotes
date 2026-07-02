@@ -37,14 +37,14 @@ public class BabyService : IBabyService
         return babies.Select(ToBabyDto).ToList();
     }
 
-    public async Task<BabyDto?> GetCurrentBabyAsync(long? babyId, CancellationToken ct = default)
+    public async Task<BabyDto?> GetCurrentBabyAsync(string? babyId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         Baby? baby = null;
-        if (babyId.HasValue)
+        if (!string.IsNullOrEmpty(babyId))
         {
-            await _babyAccess.EnsureAccessAsync(uid, babyId.Value, ct);
-            baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId.Value, ct);
+            await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
+            baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId, ct);
         }
         baby ??= await _babyAccess.GetDefaultBabyAsync(uid, ct);
         return baby is null ? null : ToBabyDto(baby);
@@ -55,6 +55,7 @@ public class BabyService : IBabyService
         var uid = _current.RequireUserId();
         var baby = new Baby
         {
+            Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
             Name = string.IsNullOrWhiteSpace(req.Name) ? "宝宝" : req.Name,
             Avatar = req.Avatar ?? string.Empty,
@@ -64,43 +65,49 @@ public class BabyService : IBabyService
         _db.Babies.Add(baby);
         await _db.SaveChangesAsync(ct);
 
-        // 为创建者建 owner 成员
-        var ownerMember = new BabyMember
+        // 以下两次写入（owner 成员 + 同步现有成员）必须原子：若失败会留下无 owner 的孤儿 Baby。
+        await _db.ExecuteInTransactionAsync(async () =>
         {
-            BabyId = baby.Id,
-            UserId = uid,
-            RoleCode = "father",
-            RoleName = "爸爸",
-            IsOwner = true,
-            Status = StatusConstants.BabyMember.Active,
-        };
-        _db.BabyMembers.Add(ownerMember);
-
-        // 将创建者名下其他宝宝的家庭成员同步到新宝宝
-        var existingMembers = await _db.BabyMembers
-            .Where(m => m.UserId == uid && m.BabyId != baby.Id && m.Status == StatusConstants.BabyMember.Active)
-            .GroupBy(m => new { m.UserId, m.RoleCode }).Select(g => g.First())
-            .ToListAsync(ct);
-        foreach (var m in existingMembers)
-        {
-            _db.BabyMembers.Add(new BabyMember
+            // 为创建者建 owner 成员
+            var ownerMember = new BabyMember
             {
+                Id = Guid.NewGuid().ToString("N"),
                 BabyId = baby.Id,
-                UserId = m.UserId,
-                RoleCode = m.RoleCode,
-                RoleName = m.RoleName,
-                IsOwner = m.UserId == uid,
+                UserId = uid,
+                RoleCode = "father",
+                RoleName = "爸爸",
+                IsOwner = true,
                 Status = StatusConstants.BabyMember.Active,
-            });
-        }
-        await _db.SaveChangesAsync(ct);
+            };
+            _db.BabyMembers.Add(ownerMember);
+
+            // 将创建者名下其他宝宝的家庭成员同步到新宝宝
+            var existingMembers = await _db.BabyMembers
+                .Where(m => m.UserId == uid && m.BabyId != baby.Id && m.Status == StatusConstants.BabyMember.Active)
+                .GroupBy(m => new { m.UserId, m.RoleCode }).Select(g => g.First())
+                .ToListAsync(ct);
+            foreach (var m in existingMembers)
+            {
+                _db.BabyMembers.Add(new BabyMember
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    BabyId = baby.Id,
+                    UserId = m.UserId,
+                    RoleCode = m.RoleCode,
+                    RoleName = m.RoleName,
+                    IsOwner = m.UserId == uid,
+                    Status = StatusConstants.BabyMember.Active,
+                });
+            }
+            await _db.SaveChangesAsync(ct);
+        }, ct);
         return ToBabyDto(baby);
     }
 
     public async Task<BabyDto> UpdateBabyAsync(UpdateBabyRequest req, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
-        var babyId = req.Id ?? (await GetCurrentBabyAsync(null, ct))?.Id
+        var babyId = !string.IsNullOrEmpty(req.Id) ? req.Id : (await GetCurrentBabyAsync(null, ct))?.Id
             ?? throw new NotFoundException("未找到宝宝");
         await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
         var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId, ct)
@@ -164,6 +171,7 @@ public class BabyService : IBabyService
         {
             member = new BabyMember
             {
+                Id = Guid.NewGuid().ToString("N"),
                 BabyId = req.BabyId,
                 UserId = uid,
                 RoleCode = req.RoleCode,
@@ -210,6 +218,7 @@ public class BabyService : IBabyService
             if (existingMemberBabyIds.Contains(b.Id)) continue;
             _db.BabyMembers.Add(new BabyMember
             {
+                Id = Guid.NewGuid().ToString("N"),
                 BabyId = b.Id,
                 UserId = uid,
                 RoleCode = req.RoleCode,

@@ -8,8 +8,8 @@ public class GenerateAiAnalysisRequest
 
 public class AiAnalysisRecordDto
 {
-    public long Id { get; set; }
-    public long BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
     public string BabyName { get; set; } = string.Empty;
     public string RangeStartDate { get; set; } = string.Empty;
     public string RangeEndDate { get; set; } = string.Empty;
@@ -49,5 +49,5 @@ public record AiNoteParseResponse
     public string? Summary { get; set; }
     public double Confidence { get; set; }
     public bool Saved { get; set; }
-    public long? RecordId { get; set; }
+    public string? RecordId { get; set; }
 }

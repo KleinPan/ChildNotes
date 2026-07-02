@@ -10,7 +10,8 @@ namespace ChildNotes.Tests;
 public class Phase3FlowTests
 {
     private static ApiFactory NewFactory() => new();
-    private const string AdminPassword = "change-this-admin-password";
+    // 使用 ApiFactory.TestAdminPassword 与 appsettings.json 默认值解耦
+    private const string AdminPassword = ApiFactory.TestAdminPassword;
 
     private static async Task<HttpClient> NewAdminClientAsync(ApiFactory factory)
     {
@@ -151,7 +152,7 @@ public class Phase3FlowTests
         Assert.True(resp.IsSuccessStatusCode, respBody);
         var body = JsonDocument.Parse(respBody).RootElement;
         var data = GetData(body);
-        var id = data.GetProperty("id").GetInt64();
+        var id = data.GetProperty("id").GetString()!;
         Assert.Equal("draft", data.GetProperty("status").GetString());
 
         var pubResp = await client.PostAsync($"/admin/api/lotteries/{id}/publish", null);
@@ -179,7 +180,7 @@ public class Phase3FlowTests
         };
         var resp = await client.PostAsJsonAsync("/admin/api/lotteries", create);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var id = GetData(body).GetProperty("id").GetInt64();
+        var id = GetData(body).GetProperty("id").GetString()!;
 
         var pubResp = await client.PostAsync($"/admin/api/lotteries/{id}/publish", null);
         var pubBody = await pubResp.Content.ReadFromJsonAsync<JsonElement>();

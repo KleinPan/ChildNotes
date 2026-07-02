@@ -31,31 +31,32 @@ public class MilestoneService : IMilestoneService
         _httpCtx = httpCtx;
     }
 
-    public async Task<List<MilestoneRecordDto>> ListAsync(long? babyId, CancellationToken ct = default)
+    public async Task<List<MilestoneRecordDto>> ListAsync(string? babyId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var q = _db.Milestones.AsNoTracking().Where(m => m.UserId == uid);
-        if (babyId.HasValue)
+        if (!string.IsNullOrEmpty(babyId))
         {
-            await _babyAccess.EnsureAccessAsync(uid, babyId.Value, ct);
-            q = q.Where(m => m.BabyId == babyId.Value);
+            await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
+            q = q.Where(m => m.BabyId == babyId);
         }
         var list = await q.OrderByDescending(m => m.RecordDate).ThenByDescending(m => m.Id).ToListAsync(ct);
         return list.Select(ToDto).ToList();
     }
 
-    public async Task<long> AddAsync(MilestoneRecordDto dto, CancellationToken ct = default)
+    public async Task<string> AddAsync(MilestoneRecordDto dto, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var babyId = ResolveBabyId();
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new BusinessException("标题不能为空");
-        if (babyId.HasValue)
-            await _babyAccess.EnsureAccessAsync(uid, babyId.Value, ct);
+        if (!string.IsNullOrEmpty(babyId))
+            await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
 
         var now = DateTime.UtcNow;
         var entity = new Milestone
         {
+            Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
             BabyId = babyId,
             Title = dto.Title.Trim(),
@@ -70,7 +71,7 @@ public class MilestoneService : IMilestoneService
         return entity.Id;
     }
 
-    public async Task<bool> UpdateAsync(long id, MilestoneRecordDto dto, CancellationToken ct = default)
+    public async Task<bool> UpdateAsync(string id, MilestoneRecordDto dto, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var existing = await _db.Milestones.FirstOrDefaultAsync(m => m.Id == id && m.UserId == uid, ct);
@@ -78,8 +79,8 @@ public class MilestoneService : IMilestoneService
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new BusinessException("标题不能为空");
         var babyId = ResolveBabyId();
-        if (babyId.HasValue)
-            await _babyAccess.EnsureAccessAsync(uid, babyId.Value, ct);
+        if (!string.IsNullOrEmpty(babyId))
+            await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
 
         existing.Title = dto.Title.Trim();
         existing.Content = string.IsNullOrWhiteSpace(dto.Content) ? null : dto.Content.Trim();
@@ -91,7 +92,7 @@ public class MilestoneService : IMilestoneService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(long id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(string id, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var existing = await _db.Milestones.FirstOrDefaultAsync(m => m.Id == id && m.UserId == uid, ct);
@@ -103,13 +104,13 @@ public class MilestoneService : IMilestoneService
     }
 
     /// <summary>从请求头 X-Baby-Id 或查询参数 babyId 解析宝宝 ID。</summary>
-    private long? ResolveBabyId()
+    private string? ResolveBabyId()
     {
         var ctx = _httpCtx.HttpContext;
         if (ctx is null) return null;
-        if (ctx.Request.Headers.TryGetValue("X-Baby-Id", out var h) && long.TryParse(h, out var id)) return id;
-        if (long.TryParse(ctx.Request.Query["babyId"], out var q)) return q;
-        return null;
+        if (ctx.Request.Headers.TryGetValue("X-Baby-Id", out var h) && !string.IsNullOrEmpty(h)) return h.ToString();
+        var q = ctx.Request.Query["babyId"].ToString();
+        return string.IsNullOrEmpty(q) ? null : q;
     }
 
     private static MilestoneRecordDto ToDto(Milestone m) => new()

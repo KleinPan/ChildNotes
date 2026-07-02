@@ -457,12 +457,12 @@ public sealed class VaccinePlanView : VaccinePlan, System.ComponentModel.INotify
     private string? _replacedByName;
     public string? ReplacedByName { get => _replacedByName; set { if (_replacedByName != value) { _replacedByName = value; OnPropertyChanged(nameof(ReplacedByName)); } } }
 
-    private long? _recordId;
+    private string? _recordId;
     /// <summary>已处理剂次对应的数据库记录 ID（用于修改/删除操作），未处理时为 null。</summary>
-    public long? RecordId { get => _recordId; set { if (_recordId != value) { _recordId = value; OnPropertyChanged(nameof(RecordId)); } } }
+    public string? RecordId { get => _recordId; set { if (_recordId != value) { _recordId = value; OnPropertyChanged(nameof(RecordId)); } } }
 
     /// <summary>原地更新为"已打"状态（避免 LoadAsync 全量重建导致时间轴抖动）。</summary>
-    public void UpdateForDone(string time, long recordId)
+    public void UpdateForDone(string time, string recordId)
     {
         Status = VaccineDoseStatus.Done;
         StatusText = "已打";
@@ -472,7 +472,7 @@ public sealed class VaccinePlanView : VaccinePlan, System.ComponentModel.INotify
     }
 
     /// <summary>原地更新为"跳过"状态。</summary>
-    public void UpdateForSkipped(string time, long recordId)
+    public void UpdateForSkipped(string time, string recordId)
     {
         Status = VaccineDoseStatus.Skipped;
         StatusText = "已跳过";

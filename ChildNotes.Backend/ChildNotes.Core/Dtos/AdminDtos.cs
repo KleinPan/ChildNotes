@@ -10,7 +10,7 @@ public class AdminLoginRequest
 
 public class AdminLoginResponse
 {
-    public long AdminId { get; set; }
+    public string AdminId { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Token { get; set; } = string.Empty;
@@ -37,24 +37,24 @@ public class AdminPageResponse<T>
 
 public class AdminUserListItemDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string NickName { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
     public int Gender { get; set; }
-    public long? ReferrerUserId { get; set; }
+    public string? ReferrerUserId { get; set; }
     public int BabyCount { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
 }
 
 public class AdminBabyListItemDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
     public DateTime? BirthDate { get; set; }
     public int AgeDays { get; set; }
-    public long OwnerUserId { get; set; }
+    public string OwnerUserId { get; set; } = string.Empty;
     public string OwnerNickName { get; set; } = string.Empty;
     public int MemberCount { get; set; }
     public string CreatedAt { get; set; } = string.Empty;
@@ -62,7 +62,7 @@ public class AdminBabyListItemDto
 
 public class AdminLotteryPrizeDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string PrizeName { get; set; } = string.Empty;
     public string PrizeIntro { get; set; } = string.Empty;
     public string PrizeImage { get; set; } = string.Empty;
@@ -84,7 +84,7 @@ public class AdminLotteryRequest
 
 public class AdminLotteryDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CoverImage { get; set; } = string.Empty;

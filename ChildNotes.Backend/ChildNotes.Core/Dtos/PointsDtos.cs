@@ -49,7 +49,7 @@ public class SignInTimelineItemDto
 
 public class LotterySummaryDto
 {
-    public long ActivityId { get; set; }
+    public string ActivityId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string DrawTime { get; set; } = string.Empty;
@@ -65,7 +65,7 @@ public class LotterySummaryDto
 
 public class LotteryHistoryItemDto
 {
-    public long ActivityId { get; set; }
+    public string ActivityId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string PrizeName { get; set; } = string.Empty;
     public int CostPoints { get; set; }
@@ -76,8 +76,8 @@ public class LotteryHistoryItemDto
 
 public class InviteRecordDto
 {
-    public long Id { get; set; }
-    public long InvitedUserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string InvitedUserId { get; set; } = string.Empty;
     public string InvitedNickName { get; set; } = string.Empty;
     public string InvitedAvatarUrl { get; set; } = string.Empty;
     public int Points { get; set; }

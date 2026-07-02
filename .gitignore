@@ -1,69 +1,43 @@
-# ==========================================================================
-# Root .gitignore for the AiJi monorepo
-# (covers backend, IDE/agent tooling, and root-level artifacts)
-# Sub-projects may carry their own .gitignore for project-specific rules.
-# ==========================================================================
-
-# --------------------------------------------------------------------------
-# IDE / Editor
-# --------------------------------------------------------------------------
-.vs/
-.vscode/
-.idea/
+# ===== .NET =====
+**/bin/
+**/obj/
 *.user
 *.suo
-*.userprefs
+.vs/
+.idea/
 
-# --------------------------------------------------------------------------
-# .NET build artifacts (catch-all at repo root, in case a project forgets)
-# --------------------------------------------------------------------------
-**/[Bb]in/
-**/[Oo]bj/
-**/[Dd]ebug/
-**/[Dd]ebugPublic/
-**/[Rr]elease/
-**/[Rr]eleases/
-**/artifacts/
-**/TestResults/
-*.log
-*.binlog
-
-# --------------------------------------------------------------------------
-# NuGet
-# --------------------------------------------------------------------------
-**/[Pp]ackages/*
-!**/[Pp]ackages/build/
+# ===== NuGet =====
 *.nupkg
 *.snupkg
-project.lock.json
-project.fragment.lock.json
+.nuget/
 
-# --------------------------------------------------------------------------
-# Backend runtime / user content
-# --------------------------------------------------------------------------
-# uploaded files are runtime user content, must not be version-controlled
+# ===== 运行产物 =====
+# 后端上传文件
 ChildNotes.Backend/ChildNotes.Api/uploads/
+# 后端测试产物
+ChildNotes.Backend/ChildNotes.Tests/TestResults/
+ChildNotes/ChildNotes.Tests/TestResults/
+# 前端 SQLite 本地数据库
+*.db
+*.db-shm
+*.db-wal
+*.db.bak
+# 日志
+*.log
+ui-check-reports/
 
-# local secrets (override files kept out of VCS)
-**/appsettings.*.Local.json
-**/appsettings.Local.json
-**/secrets.json
-
-# --------------------------------------------------------------------------
-# OS junk
-# --------------------------------------------------------------------------
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# ===== IDE =====
+*.swp
+*~
 .DS_Store
 
-# --------------------------------------------------------------------------
-# AI/agent tooling scratch (keep rules, ignore caches/logs)
-# --------------------------------------------------------------------------
-.trae/caches/
-.trae/logs/
+# ===== 敏感配置 =====
+# 生产环境配置文件不入库（包含真实密钥）
+appsettings.Production.json
+appsettings.Local.json
+*.env
+!.env.example
 
-# --------------------------------------------------------------------------
-# UI design check runtime artifacts (regenerable, do not version)
-# --------------------------------------------------------------------------
-ChildNotes/ui-check-reports/
+# ===== Node（如有前端构建）=====
+node_modules/
+dist/

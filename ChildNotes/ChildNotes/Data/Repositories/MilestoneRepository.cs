@@ -12,28 +12,31 @@ public sealed class MilestoneRepository : BaseRepository
         "is_deleted, device_id, synced_at FROM milestone";
 
     /// <summary>查询当前用户+宝宝下的未删除里程碑（按日期倒序）。</summary>
-    public List<Milestone> GetAll(long userId, long? babyId)
+    public List<Milestone> GetAll(string userId, string? babyId)
     {
         var sql = SelectBase + " WHERE user_id=@uid AND is_deleted=0";
-        if (babyId.HasValue) sql += " AND baby_id=@bid";
+        if (babyId is not null) sql += " AND baby_id=@bid";
         sql += " ORDER BY record_date DESC, id DESC";
         return Query(sql,
             cmd =>
             {
                 cmd.Add("@uid", userId);
-                if (babyId.HasValue) cmd.Add("@bid", babyId.Value);
+                if (babyId is not null) cmd.Add("@bid", babyId);
             },
             Map);
     }
 
-    public Milestone? FindById(long id)
+    public Milestone? FindById(string id)
         => QueryFirstOrDefault(SelectBase + " WHERE id=@i", cmd => cmd.Add("@i", id), Map);
 
-    public long Insert(Milestone m)
-        => (long)ExecuteScalar(
-            @"INSERT INTO milestone (user_id, baby_id, title, content, record_date, photos_json, is_deleted, device_id, created_at, updated_at)
-              VALUES (@uid,@bid,@t,@c,@d,@p,@del,@dev,@n,@n); SELECT last_insert_rowid();",
+    public string Insert(Milestone m)
+    {
+        m.Id = Guid.NewGuid().ToString("N");
+        ExecuteNonQuery(
+            @"INSERT INTO milestone (id, user_id, baby_id, title, content, record_date, photos_json, is_deleted, device_id, created_at, updated_at)
+              VALUES (@id,@uid,@bid,@t,@c,@d,@p,@del,@dev,@n,@n)",
             cmd => cmd
+                .Add("@id", m.Id)
                 .Add("@uid", m.UserId)
                 .Add("@bid", (object?)m.BabyId ?? DBNull.Value)
                 .Add("@t", m.Title)
@@ -42,7 +45,9 @@ public sealed class MilestoneRepository : BaseRepository
                 .Add("@p", m.PhotosJson)
                 .Add("@del", m.Deleted ? 1 : 0)
                 .Add("@dev", (object?)m.DeviceId ?? DBNull.Value)
-                .AddUtc("@n", DateTime.UtcNow))!;
+                .AddUtc("@n", DateTime.UtcNow));
+        return m.Id;
+    }
 
     public void Update(Milestone m)
         => ExecuteNonQuery(
@@ -58,7 +63,7 @@ public sealed class MilestoneRepository : BaseRepository
                 .Add("@id", m.Id));
 
     /// <summary>软删里程碑（is_deleted=1），便于同步通道传递删除事件。</summary>
-    public void Delete(long id)
+    public void Delete(string id)
         => ExecuteNonQuery(
             "UPDATE milestone SET is_deleted=1, updated_at=@n WHERE id=@id",
             cmd => cmd.AddUtc("@n", DateTime.UtcNow).Add("@id", id));
@@ -108,7 +113,7 @@ public sealed class MilestoneRepository : BaseRepository
     }
 
     /// <summary>批量标记里程碑为"已上送"（更新 synced_at）。</summary>
-    public void MarkSynced(IEnumerable<long> ids, DateTime syncedAt)
+    public void MarkSynced(IEnumerable<string> ids, DateTime syncedAt)
     {
         var idList = ids.ToList();
         if (idList.Count == 0) return;
@@ -132,9 +137,9 @@ public sealed class MilestoneRepository : BaseRepository
 
     private static Milestone Map(SqliteDataReader r) => new()
     {
-        Id = r.GetInt64(0),
-        UserId = r.GetInt64(1),
-        BabyId = r.IsDBNull(2) ? null : r.GetInt64(2),
+        Id = r.GetString(0),
+        UserId = r.GetString(1),
+        BabyId = r.IsDBNull(2) ? null : r.GetString(2),
         Title = r.GetString(3),
         Content = r.IsDBNull(4) ? null : r.GetString(4),
         RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),

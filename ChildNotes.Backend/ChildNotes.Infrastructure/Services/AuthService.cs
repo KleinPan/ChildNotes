@@ -36,6 +36,7 @@ public class AuthService : IAuthService
 
         var user = new AppUser
         {
+            Id = Guid.NewGuid().ToString("N"),
             Username = req.Username,
             PasswordHash = _passwordHasher.Hash(req.Password),
             NickName = string.IsNullOrWhiteSpace(req.NickName) ? req.Username : req.NickName,
@@ -93,11 +94,11 @@ public class AuthService : IAuthService
     /// 修复原版 bug：原版 AnyAsync 后未重查直接 Add，并发场景下异常被吞但调用方误以为已创建。
     /// 现统一为失败后重查，保证返回存在记录。
     /// </summary>
-    private async Task EnsureUserPointsAsync(long userId, CancellationToken ct)
+    private async Task EnsureUserPointsAsync(string userId, CancellationToken ct)
     {
         var p = await _db.UserPoints.FirstOrDefaultAsync(x => x.UserId == userId, ct);
         if (p is not null) return;
-        p = new UserPoints { UserId = userId };
+        p = new UserPoints { Id = Guid.NewGuid().ToString("N"), UserId = userId };
         _db.UserPoints.Add(p);
         try { await _db.SaveChangesAsync(ct); }
         catch (DbUpdateException)

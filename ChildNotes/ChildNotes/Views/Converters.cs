@@ -1,6 +1,4 @@
 using Avalonia.Data.Converters;
-using ChildNotes.Models;
-using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 using System.Globalization;
 
@@ -95,15 +93,6 @@ public static class AppConverters
     // ===== 疫苗自定义 =====
     public static readonly IValueConverter IsCustomFree = new EqualsConverter("free");
     public static readonly IValueConverter IsCustomPaid = new EqualsConverter("paid");
-
-    // ===== 疫苗状态 =====
-    public static readonly IValueConverter IsStatusDone = new EqualsConverter(VaccineDoseStatus.Done);
-    public static readonly IValueConverter IsStatusSkipped = new EqualsConverter(VaccineDoseStatus.Skipped);
-    public static readonly IValueConverter IsStatusReplaced = new EqualsConverter(VaccineDoseStatus.Replaced);
-    public static readonly IValueConverter IsStatusOverdue = new EqualsConverter(VaccineDoseStatus.Overdue);
-    public static readonly IValueConverter IsStatusDue = new EqualsConverter(VaccineDoseStatus.Due);
-    public static readonly IValueConverter IsStatusSoon = new EqualsConverter(VaccineDoseStatus.Soon);
-    public static readonly IValueConverter IsStatusPending = new EqualsConverter(VaccineDoseStatus.Pending);
 
     // ===== AI 设置：测试连接结果 =====
     public static readonly IValueConverter TestResultTitleConverter = new BoolToTextConverter("✅ 连接成功", "❌ 连接失败");

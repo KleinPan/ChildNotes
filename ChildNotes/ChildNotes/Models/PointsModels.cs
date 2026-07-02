@@ -8,8 +8,8 @@ public sealed class UserPoints : UserPointsBase
 
 public sealed class SignInRecord
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public DateTime SignDate { get; set; }
     public int ContinuousDays { get; set; }
     public int Reward { get; set; }
@@ -18,8 +18,8 @@ public sealed class SignInRecord
 
 public sealed class TaskRecord
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string TaskCode { get; set; } = string.Empty;
     public string TaskName { get; set; } = string.Empty;
     public int Reward { get; set; }

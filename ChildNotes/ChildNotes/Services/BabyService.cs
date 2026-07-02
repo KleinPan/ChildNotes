@@ -74,7 +74,7 @@ public sealed class BabyService
         NotifyWrite();
     }
 
-    public void DeleteBaby(long babyId)
+    public void DeleteBaby(string babyId)
     {
         _repo.Delete(babyId);
         var idx = IndexOfBaby(babyId);
@@ -88,14 +88,14 @@ public sealed class BabyService
     }
 
     /// <summary>查找宝宝在 ObservableCollection 中的索引（ObservableCollection 无 FindIndex）。</summary>
-    private int IndexOfBaby(long id)
+    private int IndexOfBaby(string id)
     {
         for (int i = 0; i < _state.BabyList.Count; i++)
             if (_state.BabyList[i].Id == id) return i;
         return -1;
     }
 
-    public void SwitchBaby(long babyId)
+    public void SwitchBaby(string babyId)
     {
         _state.CurrentBaby = _state.BabyList.FirstOrDefault(b => b.Id == babyId);
     }

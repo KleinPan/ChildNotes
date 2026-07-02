@@ -24,8 +24,8 @@ public class AiAnalysisController : AppBaseController
     public async Task<List<AiAnalysisRecordDto>> List(CancellationToken ct)
         => await _ai.ListAsync(ResolveBabyIdFromRequest(), ct);
 
-    [HttpGet("{id:long}")]
-    public async Task<AiAnalysisRecordDto?> GetById(long id, CancellationToken ct)
+    [HttpGet("{id}")]
+    public async Task<AiAnalysisRecordDto?> GetById(string id, CancellationToken ct)
         => await _ai.GetByIdAsync(id, ct);
 
     /// <summary>

@@ -9,7 +9,7 @@ namespace ChildNotes.Shared.Dtos;
 /// </summary>
 public abstract class BaseRecordDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Time { get; set; } = string.Empty;
 }
 
@@ -137,7 +137,7 @@ public sealed class ActivityRecordDto : BaseRecordDto
 
 public sealed class MilestoneRecordDto
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public string Date { get; set; } = string.Empty;

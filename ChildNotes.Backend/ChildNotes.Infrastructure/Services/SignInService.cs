@@ -52,6 +52,7 @@ public class SignInService : ISignInService
         var now = DateTime.UtcNow;
         _db.SignInRecords.Add(new SignInRecord
         {
+            Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
             SignDate = today,
             SignTime = now,
@@ -60,11 +61,15 @@ public class SignInService : ISignInService
             RewardPoints = reward,
             CreatedAt = now,
         });
-        await _wallet.ChangeAsync(uid, reward, ct);
-        await _db.SaveChangesAsync(ct);
+        // 事务包裹：积分增加（ExecuteUpdateAsync 立即落库）与签到记录写入必须原子。
+        await _db.ExecuteInTransactionAsync(async () =>
+        {
+            await _wallet.ChangeAsync(uid, reward, ct);
+            await _db.SaveChangesAsync(ct);
+        }, ct);
     }
 
-    private async Task<SignInSummaryDto> BuildSignInSummaryAsync(long userId, CancellationToken ct)
+    private async Task<SignInSummaryDto> BuildSignInSummaryAsync(string userId, CancellationToken ct)
     {
         var today = DateTime.Today;
         var todayRec = await _db.SignInRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.SignDate == today, ct);

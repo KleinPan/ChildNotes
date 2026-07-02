@@ -71,7 +71,7 @@ public sealed class AiAnalysisService
         return _repo.GetByBaby(_state.CurrentBaby.Id);
     }
 
-    public AiAnalysisRecord? GetRecord(long id) => _repo.FindById(id);
+    public AiAnalysisRecord? GetRecord(string id) => _repo.FindById(id);
 
     public bool HasRangeAnalysis(DateTime start, DateTime end)
     {
@@ -122,9 +122,9 @@ public sealed class AiAnalysisService
         return record;
     }
 
-    public void DeleteRecord(long id) => _repo.Delete(id);
+    public void DeleteRecord(string id) => _repo.Delete(id);
 
-    private AiAnalysisRecord? GetPreviousAnalysis(long babyId, DateTime currentStart)
+    private AiAnalysisRecord? GetPreviousAnalysis(string babyId, DateTime currentStart)
     {
         var all = _repo.GetByBaby(babyId);
         return all.FirstOrDefault(r => r.RangeEndDate < currentStart);

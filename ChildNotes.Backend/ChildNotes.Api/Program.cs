@@ -1,5 +1,7 @@
 using System.Text;
+using System.Text.Json;
 using ChildNotes.Api.Filters;
+using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Auth;
@@ -21,8 +23,24 @@ builder.Services.Configure<OssOptions>(builder.Configuration.GetSection("Oss"));
 builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection("RateLimit"));
 builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Upload"));
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
-var jwtSecret = builder.Configuration["Jwt:Secret"]
-    ?? "change-this-jwt-secret-before-deploy-at-least-32-chars";
+var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
+// 生产环境强制校验 JWT Secret 必须配置且足够长（>=32 字符）
+// 开发/测试环境若未配置则生成临时密钥（仅本机使用，重启后失效）
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+{
+    if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
+    {
+        // 开发/测试环境：生成临时密钥，避免本地启动失败
+        jwtSecret = "dev-only-secret-" + Guid.NewGuid().ToString("N");
+    }
+    else
+    {
+        throw new InvalidOperationException(
+            "生产环境必须配置 Jwt:Secret（至少 32 字符）。请在环境变量或 appsettings.Production.json 中设置。");
+    }
+}
+// 将最终使用的 jwtSecret 回写到 JwtOptions，确保 JwtTokenService 与 AddJwtBearer 使用同一密钥
+builder.Services.PostConfigure<JwtOptions>(opt => opt.Secret = jwtSecret);
 
 // 数据库
 var connStr = builder.Configuration.GetConnectionString("Default")
@@ -60,11 +78,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<IReferrerCodeUtil>(new ReferrerCodeUtil(jwtSecret));
-// 密码哈希：用户用 Pbkdf2PasswordHasher（单字段格式），Admin 用 AdminPasswordHasher（双字段格式，兼容老数据）
+// 密码哈希：统一用 Pbkdf2PasswordHasher（单字段格式 iterations:salt:hash）
 builder.Services.Configure<PasswordHashOptions>(builder.Configuration.GetSection("PasswordHash"));
-builder.Services.Configure<AdminPasswordHashOptions>(builder.Configuration.GetSection("AdminPasswordHash"));
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-builder.Services.AddSingleton<AdminPasswordHasher>();
 // 宝宝访问权限校验：消除 AiAnalysisService/BabyService/RecordService/SyncService 中的重复
 builder.Services.AddScoped<IBabyAccessService, BabyAccessService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -130,7 +146,8 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(p => p
 
 var app = builder.Build();
 
-// 自动迁移（开发期）
+// 数据库迁移：开发/测试环境自动迁移，生产环境需手动执行 dotnet ef database update
+// （Testing 用 InMemoryDatabase，MigrateAsync 是空操作）
 if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
@@ -145,6 +162,34 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+// 全局异常处理：将未捕获异常统一包装为 ApiResponse，避免泄漏堆栈
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        var logger = context.RequestServices.GetService<ILogger<Program>>();
+        logger?.LogError(ex, "未处理异常: {Path}", context.Request.Path);
+
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json; charset=utf-8";
+        var apiResp = ApiResponse.Fail("服务器内部错误，请稍后重试");
+        // 开发/测试环境暴露异常详情，便于排查；生产环境仅返回通用提示
+        if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+        {
+            apiResp = ApiResponse.Fail($"服务器内部错误：{ex.Message}");
+        }
+        var json = JsonSerializer.Serialize(apiResp, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = null,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        });
+        await context.Response.WriteAsync(json);
+    }
+});
 app.UseMiddleware<RateLimitMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();

@@ -8,27 +8,32 @@ public sealed class BabyRepository : BaseRepository
     public BabyRepository(DbConnectionFactory factory) : base(factory) { }
 
     private const string SelectBase =
-        "SELECT id, user_id, name, avatar, gender, birth_date, created_at, updated_at, " +
+        "SELECT id, user_id, name, avatar, gender, birth_date, is_deleted, created_at, updated_at, " +
         "device_id, synced_at FROM baby";
 
-    public List<Baby> GetByUser(long userId)
+    public List<Baby> GetByUser(string userId)
         => Query(SelectBase + " WHERE user_id = @u ORDER BY id",
             cmd => cmd.Add("@u", userId), Map);
 
-    public Baby? FindById(long id)
+    public Baby? FindById(string id)
         => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
-    public long Insert(Baby baby)
-        => (long)ExecuteScalar(
-            @"INSERT INTO baby (user_id, name, avatar, gender, birth_date, created_at, updated_at)
-              VALUES (@u, @n, @a, @g, @b, @c, @c); SELECT last_insert_rowid();",
+    public string Insert(Baby baby)
+    {
+        baby.Id = Guid.NewGuid().ToString("N");
+        ExecuteNonQuery(
+            @"INSERT INTO baby (id, user_id, name, avatar, gender, birth_date, created_at, updated_at)
+              VALUES (@i, @u, @n, @a, @g, @b, @c, @c)",
             cmd => cmd
+                .Add("@i", baby.Id)
                 .Add("@u", baby.UserId)
                 .Add("@n", baby.Name)
                 .Add("@a", (object?)baby.Avatar ?? DBNull.Value)
                 .Add("@g", (object?)baby.Gender ?? DBNull.Value)
                 .Add("@b", (object?)(baby.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
-                .AddUtc("@c", DateTime.UtcNow))!;
+                .AddUtc("@c", DateTime.UtcNow));
+        return baby.Id;
+    }
 
     public void Update(Baby baby)
         => ExecuteNonQuery(
@@ -41,7 +46,7 @@ public sealed class BabyRepository : BaseRepository
                 .AddUtc("@t", DateTime.UtcNow)
                 .Add("@i", baby.Id));
 
-    public void Delete(long id)
+    public void Delete(string id)
         => ExecuteNonQuery("DELETE FROM baby WHERE id=@i", cmd => cmd.Add("@i", id));
 
     /// <summary>获取本地指定更新时间之后的所有宝宝（含已软删，用于增量上送）。</summary>
@@ -69,14 +74,15 @@ public sealed class BabyRepository : BaseRepository
         cmd.Transaction = tx;
         // INSERT ... ON CONFLICT(id) DO UPDATE：仅在 excluded.updated_at > baby.updated_at 时更新
         cmd.CommandText = @"
-            INSERT INTO baby (id, user_id, name, avatar, gender, birth_date, created_at, updated_at)
-            VALUES (@i, @u, @n, @a, @g, @b, @c, @t)
+            INSERT INTO baby (id, user_id, name, avatar, gender, birth_date, is_deleted, created_at, updated_at)
+            VALUES (@i, @u, @n, @a, @g, @b, @d, @c, @t)
             ON CONFLICT(id) DO UPDATE SET
                 user_id = excluded.user_id,
                 name = excluded.name,
                 avatar = excluded.avatar,
                 gender = excluded.gender,
                 birth_date = excluded.birth_date,
+                is_deleted = excluded.is_deleted,
                 updated_at = excluded.updated_at
             WHERE excluded.updated_at > baby.updated_at";
         cmd.Add("@i", item.Id)
@@ -85,6 +91,7 @@ public sealed class BabyRepository : BaseRepository
            .Add("@a", (object?)item.Avatar ?? DBNull.Value)
            .Add("@g", (object?)item.Gender ?? DBNull.Value)
            .Add("@b", (object?)(item.BirthDate?.ToString("yyyy-MM-dd")) ?? DBNull.Value)
+           .Add("@d", item.Deleted ? 1 : 0)
            .AddUtc("@c", item.CreatedAt)
            .AddUtc("@t", item.UpdatedAt);
         // 返回受影响行数：1 表示写入（INSERT 或 UPDATE），0 表示因 LWW 跳过
@@ -95,7 +102,7 @@ public sealed class BabyRepository : BaseRepository
     /// 批量标记宝宝为"已上送"（更新 synced_at）。Push 成功后调用，防止崩溃导致重推。
     /// 优化：原实现逐条 UPDATE，500 条 = 500 次往返。改为按 500 个 id 一批的 IN 子句批量 UPDATE。
     /// </summary>
-    public void MarkSynced(IEnumerable<long> ids, DateTime syncedAt)
+    public void MarkSynced(IEnumerable<string> ids, DateTime syncedAt)
     {
         var idList = ids.ToList();
         if (idList.Count == 0) return;
@@ -120,15 +127,16 @@ public sealed class BabyRepository : BaseRepository
 
     private static Baby Map(SqliteDataReader r) => new()
     {
-        Id = r.GetInt64(0),
-        UserId = r.GetInt64(1),
+        Id = r.GetString(0),
+        UserId = r.GetString(1),
         Name = r.GetString(2),
         Avatar = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         Gender = r.IsDBNull(4) ? string.Empty : r.GetString(4),
         BirthDate = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
-        DeviceId = r.IsDBNull(8) ? null : r.GetString(8),
-        SyncedAt = r.IsDBNull(9) ? null : DateTimeExtensions.ParseDb(r.GetString(9)),
+        Deleted = r.IsDBNull(6) ? false : r.GetInt64(6) != 0,
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
+        DeviceId = r.IsDBNull(9) ? null : r.GetString(9),
+        SyncedAt = r.IsDBNull(10) ? null : DateTimeExtensions.ParseDb(r.GetString(10)),
     };
 }

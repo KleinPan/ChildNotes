@@ -35,7 +35,7 @@ public partial class FamilyViewModel : ViewModelBase
     // 修改角色表单
     [ObservableProperty] private bool _isRoleEditorOpen;
     [ObservableProperty] private string _roleEditorTitle = "我的角色";
-    [ObservableProperty] private long _editingBabyId;
+    [ObservableProperty] private string _editingBabyId = string.Empty;
     [ObservableProperty] private string _editingRoleCode = "other";
 
     public FamilyViewModel()
@@ -98,9 +98,10 @@ public partial class FamilyViewModel : ViewModelBase
     private async Task ConfirmJoin()
     {
         JoinError = string.Empty;
-        if (!long.TryParse(JoinBabyId.Trim(), out var babyId) || babyId <= 0)
+        var babyId = JoinBabyId.Trim();
+        if (string.IsNullOrEmpty(babyId))
         {
-            JoinError = "请输入有效的宝宝 ID";
+            JoinError = "请输入宝宝 ID";
             return;
         }
         var result = await _api.JoinFamilyAsync(babyId, JoinRoleCode);

@@ -177,13 +177,13 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
     }
 
     /// <summary>原地标记「已打」（保存 DB 成功后调用，只更新该卡片 UI，不重建整个时间轴）。</summary>
-    public void MarkDoneInline(VaccinePlanView plan, string time, long recordId)
+    public void MarkDoneInline(VaccinePlanView plan, string time, string recordId)
     {
         plan.UpdateForDone(time, recordId);
     }
 
     /// <summary>原地标记「跳过」。</summary>
-    public void MarkSkippedInline(VaccinePlanView plan, string time, long recordId)
+    public void MarkSkippedInline(VaccinePlanView plan, string time, string recordId)
     {
         plan.UpdateForSkipped(time, recordId);
     }
@@ -311,30 +311,10 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         };
     }
 
-    // 兼容旧 Save 流程（RecordSheetViewModel.Save 仍会调用 Validate/BuildDto）
-    [ObservableProperty] private string _name = string.Empty;
-    [ObservableProperty] private string _nextName = string.Empty;
-    [ObservableProperty] private string _nextDateText = string.Empty;
-    [ObservableProperty] private string _note = string.Empty;
-    [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
-
+    // Vaccine 类型不参与通用 Save 流程（UI 上保存按钮隐藏），Validate 仅满足 IRecordFormViewModel 契约。
     public bool Validate(out string error)
     {
-        if (string.IsNullOrWhiteSpace(Name))
-        {
-            error = "请输入疫苗名称";
-            return false;
-        }
         error = string.Empty;
         return true;
     }
-
-    public VaccineRecordDto BuildDto() => new()
-    {
-        Name = Name,
-        NextName = string.IsNullOrWhiteSpace(NextName) ? null : NextName,
-        NextDate = string.IsNullOrWhiteSpace(NextDateText) ? null : NextDateText,
-        Note = Note,
-        Time = TimeText,
-    };
 }

@@ -5,8 +5,7 @@ namespace ChildNotes.Data.Repositories;
 
 /// <summary>
 /// sync_config 表的访问器。该表只有一行（id=1）。
-/// 注：ServerUrl 由 <see cref="ChildNotes.Services.ServerEndpoints"/> 硬编码，
-/// 此字段仅作运行时探测地址缓存，外部 Save 不再持久化该字段。
+/// ServerUrl 由用户在同步设置页配置并持久化到此表。
 /// 优化：单行配置表加内存缓存，避免 ApiSyncService 单次同步流程 4-6 次 Get() 各开连接 + PRAGMA 往返。
 ///      任何写操作（Save/UpdateSyncResult/UpdateToken/UpdateDeviceId）自动失效缓存。
 /// </summary>

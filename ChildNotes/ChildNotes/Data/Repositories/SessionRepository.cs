@@ -14,7 +14,7 @@ public sealed class SessionRepository : BaseRepository
     public SessionRepository(DbConnectionFactory factory) : base(factory) { }
 
     /// <summary>保存或覆盖会话（INSERT OR REPLACE）。</summary>
-    public void Save(long userId, DateTime issuedAt, DateTime expireAt)
+    public void Save(string userId, DateTime issuedAt, DateTime expireAt)
         => ExecuteNonQuery(
             @"INSERT OR REPLACE INTO user_session (id, user_id, issued_at, expire_at)
               VALUES (@id, @u, @i, @e)",
@@ -31,7 +31,7 @@ public sealed class SessionRepository : BaseRepository
         return QueryFirstOrDefault(sql,
             cmd => cmd.Add("@id", SessionId),
             r => new SessionRecord(
-                r.GetInt64(0),
+                r.GetString(0),
                 DateTimeExtensions.ParseDb(r.GetString(1)),
                 DateTimeExtensions.ParseDb(r.GetString(2))));
     }
@@ -43,4 +43,4 @@ public sealed class SessionRepository : BaseRepository
 }
 
 /// <summary>会话记录。</summary>
-public sealed record SessionRecord(long UserId, DateTime IssuedAt, DateTime ExpireAt);
+public sealed record SessionRecord(string UserId, DateTime IssuedAt, DateTime ExpireAt);

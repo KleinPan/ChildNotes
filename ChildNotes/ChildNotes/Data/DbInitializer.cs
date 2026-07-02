@@ -13,7 +13,7 @@ public static class DbInitializer
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS app_user (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id TEXT PRIMARY KEY NOT NULL,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     nick_name TEXT,
@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS app_user (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS baby (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     avatar TEXT,
     gender TEXT,
@@ -37,9 +37,9 @@ CREATE TABLE IF NOT EXISTS baby (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS baby_member (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    baby_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    baby_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
     role_code TEXT NOT NULL,
     role_name TEXT NOT NULL,
     is_owner INTEGER NOT NULL DEFAULT 0,
@@ -51,9 +51,9 @@ CREATE TABLE IF NOT EXISTS baby_member (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS child_record (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    baby_id INTEGER,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    baby_id TEXT,
     record_type TEXT NOT NULL,
     record_sub_type TEXT,
     record_date TEXT NOT NULL,
@@ -74,9 +74,9 @@ CREATE TABLE IF NOT EXISTS child_record (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS milestone (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    baby_id INTEGER,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    baby_id TEXT,
     title TEXT NOT NULL,
     content TEXT,
     record_date TEXT NOT NULL,
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS milestone (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS user_points (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL UNIQUE,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL UNIQUE,
     points INTEGER NOT NULL DEFAULT 0,
     total_earned INTEGER NOT NULL DEFAULT 0,
     total_spent INTEGER NOT NULL DEFAULT 0,
@@ -98,8 +98,8 @@ CREATE TABLE IF NOT EXISTS user_points (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS sign_in_record (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
     sign_date TEXT NOT NULL,
     continuous_days INTEGER NOT NULL DEFAULT 1,
     reward INTEGER NOT NULL DEFAULT 0,
@@ -109,8 +109,8 @@ CREATE TABLE IF NOT EXISTS sign_in_record (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS task_record (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
     task_code TEXT NOT NULL,
     task_name TEXT NOT NULL,
     reward INTEGER NOT NULL DEFAULT 0,
@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS task_record (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS user_supplement_item (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
     type TEXT NOT NULL,
     name TEXT NOT NULL,
     created_at TEXT NOT NULL,
@@ -131,8 +131,8 @@ CREATE TABLE IF NOT EXISTS user_supplement_item (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS user_custom_vaccine (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
     name TEXT NOT NULL,
     created_at TEXT NOT NULL,
     UNIQUE (user_id, name)
@@ -140,9 +140,9 @@ CREATE TABLE IF NOT EXISTS user_custom_vaccine (
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS ai_analysis_record (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    baby_id INTEGER NOT NULL,
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    baby_id TEXT NOT NULL,
     baby_name TEXT,
     range_start_date TEXT NOT NULL,
     range_end_date TEXT NOT NULL,
@@ -239,7 +239,7 @@ VALUES (1, 0, '', '', '', '');
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS user_session (
     id INTEGER PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id TEXT NOT NULL,
     issued_at TEXT NOT NULL,
     expire_at TEXT NOT NULL
 );");

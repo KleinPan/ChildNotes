@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
 using ChildNotes.Core.Constants;
@@ -18,13 +20,13 @@ public class AdminAuthService : IAdminAuthService
     private readonly ChildNotesDbContext _db;
     private readonly AdminOptions _opt;
     private readonly ICurrentAdminService _current;
-    private readonly AdminPasswordHasher _passwordHasher;
+    private readonly IPasswordHasher _passwordHasher;
 
     public AdminAuthService(
         ChildNotesDbContext db,
         IOptions<AdminOptions> opt,
         ICurrentAdminService current,
-        AdminPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher)
     {
         _db = db;
         _opt = opt.Value;
@@ -40,12 +42,11 @@ public class AdminAuthService : IAdminAuthService
         lock (_initLock)
         {
             if (_db.AdminAccounts.Any()) return;
-            var (salt, hash) = _passwordHasher.Hash(_opt.InitPassword);
             _db.AdminAccounts.Add(new AdminAccount
             {
+                Id = Guid.NewGuid().ToString("N"),
                 Username = _opt.InitUsername,
-                PasswordSalt = salt,
-                PasswordHash = hash,
+                PasswordHash = _passwordHasher.Hash(_opt.InitPassword),
                 DisplayName = _opt.InitDisplayName,
                 Status = StatusConstants.Admin.Active,
             });
@@ -62,11 +63,12 @@ public class AdminAuthService : IAdminAuthService
 
         var admin = await _db.AdminAccounts.FirstOrDefaultAsync(a => a.Username == req.Username, ct);
         if (admin is null || admin.Status != StatusConstants.Admin.Active
-            || !_passwordHasher.Verify(req.Password, admin.PasswordSalt, admin.PasswordHash))
+            || !_passwordHasher.Verify(req.Password, admin.PasswordHash))
             throw new BusinessException("Invalid username or password", 400);
 
-        var token = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        admin.Token = token;
+        // 生成随机 token，但数据库只存其 SHA256 哈希，避免数据库泄露后 token 被直接复用
+        var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+        admin.Token = HashToken(rawToken);
         admin.TokenExpireAt = DateTime.UtcNow.AddHours(_opt.TokenExpireHours);
         admin.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -76,7 +78,7 @@ public class AdminAuthService : IAdminAuthService
             AdminId = admin.Id,
             Username = admin.Username,
             DisplayName = admin.DisplayName,
-            Token = token,
+            Token = rawToken,
             TokenExpireAt = DateTimeFormatter.FormatDateTime(admin.TokenExpireAt!.Value),
         };
     }
@@ -84,8 +86,9 @@ public class AdminAuthService : IAdminAuthService
     public async Task<AdminAccount?> AuthenticateAsync(string? token, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(token)) return null;
+        var tokenHash = HashToken(token);
         return await _db.AdminAccounts.FirstOrDefaultAsync(
-            a => a.Token == token && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
+            a => a.Token == tokenHash && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
     }
 
     public Task<AdminAccount?> GetCurrentAdminAsync(CancellationToken ct = default)
@@ -98,5 +101,15 @@ public class AdminAuthService : IAdminAuthService
         admin.Token = null;
         admin.TokenExpireAt = null;
         await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// 将明文 token 转为 SHA256 哈希（64 位 hex 字符串）。
+    /// 数据库只存哈希值，即使数据库泄露攻击者也无法直接复用 token 登录。
+    /// </summary>
+    private static string HashToken(string rawToken)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

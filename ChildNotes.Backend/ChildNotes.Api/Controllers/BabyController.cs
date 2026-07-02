@@ -12,7 +12,7 @@ public class BabyController : AppBaseController
     public BabyController(IBabyService baby) => _baby = baby;
 
     [HttpGet("current")]
-    public async Task<BabyDto?> GetCurrent([FromQuery] long? babyId, CancellationToken ct)
+    public async Task<BabyDto?> GetCurrent([FromQuery] string? babyId, CancellationToken ct)
         => await _baby.GetCurrentBabyAsync(babyId, ct);
 
     [HttpGet("list")]

@@ -2,7 +2,7 @@ namespace ChildNotes.Core.Services;
 
 public interface ICurrentUserService
 {
-    long? UserId { get; }
+    string? UserId { get; }
     bool IsAuthenticated { get; }
-    long RequireUserId();
+    string RequireUserId();
 }

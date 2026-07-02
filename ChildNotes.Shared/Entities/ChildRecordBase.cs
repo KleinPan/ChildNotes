@@ -6,9 +6,9 @@ namespace ChildNotes.Shared.Entities;
 /// </summary>
 public abstract class ChildRecordBase
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long? BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string? BabyId { get; set; }
     public string RecordType { get; set; } = string.Empty;
     public string? RecordSubType { get; set; }
     public DateTime RecordDate { get; set; }

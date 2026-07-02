@@ -5,9 +5,9 @@ using ChildNotes.Core.Services;
 namespace ChildNotes.Infrastructure.Auth;
 
 /// <summary>
-/// 推荐码工具：HMAC-SHA256 签名 + Base64Url 编码，对齐 Java ReferrerCodeUtil。
+/// 推荐码工具：HMAC-SHA256 签名 + Base64Url 编码。
+/// userId 为 GUID 字符串（32 位无连字符）。
 /// 格式：u_ + Base64Url(userId + ":" + HMAC_SHA256(userId) 前12字节 hex)
-/// 也支持纯数字 userId 直接解码（向后兼容）。
 /// </summary>
 public class ReferrerCodeUtil : IReferrerCodeUtil
 {
@@ -18,9 +18,9 @@ public class ReferrerCodeUtil : IReferrerCodeUtil
         _secret = Encoding.UTF8.GetBytes(secret);
     }
 
-    public string Encode(long userId)
+    public string Encode(string userId)
     {
-        var idStr = userId.ToString();
+        var idStr = userId ?? string.Empty;
         using var hmac = new HMACSHA256(_secret);
         var hashHex = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(idStr)));
         var payload = $"{idStr}:{hashHex}";
@@ -28,12 +28,9 @@ public class ReferrerCodeUtil : IReferrerCodeUtil
         return "u_" + Base64UrlEncode(bytes);
     }
 
-    public long? Decode(string code)
+    public string? Decode(string code)
     {
         if (string.IsNullOrWhiteSpace(code)) return null;
-
-        // 纯数字直接解析
-        if (long.TryParse(code, out var pureNum)) return pureNum;
 
         if (!code.StartsWith("u_")) return null;
         try
@@ -43,14 +40,14 @@ public class ReferrerCodeUtil : IReferrerCodeUtil
             if (idx <= 0) return null;
             var idStr = payload[..idx];
             var hashHex = payload[(idx + 1)..];
-            if (!long.TryParse(idStr, out var uid)) return null;
+            if (string.IsNullOrEmpty(idStr)) return null;
 
             using var hmac = new HMACSHA256(_secret);
             var expected = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(idStr)));
             // 固定时间比较，防时序攻击
             if (!CryptographicOperations.FixedTimeEquals(
                 Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(hashHex))) return null;
-            return uid;
+            return idStr;
         }
         catch
         {

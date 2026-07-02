@@ -13,15 +13,22 @@ public sealed class RecordRepository : BaseRepository
         "temperature_value, height_cm, weight_kg, payload_json, deleted, created_at, updated_at, " +
         "device_id, synced_at FROM child_record";
 
-    public long Insert(ChildRecord rec)
-        => (long)ExecuteScalar(
+    public string Insert(ChildRecord rec)
+    {
+        rec.Id = Guid.NewGuid().ToString("N");
+        ExecuteNonQuery(
             @"INSERT INTO child_record
-              (user_id, baby_id, record_type, record_sub_type, record_date, record_time,
+              (id, user_id, baby_id, record_type, record_sub_type, record_date, record_time,
                amount_ml, duration_sec, left_duration_sec, right_duration_sec, abnormal_flag,
                temperature_value, height_cm, weight_kg, payload_json, deleted, created_at, updated_at)
-              VALUES (@uid,@bid,@rt,@rst,@rd,@rtm,@aml,@ds,@lds,@rds,@af,@tv,@hc,@wk,@pj,0,@c,@c);
-              SELECT last_insert_rowid();",
-            cmd => AddParams(cmd, rec))!;
+              VALUES (@id,@uid,@bid,@rt,@rst,@rd,@rtm,@aml,@ds,@lds,@rds,@af,@tv,@hc,@wk,@pj,0,@c,@c)",
+            cmd =>
+            {
+                cmd.Add("@id", rec.Id);
+                AddParams(cmd, rec);
+            });
+        return rec.Id;
+    }
 
     public void Update(ChildRecord rec)
         => ExecuteNonQuery(
@@ -36,46 +43,46 @@ public sealed class RecordRepository : BaseRepository
                 cmd.Add("@id", rec.Id);
             });
 
-    public void SoftDelete(long id)
+    public void SoftDelete(string id)
         => ExecuteNonQuery(
             "UPDATE child_record SET deleted=1, updated_at=@t WHERE id=@id",
             cmd => cmd.AddUtc("@t", DateTime.UtcNow).Add("@id", id));
 
-    public ChildRecord? FindById(long id)
+    public ChildRecord? FindById(string id)
         => QueryFirstOrDefault(SelectBase + " WHERE id=@id AND deleted=0",
             cmd => cmd.Add("@id", id), Map);
 
-    public List<ChildRecord> GetByDate(long userId, long? babyId, DateTime date)
+    public List<ChildRecord> GetByDate(string userId, string? babyId, DateTime date)
         => QueryRecords(userId, babyId, "record_date=@d", cmd => cmd.AddDate("@d", date));
 
-    public List<ChildRecord> GetByDateRange(long userId, long? babyId, DateTime start, DateTime end)
+    public List<ChildRecord> GetByDateRange(string userId, string? babyId, DateTime start, DateTime end)
         => QueryRecords(userId, babyId, "record_date>=@s AND record_date<=@e",
             cmd => cmd.AddDate("@s", start).AddDate("@e", end));
 
-    public ChildRecord? GetLatest(long userId, long? babyId, string recordType)
+    public ChildRecord? GetLatest(string userId, string? babyId, string recordType)
     {
         using var conn = OpenConnection();
         using var cmd = conn.CreateCommand();
         var sql = SelectBase + " WHERE user_id=@uid AND record_type=@rt AND deleted=0";
-        if (babyId.HasValue) sql += " AND baby_id=@bid";
+        if (babyId is not null) sql += " AND baby_id=@bid";
         sql += " ORDER BY record_time DESC LIMIT 1";
         cmd.CommandText = sql;
         cmd.Add("@uid", userId).Add("@rt", recordType);
-        if (babyId.HasValue) cmd.Add("@bid", babyId.Value);
+        if (babyId is not null) cmd.Add("@bid", babyId);
         using var r = cmd.ExecuteReader();
         return r.Read() ? Map(r) : null;
     }
 
-    public List<ChildRecord> GetByType(long userId, long? babyId, string recordType, int limit = 100)
+    public List<ChildRecord> GetByType(string userId, string? babyId, string recordType, int limit = 100)
     {
         using var conn = OpenConnection();
         using var cmd = conn.CreateCommand();
         var sql = SelectBase + " WHERE user_id=@uid AND record_type=@rt AND deleted=0";
-        if (babyId.HasValue) sql += " AND baby_id=@bid";
+        if (babyId is not null) sql += " AND baby_id=@bid";
         sql += " ORDER BY record_time DESC LIMIT @lim";
         cmd.CommandText = sql;
         cmd.Add("@uid", userId).Add("@rt", recordType).Add("@lim", limit);
-        if (babyId.HasValue) cmd.Add("@bid", babyId.Value);
+        if (babyId is not null) cmd.Add("@bid", babyId);
         using var r = cmd.ExecuteReader();
         var list = new List<ChildRecord>();
         while (r.Read()) list.Add(Map(r));
@@ -135,16 +142,16 @@ public sealed class RecordRepository : BaseRepository
         return cmd.ExecuteNonQuery() > 0;
     }
 
-    private List<ChildRecord> QueryRecords(long userId, long? babyId, string condition, Action<SqliteCommand> addExtra)
+    private List<ChildRecord> QueryRecords(string userId, string? babyId, string condition, Action<SqliteCommand> addExtra)
     {
         using var conn = OpenConnection();
         using var cmd = conn.CreateCommand();
         var sql = SelectBase + " WHERE user_id=@uid AND deleted=0 AND " + condition;
-        if (babyId.HasValue) sql += " AND baby_id=@bid";
+        if (babyId is not null) sql += " AND baby_id=@bid";
         sql += " ORDER BY record_time ASC";
         cmd.CommandText = sql;
         cmd.Add("@uid", userId);
-        if (babyId.HasValue) cmd.Add("@bid", babyId.Value);
+        if (babyId is not null) cmd.Add("@bid", babyId);
         addExtra(cmd);
         using var r = cmd.ExecuteReader();
         var list = new List<ChildRecord>();
@@ -198,7 +205,7 @@ public sealed class RecordRepository : BaseRepository
     /// 批量标记记录为"已上送"（更新 synced_at）。Push 成功后调用，防止崩溃导致重推。
     /// 优化：原实现逐条 UPDATE，500 条 = 500 次往返。改为按 500 个 id 一批的 IN 子句批量 UPDATE。
     /// </summary>
-    public void MarkSynced(IEnumerable<long> ids, DateTime syncedAt)
+    public void MarkSynced(IEnumerable<string> ids, DateTime syncedAt)
     {
         var idList = ids.ToList();
         if (idList.Count == 0) return;
@@ -222,9 +229,9 @@ public sealed class RecordRepository : BaseRepository
 
     private static ChildRecord Map(SqliteDataReader r) => new()
     {
-        Id = r.GetInt64(0),
-        UserId = r.GetInt64(1),
-        BabyId = r.IsDBNull(2) ? null : r.GetInt64(2),
+        Id = r.GetString(0),
+        UserId = r.GetString(1),
+        BabyId = r.IsDBNull(2) ? null : r.GetString(2),
         RecordType = r.GetString(3),
         RecordSubType = r.IsDBNull(4) ? null : r.GetString(4),
         RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),

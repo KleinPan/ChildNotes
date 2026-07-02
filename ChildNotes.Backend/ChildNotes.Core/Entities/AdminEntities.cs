@@ -4,9 +4,8 @@ namespace ChildNotes.Core.Entities;
 
 public class AdminAccount : IAuditable
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
-    public string PasswordSalt { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string Status { get; set; } = StatusConstants.Admin.Active;
@@ -19,7 +18,7 @@ public class AdminAccount : IAuditable
 
 public class AdminLotteryActivity
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CoverImage { get; set; } = string.Empty;
@@ -29,16 +28,16 @@ public class AdminLotteryActivity
     public int WinnerCount { get; set; } = 1;
     public string Status { get; set; } = StatusConstants.AdminLottery.Draft; // draft / published / closed
     public DateTime? PublishTime { get; set; }
-    public long? CreatedBy { get; set; }
-    public long? UpdatedBy { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
 
 public class AdminLotteryPrize
 {
-    public long Id { get; set; }
-    public long ActivityId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string ActivityId { get; set; } = string.Empty;
     public string PrizeName { get; set; } = string.Empty;
     public string PrizeIntro { get; set; } = string.Empty;
     public string PrizeImage { get; set; } = string.Empty;

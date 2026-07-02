@@ -10,24 +10,27 @@ public sealed class AiAnalysisRepository : BaseRepository
     private const string SelectBase =
         "SELECT id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at FROM ai_analysis_record";
 
-    public List<AiAnalysisRecord> GetByBaby(long babyId)
+    public List<AiAnalysisRecord> GetByBaby(string babyId)
         => Query(SelectBase + " WHERE baby_id = @b ORDER BY created_at DESC",
             cmd => cmd.Add("@b", babyId), Map);
 
-    public AiAnalysisRecord? FindByRange(long babyId, DateTime start, DateTime end)
+    public AiAnalysisRecord? FindByRange(string babyId, DateTime start, DateTime end)
         => QueryFirstOrDefault(
             SelectBase + " WHERE baby_id = @b AND range_start_date = @s AND range_end_date = @e ORDER BY created_at DESC LIMIT 1",
             cmd => cmd.Add("@b", babyId).AddDate("@s", start).AddDate("@e", end),
             Map);
 
-    public AiAnalysisRecord? FindById(long id)
+    public AiAnalysisRecord? FindById(string id)
         => QueryFirstOrDefault(SelectBase + " WHERE id = @i", cmd => cmd.Add("@i", id), Map);
 
-    public long Insert(AiAnalysisRecord record)
-        => (long)ExecuteScalar(
-            @"INSERT INTO ai_analysis_record (user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at)
-              VALUES (@u, @b, @bn, @s, @e, @t, @dq, @m, @c, @c); SELECT last_insert_rowid();",
+    public string Insert(AiAnalysisRecord record)
+    {
+        record.Id = Guid.NewGuid().ToString("N");
+        ExecuteNonQuery(
+            @"INSERT INTO ai_analysis_record (id, user_id, baby_id, baby_name, range_start_date, range_end_date, analysis_text, data_quality_tip, model, created_at, updated_at)
+              VALUES (@i, @u, @b, @bn, @s, @e, @t, @dq, @m, @c, @c)",
             cmd => cmd
+                .Add("@i", record.Id)
                 .Add("@u", record.UserId)
                 .Add("@b", record.BabyId)
                 .Add("@bn", (object?)record.BabyName ?? DBNull.Value)
@@ -36,9 +39,11 @@ public sealed class AiAnalysisRepository : BaseRepository
                 .Add("@t", record.AnalysisText)
                 .Add("@dq", (object?)record.DataQualityTip ?? DBNull.Value)
                 .Add("@m", (object?)record.Model ?? DBNull.Value)
-                .AddUtc("@c", DateTime.UtcNow))!;
+                .AddUtc("@c", DateTime.UtcNow));
+        return record.Id;
+    }
 
-    public void Delete(long id)
+    public void Delete(string id)
         => ExecuteNonQuery("DELETE FROM ai_analysis_record WHERE id = @i", cmd => cmd.Add("@i", id));
 
     /// <summary>LlmConfig 内存缓存：单行配置表，仅在 SaveLlmConfig 后失效。</summary>
@@ -99,9 +104,9 @@ public sealed class AiAnalysisRepository : BaseRepository
 
     private static AiAnalysisRecord Map(SqliteDataReader r) => new()
     {
-        Id = r.GetInt64(0),
-        UserId = r.GetInt64(1),
-        BabyId = r.GetInt64(2),
+        Id = r.GetString(0),
+        UserId = r.GetString(1),
+        BabyId = r.GetString(2),
         BabyName = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         RangeStartDate = DateTimeExtensions.ParseDb(r.GetString(4)),
         RangeEndDate = DateTimeExtensions.ParseDb(r.GetString(5)),

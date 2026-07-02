@@ -29,7 +29,7 @@ public class LotteryService : ILotteryService
         return await BuildActiveLotteryAsync(uid, ct);
     }
 
-    public async Task JoinLotteryAsync(long activityId, CancellationToken ct = default)
+    public async Task JoinLotteryAsync(string activityId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var activity = await _db.LotteryActivities.FirstOrDefaultAsync(a => a.Id == activityId, ct)
@@ -41,21 +41,28 @@ public class LotteryService : ILotteryService
         if (joined) throw new BusinessException("您已参与本期抽奖", 400, "ALREADY_JOINED_LOTTERY");
 
         var cost = activity.CostPoints <= 0 ? 30 : activity.CostPoints;
-        await _wallet.ChangeAsync(uid, -cost, ct);
 
-        var now = DateTime.UtcNow;
-        _db.LotteryParticipations.Add(new LotteryParticipation
+        // 事务包裹：积分扣减（ExecuteUpdateAsync 立即落库）与参与记录写入必须原子，
+        // 避免扣了积分但写入参与记录失败导致用户损失。
+        await _db.ExecuteInTransactionAsync(async () =>
         {
-            ActivityId = activityId,
-            UserId = uid,
-            CostPoints = cost,
-            Status = StatusConstants.LotteryParticipation.Joined,
-            CreatedAt = now,
-            UpdatedAt = now,
-        });
-        activity.ParticipantCount++;
-        activity.UpdatedAt = now;
-        await _db.SaveChangesAsync(ct);
+            await _wallet.ChangeAsync(uid, -cost, ct);
+
+            var now = DateTime.UtcNow;
+            _db.LotteryParticipations.Add(new LotteryParticipation
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                ActivityId = activityId,
+                UserId = uid,
+                CostPoints = cost,
+                Status = StatusConstants.LotteryParticipation.Joined,
+                CreatedAt = now,
+                UpdatedAt = now,
+            });
+            activity.ParticipantCount++;
+            activity.UpdatedAt = now;
+            await _db.SaveChangesAsync(ct);
+        }, ct);
     }
 
     public async Task<List<LotteryHistoryItemDto>> GetLotteryHistoryAsync(CancellationToken ct = default)
@@ -83,7 +90,7 @@ public class LotteryService : ILotteryService
         }).ToList();
     }
 
-    private async Task<LotterySummaryDto?> BuildActiveLotteryAsync(long userId, CancellationToken ct)
+    private async Task<LotterySummaryDto?> BuildActiveLotteryAsync(string userId, CancellationToken ct)
     {
         var activity = await _db.LotteryActivities
             .Where(a => a.Status == StatusConstants.Lottery.Active && a.DrawTime > DateTime.UtcNow)

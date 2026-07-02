@@ -28,7 +28,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     /// <summary>请求主壳层打开编辑记录抽屉（复用 RecordSheet 编辑模式）。</summary>
     public event Action<ChildRecord>? EditRequested;
 
-    private long _deletingRecordId;
+    private string _deletingRecordId = string.Empty;
 
     public FeedingViewModel()
     {

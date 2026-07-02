@@ -15,15 +15,15 @@ public class RecordController : AppBaseController
     public RecordController(IRecordService record) => _record = record;
 
     [HttpGet("today")]
-    public async Task<DailyRecordsResponse> Today([FromQuery] long? babyId, CancellationToken ct)
+    public async Task<DailyRecordsResponse> Today([FromQuery] string? babyId, CancellationToken ct)
         => await _record.GetTodayRecordsAsync(babyId, ct);
 
     [HttpGet("date")]
-    public async Task<DailyRecordsResponse> ByDate([FromQuery] DateTime date, [FromQuery] long? babyId, CancellationToken ct)
+    public async Task<DailyRecordsResponse> ByDate([FromQuery] DateTime date, [FromQuery] string? babyId, CancellationToken ct)
         => await _record.GetRecordsByDateAsync(date, babyId, ct);
 
     [HttpGet("history")]
-    public async Task<List<DailyRecordsResponse>> History([FromQuery] long? babyId, CancellationToken ct, [FromQuery] int limit = 30)
+    public async Task<List<DailyRecordsResponse>> History([FromQuery] string? babyId, CancellationToken ct, [FromQuery] int limit = 30)
         => await _record.GetHistoryRecordsAsync(babyId, limit, ct);
 
     [HttpPost("{type}")]
@@ -34,12 +34,12 @@ public class RecordController : AppBaseController
         return new { id };
     }
 
-    [HttpDelete("{id:long}")]
-    public async Task DeleteRecord(long id, CancellationToken ct)
+    [HttpDelete("{id}")]
+    public async Task DeleteRecord(string id, CancellationToken ct)
         => await _record.DeleteRecordAsync(id, ct);
 
-    [HttpPut("sleep/{sleepId:long}/wake")]
-    public async Task WakeUpSleep(long sleepId, CancellationToken ct)
+    [HttpPut("sleep/{sleepId}/wake")]
+    public async Task WakeUpSleep(string sleepId, CancellationToken ct)
         => await _record.WakeUpSleepAsync(sleepId, ct);
 
     private static object ParseDto(string type, JsonElement payload)

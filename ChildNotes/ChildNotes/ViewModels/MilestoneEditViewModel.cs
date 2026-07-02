@@ -80,13 +80,13 @@ public partial class MilestoneEditViewModel : ViewModelBase
     /// <summary>是否还能继续添加照片（达到上限时隐藏"+"按钮）。</summary>
     public bool CanAddPhoto => Photos.Count < MaxPhotos;
 
-    private long _editingId;
+    private string _editingId = string.Empty;
 
     public event Action? Saved;
 
     public void InitForAdd()
     {
-        _editingId = 0;
+        _editingId = string.Empty;
         Title = string.Empty;
         Content = string.Empty;
         var localDate = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
@@ -230,7 +230,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
             DeviceId = _cfgRepo.Get().DeviceId,
         };
 
-        if (_editingId == 0)
+        if (string.IsNullOrEmpty(_editingId))
             _repo.Insert(m);
         else
             _repo.Update(m);
@@ -252,7 +252,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
     [RelayCommand]
     private void Delete()
     {
-        if (_editingId == 0) return;
+        if (string.IsNullOrEmpty(_editingId)) return;
         _repo.Delete(_editingId);
         IsVisible = false;
         Saved?.Invoke();

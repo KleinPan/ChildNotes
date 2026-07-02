@@ -66,7 +66,7 @@ public partial class AiNoteService : IAiNoteService
         _recordService = recordService;
     }
 
-    public async Task<AiNoteParseResponse> ParseAndSaveAsync(AiNoteParseRequest req, long? babyId, CancellationToken ct = default)
+    public async Task<AiNoteParseResponse> ParseAndSaveAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(req?.Text))
             throw new Core.Exceptions.BusinessException("记录文本不能为空", 400);

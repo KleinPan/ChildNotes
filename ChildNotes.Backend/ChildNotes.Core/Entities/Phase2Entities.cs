@@ -4,8 +4,8 @@ namespace ChildNotes.Core.Entities;
 
 public class SignInRecord : ICreatedAuditable
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public DateTime SignDate { get; set; }
     public DateTime SignTime { get; set; }
     public int ContinuousDays { get; set; }
@@ -16,11 +16,11 @@ public class SignInRecord : ICreatedAuditable
 
 public class TaskRecord
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string TaskType { get; set; } = string.Empty;
     public string TaskKey { get; set; } = string.Empty;
-    public long? RelatedUserId { get; set; }
+    public string? RelatedUserId { get; set; }
     public int Points { get; set; }
     public string Status { get; set; } = StatusConstants.TaskRecord.Completed;
     public string PayloadJson { get; set; } = "{}";
@@ -30,7 +30,7 @@ public class TaskRecord
 
 public class LotteryActivity
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string CoverImage { get; set; } = string.Empty;
@@ -46,9 +46,9 @@ public class LotteryActivity
 
 public class LotteryParticipation : IAuditable
 {
-    public long Id { get; set; }
-    public long ActivityId { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string ActivityId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public int CostPoints { get; set; }
     public string Status { get; set; } = StatusConstants.LotteryParticipation.Joined;
     public DateTime CreatedAt { get; set; }
@@ -57,8 +57,8 @@ public class LotteryParticipation : IAuditable
 
 public class LotteryPrize
 {
-    public long Id { get; set; }
-    public long ActivityId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string ActivityId { get; set; } = string.Empty;
     public string PrizeName { get; set; } = string.Empty;
     public string PrizeIntro { get; set; } = string.Empty;
     public string PrizeImage { get; set; } = string.Empty;
@@ -69,7 +69,7 @@ public class LotteryPrize
 
 public class IpBlacklist
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string? TriggerMethod { get; set; }
     public string? TriggerPath { get; set; }
@@ -83,9 +83,9 @@ public class IpBlacklist
 
 public class AiAnalysisRecord : IAuditable
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
     public string BabyName { get; set; } = string.Empty;
     public DateTime RangeStartDate { get; set; }
     public DateTime RangeEndDate { get; set; }

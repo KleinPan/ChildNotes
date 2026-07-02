@@ -43,8 +43,8 @@ public class PointsController : AppBaseController
     public async Task<LotterySummaryDto?> ActiveLottery(CancellationToken ct)
         => await _lottery.GetActiveLotteryAsync(ct);
 
-    [HttpPost("lottery/{activityId:long}/join")]
-    public async Task<PointsDashboardResponse> JoinLottery(long activityId, CancellationToken ct)
+    [HttpPost("lottery/{activityId}/join")]
+    public async Task<PointsDashboardResponse> JoinLottery(string activityId, CancellationToken ct)
     {
         await _lottery.JoinLotteryAsync(activityId, ct);
         return await _points.GetDashboardAsync(ct);

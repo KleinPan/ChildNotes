@@ -4,9 +4,9 @@ namespace ChildNotes.Core.Entities;
 
 public class BabyMember : IAuditable
 {
-    public long Id { get; set; }
-    public long BabyId { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string RoleCode { get; set; } = string.Empty;
     public string RoleName { get; set; } = string.Empty;
     public bool IsOwner { get; set; }

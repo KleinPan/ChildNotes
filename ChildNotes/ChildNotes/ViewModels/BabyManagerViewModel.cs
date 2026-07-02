@@ -23,7 +23,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private string _editorTitle = "添加宝宝";
 
     // 编辑表单字段
-    [ObservableProperty] private long _editingId;
+    [ObservableProperty] private string _editingId = string.Empty;
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _gender = "boy";
     [ObservableProperty] private DateTime? _birthDate;
@@ -68,7 +68,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     {
         IsEditing = false;
         EditorTitle = "添加宝宝";
-        EditingId = 0;
+        EditingId = string.Empty;
         Name = string.Empty;
         Gender = "boy";
         BirthDate = null;

@@ -36,7 +36,7 @@ public class AiAnalysisService : IAiAnalysisService
         _skillPrompt = LoadSkillPrompt();
     }
 
-    public async Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, long? babyId, CancellationToken ct = default)
+    public async Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, string? babyId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var (start, end) = ResolveAnalysisRange(req);
@@ -78,6 +78,7 @@ public class AiAnalysisService : IAiAnalysisService
 
         var record = new AiAnalysisRecord
         {
+            Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
             BabyId = baby.Id,
             BabyName = baby.Name,
@@ -109,7 +110,7 @@ public class AiAnalysisService : IAiAnalysisService
         return ToDto(record);
     }
 
-    public async Task<List<AiAnalysisRecordDto>> ListAsync(long? babyId, CancellationToken ct = default)
+    public async Task<List<AiAnalysisRecordDto>> ListAsync(string? babyId, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var targetBabyId = await ResolveBabyIdForQueryAsync(uid, babyId, ct);
@@ -120,7 +121,7 @@ public class AiAnalysisService : IAiAnalysisService
         return list.Select(ToDto).ToList();
     }
 
-    public async Task<AiAnalysisRecordDto?> GetByIdAsync(long id, CancellationToken ct = default)
+    public async Task<AiAnalysisRecordDto?> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var rec = await _db.AiAnalysisRecords.FirstOrDefaultAsync(a => a.Id == id && a.UserId == uid, ct);
@@ -149,12 +150,12 @@ public class AiAnalysisService : IAiAnalysisService
         return (s, e);
     }
 
-    private async Task<Baby> ResolveBabyAsync(long userId, long? babyId, CancellationToken ct)
+    private async Task<Baby> ResolveBabyAsync(string userId, string? babyId, CancellationToken ct)
     {
-        if (babyId.HasValue)
+        if (!string.IsNullOrEmpty(babyId))
         {
-            await _babyAccess.EnsureAccessAsync(userId, babyId.Value, ct);
-            return await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId.Value, ct)
+            await _babyAccess.EnsureAccessAsync(userId, babyId, ct);
+            return await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId, ct)
                 ?? throw new NotFoundException("宝宝不存在");
         }
         // 默认取第一个有访问权的宝宝
@@ -162,10 +163,10 @@ public class AiAnalysisService : IAiAnalysisService
             ?? throw new NotFoundException("未找到宝宝");
     }
 
-    private async Task<long?> ResolveBabyIdForQueryAsync(long userId, long? babyId, CancellationToken ct)
+    private async Task<string?> ResolveBabyIdForQueryAsync(string userId, string? babyId, CancellationToken ct)
     {
-        if (!babyId.HasValue) return null;
-        await _babyAccess.EnsureAccessAsync(userId, babyId.Value, ct);
+        if (string.IsNullOrEmpty(babyId)) return null;
+        await _babyAccess.EnsureAccessAsync(userId, babyId, ct);
         return babyId;
     }
 

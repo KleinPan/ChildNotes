@@ -44,7 +44,6 @@ public partial class AiAnalysisViewModel : ViewModelBase
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
-    /// 修复：原还有同步 Load() 重复实现，已删除（死代码）。
     /// </summary>
     public async Task LoadAsync()
     {

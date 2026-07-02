@@ -116,7 +116,7 @@ public class ApiFlowTests
         var baby1RespBody = await baby1Resp.Content.ReadAsStringAsync();
         Assert.True(baby1Resp.IsSuccessStatusCode, baby1RespBody);
         var baby1Id = (await baby1Resp.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("data").GetProperty("id").GetInt64();
+            .GetProperty("data").GetProperty("id").GetString()!;
         await ownerA.PostAsJsonAsync("/api/baby/add", new CreateBabyRequest { Name = "二宝" });
 
         // 用户 B 注册
@@ -149,7 +149,7 @@ public class ApiFlowTests
         var babyRespBody = await babyResp.Content.ReadAsStringAsync();
         Assert.True(babyResp.IsSuccessStatusCode, babyRespBody);
         var babyId = (await babyResp.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("data").GetProperty("id").GetInt64();
+            .GetProperty("data").GetProperty("id").GetString()!;
 
         var member = await NewAuthClientAsync(factory, "roleMember_" + Guid.NewGuid().ToString("N")[..6]);
         var joinResp = await member.PostAsJsonAsync("/api/baby/family/join", new JoinFamilyRequest { BabyId = babyId, RoleCode = "uncle" });
@@ -207,7 +207,7 @@ public class ApiFlowTests
         var feedRespBody = await feedResp.Content.ReadAsStringAsync();
         Assert.True(feedResp.IsSuccessStatusCode, feedRespBody);
         var feedBody = await feedResp.Content.ReadFromJsonAsync<JsonElement>();
-        var id = feedBody.GetProperty("data").GetProperty("id").GetInt64();
+        var id = feedBody.GetProperty("data").GetProperty("id").GetString()!;
 
         var delResp = await client.DeleteAsync($"/api/records/{id}");
         Assert.True(delResp.IsSuccessStatusCode, await delResp.Content.ReadAsStringAsync());
@@ -229,7 +229,7 @@ public class ApiFlowTests
         var babyRespBody = await babyResp.Content.ReadAsStringAsync();
         Assert.True(babyResp.IsSuccessStatusCode, babyRespBody);
         var babyAId = (await babyResp.Content.ReadFromJsonAsync<JsonElement>())
-            .GetProperty("data").GetProperty("id").GetInt64();
+            .GetProperty("data").GetProperty("id").GetString()!;
 
         var userB = await NewAuthClientAsync(factory, "fb_" + Guid.NewGuid().ToString("N")[..6]);
         // B 没加入家庭，直接查 A 的宝宝今日记录
@@ -246,11 +246,19 @@ public class ApiFactory : WebApplicationFactory<Program>
 {
     public string DbName { get; } = $"test-{Guid.NewGuid()}";
 
+    /// <summary>测试用 Admin 密码（与 Program.cs 中开发环境回退值解耦）</summary>
+    public const string TestAdminPassword = "test-admin-pass-123";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
         builder.ConfigureServices(services =>
         {
+            // 测试环境显式覆盖 Admin 密码，避免依赖 appsettings.json 默认值
+            services.PostConfigure<Core.Config.AdminOptions>(opt =>
+            {
+                opt.InitPassword = TestAdminPassword;
+            });
             services.RemoveAll<DbContextOptions<ChildNotesDbContext>>();
             services.RemoveAll<ChildNotesDbContext>();
             services.AddDbContext<ChildNotesDbContext>(opt =>

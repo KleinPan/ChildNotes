@@ -33,13 +33,13 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("app_user");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
             e.Property(x => x.Username).HasColumnName("username").IsRequired().HasMaxLength(64);
             e.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
             e.Property(x => x.NickName).HasColumnName("nick_name").HasMaxLength(64);
             e.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
             e.Property(x => x.Gender).HasColumnName("gender");
-            e.Property(x => x.ReferrerUserId).HasColumnName("referrer_user_id");
+            e.Property(x => x.ReferrerUserId).HasColumnName("referrer_user_id").HasColumnType("uuid");
             e.Property(x => x.ReferrerBoundAt).HasColumnName("referrer_bound_at");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
@@ -51,24 +51,28 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("baby");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.Name).HasColumnName("name").IsRequired();
             e.Property(x => x.Avatar).HasColumnName("avatar");
             e.Property(x => x.Gender).HasColumnName("gender");
             e.Property(x => x.BirthDate).HasColumnName("birth_date");
+            e.Property(x => x.Deleted).HasColumnName("deleted").HasDefaultValue(false);
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            // 软删除查询过滤器：默认隐藏已删除的宝宝（同步通道用 IgnoreQueryFilters 绕过）
+            e.HasQueryFilter(x => !x.Deleted);
             e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.UpdatedAt);
         });
 
         modelBuilder.Entity<BabyMember>(e =>
         {
             e.ToTable("baby_member");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.BabyId).HasColumnName("baby_id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.BabyId).HasColumnName("baby_id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.RoleCode).HasColumnName("role_code").IsRequired();
             e.Property(x => x.RoleName).HasColumnName("role_name").IsRequired();
             e.Property(x => x.IsOwner).HasColumnName("is_owner");
@@ -83,9 +87,9 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("child_record");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
-            e.Property(x => x.BabyId).HasColumnName("baby_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
+            e.Property(x => x.BabyId).HasColumnName("baby_id").HasColumnType("uuid");
             e.Property(x => x.RecordType).HasColumnName("record_type").IsRequired().HasMaxLength(32);
             e.Property(x => x.RecordSubType).HasColumnName("record_sub_type").HasMaxLength(32);
             e.Property(x => x.RecordDate).HasColumnName("record_date");
@@ -105,14 +109,15 @@ public class ChildNotesDbContext : DbContext
             e.HasQueryFilter(x => !x.Deleted);
             e.HasIndex(x => new { x.UserId, x.RecordDate, x.RecordType });
             e.HasIndex(x => new { x.BabyId, x.RecordDate });
+            e.HasIndex(x => x.UpdatedAt);
         });
 
         modelBuilder.Entity<UserPoints>(e =>
         {
             e.ToTable("user_points");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.Points).HasColumnName("points");
             e.Property(x => x.TotalEarned).HasColumnName("total_earned");
             e.Property(x => x.TotalSpent).HasColumnName("total_spent");
@@ -125,8 +130,8 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("sign_in_record");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.SignDate).HasColumnName("sign_date");
             e.Property(x => x.SignTime).HasColumnName("sign_time");
             e.Property(x => x.ContinuousDays).HasColumnName("continuous_days");
@@ -140,11 +145,11 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("task_record");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.TaskType).HasColumnName("task_type");
             e.Property(x => x.TaskKey).HasColumnName("task_key");
-            e.Property(x => x.RelatedUserId).HasColumnName("related_user_id");
+            e.Property(x => x.RelatedUserId).HasColumnName("related_user_id").HasColumnType("uuid");
             e.Property(x => x.Points).HasColumnName("points");
             e.Property(x => x.Status).HasColumnName("status");
             e.Property(x => x.PayloadJson).HasColumnName("payload_json");
@@ -157,7 +162,7 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("lottery_activity");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
             e.Property(x => x.Title).HasColumnName("title");
             e.Property(x => x.Description).HasColumnName("description");
             e.Property(x => x.CoverImage).HasColumnName("cover_image");
@@ -176,9 +181,9 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("lottery_participation");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.ActivityId).HasColumnName("activity_id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.ActivityId).HasColumnName("activity_id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
             e.Property(x => x.CostPoints).HasColumnName("cost_points");
             e.Property(x => x.Status).HasColumnName("status");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
@@ -190,8 +195,8 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("lottery_prize");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.ActivityId).HasColumnName("activity_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.ActivityId).HasColumnName("activity_id").HasColumnType("uuid");
             e.Property(x => x.PrizeName).HasColumnName("prize_name");
             e.Property(x => x.PrizeIntro).HasColumnName("prize_intro");
             e.Property(x => x.PrizeImage).HasColumnName("prize_image");
@@ -205,7 +210,7 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("ip_blacklist");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
             e.Property(x => x.IpAddress).HasColumnName("ip_address");
             e.Property(x => x.TriggerMethod).HasColumnName("trigger_method");
             e.Property(x => x.TriggerPath).HasColumnName("trigger_path");
@@ -222,9 +227,9 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("ai_analysis_record");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
-            e.Property(x => x.BabyId).HasColumnName("baby_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
+            e.Property(x => x.BabyId).HasColumnName("baby_id").HasColumnType("uuid");
             e.Property(x => x.BabyName).HasColumnName("baby_name");
             e.Property(x => x.RangeStartDate).HasColumnName("range_start_date");
             e.Property(x => x.RangeEndDate).HasColumnName("range_end_date");
@@ -242,9 +247,8 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("admin_account");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
             e.Property(x => x.Username).HasColumnName("username");
-            e.Property(x => x.PasswordSalt).HasColumnName("password_salt");
             e.Property(x => x.PasswordHash).HasColumnName("password_hash");
             e.Property(x => x.DisplayName).HasColumnName("display_name");
             e.Property(x => x.Status).HasColumnName("status");
@@ -261,7 +265,7 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("admin_lottery_activity");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
             e.Property(x => x.Title).HasColumnName("title");
             e.Property(x => x.Description).HasColumnName("description");
             e.Property(x => x.CoverImage).HasColumnName("cover_image");
@@ -271,8 +275,8 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.WinnerCount).HasColumnName("winner_count");
             e.Property(x => x.Status).HasColumnName("status");
             e.Property(x => x.PublishTime).HasColumnName("publish_time");
-            e.Property(x => x.CreatedBy).HasColumnName("created_by");
-            e.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+            e.Property(x => x.CreatedBy).HasColumnName("created_by").HasColumnType("uuid");
+            e.Property(x => x.UpdatedBy).HasColumnName("updated_by").HasColumnType("uuid");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => x.Status);
@@ -282,8 +286,8 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("admin_lottery_prize");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.ActivityId).HasColumnName("activity_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.ActivityId).HasColumnName("activity_id").HasColumnType("uuid");
             e.Property(x => x.PrizeName).HasColumnName("prize_name");
             e.Property(x => x.PrizeIntro).HasColumnName("prize_intro");
             e.Property(x => x.PrizeImage).HasColumnName("prize_image");
@@ -297,9 +301,9 @@ public class ChildNotesDbContext : DbContext
         {
             e.ToTable("milestone");
             e.HasKey(x => x.Id);
-            e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.UserId).HasColumnName("user_id");
-            e.Property(x => x.BabyId).HasColumnName("baby_id");
+            e.Property(x => x.Id).HasColumnName("id").HasColumnType("uuid");
+            e.Property(x => x.UserId).HasColumnName("user_id").HasColumnType("uuid");
+            e.Property(x => x.BabyId).HasColumnName("baby_id").HasColumnType("uuid");
             e.Property(x => x.Title).HasColumnName("title").IsRequired();
             e.Property(x => x.Content).HasColumnName("content");
             e.Property(x => x.RecordDate).HasColumnName("record_date");

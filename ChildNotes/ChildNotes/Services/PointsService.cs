@@ -99,7 +99,7 @@ public sealed class PointsService
         };
 
         // 查询今日记录，判断任务完成状态
-        var todayRecords = _state.CurrentBabyId.HasValue
+        var todayRecords = _state.CurrentBabyId is not null
             ? _recordService.GetByDate(DateTime.Today)
             : new List<ChildRecord>();
 

@@ -2,9 +2,16 @@
 
 ## Proxy Settings
 
-- HTTP/HTTPS 代理地址：`127.0.0.1:10808`
-- 访问 GitHub 等外网资源时需通过此代理
-- 使用方式：环境变量 `HTTP_PROXY=http://127.0.0.1:10808` 和 `HTTPS_PROXY=http://127.0.0.1:10808`
+- 代理端口 `127.0.0.1:10808` 同时承载 SOCKS5 与 HTTP/HTTPS 两种协议（v2rayN 默认配置）。
+- 访问 GitHub 等外网资源时需通过代理。
+- **git 已在全局配置中指定 SOCKS5**（`git config --global http.proxy socks5://127.0.0.1:10808`），**无需额外设置环境变量**。
+  - 如确需设置环境变量，须与 git 配置一致，使用 `socks5://` 前缀：
+    - `$env:ALL_PROXY="socks5://127.0.0.1:10808"`（推荐，同时覆盖 http/https）
+    - 或分别设置：`$env:HTTP_PROXY="socks5://127.0.0.1:10808"` 与 `$env:HTTPS_PROXY="socks5://127.0.0.1:10808"`
+- **禁止**混用协议前缀（如 `HTTP_PROXY=http://...` 与 git 的 `socks5://` 共存），会导致 schannel SSL/TLS 握手失败。
+- 若推送时遇到 `schannel: failed to receive handshake, SSL/TLS connection failed`，先检查环境变量是否覆盖了 git 的代理配置：
+  - `$env:HTTP_PROXY` / `$env:HTTPS_PROXY` 为空时，git 自动使用自身配置的 `socks5://`。
+  - 清除覆盖：`Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY, Env:ALL_PROXY -ErrorAction SilentlyContinue`
 
 ## Build Commands
 

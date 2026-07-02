@@ -10,7 +10,7 @@ public class CurrentUserService : ICurrentUserService
     private readonly IHttpContextAccessor _accessor;
     public CurrentUserService(IHttpContextAccessor accessor) => _accessor = accessor;
 
-    public long? UserId
+    public string? UserId
     {
         get
         {
@@ -18,15 +18,16 @@ public class CurrentUserService : ICurrentUserService
             if (ctx is null) return null;
             var uidStr = ctx.User.FindFirst("uid")?.Value
                 ?? ctx.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return long.TryParse(uidStr, out var uid) ? uid : null;
+            return string.IsNullOrEmpty(uidStr) ? null : uidStr;
         }
     }
 
-    public bool IsAuthenticated => UserId.HasValue;
+    public bool IsAuthenticated => !string.IsNullOrEmpty(UserId);
 
-    public long RequireUserId()
+    public string RequireUserId()
     {
-        if (UserId is long uid) return uid;
-        throw new UnauthorizedException();
+        var uid = UserId;
+        if (string.IsNullOrEmpty(uid)) throw new UnauthorizedException();
+        return uid;
     }
 }

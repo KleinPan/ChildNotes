@@ -12,7 +12,7 @@ public class CreateBabyRequest
 
 public class UpdateBabyRequest
 {
-    public long? Id { get; set; }
+    public string? Id { get; set; }
     public string? Name { get; set; }
     public string? Avatar { get; set; }
     public string? Gender { get; set; }
@@ -21,8 +21,8 @@ public class UpdateBabyRequest
 
 public class BabyDto
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
@@ -32,13 +32,13 @@ public class BabyDto
 
 public class UpdateBabyMemberRoleRequest
 {
-    public long BabyId { get; set; }
+    public string BabyId { get; set; } = string.Empty;
     public string RoleCode { get; set; } = string.Empty;
 }
 
 public class JoinFamilyRequest
 {
-    public long BabyId { get; set; }
+    public string BabyId { get; set; } = string.Empty;
     public string RoleCode { get; set; } = "other";
     public string? RoleName { get; set; }
 }

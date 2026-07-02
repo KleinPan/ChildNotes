@@ -170,7 +170,7 @@ public sealed class AuthService
         return true;
     }
 
-    private void SaveSession(long userId)
+    private void SaveSession(string userId)
     {
         var now = DateTime.UtcNow;
         _sessions.Save(userId, now, now + SessionLifetime);

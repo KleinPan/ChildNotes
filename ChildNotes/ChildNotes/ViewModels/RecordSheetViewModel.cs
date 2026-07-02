@@ -37,8 +37,8 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     /// <summary>取消确认对话框中展示的剂次名称。</summary>
     [ObservableProperty] private string _vaccineCancelConfirmTitle = string.Empty;
 
-    /// <summary>编辑模式下保存的记录 ID；新建模式为 0。</summary>
-    private long _editingId;
+    /// <summary>编辑模式下保存的记录 ID；新建模式为空字符串。</summary>
+    private string _editingId = string.Empty;
 
     /// <summary>编辑模式下保存的原始记录日期（用于时间解析回填）。</summary>
     private DateTime _editingDate;
@@ -47,7 +47,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     {
         ActiveType = type;
         IsEditMode = false;
-        _editingId = 0;
+        _editingId = string.Empty;
         SheetTitle = BuildTitle("记录", type);
         ErrorMessage = string.Empty;
         IsVisible = true;
@@ -152,7 +152,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
         try
         {
-            RecordService.UpdateVaccine(plan.RecordId.Value, dto);
+            RecordService.UpdateVaccine(plan.RecordId, dto);
             // 清预加载缓存，确保 LoadAsync 从 DB 重建（改时间后状态可能联动变化，不能用原地更新）
             ChildNotes.ViewModels.VaccineFormViewModel.InvalidatePreload();
             await VaccineForm.LoadAsync();
@@ -183,7 +183,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         if (plan.RecordId is null) return;
         try
         {
-            RecordService.Delete(plan.RecordId.Value);
+            RecordService.Delete(plan.RecordId);
             VaccineForm.CancelInline(plan);
             VaccineInlineChanged?.Invoke();
         }
@@ -216,7 +216,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
         try
         {
-            RecordService.Delete(plan.RecordId.Value);
+            RecordService.Delete(plan.RecordId);
             // 原地更新该卡片状态为待接种（INPC 通知触发 UI 刷新），不依赖 LoadAsync 重建
             VaccineForm.CancelInline(plan);
             VaccineInlineChanged?.Invoke();
@@ -269,7 +269,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             case RecordType.Pump: RecordService.AddPump(PumpForm.BuildDto()); break;
             case RecordType.Complementary: RecordService.AddComplementary(ComplementaryForm.BuildDto()); break;
             case RecordType.Abnormal: RecordService.AddAbnormal(AbnormalForm.BuildDto()); break;
-            case RecordType.Vaccine: RecordService.AddVaccine(VaccineForm.BuildDto()); break;
             case RecordType.Activity: RecordService.AddActivity(ActivityForm.BuildDto()); break;
         }
     }
@@ -352,10 +351,6 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                     existing.RecordSubType = null;
                 existing.PayloadJson = System.Text.Json.JsonSerializer.Serialize(abnDto);
                 existing.RecordTime = ParseTime(abnDto.Time, _editingDate);
-                break;
-            case RecordType.Vaccine:
-                var vacDto = VaccineForm.BuildDto();
-                existing.RecordTime = ParseTime(vacDto.Time, _editingDate);
                 break;
             case RecordType.Activity:
                 var actDto = ActivityForm.BuildDto();

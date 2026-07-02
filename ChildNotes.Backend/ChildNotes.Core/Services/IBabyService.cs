@@ -5,7 +5,7 @@ namespace ChildNotes.Core.Services;
 
 public interface IBabyService
 {
-    Task<BabyDto?> GetCurrentBabyAsync(long? babyId, CancellationToken ct = default);
+    Task<BabyDto?> GetCurrentBabyAsync(string? babyId, CancellationToken ct = default);
     Task<List<BabyDto>> ListBabiesAsync(CancellationToken ct = default);
     Task<BabyDto> CreateBabyAsync(CreateBabyRequest req, CancellationToken ct = default);
     Task<BabyDto> UpdateBabyAsync(UpdateBabyRequest req, CancellationToken ct = default);

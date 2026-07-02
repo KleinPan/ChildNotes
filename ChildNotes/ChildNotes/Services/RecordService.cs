@@ -26,7 +26,7 @@ public sealed class RecordService
         try { SyncTrigger?.NotifyWrite(); } catch { /* 同步触发不应影响写入主流程 */ }
     }
 
-    public long AddFeed(FeedRecordDto dto)
+    public string AddFeed(FeedRecordDto dto)
     {
         var rec = NewRecord(RecordType.Feed, dto.Time);
         rec.RecordSubType = dto.Type;
@@ -46,7 +46,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddDiaper(DiaperRecordDto dto)
+    public string AddDiaper(DiaperRecordDto dto)
     {
         var rec = NewRecord(RecordType.Diaper, dto.Time);
         rec.RecordSubType = dto.Type;
@@ -57,7 +57,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddSleep(SleepRecordDto dto)
+    public string AddSleep(SleepRecordDto dto)
     {
         var rec = NewRecord(RecordType.Sleep, dto.Time);
         rec.DurationSec = (dto.Duration ?? 0) * 60;
@@ -67,7 +67,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public void WakeUpSleep(long recordId)
+    public void WakeUpSleep(string recordId)
     {
         var rec = _repo.FindById(recordId);
         if (rec is null || rec.RecordType != RecordType.Sleep) return;
@@ -82,7 +82,7 @@ public sealed class RecordService
         NotifyWrite();
     }
 
-    public long AddTemperature(TemperatureRecordDto dto)
+    public string AddTemperature(TemperatureRecordDto dto)
     {
         var rec = NewRecord(RecordType.Temperature, dto.Time);
         rec.TemperatureValue = dto.Temperature;
@@ -93,7 +93,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddGrowth(GrowthRecordDto dto)
+    public string AddGrowth(GrowthRecordDto dto)
     {
         var rec = NewRecord(RecordType.Growth, dto.Time);
         rec.HeightCm = dto.Height;
@@ -104,7 +104,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddSupplement(SupplementRecordDto dto)
+    public string AddSupplement(SupplementRecordDto dto)
     {
         var rec = NewRecord(RecordType.Supplement, dto.Time);
         rec.RecordSubType = dto.Type;
@@ -114,7 +114,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddPump(PumpRecordDto dto)
+    public string AddPump(PumpRecordDto dto)
     {
         var rec = NewRecord(RecordType.Pump, dto.Time);
         rec.AmountMl = dto.TotalAmount;
@@ -127,7 +127,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddComplementary(ComplementaryRecordDto dto)
+    public string AddComplementary(ComplementaryRecordDto dto)
     {
         var rec = NewRecord(RecordType.Complementary, dto.Time);
         rec.AbnormalFlag = dto.Abnormal;
@@ -137,7 +137,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddAbnormal(AbnormalRecordDto dto)
+    public string AddAbnormal(AbnormalRecordDto dto)
     {
         var rec = NewRecord(RecordType.Abnormal, dto.Time);
         rec.TemperatureValue = dto.Temperature;
@@ -156,7 +156,7 @@ public sealed class RecordService
         return rec.Id;
     }
 
-    public long AddVaccine(VaccineRecordDto dto)
+    public string AddVaccine(VaccineRecordDto dto)
     {
         var rec = NewRecord(RecordType.Vaccine, dto.Time);
         rec.PayloadJson = JsonSerializer.Serialize(dto);
@@ -166,7 +166,7 @@ public sealed class RecordService
     }
 
     /// <summary>更新已有疫苗记录（修改接种时间等）。</summary>
-    public void UpdateVaccine(long id, VaccineRecordDto dto)
+    public void UpdateVaccine(string id, VaccineRecordDto dto)
     {
         var rec = _repo.FindById(id);
         if (rec is null) return;
@@ -178,7 +178,7 @@ public sealed class RecordService
         NotifyWrite();
     }
 
-    public long AddActivity(ActivityRecordDto dto)
+    public string AddActivity(ActivityRecordDto dto)
     {
         var rec = NewRecord(RecordType.Activity, dto.Time);
         rec.RecordSubType = dto.Category;
@@ -201,8 +201,8 @@ public sealed class RecordService
     public List<ChildRecord> GetByDateRange(DateTime start, DateTime end) => _repo.GetByDateRange(_state.UserId, _state.CurrentBabyId, start, end);
     public ChildRecord? GetLatest(string type) => _repo.GetLatest(_state.UserId, _state.CurrentBabyId, type);
     public List<ChildRecord> GetByType(string type, int limit = 100) => _repo.GetByType(_state.UserId, _state.CurrentBabyId, type, limit);
-    public void Delete(long id) { _repo.SoftDelete(id); NotifyWrite(); }
-    public ChildRecord? GetById(long id) => _repo.FindById(id);
+    public void Delete(string id) { _repo.SoftDelete(id); NotifyWrite(); }
+    public ChildRecord? GetById(string id) => _repo.FindById(id);
     public void Update(ChildRecord rec) { _repo.Update(rec); NotifyWrite(); }
 
     private ChildRecord NewRecord(string type, string timeStr)

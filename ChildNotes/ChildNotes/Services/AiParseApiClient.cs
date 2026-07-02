@@ -41,5 +41,5 @@ public sealed class AiNoteParseResult
     public string? Summary { get; set; }
     public double Confidence { get; set; }
     public bool Saved { get; set; }
-    public long? RecordId { get; set; }
+    public string? RecordId { get; set; }
 }

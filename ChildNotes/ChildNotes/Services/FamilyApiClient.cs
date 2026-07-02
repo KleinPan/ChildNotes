@@ -83,7 +83,7 @@ public sealed class FamilyApiClient : BaseApiClient
     }
 
     /// <summary>修改本人在指定宝宝家庭中的角色。</summary>
-    public async Task<FamilyMemberItem?> UpdateMyRoleAsync(long babyId, string roleCode, CancellationToken ct = default)
+    public async Task<FamilyMemberItem?> UpdateMyRoleAsync(string babyId, string roleCode, CancellationToken ct = default)
     {
         var body = Serialize(new { babyId, roleCode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Put, "/api/baby/family/my-role", body, ct);
@@ -94,7 +94,7 @@ public sealed class FamilyApiClient : BaseApiClient
     }
 
     /// <summary>通过宝宝 ID 加入家庭（后端会把当前用户加到宝宝主人名下所有宝宝）。</summary>
-    public async Task<FamilyMemberItem?> JoinFamilyAsync(long babyId, string roleCode, CancellationToken ct = default)
+    public async Task<FamilyMemberItem?> JoinFamilyAsync(string babyId, string roleCode, CancellationToken ct = default)
     {
         var body = Serialize(new { babyId, roleCode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join", body, ct);

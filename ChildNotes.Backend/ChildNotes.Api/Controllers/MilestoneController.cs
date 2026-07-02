@@ -18,7 +18,7 @@ public class MilestoneController : AppBaseController
     public MilestoneController(IMilestoneService milestone) => _milestone = milestone;
 
     [HttpGet("milestones")]
-    public async Task<List<MilestoneRecordDto>> List([FromQuery] long? babyId, CancellationToken ct)
+    public async Task<List<MilestoneRecordDto>> List([FromQuery] string? babyId, CancellationToken ct)
         => await _milestone.ListAsync(babyId, ct);
 
     [HttpPost("milestone")]
@@ -28,15 +28,15 @@ public class MilestoneController : AppBaseController
         return new { id };
     }
 
-    [HttpPut("milestone/{id:long}")]
-    public async Task<IActionResult> Update(long id, [FromBody] MilestoneRecordDto dto, CancellationToken ct)
+    [HttpPut("milestone/{id}")]
+    public async Task<IActionResult> Update(string id, [FromBody] MilestoneRecordDto dto, CancellationToken ct)
     {
         var ok = await _milestone.UpdateAsync(id, dto, ct);
         return ok ? Ok() : NotFound();
     }
 
-    [HttpDelete("milestone/{id:long}")]
-    public async Task<IActionResult> Delete(long id, CancellationToken ct)
+    [HttpDelete("milestone/{id}")]
+    public async Task<IActionResult> Delete(string id, CancellationToken ct)
     {
         var ok = await _milestone.DeleteAsync(id, ct);
         return ok ? Ok() : NotFound();

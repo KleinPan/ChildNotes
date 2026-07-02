@@ -6,8 +6,8 @@ namespace ChildNotes.Shared.Entities;
 /// </summary>
 public abstract class UserPointsBase
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
     public int Points { get; set; }
     public int TotalEarned { get; set; }
     public int TotalSpent { get; set; }

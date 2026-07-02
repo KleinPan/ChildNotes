@@ -83,11 +83,13 @@ public class Phase2FlowTests
         var client = await NewAuthClientAsync(factory, "lot_" + Guid.NewGuid().ToString("N")[..6]);
 
         // 先创建一个抽奖活动（直接写 DB）
+        string lotteryId;
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
-            db.LotteryActivities.Add(new LotteryActivity
+            var activity = new LotteryActivity
             {
+                Id = Guid.NewGuid().ToString("N"),
                 Title = "测试抽奖",
                 Status = "active",
                 CostPoints = 30,
@@ -96,11 +98,13 @@ public class Phase2FlowTests
                 WinnerCount = 1,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
-            });
+            };
+            db.LotteryActivities.Add(activity);
             await db.SaveChangesAsync();
+            lotteryId = activity.Id;
         }
 
-        var resp = await client.PostAsync("/api/points/lottery/1/join", null);
+        var resp = await client.PostAsync($"/api/points/lottery/{lotteryId}/join", null);
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("000520", body.GetProperty("state").GetString());
         Assert.Contains("积分不足", body.GetProperty("msg").GetString()!);
@@ -139,13 +143,12 @@ public class Phase2FlowTests
     public async Task ReferrerCode_Roundtrip()
     {
         var util = new ReferrerCodeUtil("test-secret-12345");
-        var code = util.Encode(12345);
-        Assert.Equal(12345, util.Decode(code));
+        var userId = Guid.NewGuid().ToString("N");
+        var code = util.Encode(userId);
+        Assert.Equal(userId, util.Decode(code));
         // 错误 secret 解码失败
         var wrong = new ReferrerCodeUtil("wrong-secret");
         Assert.Null(wrong.Decode(code));
-        // 纯数字兼容
-        Assert.Equal(42, util.Decode("42"));
     }
 
     [Fact]
@@ -154,8 +157,27 @@ public class Phase2FlowTests
         using var factory = NewFactory();
         var client = await NewAuthClientAsync(factory, "up_" + Guid.NewGuid().ToString("N")[..6]);
         using var content = new MultipartFormDataContent();
-        var fileBytes = System.Text.Encoding.UTF8.GetBytes("hello world");
-        content.Add(new ByteArrayContent(fileBytes), "file", "test.txt");
+        // 最小合法 PNG：8 字节签名 + 25 字节 IHDR chunk（1x1 像素）
+        var pngBytes = new byte[]
+        {
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+            0x00, 0x00, 0x00, 0x0D, // IHDR length
+            0x49, 0x48, 0x44, 0x52, // "IHDR"
+            0x00, 0x00, 0x00, 0x01, // width=1
+            0x00, 0x00, 0x00, 0x01, // height=1
+            0x08, 0x06, 0x00, 0x00, 0x00, // bit depth=8, color type=6(RGBA), compression=0, filter=0
+            0x1F, 0x15, 0xC4, 0x89, // CRC
+            0x00, 0x00, 0x00, 0x0A, // IDAT length
+            0x49, 0x44, 0x41, 0x54, // "IDAT"
+            0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
+            0x0D, 0x0A, 0x2D, 0xB4, // CRC
+            0x00, 0x00, 0x00, 0x00, // IEND length
+            0x49, 0x45, 0x4E, 0x44, // "IEND"
+            0xAE, 0x42, 0x60, 0x82, // CRC
+        };
+        var fileContent = new ByteArrayContent(pngBytes);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(fileContent, "file", "test.png");
 
         var resp = await client.PostAsync("/api/upload", content);
         var respBody = await resp.Content.ReadAsStringAsync();
@@ -163,7 +185,36 @@ public class Phase2FlowTests
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         var url = body.GetProperty("data").GetProperty("url").GetString()!;
         Assert.Contains("/uploads/", url);
-        Assert.EndsWith(".txt", url);
+        Assert.EndsWith(".png", url);
+    }
+
+    [Fact]
+    public async Task Upload_RejectsDangerousExtension()
+    {
+        using var factory = NewFactory();
+        var client = await NewAuthClientAsync(factory, "up_" + Guid.NewGuid().ToString("N")[..6]);
+        using var content = new MultipartFormDataContent();
+        var fileBytes = System.Text.Encoding.UTF8.GetBytes("<script>alert(1)</script>");
+        content.Add(new ByteArrayContent(fileBytes), "file", "evil.html");
+
+        var resp = await client.PostAsync("/api/upload", content);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Upload_RejectsMagicBytesMismatch()
+    {
+        using var factory = NewFactory();
+        var client = await NewAuthClientAsync(factory, "up_" + Guid.NewGuid().ToString("N")[..6]);
+        using var content = new MultipartFormDataContent();
+        // 伪装成 png 但内容是 HTML
+        var fileBytes = System.Text.Encoding.UTF8.GetBytes("<html>not a png</html>");
+        var fileContent = new ByteArrayContent(fileBytes);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/png");
+        content.Add(fileContent, "file", "fake.png");
+
+        var resp = await client.PostAsync("/api/upload", content);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, resp.StatusCode);
     }
 
     [Fact]

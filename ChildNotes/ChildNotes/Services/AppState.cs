@@ -10,8 +10,8 @@ public sealed partial class AppState : ObservableObject
     [ObservableProperty] private Baby? _currentBaby;
     public ObservableCollection<Baby> BabyList { get; } = new();
 
-    public long UserId => User?.Id ?? 0;
-    public long? CurrentBabyId => CurrentBaby?.Id;
+    public string UserId => User?.Id ?? string.Empty;
+    public string? CurrentBabyId => CurrentBaby?.Id;
 
     public void Clear()
     {

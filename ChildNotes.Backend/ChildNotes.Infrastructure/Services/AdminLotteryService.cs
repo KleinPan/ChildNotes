@@ -55,7 +55,7 @@ public class AdminLotteryService : IAdminLotteryService
         };
     }
 
-    public async Task<AdminLotteryDto?> GetLotteryAsync(long id, CancellationToken ct = default)
+    public async Task<AdminLotteryDto?> GetLotteryAsync(string id, CancellationToken ct = default)
     {
         var a = await _db.AdminLotteryActivities.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (a is null) return null;
@@ -73,6 +73,7 @@ public class AdminLotteryService : IAdminLotteryService
 
         var activity = new AdminLotteryActivity
         {
+            Id = Guid.NewGuid().ToString("N"),
             Title = req.Title.Trim(),
             Description = req.Description ?? "",
             CoverImage = req.CoverImage ?? "",
@@ -87,11 +88,15 @@ public class AdminLotteryService : IAdminLotteryService
         };
         _db.AdminLotteryActivities.Add(activity);
         await _db.SaveChangesAsync(ct);
-        await ReplacePrizesAsync(activity.Id, req.Prizes, now, ct);
+        // activity 与 prizes 必须原子：失败会留下无奖品的活动。
+        await _db.ExecuteInTransactionAsync(async () =>
+        {
+            await ReplacePrizesAsync(activity.Id, req.Prizes, now, ct);
+        }, ct);
         return (await GetLotteryAsync(activity.Id, ct))!;
     }
 
-    public async Task<AdminLotteryDto> UpdateLotteryAsync(long id, AdminLotteryRequest req, CancellationToken ct = default)
+    public async Task<AdminLotteryDto> UpdateLotteryAsync(string id, AdminLotteryRequest req, CancellationToken ct = default)
     {
         Validate(req);
         var activity = await _db.AdminLotteryActivities.FirstOrDefaultAsync(a => a.Id == id, ct)
@@ -111,11 +116,15 @@ public class AdminLotteryService : IAdminLotteryService
         if (status == StatusConstants.AdminLottery.Published && activity.PublishTime is null) activity.PublishTime = now;
         activity.UpdatedBy = adminId;
         await _db.SaveChangesAsync(ct);
-        await ReplacePrizesAsync(activity.Id, req.Prizes, now, ct);
+        // activity 更新与 prizes 替换必须原子：失败会留下旧 prizes 与新 activity 不一致。
+        await _db.ExecuteInTransactionAsync(async () =>
+        {
+            await ReplacePrizesAsync(activity.Id, req.Prizes, now, ct);
+        }, ct);
         return (await GetLotteryAsync(activity.Id, ct))!;
     }
 
-    public async Task<AdminLotteryDto> PublishLotteryAsync(long id, CancellationToken ct = default)
+    public async Task<AdminLotteryDto> PublishLotteryAsync(string id, CancellationToken ct = default)
     {
         var activity = await _db.AdminLotteryActivities.FirstOrDefaultAsync(a => a.Id == id, ct)
             ?? throw new NotFoundException("抽奖活动不存在");
@@ -130,7 +139,7 @@ public class AdminLotteryService : IAdminLotteryService
         return (await GetLotteryAsync(activity.Id, ct))!;
     }
 
-    public async Task<AdminLotteryDto> CloseLotteryAsync(long id, CancellationToken ct = default)
+    public async Task<AdminLotteryDto> CloseLotteryAsync(string id, CancellationToken ct = default)
     {
         var activity = await _db.AdminLotteryActivities.FirstOrDefaultAsync(a => a.Id == id, ct)
             ?? throw new NotFoundException("抽奖活动不存在");
@@ -153,7 +162,7 @@ public class AdminLotteryService : IAdminLotteryService
     private static string NormalizeStatus(string? status, string fallback)
         => !string.IsNullOrEmpty(status) && ValidStatuses.Contains(status) ? status : fallback;
 
-    private async Task ReplacePrizesAsync(long activityId, List<AdminLotteryPrizeDto> prizes, DateTime now, CancellationToken ct)
+    private async Task ReplacePrizesAsync(string activityId, List<AdminLotteryPrizeDto> prizes, DateTime now, CancellationToken ct)
     {
         var old = await _db.AdminLotteryPrizes.Where(p => p.ActivityId == activityId).ToListAsync(ct);
         if (old.Count > 0) _db.AdminLotteryPrizes.RemoveRange(old);
@@ -162,6 +171,7 @@ public class AdminLotteryService : IAdminLotteryService
             if (string.IsNullOrWhiteSpace(p.PrizeName)) continue;
             _db.AdminLotteryPrizes.Add(new AdminLotteryPrize
             {
+                Id = Guid.NewGuid().ToString("N"),
                 ActivityId = activityId,
                 PrizeName = p.PrizeName.Trim(),
                 PrizeIntro = p.PrizeIntro ?? "",

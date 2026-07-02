@@ -10,7 +10,7 @@ namespace ChildNotes.Infrastructure.Auth;
 
 public class JwtOptions
 {
-    public string Secret { get; set; } = "change-this-jwt-secret-before-deploy-at-least-32-chars";
+    public string Secret { get; set; } = string.Empty;
     public int ExpireDays { get; set; } = 30;
 }
 

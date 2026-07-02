@@ -9,7 +9,7 @@ namespace ChildNotes.Infrastructure.Auth;
 public interface ICurrentAdminService
 {
     AdminAccount? Admin { get; }
-    long RequireAdminId();
+    string RequireAdminId();
     void SetAdmin(AdminAccount admin);
 }
 
@@ -18,7 +18,7 @@ public class CurrentAdminService : ICurrentAdminService
     private AdminAccount? _admin;
     public AdminAccount? Admin => _admin;
 
-    public long RequireAdminId()
+    public string RequireAdminId()
     {
         if (_admin is null) throw new Core.Exceptions.UnauthorizedException("Admin login is required");
         return _admin.Id;

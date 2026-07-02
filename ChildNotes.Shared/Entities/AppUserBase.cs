@@ -6,7 +6,7 @@ namespace ChildNotes.Shared.Entities;
 /// </summary>
 public abstract class AppUserBase
 {
-    public long Id { get; set; }
+    public string Id { get; set; } = string.Empty;
     public string Username { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
     public string NickName { get; set; } = string.Empty;

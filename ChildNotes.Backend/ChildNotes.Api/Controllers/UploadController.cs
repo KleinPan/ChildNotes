@@ -16,6 +16,6 @@ public class UploadController : AppBaseController
         if (file is null || file.Length == 0)
             throw new Core.Exceptions.BusinessException("文件不能为空");
         using var stream = file.OpenReadStream();
-        return await _upload.UploadAsync(stream, file.FileName, ct);
+        return await _upload.UploadAsync(stream, file.FileName, file.ContentType, ct);
     }
 }

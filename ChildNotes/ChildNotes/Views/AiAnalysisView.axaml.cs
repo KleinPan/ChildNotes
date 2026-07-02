@@ -14,14 +14,14 @@ public partial class AiAnalysisView : UserControl
 
     private void OnRecordTap(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Border border && border.Tag is long id && DataContext is AiAnalysisViewModel vm)
+        if (sender is Border border && border.Tag is string id && DataContext is AiAnalysisViewModel vm)
         {
             var record = FindRecord(vm, id);
             if (record is not null) vm.OpenDetail(record);
         }
     }
 
-    private static AiAnalysisRecord? FindRecord(AiAnalysisViewModel vm, long id)
+    private static AiAnalysisRecord? FindRecord(AiAnalysisViewModel vm, string id)
     {
         foreach (var r in vm.Records)
         {

@@ -4,9 +4,9 @@ namespace ChildNotes.Models;
 
 public sealed class AiAnalysisRecord
 {
-    public long Id { get; set; }
-    public long UserId { get; set; }
-    public long BabyId { get; set; }
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
     public string BabyName { get; set; } = string.Empty;
     public DateTime RangeStartDate { get; set; }
     public DateTime RangeEndDate { get; set; }
