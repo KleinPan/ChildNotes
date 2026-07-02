@@ -145,3 +145,7 @@ dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
 - 调试专用代码（日志、埋点、调试开关）应通过编译符号（如 `DEBUG`）或平台条件（`#if WINDOWS` / 运行时平台判断）隔离，避免泄漏到 Android Release 产物。
 - 严禁在 Android Release 路径上保留未受控的 `Console.WriteLine` / `Debug.WriteLine` / 详细日志输出。
 - 涉及平台差异的实现应集中放置，便于后续维护与平台扩展（如未来 iOS 接入）。
+
+## 第三方库参考
+
+- **Ursa.Avalonia**：作为开发参考项目（未引入 NuGet 包），新需求或优化时可借鉴其控件实现思路，详见 [ursa-avalonia-reference.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/ursa-avalonia-reference.md)。
