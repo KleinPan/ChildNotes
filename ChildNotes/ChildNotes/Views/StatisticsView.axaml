@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -10,6 +11,7 @@
              Background="{StaticResource WeuiBg0Brush}">
 
     <UserControl.Styles>
+        <!--  类型/范围 chip 样式  -->
         <Style Selector="Border.stat-chip">
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="12,5"/>
@@ -26,10 +28,23 @@
         <Style Selector="Border.stat-chip.active TextBlock">
             <Setter Property="Foreground" Value="White"/>
         </Style>
+
+        <!--  今日柱子光晕效果（对齐小程序 box-shadow）  -->
+        <Style Selector="Border.chart-bar.today">
+            <Setter Property="BorderBrush" Value="#07C160"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+
+        <!--  明细面板样式  -->
+        <Style Selector="Border.detail-item">
+            <Setter Property="Background" Value="#F8F9FA"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
-        <!-- 统一顶栏 -->
+        <!--  统一顶栏  -->
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
@@ -41,7 +56,7 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <!-- 原 Row=0 自定义顶栏内容：RangeLabel + TypeChip，作为内容区筛选条 -->
+                <!--  头部信息条：标题 + 范围 + 类型 badge  -->
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource WeuiCardRadius}">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
@@ -54,17 +69,15 @@
                     </Grid>
                 </Border>
 
+                <!--  类型选择  -->
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
                     <ItemsControl ItemsSource="{Binding TypeOptions}">
                         <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:StatTypeOption">
-                                <Border Classes="stat-chip"
-                                        Classes.active="{Binding IsSelected}"
+                                <Border Classes="stat-chip" Classes.active="{Binding IsSelected}"
                                         PointerPressed="OnTypeTap">
                                     <TextBlock Text="{Binding Label}"/>
                                 </Border>
@@ -73,64 +86,191 @@
                     </ItemsControl>
                 </Border>
 
+                <!--  范围选择 + 日期选择器  -->
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
-                    <ItemsControl ItemsSource="{Binding RangeOptions}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:StatRangeOption">
-                                <Border Classes="stat-chip"
-                                        Classes.active="{Binding IsSelected}"
-                                        PointerPressed="OnRangeTap">
-                                    <TextBlock Text="{Binding Label}"/>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding RangeOptions}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:StatRangeOption">
+                                    <Border Classes="stat-chip" Classes.active="{Binding IsSelected}"
+                                            PointerPressed="OnRangeTap">
+                                        <TextBlock Text="{Binding Label}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <!--  P1-2: 日期选择器（对齐小程序 date-filter）  -->
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+                            <!--  日模式：月份选择  -->
+                            <DatePicker x:Name="MonthPicker"
+                                        SelectedDateChanged="OnMonthChanged"
+                                        HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
+                                        Background="#F6F7F8" FontSize="12"
+                                        IsVisible="{Binding ShowMonthPicker}"/>
+                            <!--  月模式：年份选择  -->
+                            <DatePicker x:Name="YearPicker"
+                                        SelectedDateChanged="OnYearChanged"
+                                        HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
+                                        Background="#F6F7F8" FontSize="12"
+                                        IsVisible="{Binding ShowYearPicker}"/>
+                            <!--  自定义模式：起止日期  -->
+                            <StackPanel Orientation="Horizontal" Spacing="6"
+                                        IsVisible="{Binding ShowRangePickers}">
+                                <DatePicker x:Name="StartPicker" SelectedDateChanged="OnStartDateChanged"
+                                            HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
+                                            Background="#F6F7F8" FontSize="12"/>
+                                <TextBlock Text="至" VerticalAlignment="Center" FontSize="12"
+                                           Foreground="{StaticResource WeuiFg2Brush}"/>
+                                <DatePicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
+                                            HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
+                                            Background="#F6F7F8" FontSize="12"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8" Padding="16,16" CornerRadius="{StaticResource WeuiCardRadius}">
+                <!--  统计摘要卡片（总计/均值/峰值）  -->
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
                     <Grid ColumnDefinitions="*,*,*">
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="总计" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="合计" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
                             <TextBlock Text="{Binding AverageLabel}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding AverageText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding AverageText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="最高" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding MaxText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                            <TextBlock Text="峰值" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding MaxText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
+                <!--  ====== 图表面板（含日历热力图 + 柱状图 + 明细）======  -->
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,16" CornerRadius="{StaticResource WeuiCardRadius}">
                     <StackPanel>
-                        <TextBlock Text="趋势图" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Height="180">
-                            <ItemsControl ItemsSource="{Binding ChartBars}">
+
+                        <!--  P0-2: 日历热力图控件（独立可复用组件）  -->
+                        <controls:CalendarHeatMapControl
+                            Mode="{Binding CalendarMode}"
+                            Cells="{Binding CalendarCells}"
+                            Title="{Binding CalendarTitle}"
+                            Subtitle="{Binding CalendarSubtitle}"
+                            TypeColor="{Binding CurrentTypeColor}"
+                            IsVisible="{Binding CalendarVisible}"
+                            Margin="0,0,0,12"/>
+
+                        <!--  图表标题区（对齐小程序 chart-hd）  -->
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock FontSize="14" FontWeight="SemiBold">
+                                    <Run Text="{Binding CurrentTypeLabel}"/><Run Text="趋势"/>
+                                </TextBlock>
+                                <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg1Brush}"
+                                           Text="{Binding CurrentTypeUnit}" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
+                                       Foreground="{Binding CurrentTypeColor}"
+                                       Text="{Binding TotalText}" VerticalAlignment="Bottom"/>
+                        </Grid>
+
+                        <!--  柱状图区域（Y轴 + 网格线 + X轴基线 + 柱子）  -->
+                        <Grid Height="180" ClipToBounds="True">
+                            <!--  Y轴标签列  -->
+                            <ItemsControl Width="36" HorizontalAlignment="Left"
+                                          ItemsSource="{Binding YAxisLabels}">
                                 <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Orientation="Horizontal" Spacing="6"/>
-                                    </ItemsPanelTemplate>
+                                    <ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:ChartBarItem">
-                                        <StackPanel Width="34" HorizontalAlignment="Center" VerticalAlignment="Bottom" Spacing="4">
-                                            <TextBlock Text="{Binding ValueText}" FontSize="9" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
-                                            <Border Height="{Binding HeightPct}" MinHeight="2" CornerRadius="3,3,0,0"
-                                                    Background="{Binding BarColor}" VerticalAlignment="Bottom"/>
-                                            <TextBlock Text="{Binding Label}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
-                                        </StackPanel>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{Binding .}" FontSize="9"
+                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                   Margin="0,0,4,0"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </ScrollViewer>
+
+                            <!--  绘图区  -->
+                            <Grid Margin="38,0,0,18" Background="Transparent">
+                                <!--  网格线  -->
+                                <Border Height="2" Background="#EDF0F2" VerticalAlignment="Top"/>
+                                <Border Height="2" Background="#EDF0F2" VerticalAlignment="Center"/>
+                                <Border Width="2" Background="#D9DDE3" HorizontalAlignment="Left"/>
+
+                                <!--  柱状图滚动容器（P1-3: 自动滚动到今日）  -->
+                                <ScrollViewer x:Name="ChartScrollViewer"
+                                              HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                                              Offset="{Binding ChartScrollLeft, Mode=OneWayToSource}">
+                                    <Grid>
+                                        <!--  X轴基线  -->
+                                        <Border Height="2" Background="#D9DDE3" VerticalAlignment="Bottom"/>
+
+                                        <!--  柱子（P2-1: 柱宽自适应 BarWidth；P2-3: 今日光晕）  -->
+                                        <ItemsControl ItemsSource="{Binding ChartBars}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="6"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ChartBarItem">
+                                                <StackPanel Width="{Binding $parent[UserControl].DataContext.BarWidth,
+                                                                    FallbackValue=30}"
+                                                            HorizontalAlignment="Center" VerticalAlignment="Bottom" Spacing="3">
+                                                    <TextBlock Text="{Binding ValueText}" FontSize="9"
+                                                               Foreground="{StaticResource WeuiFg1Brush}"
+                                                               HorizontalAlignment="Center"/>
+                                                    <Border Height="{Binding HeightPct}" MinHeight="2"
+                                                            CornerRadius="4,4,0,0"
+                                                            Background="{Binding BarColor}"
+                                                            VerticalAlignment="Bottom"
+                                                            Classes.chart-bar="{Binding IsToday}"/>
+                                                    <TextBlock Text="{Binding Label}" FontSize="9"
+                                                               Foreground="{StaticResource WeuiFg2Brush}"
+                                                               HorizontalAlignment="Center"/>
+                                                </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </ScrollViewer>
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!--  P0-3: 明细面板（对齐小程序 detail-panel）  -->
+                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
+                    <StackPanel>
+                        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10">
+                            <Run Text="{Binding CurrentTypeLabel}"/><Run Text="明细"/>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding SummaryItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <!--  2列网格（对齐小程序 detail-grid）  -->
+                                    <UniformGrid Columns="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SummaryItem">
+                                    <Border Classes="detail-item" Margin="0,0,10,8">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Label}" FontSize="11"
+                                                       Foreground="{StaticResource WeuiFg2Brush}"/>
+                                            <TextBlock Text="{Binding Value}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource WeuiFg0Brush}" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
 

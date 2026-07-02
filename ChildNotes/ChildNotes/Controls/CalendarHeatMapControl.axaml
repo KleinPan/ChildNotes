@@ -1,0 +1,139 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:ChildNotes.Controls"
+             x:Class="ChildNotes.Controls.CalendarHeatMapControl"
+             x:DataType="controls:CalendarHeatMapControl">
+
+  <UserControl.Styles>
+    <!-- 热力图单元格基础样式 -->
+    <Style Selector="Border.cell">
+      <Setter Property="CornerRadius" Value="6"/>
+      <Setter Property="Background" Value="#F7F8FA"/>
+      <Setter Property="BorderBrush" Value="#EDF0F2"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="4,2"/>
+      <Setter Property="MinHeight" Value="40"/>
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="VerticalAlignment" Value="Stretch"/>
+    </Style>
+
+    <!-- 未来日期半透明 -->
+    <Style Selector="Border.cell.future">
+      <Setter Property="Opacity" Value="0.45"/>
+    </Style>
+
+    <!-- 空单元格透明 -->
+    <Style Selector="Border.cell.empty">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <!-- 单元格内文字 -->
+    <Style Selector="Border.cell TextBlock.lbl">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Foreground" Value="#202124"/>
+    </Style>
+
+    <!-- 高值时文字变白 -->
+    <Style Selector="Border.cell.high TextBlock.lbl">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <!-- 类型标签样式 -->
+    <Style Selector="Border.type-badge">
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="8,3"/>
+      <Setter Property="Background" Value="#E8F9EF"/>
+    </Style>
+    <Style Selector="Border.type-badge TextBlock">
+      <Setter Property="Foreground" Value="#07C160"/>
+      <Setter Property="FontSize" Value="10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+
+    <!-- 星期行文字 -->
+    <Style Selector="TextBlock.week-day">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Foreground" Value="#9AA1AB"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Border x:Name="PART_Root"
+          CornerRadius="12"
+          Background="White"
+          BorderBrush="#EDF0F2"
+          BorderThickness="1"
+          Padding="16,14">
+    <StackPanel Spacing="10">
+
+      <!-- 头部区域：标题 + 副标题 + 类型标签 -->
+      <Grid ColumnDefinitions="Auto,*">
+        <StackPanel Grid.Column="0" Spacing="2">
+          <TextBlock x:Name="PART_Title" FontSize="15" FontWeight="Bold" Foreground="#202124"/>
+          <TextBlock x:Name="PART_Subtitle" FontSize="12" Foreground="#8A8F98"/>
+        </StackPanel>
+        <Border Grid.Column="1" Classes="type-badge"
+                HorizontalAlignment="Right" VerticalAlignment="Center"
+                x:Name="PART_Badge"
+                IsVisible="False">
+          <TextBlock x:Name="PART_BadgeText" Text="当前类型"/>
+        </Border>
+      </Grid>
+
+      <!-- 仅 Day 模式显示星期行（与单元格等宽） -->
+      <Grid x:Name="PART_WeekRow" Margin="0,4,0,4" IsVisible="False">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Classes="week-day" Text="日" TextAlignment="Center"/>
+        <TextBlock Grid.Column="1" Classes="week-day" Text="一" TextAlignment="Center"/>
+        <TextBlock Grid.Column="2" Classes="week-day" Text="二" TextAlignment="Center"/>
+        <TextBlock Grid.Column="3" Classes="week-day" Text="三" TextAlignment="Center"/>
+        <TextBlock Grid.Column="4" Classes="week-day" Text="四" TextAlignment="Center"/>
+        <TextBlock Grid.Column="5" Classes="week-day" Text="五" TextAlignment="Center"/>
+        <TextBlock Grid.Column="6" Classes="week-day" Text="六" TextAlignment="Center"/>
+      </Grid>
+
+      <!-- 单元格网格（UniformGrid 天然支持网格布局） -->
+      <ItemsControl x:Name="PART_Cells"
+                    ItemsSource="{Binding Cells, RelativeSource={RelativeSource AncestorType=controls:CalendarHeatMapControl}}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid x:Name="PART_Grid" Columns="7"/>
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="controls:CalendarCellItem">
+            <Border CornerRadius="6" BorderThickness="1" Padding="3,2"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Background="{Binding CellBackground}"
+                    BorderBrush="{Binding CellBorderBrush}"
+                    Opacity="{Binding CellOpacity}">
+              <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
+                <!--  日期/标签（上）  -->
+                <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{Binding CellForeground}"/>
+                <!--  数据值（下）：有数据且非空时显示  -->
+                <TextBlock Text="{Binding ValueDisplay}" FontSize="9"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{Binding CellForeground}"
+                           IsVisible="{Binding HasValue}"/>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </StackPanel>
+  </Border>
+</UserControl>

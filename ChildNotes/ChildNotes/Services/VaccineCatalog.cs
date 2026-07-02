@@ -206,6 +206,32 @@ public static class VaccineCatalog
                 new Dose { Id = "dose4", Label = "第4剂", AgeLabel = "6周岁", DueDays = 2190 },
             ],
         },
+        new Vaccine
+        {
+            Id = "men_acyw135", Category = "paid", Name = "ACYW135群流脑多糖疫苗", Disease = "A、C、Y、W135群流脑",
+            Doses = [new Dose { Id = "dose1", Label = "第1剂", AgeLabel = "2岁以上", DueDays = 730 }],
+        },
+        new Vaccine
+        {
+            Id = "cholera", Category = "paid", Name = "霍乱疫苗", Disease = "霍乱及ETEC腹泻",
+            Doses =
+            [
+                new Dose { Id = "dose1", Label = "第1剂", AgeLabel = "2岁以上", DueDays = 730 },
+                new Dose { Id = "dose2", Label = "第2剂", AgeLabel = "间隔7天", DueDays = 737 },
+                new Dose { Id = "dose3", Label = "第3剂", AgeLabel = "间隔28天", DueDays = 758 },
+            ],
+        },
+        new Vaccine
+        {
+            Id = "men_ac_conj", Category = "paid", Name = "A+C群流脑结合疫苗", Disease = "A群、C群流行性脑脊髓膜炎",
+            Doses =
+            [
+                new Dose { Id = "dose1", Label = "第1剂", AgeLabel = "6月龄", DueDays = 180 },
+                new Dose { Id = "dose2", Label = "第2剂", AgeLabel = "9月龄", DueDays = 270 },
+                new Dose { Id = "dose3", Label = "加强1剂", AgeLabel = "3周岁", DueDays = 1095 },
+                new Dose { Id = "dose4", Label = "加强2剂", AgeLabel = "6周岁", DueDays = 2190 },
+            ],
+        },
     };
 
     /// <summary>
@@ -249,6 +275,11 @@ public static class VaccineCatalog
         ["je_inact:dose3"] = ["je_live:dose2"],
         ["men_ac:dose1"] = ["men_a:dose1"],
         ["men_ac:dose2"] = ["men_a:dose2"],
+        ["men_acyw135:dose1"] = ["men_ac:dose1"],
+        ["men_ac_conj:dose1"] = ["men_a:dose1"],
+        ["men_ac_conj:dose2"] = ["men_a:dose2"],
+        ["men_ac_conj:dose3"] = ["men_ac:dose1"],
+        ["men_ac_conj:dose4"] = ["men_ac:dose2"],
     };
 
     /// <summary>根据 VaccineId+DoseId 查找疫苗与剂次</summary>
@@ -606,11 +637,11 @@ public static class VaccineTimelineBuilder
                 // 未处理：按推荐日期计算
                 if (p.RecommendedDate.HasValue)
                 {
-                    var diff = (today - p.RecommendedDate.Value).Days;
-                    if (diff < 0) { view.Status = VaccineDoseStatus.Pending; view.StatusText = "待安排"; view.StatusClass = "pending"; }
+                    var diff = (p.RecommendedDate.Value - today).Days;
+                    if (diff < 0) { view.Status = VaccineDoseStatus.Overdue; view.StatusText = $"已过期{-diff}天"; view.StatusClass = "overdue"; }
                     else if (diff == 0) { view.Status = VaccineDoseStatus.Due; view.StatusText = "今天可打"; view.StatusClass = "due"; }
-                    else if (diff <= 30) { view.Status = VaccineDoseStatus.Soon; view.StatusText = $"逾期{diff}天"; view.StatusClass = "soon"; }
-                    else { view.Status = VaccineDoseStatus.Overdue; view.StatusText = $"逾期{diff}天"; view.StatusClass = "overdue"; }
+                    else if (diff <= 30) { view.Status = VaccineDoseStatus.Soon; view.StatusText = $"{diff}天后"; view.StatusClass = "soon"; }
+                    else { view.Status = VaccineDoseStatus.Pending; view.StatusText = "待安排"; view.StatusClass = "pending"; }
                 }
                 else
                 {
