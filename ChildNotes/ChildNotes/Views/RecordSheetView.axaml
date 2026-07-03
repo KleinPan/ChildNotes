@@ -269,7 +269,7 @@
                                 <Border Classes="form-section">
                                     <StackPanel>
                                         <TextBlock Classes="form-label" Text="← 左侧时长（分钟）"/>
-                                        <TextBox Classes="form-input" Text="{Binding FeedForm.LeftDurationText}" PlaceholderText="0" KeyboardNavigation.IsTabStop="True"/>
+                                        <TextBox x:Name="FeedLeftDurationTextBox" Classes="form-input" Text="{Binding FeedForm.LeftDurationText}" PlaceholderText="0" KeyboardNavigation.IsTabStop="True"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
@@ -284,7 +284,7 @@
                                 <Border Classes="form-section">
                                     <StackPanel>
                                         <TextBlock Classes="form-label" Text="奶量（ml）"/>
-                                        <TextBox Classes="form-input" Text="{Binding FeedForm.AmountText}" PlaceholderText="请输入奶量"/>
+                                        <TextBox x:Name="FeedAmountTextBox" Classes="form-input" Text="{Binding FeedForm.AmountText}" PlaceholderText="请输入奶量"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -343,7 +343,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding DiaperForm.SelectedConsistency}" PlaceholderText="补充说明..."/>
+                                    <TextBox x:Name="DiaperNoteTextBox" Classes="form-input" Text="{Binding DiaperForm.SelectedConsistency}" PlaceholderText="补充说明..."/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -390,7 +390,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="体温（℃）"/>
-                                    <TextBox Classes="form-input" Text="{Binding TemperatureForm.TemperatureText}" PlaceholderText="输入体温"/>
+                                    <TextBox x:Name="TemperatureTextBox" Classes="form-input" Text="{Binding TemperatureForm.TemperatureText}" PlaceholderText="输入体温"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section" Background="#FFF0F0" CornerRadius="8" Padding="10"
@@ -426,7 +426,7 @@
                                         <TextBlock Text="📏" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,6"/>
                                         <TextBlock Text="身高" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
                                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox Text="{Binding GrowthForm.HeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
+                                            <TextBox x:Name="GrowthHeightTextBox" Text="{Binding GrowthForm.HeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
                                             <TextBlock Text="cm" FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -519,7 +519,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="剂量（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Dose}" PlaceholderText="如：1滴、5ml..."/>
+                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" Text="{Binding SupplementForm.Dose}" PlaceholderText="如：1滴、5ml..."/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -549,7 +549,7 @@
                                 <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="12,10">
                                     <StackPanel>
                                         <TextBlock Text="左侧时长（分钟）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                                        <TextBox Classes="form-input" Text="{Binding PumpForm.LeftDurationText}" PlaceholderText="0"/>
+                                        <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" Text="{Binding PumpForm.LeftDurationText}" PlaceholderText="0"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="12,10" Margin="8,0,0,0">
@@ -672,7 +672,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="食量（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.AmountText}" PlaceholderText="如：2勺、半碗..."/>
+                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" Text="{Binding ComplementaryForm.AmountText}" PlaceholderText="如：2勺、半碗..."/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -729,7 +729,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="体温（℃，选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.TemperatureText}" PlaceholderText="如有发热请填写"/>
+                                    <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" Text="{Binding AbnormalForm.TemperatureText}" PlaceholderText="如有发热请填写"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section" Background="#FFF0F0" CornerRadius="8" Padding="10"
@@ -1128,7 +1128,7 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="活动名称"/>
-                                    <TextBox Classes="form-input" Text="{Binding ActivityForm.Name}" PlaceholderText="如：翻身练习、户外散步..."/>
+                                    <TextBox x:Name="ActivityNameTextBox" Classes="form-input" Text="{Binding ActivityForm.Name}" PlaceholderText="如：翻身练习、户外散步..."/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">

@@ -207,11 +207,13 @@ public sealed class ApiSyncService : BaseApiClient
         {
             // 重试用尽仍失败：通知监测器探活，加速状态判定
             NetworkMonitor?.ProbeNow();
+            ReleaseLogger.Warn("Sync", ex, "Sync failed (retries exhausted)");
             return Finish(false, "同步失败：" + ex.Message, _cfgRepo.Get(), ex.Kind);
         }
         catch (Exception ex)
         {
             DevLogger.Log("Sync", ex);
+            ReleaseLogger.Error("Sync", ex, "Sync unexpected error");
             return Finish(false, "同步异常：" + ex.Message, _cfgRepo.Get(), SyncErrorKind.Unknown);
         }
         finally

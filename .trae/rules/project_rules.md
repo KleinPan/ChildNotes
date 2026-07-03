@@ -29,6 +29,93 @@
 - **禁止**使用 `git push --force` / `--force-with-lease` 推送到 master/main 分支，除非用户明确要求。
 - 推送前如遇 non-fast-forward，优先用 `git pull --rebase` 整合远端改动，不要强制覆盖。
 
+## 提交信息（Commit Message）正确写法
+
+PowerShell 不支持 bash 的 heredoc 语法（`<<'EOF'`），多行 commit message 必须用文件方式：
+
+```powershell
+# 1. 写入临时文件（用 Write 工具或 echo）
+# 2. 用 -F 参数传递
+git commit -F .git\COMMIT_MSG_TMP.txt
+# 3. 提交后删除临时文件
+```
+
+**禁止**在 PowerShell 中使用 `git commit -m "$(cat <<'EOF' ... EOF)"`，会因 heredoc 解析失败报错。
+
+单行 commit message 可直接用 `-m "..."`。
+
+## Tag 推送完整流程
+
+### 版本号约定（SemVer + 0.x 阶段规则）
+
+项目当前处于 0.x 阶段（未正式发布），版本号规则：
+
+| 变更类型 | 版本号递增 | 示例 |
+|----------|------------|------|
+| 破坏性变更（API/DB schema 不兼容） | minor+1 | v0.3.8 → v0.4.0 |
+| 新功能（向后兼容） | patch+1 | v0.4.0 → v0.4.1 |
+| Bug 修复 / 小优化 | patch+1 | v0.4.0 → v0.4.1 |
+
+**禁止**在 0.x 阶段直接跳到 v1.0.0 或更高主版本号。v1.0.0 保留给正式发布（first stable release）。
+
+### 推送前检查
+
+```powershell
+# 1. 确认当前分支
+git branch --show-current
+
+# 2. 查看最近的 tag，判断下一个版本号
+git tag --sort=-v:refname | Select-Object -First 5
+
+# 3. 确认无代理环境变量覆盖 git 的 socks5 配置
+Get-ChildItem Env: | Where-Object { $_.Name -match "PROXY|proxy" }
+# 若有 HTTP_PROXY/HTTPS_PROXY 覆盖，先清除：
+# Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY, Env:ALL_PROXY -ErrorAction SilentlyContinue
+```
+
+### 创建 annotated tag
+
+```powershell
+# 1. 写 tag 信息到临时文件
+# 2. 创建 annotated tag
+git tag -a v0.4.0 -F .git\TAG_MSG_TMP.txt
+# 3. 推送 tag
+git push origin v0.4.0
+# 4. 删除临时文件
+```
+
+**禁止**用轻量级 tag（`git tag v0.4.0` 不带 `-a`），必须用 annotated tag 附带说明。
+
+### 完整推送顺序
+
+```powershell
+# 1. 暂存改动（按目录批量 add，禁止 git add . / -A）
+git add ChildNotes.Backend/ChildNotes.Api/ ChildNotes.Backend/ChildNotes.Core/ ...
+
+# 2. 提交（用 -F 文件方式）
+git commit -F .git\COMMIT_MSG_TMP.txt
+
+# 3. 推送分支（显式 refspec）
+git push origin master:refs/heads/master
+
+# 4. 打 tag（annotated）
+git tag -a v0.4.0 -F .git\TAG_MSG_TMP.txt
+
+# 5. 推送 tag
+git push origin v0.4.0
+
+# 6. 清理临时文件
+```
+
+### 删除误推的 tag
+
+```powershell
+# 删除远端 tag
+git push origin :refs/tags/<tagname>
+# 删除本地 tag
+git tag -d <tagname>
+```
+
 ## 共享代码契约（ChildNotes.Shared）
 
 - 前后端共享的纯 POCO / 常量 / DTO / 协议契约 / 实体核心字段基类统一放在 `ChildNotes.Shared/` 项目（net10.0，不依赖任何 UI 或 ORM 框架）。

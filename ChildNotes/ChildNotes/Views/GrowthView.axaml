@@ -197,7 +197,7 @@
         </ScrollViewer>
 
         <!--  编辑/新增成长记录的底部弹层  -->
-        <Panel IsVisible="{Binding MilestoneEdit.IsVisible}">
+        <Panel x:Name="MilestoneEditPanel" IsVisible="{Binding MilestoneEdit.IsVisible}">
             <Border Classes="modal-mask" />
 
             <!--  Sheet 弹层  -->
@@ -230,7 +230,7 @@
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="标题" />
-                                <TextBox Padding="12,8" Background="#F5F5F5" CornerRadius="6" PlaceholderText="如：第一次翻身、第一次叫妈妈..."
+                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="#F5F5F5" CornerRadius="6" PlaceholderText="如：第一次翻身、第一次叫妈妈..."
                                          Text="{Binding MilestoneEdit.Title}" />
                             </StackPanel>
                             <StackPanel>

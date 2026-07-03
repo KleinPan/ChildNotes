@@ -1,8 +1,10 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
@@ -16,6 +18,52 @@ public partial class BabyManagerView : UserControl
     public BabyManagerView()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        // ★ 订阅编辑弹层的可见性变化：从 false→true 时自动聚焦姓名输入框
+        //    EditorSheet.IsVisible 绑定到 IsEditorOpen
+        if (EditorSheet is not null)
+        {
+            EditorSheet.PropertyChanged += OnEditorSheetPropertyChanged;
+        }
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        if (EditorSheet is not null)
+        {
+            EditorSheet.PropertyChanged -= OnEditorSheetPropertyChanged;
+        }
+    }
+
+    private void OnEditorSheetPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        // 监听 IsVisible 从 false→true 的变更，触发自动聚焦
+        if (e.Property == IsVisibleProperty && e.NewValue is true)
+        {
+            DispatcherTimer.RunOnce(TryFocusBabyName, TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    /// <summary>
+    /// 自动聚焦姓名输入框：弹层打开后延迟触发，确保控件已完全布局。
+    /// </summary>
+    private void TryFocusBabyName()
+    {
+        if (BabyNameTextBox is null) return;
+        if (Vm is not { IsEditorOpen: true }) return;
+        try
+        {
+            if (BabyNameTextBox.IsVisible)
+            {
+                BabyNameTextBox.Focus(NavigationMethod.Unspecified, KeyModifiers.None);
+            }
+        }
+        catch { /* 聚焦失败时静默忽略，不影响主流程 */ }
     }
 
     // 判断是否为当前宝宝（参数: Baby, 用 AppState.CurrentBaby.Id 比较）

@@ -14,7 +14,7 @@ namespace ChildNotes.Android.Services;
 /// 用 displayMetrics.HeightPixels - visibleFrame.Bottom 计算键盘高度，
 /// 并扣除底部系统栏（导航栏）以获得纯键盘高度。
 ///
-/// View 层（AiNoteView / RecordSheetView）会再扣除 TabBar 高度，
+/// View 层（RecordSheetView）会再扣除 TabBar 高度，
 /// 因为测量值是从屏幕底部算起的距离，包含了 TabBar。
 /// </summary>
 public static class KeyboardHeightService

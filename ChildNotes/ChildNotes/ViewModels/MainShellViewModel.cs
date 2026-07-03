@@ -15,34 +15,32 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isGrowthSelected;
     [ObservableProperty] private bool _isMineSelected;
 
-    [ObservableProperty] private bool _isRecordSheetOpen;
-    [ObservableProperty] private RecordSheetViewModel _recordSheet;
-    [ObservableProperty] private QuickMenuViewModel _quickMenu;
-
     /// <summary>
-    /// 底部抽屉打开/关闭时同步到 QuickMenu，触发 FAB 显隐派生属性变更。
+    /// 首页输入栏和功能面板是否可见：首页 Tab 且 未打开底部抽屉。
+    /// 抽屉打开时隐藏，避免与 RecordSheet 底部抽屉视觉重叠。
     /// </summary>
+    public bool IsQuickInputVisible => IsHomeSelected && !IsRecordSheetOpen;
+
+    partial void OnIsHomeSelectedChanged(bool value) => OnPropertyChanged(nameof(IsQuickInputVisible));
     partial void OnIsRecordSheetOpenChanged(bool value)
     {
         if (QuickMenu is not null)
         {
             QuickMenu.IsRecordSheetOpen = value;
-            DevLogger.Log("Shell", $"OnIsRecordSheetOpenChanged: {value} -> FAB will be {(value ? "hidden" : "shown")}");
         }
+        OnPropertyChanged(nameof(IsQuickInputVisible));
     }
 
+    [ObservableProperty] private bool _isRecordSheetOpen;
+    [ObservableProperty] private RecordSheetViewModel _recordSheet;
+    [ObservableProperty] private QuickMenuViewModel _quickMenu;
+
     /// <summary>
-    /// Ai 记弹层打开/关闭时同步到 QuickMenu，触发 FAB 显隐派生属性变更。
-    /// 与 OnIsRecordSheetOpenChanged 对称，确保 Ai 记弹出时 + 按钮正确隐藏。
+    /// 首页底部快捷输入栏：承担原 Ai 记模态的全部输入/解析/保存职责。
+    /// 仅在首页 Tab 显示，输入文本即触发解析（点发送按钮）。
     /// </summary>
-    partial void OnIsAiNoteOpenChanged(bool value)
-    {
-        if (QuickMenu is not null)
-        {
-            QuickMenu.IsAiNoteOpen = value;
-            DevLogger.Log("Shell", $"OnIsAiNoteOpenChanged: {value} -> FAB will be {(value ? "hidden" : "shown")}");
-        }
-    }
+    [ObservableProperty] private QuickInputViewModel _quickInput;
+
     [ObservableProperty] private bool _isBabySetupOpen;
     [ObservableProperty] private BabySetupViewModel _babySetup;
     [ObservableProperty] private bool _isBabyManagerOpen;
@@ -59,8 +57,6 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private SyncSettingsViewModel _syncSettings;
     [ObservableProperty] private bool _isFamilyOpen;
     [ObservableProperty] private FamilyViewModel _family;
-    [ObservableProperty] private bool _isAiNoteOpen;
-    [ObservableProperty] private AiNoteViewModel _aiNote;
 
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
@@ -158,6 +154,13 @@ public partial class MainShellViewModel : ViewModelBase
         _quickMenu = new QuickMenuViewModel();
         _quickMenu.OpenRecordRequested += OpenQuickRecord;
 
+        _quickInput = new QuickInputViewModel();
+        _quickInput.Saved += OnRecordSaved;
+        // + 按钮点击 → 转发到功能面板展开/收起
+        _quickInput.ToggleActionsRequested += () => QuickMenu.ToggleMenuCommand.Execute(null);
+        // 输入内容时强制收起功能面板
+        _quickInput.CloseActionsRequested += () => QuickMenu.CloseMenuCommand.Execute(null);
+
         _babySetup = new BabySetupViewModel();
         _babySetup.Completed += OnBabySetupCompleted;
 
@@ -177,9 +180,6 @@ public partial class MainShellViewModel : ViewModelBase
 
         _family = new FamilyViewModel();
 
-        _aiNote = new AiNoteViewModel();
-        _aiNote.Saved += OnRecordSaved;
-
         _developerOptions = new DeveloperOptionsViewModel();
         _developerOptions.DevLogOverlayVisibilityChanged += OnDevLogOverlayVisibilityChanged;
 
@@ -195,27 +195,15 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(AiSettings, () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
-        RegisterOverlay(AiNote, () => IsAiNoteOpen = false, () => IsAiNoteOpen, OpenAiNote);
         RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
-    }
-
-    /// <summary>打开 AI 智能记模态窗口。</summary>
-    public void OpenAiNote()
-    {
-        if (ServiceProvider.Instance.AppState.CurrentBaby is null)
-        {
-            OpenBabySetup();
-            return;
-        }
-        AiNote.Activate();
-        IsAiNoteOpen = true;
     }
 
     [RelayCommand]
     private void SwitchTab(string tab)
     {
         CloseRecordSheetAndQuickMenu();
-        QuickMenu.IsFabEnabled = tab == "home";
+        // 切 Tab 时关闭功能面板（输入栏在非首页隐藏，面板也应关闭）
+        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
         CloseAllOverlays();
 
         IsHomeSelected = tab == "home";
@@ -253,7 +241,8 @@ public partial class MainShellViewModel : ViewModelBase
     public void RestoreTab(string tabId)
     {
         var tab = tabId is "feeding" or "growth" or "mine" ? tabId : "home";
-        QuickMenu.IsFabEnabled = tab == "home";
+        // 切 Tab 时关闭功能面板（输入栏在非首页隐藏，面板也应关闭）
+        if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
         IsHomeSelected = tab == "home";
         IsFeedingSelected = tab == "feeding";
         IsGrowthSelected = tab == "growth";
@@ -283,12 +272,6 @@ public partial class MainShellViewModel : ViewModelBase
             {
                 DevLogger.Log("Shell", "OpenQuickRecord: no current baby, open BabySetup");
                 OpenBabySetup();
-                return;
-            }
-            // Ai 记走单独的模态窗口，不走底部抽屉
-            if (recordType == RecordType.AiNote)
-            {
-                OpenAiNote();
                 return;
             }
             // 先设置抽屉可见（占位立即响应），再异步打开（疫苗类型会异步加载数据）
@@ -492,7 +475,6 @@ public partial class MainShellViewModel : ViewModelBase
         IsGrowthSelected = false;
         IsMineSelected = false;
         CurrentTab = Home;
-        QuickMenu.IsFabEnabled = true;
         Home.Activate();
     }
 }

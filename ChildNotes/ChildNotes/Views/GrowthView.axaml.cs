@@ -1,11 +1,13 @@
 using System.Globalization;
 using System.IO;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ChildNotes.ViewModels;
 
@@ -16,6 +18,53 @@ public partial class GrowthView : UserControl
     public GrowthView()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+    }
+
+    private void OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        // ★ 订阅编辑弹层的可见性变化：从 false→true 时自动聚焦标题输入框
+        //    MilestoneEditPanel.IsVisible 绑定到 MilestoneEdit.IsVisible
+        if (MilestoneEditPanel is not null)
+        {
+            MilestoneEditPanel.PropertyChanged += OnMilestoneEditPanelPropertyChanged;
+        }
+    }
+
+    private void OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        if (MilestoneEditPanel is not null)
+        {
+            MilestoneEditPanel.PropertyChanged -= OnMilestoneEditPanelPropertyChanged;
+        }
+    }
+
+    private void OnMilestoneEditPanelPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        // 监听 IsVisible 从 false→true 的变更，触发自动聚焦
+        if (e.Property == IsVisibleProperty && e.NewValue is true)
+        {
+            DispatcherTimer.RunOnce(TryFocusMilestoneTitle, TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    /// <summary>
+    /// 自动聚焦标题输入框：弹层打开后延迟触发，确保控件已完全布局。
+    /// </summary>
+    private void TryFocusMilestoneTitle()
+    {
+        if (MilestoneTitleTextBox is null) return;
+        // 仅当弹层可见时才聚焦（避免弹层已关闭时误触发）
+        if (DataContext is GrowthViewModel vm && !vm.MilestoneEdit.IsVisible) return;
+        try
+        {
+            if (MilestoneTitleTextBox.IsVisible)
+            {
+                MilestoneTitleTextBox.Focus(NavigationMethod.Unspecified, KeyModifiers.None);
+            }
+        }
+        catch { /* 聚焦失败时静默忽略，不影响主流程 */ }
     }
 
     public static readonly IValueConverter IsEditingConverter = new FuncValueConverter<string, bool>(

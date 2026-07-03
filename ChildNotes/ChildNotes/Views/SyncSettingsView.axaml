@@ -58,7 +58,7 @@
                         <Grid Margin="14,12" ColumnDefinitions="80,*,Auto">
                             <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="13"
-                                     Watermark="https://api.example.com"
+                                     PlaceholderText="https://api.example.com"
                                      VerticalAlignment="Center"
                                      BorderThickness="0" Padding="0"/>
                             <Button Grid.Column="2" Content="保存" Classes="weui-btn mini primary"

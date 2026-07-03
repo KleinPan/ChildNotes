@@ -4,7 +4,10 @@ using ChildNotes.Infrastructure;
 namespace ChildNotes.Services;
 
 /// <summary>
-/// 日志导出服务：将 <see cref="DevLogger"/> 环形缓冲区中的日志导出为 .txt 文件。
+/// 日志导出服务：
+/// - Debug 构建：导出 <see cref="DevLogger"/> 环形缓冲区（应用内调试日志）。
+/// - Release 构建（或 Debug 中 ReleaseLogger 已初始化）：合并导出 Serilog 文件日志（app-*.log），
+///   用于闪退后的问题定位。两者可同时导出。
 /// 跨平台兼容：
 /// - Android 10+ (API 29+)：通过 MediaStore.Downloads 写入公共 Download 目录（无需存储权限）。
 /// - Android 9 及以下 (API &lt; 29)：直接写 /storage/emulated/0/Download（需 WRITE_EXTERNAL_STORAGE，已由 manifest 声明）。
@@ -13,43 +16,74 @@ namespace ChildNotes.Services;
 public static class LogExportService
 {
     /// <summary>
-    /// 导出全部日志到 .txt 文件。
+    /// 导出日志到 .txt 文件。
+    /// 优先合并 ReleaseLogger 的文件日志（崩溃排查用）；若 DevLogger 有条目也一并追加。
     /// </summary>
     /// <returns>导出结果（成功则含文件路径/提示；失败则含错误信息）。</returns>
     public static async Task<LogExportResult> ExportAsync()
     {
-        var entries = DevLogger.Entries;
-        if (entries.Count == 0)
+        var devEntries = DevLogger.Entries;
+        var releaseFiles = ReleaseLogger.GetLogFiles();
+
+        if (devEntries.Count == 0 && releaseFiles.Count == 0)
         {
             return LogExportResult.Fail("当前无日志可导出");
         }
 
-        // 构造日志文本：头部信息 + 全部日志条目
-        var sb = new StringBuilder(entries.Count * 100 + 200);
-        sb.AppendLine("===== ChildNotes 开发日志 =====");
+        // 构造日志文本：头部信息 + Release 文件日志 + Dev 内存日志
+        var sb = new StringBuilder(8192);
+        sb.AppendLine("===== ChildNotes 日志 =====");
         sb.AppendLine($"导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine($"平台: {DevLogger.PlatformTag}");
-        sb.AppendLine($"条目数: {entries.Count}");
         sb.AppendLine($"应用版本: {GetAppVersion()}");
+        sb.AppendLine($"Dev 日志条目数: {devEntries.Count}");
+        sb.AppendLine($"Release 日志文件数: {releaseFiles.Count}");
         sb.AppendLine("================================");
         sb.AppendLine();
 
-        foreach (var entry in entries)
+        // 1. Release 文件日志（Serilog 写入的 app-*.log，含崩溃堆栈）
+        if (releaseFiles.Count > 0)
         {
-            sb.AppendLine(entry.Full);
+            sb.AppendLine("----- Release 日志（Serilog 文件） -----");
+            foreach (var file in releaseFiles)
+            {
+                sb.AppendLine($"### 文件: {file.Name} (修改于 {file.LastWriteTime:yyyy-MM-dd HH:mm:ss}) ###");
+                try
+                {
+                    var content = await File.ReadAllTextAsync(file.FullName);
+                    sb.AppendLine(content);
+                }
+                catch (Exception ex)
+                {
+                    sb.AppendLine($"[读取失败: {ex.Message}]");
+                }
+                sb.AppendLine();
+            }
         }
 
-        var content = sb.ToString();
+        // 2. Dev 内存日志（Debug 阶段的应用内调试日志）
+        if (devEntries.Count > 0)
+        {
+            sb.AppendLine("----- Dev 日志（内存浮层） -----");
+            foreach (var entry in devEntries)
+            {
+                sb.AppendLine(entry.Full);
+            }
+        }
+
+        var allContent = sb.ToString();
         var fileName = $"ChildNotes_log_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
 
         try
         {
-            var path = await WriteFileAsync(fileName, content);
-            return LogExportResult.Ok(path, entries.Count);
+            var path = await WriteFileAsync(fileName, allContent);
+            var totalLines = devEntries.Count + releaseFiles.Count;
+            return LogExportResult.Ok(path, totalLines);
         }
         catch (Exception ex)
         {
             DevLogger.Log("LogExport", $"导出失败: {ex}");
+            ReleaseLogger.Error("LogExport", ex, "Log export failed");
             return LogExportResult.Fail(ex.Message);
         }
     }

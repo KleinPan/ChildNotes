@@ -20,6 +20,10 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.0" />
     <PackageVersion Include="Semi.Avalonia" Version="12.0.3" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.10" />
+    <!-- Serilog：Release 日志系统（文件滚动 + 异步写入 + 分级）。DevLogger 仍为 Debug 阶段主路径。 -->
+    <PackageVersion Include="Serilog" Version="4.3.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
     <!-- AndroidX Core：用于 WindowInsetsCompat API 获取精确键盘高度（与 Avalonia.Android 传递依赖一致） -->
     <PackageVersion Include="Xamarin.AndroidX.Core" Version="1.17.0.2" />
     <!-- Test packages -->

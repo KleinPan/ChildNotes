@@ -31,6 +31,9 @@ public partial class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         var sw = Stopwatch.StartNew();
+        // Release 日志系统初始化（必须最早期，确保后续异常都能记录）
+        ReleaseLogger.Initialize();
+
         // 全局异常处理：避免未捕获异常导致应用崩溃白屏
         AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
@@ -38,6 +41,7 @@ public partial class App : Application
 
         _current = this;
         DevLogger.Log("Startup", "OnFrameworkInitializationCompleted start");
+        ReleaseLogger.Info("Startup", "OnFrameworkInitializationCompleted start");
         try
         {
             Batteries_V2.Init();
@@ -81,6 +85,7 @@ public partial class App : Application
 
         sw.Stop();
         DevLogger.Log("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
+        ReleaseLogger.Info("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -93,14 +98,20 @@ public partial class App : Application
     {
         try
         {
-            if (!ServiceProvider.Instance.AuthService.TryRestoreSession()) return false;
+            if (!ServiceProvider.Instance.AuthService.TryRestoreSession())
+            {
+                ReleaseLogger.Info("App", "Session restore: no valid session, will show login");
+                return false;
+            }
             ServiceProvider.Instance.BindUserToState();
             ServiceProvider.Instance.BabyService.LoadBabyList();
+            ReleaseLogger.Info("App", "Session restored successfully");
             return true;
         }
         catch (Exception ex)
         {
             DevLogger.Log("App", "TryRestoreSession EXCEPTION: " + ex);
+            ReleaseLogger.Warn("App", ex, "Session restore failed, falling back to login");
             return false;
         }
     }
@@ -127,10 +138,12 @@ public partial class App : Application
                 _rootContainer.SetContent(_shellView);
             }
             DevLogger.Log("App", "EnterMainShell done (session restored)");
+            ReleaseLogger.Info("App", "EnterMainShell done (session restored)");
         }
         catch (Exception ex)
         {
             DevLogger.Log("App", "EnterMainShell EXCEPTION: " + ex);
+            ReleaseLogger.Error("App", ex, "EnterMainShell failed, falling back to login");
             // 恢复失败时回退到登录页
             if (desktopHost is MainWindow w) ShowLogin(w);
             else if (ApplicationLifetime is ISingleViewApplicationLifetime sv) ShowLogin(sv);
@@ -187,6 +200,7 @@ public partial class App : Application
     private void OnLoginSucceeded()
     {
         DevLogger.Log("App", "OnLoginSucceeded start");
+        ReleaseLogger.Info("App", "Login succeeded, entering main shell");
         try
         {
             _shellVm = new MainShellViewModel();
@@ -214,6 +228,7 @@ public partial class App : Application
         {
             DevLogger.Log("App", "OnLoginSucceeded EXCEPTION");
             DevLogger.Log("App", ex);
+            ReleaseLogger.Error("App", ex, "OnLoginSucceeded failed");
             throw;
         }
     }
@@ -249,6 +264,7 @@ public partial class App : Application
     private void OnLogout()
     {
         DevLogger.Log("App", "OnLogout");
+        ReleaseLogger.Info("App", "User logout");
         if (_shellVm is not null)
         {
             _shellVm.LogoutRequested -= OnLogout;
@@ -319,10 +335,12 @@ public partial class App : Application
         if (ex is null)
         {
             DevLogger.Log("EX:" + source, "exception object is null");
+            ReleaseLogger.Error("EX:" + source, "exception object is null");
             System.Diagnostics.Debug.WriteLine($"[UnhandledException:{source}] <null>");
             return;
         }
         DevLogger.Log("EX:" + source, ex);
+        ReleaseLogger.Error("EX:" + source, ex, $"Unhandled exception from {source}");
         System.Diagnostics.Debug.WriteLine($"[UnhandledException:{source}] {ex}");
     }
 }

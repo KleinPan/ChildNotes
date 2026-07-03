@@ -1,0 +1,86 @@
+<UserControl x:Class="ChildNotes.Views.QuickInputView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             d:DesignHeight="56"
+             d:DesignWidth="390"
+             x:DataType="vm:QuickInputViewModel"
+             Background="White"
+             mc:Ignorable="d">
+
+    <UserControl.Styles>
+        <!-- 输入框：圆角胶囊形，浅灰底，对齐微信风格 -->
+        <Style Selector="TextBox.quick-input">
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="MaxHeight" Value="120" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <!-- 发送按钮：圆角矩形（对齐微信发送按钮风格） -->
+        <Style Selector="Button.send-btn">
+            <Setter Property="MinWidth" Value="56" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="Padding" Value="12,0" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <!-- + 按钮：圆形绿色 -->
+        <Style Selector="Button.plus-btn">
+            <Setter Property="Width" Value="36" />
+            <Setter Property="Height" Value="36" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <Border Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+            <!-- 输入框 -->
+            <TextBox Grid.Column="0"
+                    Classes="quick-input"
+                    PlaceholderText="用一句话记录，AI 帮你分类"
+                    Text="{Binding InputText}" />
+
+            <!-- 有内容时显示发送按钮 -->
+            <Button Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Classes="send-btn"
+                    Command="{Binding SendCommand}"
+                    IsEnabled="{Binding !IsParsing}"
+                    ToolTip.Tip="发送"
+                    IsVisible="{Binding HasContent}">
+                发送
+            </Button>
+
+            <!-- 无内容时显示 + 按钮（展开功能面板） -->
+            <Button Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Classes="plus-btn"
+                    Command="{Binding ToggleActionsCommand}"
+                    ToolTip.Tip="更多记录类型"
+                    IsVisible="{Binding !HasContent}">
+                <TextBlock Text="＋" FontSize="22" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Button>
+        </Grid>
+    </Border>
+</UserControl>

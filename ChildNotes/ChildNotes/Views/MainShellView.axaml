@@ -11,10 +11,14 @@
              x:CompileBindings="True"
              Background="{StaticResource WeuiBg0Brush}">
 
-    <!-- 注：原 UserControl.Styles 中 tab-text 重复定义已删除，
-         WeUIStyles.axaml 中已有完全相同的 Style（Button.tab-item[.active] TextBlock.tab-text）。 -->
-
-    <Grid RowDefinitions="*,Auto">
+    <!--
+        布局结构（参考微信）：
+        Row=0: 主内容区（首页/喂养/成长/我的 + 各弹层）
+        Row=1: 首页底部输入栏（仅首页可见，含 [输入框][发送/+]）
+        Row=2: 功能面板（点 + 后在输入栏下方展开的 4×2 图标网格）
+        Row=3: TabBar（首页/喂养/成长/我的）
+    -->
+    <Grid RowDefinitions="*,Auto,Auto,Auto">
 
         <ContentControl Grid.Row="0" Content="{Binding CurrentTab}" IsTabStop="False"/>
 
@@ -45,22 +49,36 @@
         <ContentControl Grid.Row="0" Content="{Binding Family}" IsTabStop="False"
                         IsVisible="{Binding IsFamilyOpen}"/>
 
-        <ContentControl Grid.Row="0" Content="{Binding AiNote}" IsTabStop="False"
-                        IsVisible="{Binding IsAiNoteOpen}"/>
-
         <ContentControl Grid.Row="0" Content="{Binding DeveloperOptions}" IsTabStop="False"
                         IsVisible="{Binding IsDeveloperOptionsOpen}"/>
 
-        <!-- 快捷记录：右下角悬浮 + 按钮 + 扇形菜单 + 居中卡片表单（跨行覆盖，+ 按钮始终可见） -->
-        <ContentControl Grid.RowSpan="2" Content="{Binding QuickMenu}" IsTabStop="False"/>
+        <!-- 首页底部快捷输入栏：仅在首页显示 且 未打开底部抽屉。
+             内含 [输入框][发送按钮(有内容时)] [+ 按钮(无内容时)]，互斥切换。
+             抽屉打开时隐藏，避免与 RecordSheet 底部抽屉视觉重叠。 -->
+        <ContentControl Grid.Row="1" Content="{Binding QuickInput}" IsTabStop="False"
+                        IsVisible="{Binding IsQuickInputVisible}"/>
 
-        <Border Grid.Row="1" Classes="tab-bar">
+        <!-- 功能面板：输入栏下方的 4×2 图标网格（成长/辅食/.../喂奶），
+             由 QuickMenuViewModel 管理 IsMenuOpen 控制显隐。
+             抽屉打开时与输入栏同步隐藏。 -->
+        <ContentControl Grid.Row="2" Content="{Binding QuickMenu}" IsTabStop="False"
+                        IsVisible="{Binding IsQuickInputVisible}"/>
+
+        <!-- Toast 浮层：首页快捷输入栏的提示（位于输入栏上方） -->
+        <Border Grid.Row="1" Margin="0,0,0,8" Padding="16,10"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                Background="#CC000000" CornerRadius="8"
+                IsVisible="{Binding QuickInput.ShowToast}"
+                ZIndex="100">
+            <TextBlock FontSize="13" Foreground="White" Text="{Binding QuickInput.ToastMessage}" />
+        </Border>
+
+        <Border Grid.Row="3" Classes="tab-bar">
             <Grid ColumnDefinitions="*,*,*,*">
                 <Button Grid.Column="0" Classes="tab-item"
                         Classes.active="{Binding IsHomeSelected}"
                         Command="{Binding SwitchTabCommand}" CommandParameter="home">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
-                        <!-- 原版 tabBar emoji 图标 40rpx≈20px -->
                         <TextBlock Text="🏠" FontSize="20" HorizontalAlignment="Center"/>
                         <TextBlock Classes="tab-text" Text="首页" HorizontalAlignment="Center"/>
                     </StackPanel>
@@ -93,6 +111,6 @@
         </Border>
 
         <!-- 开发阶段日志浮层（最上层覆盖，跨 Row，可见性由开发者选项控制） -->
-        <ctrl:DevLogOverlay Grid.RowSpan="2" IsVisible="{Binding IsDevLogOverlayVisible}"/>
+        <ctrl:DevLogOverlay Grid.RowSpan="4" IsVisible="{Binding IsDevLogOverlayVisible}"/>
     </Grid>
 </UserControl>

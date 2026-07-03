@@ -39,7 +39,7 @@ public class ViewLocator : IDataTemplate
                 PointsViewModel => new PointsView(),
                 AiAnalysisViewModel => new AiAnalysisView(),
                 AiSettingsViewModel => new AiSettingsView(),
-                AiNoteViewModel => new AiNoteView(),
+                QuickInputViewModel => new QuickInputView(),
                 SyncSettingsViewModel => new SyncSettingsView(),
                 FamilyViewModel => new FamilyView(),
                 RecordSheetViewModel => new RecordSheetView(),

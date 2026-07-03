@@ -7,42 +7,44 @@ using ChildNotes.Shared.Constants;
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 右下角悬浮 + 按钮的 PopupBox 菜单状态机。
-/// 菜单项从 + 按钮正上方垂直堆叠弹出。
-/// 表单展示复用 RecordSheetViewModel（底部抽屉），由 MainShellViewModel.OpenQuickRecord 统一打开。
+/// 首页底部功能面板 ViewModel：管理输入栏下方的图标网格面板展开/收起。
+/// 支持分页（每页最多 8 项 = 4 列 × 2 行），项数 >8 时自动分页，
+/// 通过 Carousel 左右滑动切换页面，PipsPager 显示页码指示器。
 /// </summary>
 public partial class QuickMenuViewModel : ViewModelBase
 {
+    /// <summary>每页最多项数（4 列 × 2 行）</summary>
+    private const int PageSize = 8;
+
     [ObservableProperty] private bool _isMenuOpen;
+    [ObservableProperty] private int _currentPage;
 
     /// <summary>
     /// 底部记录抽屉是否打开（由 MainShellViewModel 同步镜像）。
-    /// 抽屉打开期间 FAB 必须隐藏，避免遮挡表单 / 重复触发新记录。
+    /// 抽屉打开期间功能面板必须隐藏，避免遮挡表单。
     /// </summary>
     [ObservableProperty] private bool _isRecordSheetOpen;
-
-    /// <summary>
-    /// Ai 记弹层是否打开（由 MainShellViewModel 同步镜像）。
-    /// Ai 记弹出期间 FAB 必须隐藏，与 RecordSheet 行为对齐。
-    /// </summary>
-    [ObservableProperty] private bool _isAiNoteOpen;
-
-    /// <summary>
-    /// FAB 是否在当前 tab 可见（仅首页可见，由 MainShellViewModel.SwitchTab 同步）。
-    /// 与 IsRecordSheetOpen/IsAiNoteOpen/IsMenuOpen 共同决定 FAB 最终可见性。
-    /// </summary>
-    [ObservableProperty] private bool _isFabEnabled = true;
 
     /// <summary>请求主壳层打开记录表单（由 MainShellViewModel 订阅）。</summary>
     public event Action<string>? OpenRecordRequested;
 
-    /// <summary>PopupBox 菜单的快捷项（从 + 按钮上方垂直堆叠弹出）</summary>
+    /// <summary>所有功能项（不分页前的完整列表）</summary>
     public ObservableCollection<QuickActionItem> Actions { get; } = new();
+
+    /// <summary>分页后的页面列表，每页最多 8 项。Carousel 绑定此属性。</summary>
+    public ObservableCollection<List<QuickActionItem>> Pages { get; } = new();
+
+    /// <summary>总页数（PipsPager Count 绑定）</summary>
+    public int PageCount => Pages.Count;
+
+    /// <summary>是否显示页码指示器（仅 >1 页时显示）</summary>
+    public bool HasMultiplePages => Pages.Count > 1;
 
     public QuickMenuViewModel()
     {
-        // 快捷项：不常用的在上边（远离 + 按钮），常用的在下边（靠近 + 按钮）
-        // 异常记录已在首页有独立红色入口，此处不再重复添加
+        // 8 项：常用在下排（Row=2），不常用在上排（Row=1）
+        // Ai 记已迁移到首页底部输入栏
+        // 异常记录已在首页有独立红色入口
         Actions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
         Actions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary, "#FFF3E0"));
         Actions.Add(new QuickActionItem("🍶", "吸奶", RecordType.Pump, "#E8F5E9"));
@@ -51,25 +53,37 @@ public partial class QuickMenuViewModel : ViewModelBase
         Actions.Add(new QuickActionItem("🌙", "睡眠", RecordType.Sleep, "#E8F0FE"));
         Actions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper, "#FFF8E1"));
         Actions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed, "#FFF0E6"));
-        // Ai 记作为高频功能，紧贴喂奶下方（+ 按钮正上方第二位）
-        Actions.Add(new QuickActionItem("🤖", "Ai记", RecordType.AiNote, "#EDE7F6"));
+
+        RebuildPages();
+        Actions.CollectionChanged += (_, _) => RebuildPages();
     }
 
     /// <summary>
-    /// FAB 实际可见性：当前 tab 允许显示 且 未打开底部抽屉 且 Ai 记弹层未打开 且 菜单已关闭。
-    /// 四个条件任一不满足即隐藏 FAB。派生属性，由 ObservableProperty 自动通知。
+    /// 根据 Actions 重新分页。每页最多 PageSize 项。
+    /// 项数 ≤8 时只 1 页（PipsPager 自动隐藏）；>8 时自动分页。
     /// </summary>
-    public bool IsFabVisible => IsFabEnabled && !IsRecordSheetOpen && !IsAiNoteOpen && !IsMenuOpen;
+    private void RebuildPages()
+    {
+        Pages.Clear();
+        for (int i = 0; i < Actions.Count; i += PageSize)
+        {
+            var page = Actions.Skip(i).Take(PageSize).ToList();
+            Pages.Add(page);
+        }
+        if (CurrentPage >= Pages.Count) CurrentPage = 0;
+        OnPropertyChanged(nameof(PageCount));
+        OnPropertyChanged(nameof(HasMultiplePages));
+    }
 
-    partial void OnIsMenuOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
-    partial void OnIsRecordSheetOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
-    partial void OnIsAiNoteOpenChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
-    partial void OnIsFabEnabledChanged(bool value) => OnPropertyChanged(nameof(IsFabVisible));
+    partial void OnCurrentPageChanged(int value)
+    {
+        // 防御性：页码越界时回零
+        if (value < 0 || value >= Pages.Count) CurrentPage = 0;
+    }
 
     [RelayCommand]
     private void ToggleMenu()
     {
-        // 抽屉打开期间禁止切换菜单（理论上 FAB 已隐藏，这里做防御性拦截）
         if (IsRecordSheetOpen) return;
         IsMenuOpen = !IsMenuOpen;
     }
@@ -81,7 +95,6 @@ public partial class QuickMenuViewModel : ViewModelBase
     private void Select(string type)
     {
         IsMenuOpen = false;
-        // 委托给 MainShellViewModel.OpenQuickRecord 打开底部抽屉 RecordSheetView
         OpenRecordRequested?.Invoke(type);
     }
 }

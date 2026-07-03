@@ -10,6 +10,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -74,6 +75,93 @@ public partial class RecordSheetView : UserControl
         RemoveHandler(InputElement.LostFocusEvent, OnLostFocus);
         KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
         DevLogger.Log("SheetView", "Detached: listeners removed");
+    }
+
+    /// <summary>
+    /// 监听 IsVisible 变化：弹窗显示时自动聚焦当前记录类型的主输入框。
+    /// 通过重写 OnPropertyChanged 捕获 IsVisibleProperty 从 false→true 的变更，
+    /// 延迟 200ms 后聚焦目标输入框，确保表单切换 IsVisible 后的布局已刷新。
+    /// </summary>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == IsVisibleProperty && change.NewValue is true)
+        {
+            DispatcherTimer.RunOnce(TryFocusPrimaryTextBox, TimeSpan.FromMilliseconds(200));
+        }
+    }
+
+    /// <summary>
+    /// 自动聚焦当前记录类型的主输入框：弹窗打开后延迟触发，确保控件已完全布局。
+    /// 延迟 200ms 是为了等待表单切换 IsVisible 后的布局刷新（综合表单比单输入框场景更复杂）。
+    /// 
+    /// 焦点选择策略（按记录类型）：
+    /// - feed: 母乳→左侧时长；瓶喂/吸出→奶量
+    /// - diaper: 备注
+    /// - sleep: 无主输入框（用 TimePicker），不聚焦
+    /// - temperature: 体温
+    /// - growth: 身高
+    /// - supplement: 剂量
+    /// - pump: 左侧时长
+    /// - complementary: 食量
+    /// - abnormal: 体温
+    /// - activity: 活动名称
+    /// - vaccine: 无主输入框（按钮操作为主），不聚焦
+    /// </summary>
+    private void TryFocusPrimaryTextBox()
+    {
+        if (!IsVisible) return;
+        if (DataContext is not RecordSheetViewModel vm) return;
+
+        TextBox? target = ResolvePrimaryTextBox(vm.ActiveType, vm);
+        if (target is null) return;
+
+        // 目标 TextBox 可能在条件 StackPanel 内（IsVisible 绑定），需等待其可见
+        if (!target.IsVisible)
+        {
+            // 二次延迟：等待条件容器可见后再聚焦
+            DispatcherTimer.RunOnce(() =>
+            {
+                if (IsVisible && target.IsVisible)
+                {
+                    target.Focus(NavigationMethod.Unspecified, KeyModifiers.None);
+                    DevLogger.Log("SheetView", $"AutoFocus (deferred): type={vm.ActiveType}");
+                }
+            }, TimeSpan.FromMilliseconds(150));
+            return;
+        }
+
+        try
+        {
+            target.Focus(NavigationMethod.Unspecified, KeyModifiers.None);
+            DevLogger.Log("SheetView", $"AutoFocus: type={vm.ActiveType}");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("SheetView", $"AutoFocus failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>根据当前记录类型解析主输入框。</summary>
+    private TextBox? ResolvePrimaryTextBox(string activeType, RecordSheetViewModel vm)
+    {
+        return activeType switch
+        {
+            RecordType.Feed => vm.FeedForm.FeedType == FeedType.Breast
+                ? FeedLeftDurationTextBox
+                : FeedAmountTextBox,
+            RecordType.Diaper => DiaperNoteTextBox,
+            RecordType.Temperature => TemperatureTextBox,
+            RecordType.Growth => GrowthHeightTextBox,
+            RecordType.Supplement => SupplementDoseTextBox,
+            RecordType.Pump => PumpLeftDurationTextBox,
+            RecordType.Complementary => ComplementaryAmountTextBox,
+            RecordType.Abnormal => AbnormalTemperatureTextBox,
+            RecordType.Activity => ActivityNameTextBox,
+            // sleep / vaccine / milestone 等：无主输入框，不自动聚焦
+            _ => null,
+        };
     }
 
     /// <summary>向上查找 MainShellView 并获取其 TabBar 高度</summary>

@@ -1,108 +1,95 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl x:Class="ChildNotes.Views.QuickMenuView"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
-             xmlns:v="using:ChildNotes.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
-             x:Class="ChildNotes.Views.QuickMenuView"
+             d:DesignHeight="180"
+             d:DesignWidth="390"
              x:DataType="vm:QuickMenuViewModel"
-             Background="{x:Null}">
+             Background="{StaticResource WeuiBg2Brush}"
+             mc:Ignorable="d">
 
     <UserControl.Styles>
-        <!-- PopupBox 菜单项：横向排列「圆形图标 + 文字标签」 -->
-        <Style Selector="Button.popup-item">
-            <Setter Property="Background" Value="White"/>
+        <!-- 功能面板项：圆形图标 + 文字标签，对齐微信风格 -->
+        <Style Selector="Button.action-item">
+            <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Border.action-icon">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
             <Setter Property="CornerRadius" Value="24"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="Background" Value="#F0F0F0"/>
         </Style>
-        <Style Selector="Button.popup-item Border.popup-icon">
-            <Setter Property="Width" Value="36"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="CornerRadius" Value="18"/>
-        </Style>
-        <Style Selector="Button.popup-item TextBlock.popup-emoji">
-            <Setter Property="FontSize" Value="18"/>
+        <Style Selector="TextBlock.action-emoji">
+            <Setter Property="FontSize" Value="24"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
-        <Style Selector="Button.popup-item TextBlock.popup-label">
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="#1A1A1A"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="Margin" Value="10,0,4,0"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+        <Style Selector="TextBlock.action-label">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
-
-        <!-- 悬浮 + 按钮（Border 承载阴影 + 透明 Button） -->
-        <Style Selector="Border.fab-main">
-            <Setter Property="Width" Value="56"/>
-            <Setter Property="Height" Value="56"/>
-            <Setter Property="CornerRadius" Value="28"/>
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="BoxShadow" Value="0 4 12 0 #4D07C160"/>
+        <!-- PipsPager 指示器样式：小圆点紧凑居中 -->
+        <Style Selector="PipsPager.pager">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,4,0,6"/>
+            <Setter Property="Orientation" Value="Horizontal"/>
         </Style>
     </UserControl.Styles>
 
-    <Panel>
-        <!-- 遮罩层：仅在菜单或卡片打开时拦截事件 -->
-        <Border Classes="modal-mask"
-                IsVisible="{Binding IsMenuOpen}"
-                PointerPressed="OnMaskPressed"/>
-
-        <!-- PopupBox 菜单：从 + 按钮正上方垂直堆叠弹出，右对齐与 + 按钮对齐 -->
-        <StackPanel IsVisible="{Binding IsMenuOpen}"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Margin="0,0,16,140">
-            <ItemsControl ItemsSource="{Binding Actions}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:QuickActionItem">
-                        <Button Classes="popup-item"
-                                Command="{Binding $parent[ItemsControl].((vm:QuickMenuViewModel)DataContext).SelectCommand}"
-                                CommandParameter="{Binding Type}">
-                            <StackPanel Orientation="Horizontal">
-                                <Border Classes="popup-icon" Background="{Binding IconBg}">
-                                    <TextBlock Classes="popup-emoji" Text="{Binding Icon}"/>
-                                </Border>
-                                <TextBlock Classes="popup-label" Text="{Binding Label}"/>
-                            </StackPanel>
-                        </Button>
+    <!-- 功能面板：Carousel 翻页 + PipsPager 页码指示器。
+         8 项时 1 页（PipsPager 自动隐藏），>8 项时自动分页。
+         无遮罩层，面板直接可交互。 -->
+    <Border Padding="16,12" Background="{StaticResource WeuiBg2Brush}"
+            BorderBrush="#E8E8E8" BorderThickness="0,1,0,0"
+            IsVisible="{Binding IsMenuOpen}">
+        <StackPanel Spacing="0">
+            <!-- Carousel：每页一个 UniformGrid 4×2，支持左右滑动 -->
+            <Carousel ItemsSource="{Binding Pages}"
+                      SelectedIndex="{Binding CurrentPage, Mode=TwoWay}"
+                      HorizontalAlignment="Stretch"
+                      IsTabStop="False">
+                <Carousel.ItemTemplate>
+                    <!-- Carousel 每个 Item 是 List<QuickActionItem>（一页数据），
+                         用 ItemsControl 嵌套渲染单页内的 8 个功能按钮。 -->
+                    <DataTemplate>
+                        <ItemsControl ItemsSource="{Binding}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="4" Rows="2"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:QuickActionItem">
+                                    <Button Classes="action-item"
+                                            Command="{Binding $parent[UserControl].((vm:QuickMenuViewModel)DataContext).SelectCommand}"
+                                            CommandParameter="{Binding Type}">
+                                        <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                            <Border Classes="action-icon" Background="{Binding IconBg}">
+                                                <TextBlock Classes="action-emoji" Text="{Binding Icon}"/>
+                                            </Border>
+                                            <TextBlock Classes="action-label" Text="{Binding Label}"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </Carousel.ItemTemplate>
+            </Carousel>
+
+            <!-- PipsPager 页码指示器（>1 页时显示） -->
+            <PipsPager Classes="pager"
+                       NumberOfPages="{Binding PageCount}"
+                       SelectedPageIndex="{Binding CurrentPage, Mode=TwoWay}"
+                       IsVisible="{Binding HasMultiplePages}"/>
         </StackPanel>
-
-        <!-- 居中卡片表单（已移除）：原 QuickRecordCardView 已合并到 RecordSheetView 底部抽屉，
-             由 MainShellViewModel.OpenQuickRecord 统一打开，避免双份表单 XAML 维护。 -->
-
-        <!-- 悬浮 + 按钮（仅首页可见，最顶层）：用 Border 承载阴影，Button 透明覆盖。
-             FAB 显隐通过 Opacity 平滑过渡（200ms 淡入/淡出），IsHitTestVisible 同步切换防误触。
-             不用 IsVisible=false 是因为它会立即 collapse 控件，无法看到过渡动画。 -->
-        <Border Classes="fab-main"
-                Opacity="{Binding IsFabVisible, Converter={x:Static v:QuickMenuView.FabOpacityConverter}}"
-                IsHitTestVisible="{Binding IsFabVisible}"
-                HorizontalAlignment="Right"
-                VerticalAlignment="Bottom"
-                Margin="0,0,16,72">
-            <Border.Transitions>
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
-                </Transitions>
-            </Border.Transitions>
-            <Button Background="Transparent" BorderThickness="0" Padding="0"
-                    CornerRadius="28"
-                    Command="{Binding ToggleMenuCommand}"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    VerticalContentAlignment="Center">
-                <TextBlock Text="{Binding IsMenuOpen, Converter={x:Static v:QuickMenuView.FabIconConverter}}"
-                           FontSize="30" Foreground="White" FontWeight="Bold"/>
-            </Button>
-        </Border>
-    </Panel>
+    </Border>
 </UserControl>

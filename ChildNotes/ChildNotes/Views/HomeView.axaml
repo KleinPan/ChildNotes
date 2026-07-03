@@ -71,8 +71,16 @@
                 <StackPanel Spacing="12">
                     <!-- 原版 bs-top: 头像 + 名称/月龄 + 统计/签到按钮 -->
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <Border Grid.Column="0" Width="52" Height="52" CornerRadius="26" Background="{StaticResource AvatarGradientBrush}" Margin="0,0,12,0">
-                            <TextBlock Text="{Binding BabyAvatar}" FontSize="24" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Column="0" Width="52" Height="52" CornerRadius="26" Background="{StaticResource AvatarGradientBrush}" Margin="0,0,12,0" ClipToBounds="True">
+                            <Panel>
+                                <!-- 有头像时显示图片 -->
+                                <Image Source="{Binding BabyAvatar, Converter={x:Static v:AppConverters.AvatarPathToBitmap}}"
+                                       Stretch="UniformToFill"/>
+                                <!-- 无头像时显示 👶 占位 -->
+                                <TextBlock Text="👶" FontSize="24" Foreground="White"
+                                           IsVisible="{Binding BabyAvatar, Converter={x:Static StringConverters.IsNullOrEmpty}}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Panel>
                         </Border>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                             <TextBlock Text="{Binding BabyName}" FontSize="19" FontWeight="Bold" Foreground="#1A1A1A"/>
@@ -169,11 +177,13 @@
 
             <Border Classes="ai-status-card">
                 <StackPanel Spacing="8">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <PathIcon Data="{StaticResource icon-sun}" Foreground="#FFC300" Width="24" Height="24"/>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <!-- 对齐小程序 good-status 组件：用 emoji（gs-emoji 64rpx≈32px）替代硬编码 PathIcon，
+                             绑定 AiStatusIcon 让卡片随状态切换图标（☀️/🌡️/⚠️/😊/📝）。 -->
+                        <TextBlock Text="{Binding AiStatusIcon}" FontSize="32" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding AiStatusTitle}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding AiStatusSubtitle}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" Margin="32,0,0,0"/>
+                    <TextBlock Text="{Binding AiStatusSubtitle}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" Margin="42,0,0,0"/>
                     <TextBlock Text="—— 宝宝的变化 ~" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                     <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
                         <PathIcon Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource WeuiYellowBrush}" Width="14" Height="14"/>

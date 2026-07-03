@@ -1,28 +1,26 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
-using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 
-namespace ChildNotes.ViewModels;
+namespace ChildNotes.Services;
 
 /// <summary>
-/// AI 智能记 ViewModel：模态窗口，接收自然语言文本，
-/// 调用后端解析服务（失败时降级到本地 LlmClient，再失败降级到规则解析），
-/// 将解析结果按现有数据分类标准存储到本地数据库。
+/// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的三级降级解析逻辑。
+/// 抽取自原 AiNote 模态的解析逻辑，供首页快捷输入框共用。
+/// 三级降级顺序（按 AiSettings.NoteSource 配置）：
+/// - local（默认）：本地 LLM → 后端接口 → 规则降级
+/// - server：后端接口 → 本地 LLM → 规则降级
 /// </summary>
-public partial class AiNoteViewModel : ViewModelBase, IActivatable
+public sealed class AiNoteParseService
 {
     private readonly AiParseApiClient _apiClient = ServiceProvider.Instance.AiParseApiClient;
     private readonly AiAnalysisService _aiService = ServiceProvider.Instance.AiAnalysisService;
     private readonly LlmClient _llmClient = ServiceProvider.Instance.LlmClient;
-    private readonly RecordService _recordService = ServiceProvider.Instance.RecordService;
-    private readonly AppState _state = ServiceProvider.Instance.AppState;
 
-    private const string LocalSystemPrompt = """
+    /// <summary>本地 LLM 系统提示词：规定输出 JSON 字段。</summary>
+    internal const string LocalSystemPrompt = """
 你是育儿记录解析助手。请将用户输入解析为一条结构化育儿记录，并仅输出 JSON。
 
 支持的 recordType: feed / diaper / sleep / temperature / growth / supplement / pump / complementary / abnormal / activity
@@ -38,113 +36,11 @@ note, summary(<=30字一句话), confidence(0~1)。
 只输出 JSON，不要任何额外文字或 Markdown 代码块。缺失字段用 null。
 """;
 
-    [ObservableProperty] private string _inputText = string.Empty;
-    [ObservableProperty] private string _placeholder = "请输入事件记录（例如：几点几分吃了多少ml奶粉）";
-    [ObservableProperty] private bool _isParsing;
-    [ObservableProperty] private string _parseButtonText = "保存";
-    [ObservableProperty] private string _resultSummary = string.Empty;
-    [ObservableProperty] private bool _showResult;
-    [ObservableProperty] private string _resultRecordType = string.Empty;
-
-    /// <summary>解析并保存成功后通知主壳层刷新首页。</summary>
-    public event Action? Saved;
-
-    /// <summary>沿用历史 2500ms 显示时长。</summary>
-    protected override int ToastDurationMs => 2500;
-
-    public void Activate()
-    {
-        Title = "Ai 记";
-        InputText = string.Empty;
-        ShowResult = false;
-        ResultSummary = string.Empty;
-        ErrorMessage = string.Empty;
-    }
-
-    [RelayCommand]
-    private void Cancel()
-    {
-        InputText = string.Empty;
-        ShowResult = false;
-        ErrorMessage = string.Empty;
-        RaiseBackRequested();
-    }
-
-    [RelayCommand]
-    private async Task Save()
-    {
-        if (IsParsing) return;
-
-        // 基础验证：非空检查
-        var text = (InputText ?? string.Empty).Trim();
-        if (string.IsNullOrEmpty(text))
-        {
-            ErrorMessage = "请输入事件记录内容";
-            return;
-        }
-        if (text.Length > 500)
-        {
-            ErrorMessage = "记录内容过长（最多 500 字）";
-            return;
-        }
-
-        IsParsing = true;
-        ParseButtonText = "解析中...";
-        ErrorMessage = string.Empty;
-        ShowResult = false;
-
-        try
-        {
-            var result = await ParseWithFallbackAsync(text);
-            if (result is null)
-            {
-                ErrorMessage = "解析失败，请稍后重试或换种表述";
-                return;
-            }
-
-            // 后端已保存则直接刷新；否则本地保存
-            if (!result.Saved)
-            {
-                SaveLocally(result, text);
-            }
-
-            ShowResult = true;
-            ResultSummary = result.Summary ?? "已记录";
-            ResultRecordType = result.RecordType;
-            DisplayToast("保存成功：" + ResultSummary);
-            Saved?.Invoke();
-
-            // 关闭模态窗口：延迟 800ms 后续操作必须切回 UI 线程，
-            // 否则在 ThreadPool 上修改 ObservableProperty 会触发跨线程绑定异常
-            _ = Task.Delay(800).ContinueWith(_ =>
-                {
-                    InputText = string.Empty;
-                    ShowResult = false;
-                    RaiseBackRequested();
-                },
-                CancellationToken.None,
-                TaskContinuationOptions.None,
-                TaskScheduler.FromCurrentSynchronizationContext());
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = "保存失败：" + ex.Message;
-            DisplayToast("保存失败");
-        }
-        finally
-        {
-            IsParsing = false;
-            ParseButtonText = "保存";
-        }
-    }
-
     /// <summary>
-    /// 根据 AiSettingsViewModel 配置的 NoteSource 选择解析路径：
-    /// - local（默认）：用户自行配置的本地 LLM；失败降级到规则解析。
-    /// - server：后端解析接口；失败降级到本地 LLM，再降级到规则解析。
-    /// 当本地 LLM 未配置或未启用时，自动跳过并使用规则降级。
+    /// 根据 NoteSource 配置选择解析路径并执行三级降级。
+    /// 返回结果中 Saved 字段表示后端是否已落库；为 false 时调用方需自行保存。
     /// </summary>
-    private async Task<AiNoteParseResult?> ParseWithFallbackAsync(string text)
+    public async Task<AiNoteParseResult?> ParseAsync(string text)
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
@@ -188,8 +84,7 @@ note, summary(<=30字一句话), confidence(0~1)。
             return null;
         try
         {
-            var remote = await _apiClient.ParseAsync(text);
-            return remote;
+            return await _apiClient.ParseAsync(text);
         }
         catch (Exception ex)
         {
@@ -245,7 +140,7 @@ note, summary(<=30字一句话), confidence(0~1)。
     }
 
     /// <summary>本地规则降级解析：覆盖最常见的育儿记录表述。</summary>
-    internal static AiNoteParseResult LocalRuleParse(string text)
+    public static AiNoteParseResult LocalRuleParse(string text)
     {
         // 喂奶：奶量
         var m = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL)");
@@ -387,7 +282,7 @@ note, summary(<=30字一句话), confidence(0~1)。
     }
 
     /// <summary>将解析结果按现有数据分类标准存储到本地数据库。</summary>
-    private void SaveLocally(AiNoteParseResult r, string originalText)
+    public static void SaveLocally(AiNoteParseResult r, string originalText, RecordService recordService)
     {
         var time = string.IsNullOrEmpty(r.Time) ? DateTime.Now.ToString("O") : NormalizeTime(r.Time);
         switch (r.RecordType)
@@ -395,7 +290,7 @@ note, summary(<=30字一句话), confidence(0~1)。
             case RecordType.Feed:
                 if (r.RecordSubType == "breast")
                 {
-                    _recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
+                    recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
                         Type = "breast",
                         Time = time,
@@ -407,7 +302,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 }
                 else
                 {
-                    _recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
+                    recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
                         Type = string.IsNullOrEmpty(r.RecordSubType) ? "bottle" : r.RecordSubType,
                         Time = time,
@@ -416,21 +311,21 @@ note, summary(<=30字一句话), confidence(0~1)。
                 }
                 break;
             case RecordType.Diaper:
-                _recordService.AddDiaper(new ChildNotes.Shared.Dtos.DiaperRecordDto
+                recordService.AddDiaper(new ChildNotes.Shared.Dtos.DiaperRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.DiaperType) ? (r.RecordSubType ?? "dry") : r.DiaperType,
                     Time = time,
                 });
                 break;
             case RecordType.Sleep:
-                _recordService.AddSleep(new ChildNotes.Shared.Dtos.SleepRecordDto
+                recordService.AddSleep(new ChildNotes.Shared.Dtos.SleepRecordDto
                 {
                     Time = time,
                     Duration = r.Duration,
                 });
                 break;
             case RecordType.Temperature:
-                _recordService.AddTemperature(new ChildNotes.Shared.Dtos.TemperatureRecordDto
+                recordService.AddTemperature(new ChildNotes.Shared.Dtos.TemperatureRecordDto
                 {
                     Temperature = r.Temperature ?? 0,
                     IsAbnormal = (r.Temperature ?? 0) >= 37.3m,
@@ -439,7 +334,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Growth:
-                _recordService.AddGrowth(new ChildNotes.Shared.Dtos.GrowthRecordDto
+                recordService.AddGrowth(new ChildNotes.Shared.Dtos.GrowthRecordDto
                 {
                     Height = r.Height,
                     Weight = r.Weight,
@@ -447,7 +342,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Supplement:
-                _recordService.AddSupplement(new ChildNotes.Shared.Dtos.SupplementRecordDto
+                recordService.AddSupplement(new ChildNotes.Shared.Dtos.SupplementRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.RecordSubType) ? "medicine" : r.RecordSubType,
                     Name = r.Note ?? "AI 识别",
@@ -455,7 +350,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Pump:
-                _recordService.AddPump(new ChildNotes.Shared.Dtos.PumpRecordDto
+                recordService.AddPump(new ChildNotes.Shared.Dtos.PumpRecordDto
                 {
                     TotalAmount = r.Amount,
                     LeftDuration = r.LeftDuration,
@@ -465,14 +360,14 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Complementary:
-                _recordService.AddComplementary(new ChildNotes.Shared.Dtos.ComplementaryRecordDto
+                recordService.AddComplementary(new ChildNotes.Shared.Dtos.ComplementaryRecordDto
                 {
                     FoodName = r.Note,
                     Time = time,
                 });
                 break;
             case RecordType.Abnormal:
-                _recordService.AddAbnormal(new ChildNotes.Shared.Dtos.AbnormalRecordDto
+                recordService.AddAbnormal(new ChildNotes.Shared.Dtos.AbnormalRecordDto
                 {
                     Temperature = r.Temperature,
                     Note = r.Note,
@@ -480,7 +375,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 });
                 break;
             case RecordType.Activity:
-                _recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
+                recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
                 {
                     Name = r.Note ?? originalText,
                     Category = r.RecordSubType,
@@ -490,7 +385,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 break;
             default:
                 // 未知类型作为 activity 兜底，原文保留在 Name
-                _recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
+                recordService.AddActivity(new ChildNotes.Shared.Dtos.ActivityRecordDto
                 {
                     Name = originalText,
                     Time = time,

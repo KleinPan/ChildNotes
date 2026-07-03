@@ -1,4 +1,5 @@
 using Avalonia.Data.Converters;
+using Avalonia.Media.Imaging;
 using ChildNotes.Shared.Constants;
 using System.Globalization;
 
@@ -98,6 +99,38 @@ public static class AppConverters
     public static readonly IValueConverter TestResultTitleConverter = new BoolToTextConverter("✅ 连接成功", "❌ 连接失败");
     public static readonly IValueConverter TestResultBackgroundConverter = new BoolToBrushConverter("#E8F9EF", "#FFF0F0");
     public static readonly IValueConverter TestResultForegroundConverter = new BoolToBrushConverter("#06AD56", "#E64340");
+
+    // ===== 头像路径 → Bitmap =====
+    // Baby.Avatar 存储本地文件路径，UI 的 Image.Source 需要 IBitmap。
+    // 文件不存在或路径为空时返回 null，配合 XAML 中 IsVisible 控制 Image 显隐。
+    public static readonly IValueConverter AvatarPathToBitmap = new AvatarPathToBitmapConverter();
+}
+
+/// <summary>
+/// 本地头像文件路径 → Bitmap 转换器。
+/// 文件不存在或读取失败时返回 null（配合 IsVisible 隐藏 Image，露出占位 emoji）。
+/// </summary>
+internal sealed class AvatarPathToBitmapConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not string path || string.IsNullOrWhiteSpace(path))
+            return null;
+        if (!System.IO.File.Exists(path))
+            return null;
+        try
+        {
+            using var fs = System.IO.File.OpenRead(path);
+            return Bitmap.DecodeToWidth(fs, 160);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
 }
 
 /// <summary>布尔值到文本的转换器。</summary>

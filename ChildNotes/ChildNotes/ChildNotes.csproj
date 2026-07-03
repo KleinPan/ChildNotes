@@ -22,6 +22,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Semi.Avalonia" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <!-- Serilog：Release 日志系统（Debug 构建也包含，便于在 Debug 环境验证 ReleaseLogger 行为） -->
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Sinks.Async" />
   </ItemGroup>
 
   <ItemGroup>
