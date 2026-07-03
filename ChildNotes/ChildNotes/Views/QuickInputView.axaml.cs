@@ -134,11 +134,6 @@ public partial class QuickInputView : UserControl
     private void ApplyKeyboardOffset(string reason)
     {
         if (!OperatingSystem.IsAndroid()) return;
-        if (QuickInputRoot is null)
-        {
-            DevLogger.Log("QuickInput", $"ApplyOffset SKIP | QuickInputRoot is null | {reason}");
-            return;
-        }
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
         double offset;
@@ -168,18 +163,20 @@ public partial class QuickInputView : UserControl
             return;
         }
 
-        // 纯视觉偏移，不影响布局
-        QuickInputRoot.RenderTransform = new TranslateTransform(0, -offset);
+        // ★ 关键修复：给 UserControl 本身设 RenderTransform，而不是内部的 QuickInputRoot。
+        //   QuickInputView 被放在 MainShellView 的 ContentControl(Grid.Row=1) 里，
+        //   给内部 Border 设 RenderTransform 时，UserControl 的布局位置不变，视觉上不会上移。
+        //   必须给 UserControl 自身设 RenderTransform，才能让整个控件视觉上移。
+        RenderTransform = new TranslateTransform(0, -offset);
         _lastKbOffset = offset;
 
         DevLogger.Log("QuickInput",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | rootH={QuickInputRoot.Bounds.Height:F1}lp");
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | rootH={Bounds.Height:F1}lp");
     }
 
     private void ClearKeyboardOffset(string reason)
     {
-        if (QuickInputRoot is null) return;
-        QuickInputRoot.RenderTransform = null;
+        RenderTransform = null;
         _lastKbOffset = 0;
         DevLogger.Log("QuickInput", $"ClearOffset | {reason}");
     }
