@@ -107,23 +107,27 @@ public partial class MainShellView : UserControl
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
-        if (MainContentArea is null) return;
+        if (RootGrid is null) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
         // 扣除 TabBar 高度：键盘弹出时 TabBar 被覆盖，输入栏只需推到键盘上方
         var offset = Math.Max(0, kbHeight - _tabBarHeight);
 
-        MainContentArea.Margin = new Thickness(0, 0, 0, offset);
+        // ★ 给 Grid 本身设底部 Margin：将整个 Grid 向上偏移，
+        //   所有子元素（Row=0/1/2/3）都会被整体推上去。
+        //   注意：不能用子元素 ContentControl.Margin（只在行内部加边距，不影响其他行），
+        //   必须操作容器本身才能触发整体重排。
+        RootGrid.Margin = new Thickness(0, 0, 0, offset);
         _lastKbOffset = offset;
 
         DevLogger.Log("Shell",
-            $"ApplyOffset | {reason} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | gridH={RootGrid?.Bounds.Height:F1}lp");
+            $"ApplyOffset | {reason} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | gridH={RootGrid.Bounds.Height:F1}lp");
     }
 
     private void ClearKeyboardOffset(string reason)
     {
-        if (MainContentArea is null) return;
-        MainContentArea.Margin = new Thickness(0);
+        if (RootGrid is null) return;
+        RootGrid.Margin = new Thickness(0);
         _lastKbOffset = 0;
         DevLogger.Log("Shell", $"ClearOffset | {reason}");
     }
