@@ -6,9 +6,13 @@ using Avalonia.Threading;
 namespace ChildNotes.Infrastructure;
 
 /// <summary>
-/// 开发阶段统一日志服务。所有日志写入环形缓冲区并显示在 DevLogOverlay 浮层上，
-/// 便于在 Android 真机无 adb 时直接在应用内排查问题。
-/// Release 构建中通过 [Conditional("DEBUG")] 自动裁剪所有调用点，零运行时开销。
+/// 统一日志服务。所有日志同时写入：
+/// 1. 内部环形缓冲区（供 DevLogOverlay 浮层显示，仅 Debug 且开关打开时）
+/// 2. ReleaseLogger 文件日志（按天滚动，异步写入，自动脱敏）
+///
+/// 注意：曾用 [Conditional("DEBUG")] 在 Release 裁剪调用点，但导致 Release 构建无法
+/// 通过日志排查问题（如键盘上推不生效）。现已移除条件编译，所有调用点在 Release 也执行。
+/// 日志量可控：ReleaseLogger 内置速率限制 + 文件大小滚动，不会无限增长。
 /// </summary>
 public static class DevLogger
 {
@@ -35,26 +39,30 @@ public static class DevLogger
         : "???";
 
     /// <summary>
-    /// 写入一条日志。[Conditional("DEBUG")] 保证 Release 构建中所有调用点被编译器自动消除，
-    /// 零运行时开销。符合项目规则「严禁在 Android Release 路径上保留未受控调试逻辑」。
+    /// 写入一条日志。同时输出到 Debug、环形缓冲区（DevLogOverlay）、ReleaseLogger 文件。
+    /// 不再使用 [Conditional("DEBUG")]，确保 Release 构建也能通过文件日志排查问题。
     /// </summary>
-    [Conditional("DEBUG")]
     public static void Log(string tag, string message)
     {
-        // 日志开头加平台标识，便于在跨平台日志中区分来源
-        var entry = new LogEntry { Time = DateTime.Now, Tag = $"{PlatformTag}/{tag}", Message = message };
-        // 始终先输出到 Debug，确保即使 UI 线程出问题也能在 logcat 看到
+        var fullTag = $"{PlatformTag}/{tag}";
+        var entry = new LogEntry { Time = DateTime.Now, Tag = fullTag, Message = message };
+
+        // 1. 始终输出到 Debug（logcat/调试器输出）
         Debug.WriteLine(entry.Full);
 
-        // 确保 ObservableCollection 在 UI 线程修改，否则安卓会崩
+        // 2. 写入文件日志（异步、脱敏、按天滚动）
+        //    ReleaseLogger 已初始化时生效，未初始化则跳过（不抛异常）
+        ReleaseLogger.Info(fullTag, message);
+
+        // 3. 写入环形缓冲区（供 DevLogOverlay 显示）
+        //    确保 ObservableCollection 在 UI 线程修改，否则安卓会崩
         if (Dispatcher.UIThread.CheckAccess())
             AddEntry(entry);
         else
             Dispatcher.UIThread.Post(() => AddEntry(entry));
     }
 
-    /// <summary>记录异常（含完整堆栈与 InnerException 链）。同样受 [Conditional("DEBUG")] 裁剪。</summary>
-    [Conditional("DEBUG")]
+    /// <summary>记录异常（含完整堆栈与 InnerException 链）。</summary>
     public static void Log(string tag, Exception ex)
     {
         var sb = new StringBuilder();
@@ -69,7 +77,6 @@ public static class DevLogger
         Log(tag, sb.ToString());
     }
 
-    [Conditional("DEBUG")]
     public static void Clear()
     {
         if (Dispatcher.UIThread.CheckAccess())
