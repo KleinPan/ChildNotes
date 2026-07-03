@@ -38,7 +38,13 @@ public partial class QuickInputView : UserControl
     {
         base.OnAttachedToVisualTree(e);
         KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
-        UpdateTabBarHeight();
+        // 延迟获取 TabBar 高度：Attached 时 TabBar 可能尚未完成布局，Bounds.Height 可能为 0
+        DispatcherTimer.RunOnce(() =>
+        {
+            UpdateTabBarHeight();
+            DevLogger.Log("QuickInput",
+                $"Attached | kbH={KeyboardHeightProvider.CurrentHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | rootH={QuickInputRoot?.Bounds.Height ?? -1:F1}lp");
+        }, TimeSpan.FromMilliseconds(300));
     }
 
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
@@ -72,6 +78,9 @@ public partial class QuickInputView : UserControl
     {
         if (!OperatingSystem.IsAndroid()) return;
 
+        DevLogger.Log("QuickInput",
+            $"KbEvent | height={keyboardHeightLp:F1}lp | focused={_textBoxFocused} | offset={_lastKbOffset:F1}lp");
+
         // 键盘收回：立即清除偏移
         if (keyboardHeightLp <= 0 && _lastKbOffset > 0)
         {
@@ -90,18 +99,19 @@ public partial class QuickInputView : UserControl
         if (e.Source is TextBox)
         {
             _textBoxFocused = true;
-            // ★ 不在 GotFocus 时立即上推：此时 KeyboardHeightProvider.CurrentHeight 通常还是 0，
-            //   走 fallback 会用屏幕高度 45% 作为偏移（~360lp），与实际键盘高度（~270lp）差距大，
-            //   导致视觉抖动：先推 360 再被原生回调覆盖到 270。
-            //   原生键盘回调通常在 GotFocus 后 50~150ms 到达，由 OnKeyboardHeightChanged 处理即可。
-            //   仅当回调迟迟未到（>250ms）才用 fallback 兜底，避免极少数设备无回调时输入栏不上推。
+            DevLogger.Log("QuickInput", $"GotFocus | kbH={KeyboardHeightProvider.CurrentHeight:F1}lp | offset={_lastKbOffset:F1}lp");
+
+            // ★ 立即尝试上推一次（此时 kbH 可能已 > 0，若键盘是切换焦点触发的）
+            ApplyKeyboardOffset("TextBox focused");
+
+            // 延迟兜底：原生回调通常 50~150ms 到达，若 200ms 后仍无上推，用 fallback 兜底
             DispatcherTimer.RunOnce(() =>
             {
                 if (_textBoxFocused && _lastKbOffset == 0)
                 {
-                    ApplyKeyboardOffset("TextBox focused (fallback after 250ms)");
+                    ApplyKeyboardOffset("TextBox focused (fallback after 200ms)");
                 }
-            }, TimeSpan.FromMilliseconds(250));
+            }, TimeSpan.FromMilliseconds(200));
         }
     }
 
@@ -123,8 +133,12 @@ public partial class QuickInputView : UserControl
 
     private void ApplyKeyboardOffset(string reason)
     {
-        if (QuickInputRoot is null) return;
         if (!OperatingSystem.IsAndroid()) return;
+        if (QuickInputRoot is null)
+        {
+            DevLogger.Log("QuickInput", $"ApplyOffset SKIP | QuickInputRoot is null | {reason}");
+            return;
+        }
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
         double offset;
@@ -159,7 +173,7 @@ public partial class QuickInputView : UserControl
         _lastKbOffset = offset;
 
         DevLogger.Log("QuickInput",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp");
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | rootH={QuickInputRoot.Bounds.Height:F1}lp");
     }
 
     private void ClearKeyboardOffset(string reason)
