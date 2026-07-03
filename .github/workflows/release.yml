@@ -132,13 +132,20 @@ jobs:
       #   ANDROID_KEY_ALIAS        - 签名 key 别名
       #   ANDROID_KEY_PASS         - key 密码
       # 未配置 Secrets 时跳过签名，回退到默认 debug 签名（无法覆盖安装）
+      #
+      # ★ 注意：GitHub Actions 的 `if` 条件无法直接读 secrets（secrets 不在 if 上下文里），
+      #   所以 Decode 步骤总是执行，在 step 内部用 bash 判断 base64 是否为空。
       # ===============================================================
       - name: Decode Android signing keystore
-        if: matrix.target == 'android' && env.ANDROID_KEYSTORE_BASE64 != ''
+        if: matrix.target == 'android'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         shell: bash
         run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::warning::ANDROID_KEYSTORE_BASE64 Secret 未配置，跳过解码，将使用默认 debug 签名"
+            exit 0
+          fi
           echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > $HOME/childnotes.keystore
           echo "Keystore decoded to $HOME/childnotes.keystore"
           ls -la $HOME/childnotes.keystore
