@@ -2,7 +2,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:views="using:ChildNotes.Views"
-             xmlns:ctrl="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -109,8 +108,5 @@
                 </Button>
             </Grid>
         </Border>
-
-        <!-- 开发阶段日志浮层（最上层覆盖，跨 Row，可见性由开发者选项控制） -->
-        <ctrl:DevLogOverlay Grid.RowSpan="4" IsVisible="{Binding IsDevLogOverlayVisible}"/>
     </Grid>
 </UserControl>

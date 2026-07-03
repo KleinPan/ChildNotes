@@ -61,11 +61,6 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
 
-    /// <summary>
-    /// 日志悬浮层是否可见（从持久化设置读取，运行时可通过开发者选项实时切换）。
-    /// </summary>
-    [ObservableProperty] private bool _isDevLogOverlayVisible;
-
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
     public GrowthViewModel Growth { get; }
@@ -181,10 +176,6 @@ public partial class MainShellViewModel : ViewModelBase
         _family = new FamilyViewModel();
 
         _developerOptions = new DeveloperOptionsViewModel();
-        _developerOptions.DevLogOverlayVisibilityChanged += OnDevLogOverlayVisibilityChanged;
-
-        // 从持久化设置加载日志悬浮层初始状态
-        IsDevLogOverlayVisible = DeveloperPreferences.Load().ShowDevLogOverlay;
 
         // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
         RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
@@ -368,12 +359,6 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenDeveloperOptions()
     {
         IsDeveloperOptionsOpen = true;
-    }
-
-    /// <summary>响应开发者选项中日志悬浮层开关的切换。</summary>
-    private void OnDevLogOverlayVisibilityChanged(bool visible)
-    {
-        IsDevLogOverlayVisible = visible;
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：5 秒内多次保存只触发一次刷新链。</summary>

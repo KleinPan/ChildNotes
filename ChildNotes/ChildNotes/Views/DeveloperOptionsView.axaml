@@ -31,14 +31,6 @@
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="日志悬浮层" FontSize="15"/>
-                                <TextBlock Text="在界面右上角显示开发日志浮层，可查看实时日志输出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
-                            </StackPanel>
-                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowDevLogOverlay}"/>
-                        </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                            <StackPanel Grid.Column="0">
                                 <TextBlock Text="导出运行日志" FontSize="15"/>
                                 <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
@@ -57,8 +49,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
                         <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 日志悬浮层默认关闭，开启后立即生效，无需重启应用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 开关状态会自动保存，下次启动保持上次设置" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 日志会自动写入应用文件目录，可通过上方按钮导出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                         <TextBlock Text="• 导出的日志文件位于系统 Download 目录，可通过文件管理器查看" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>

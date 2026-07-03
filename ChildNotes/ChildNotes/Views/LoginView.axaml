@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
-             xmlns:ctrl="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -71,7 +70,6 @@
             </Grid>
         </ScrollViewer>
 
-        <!-- 开发阶段日志浮层（最上层覆盖） -->
-        <ctrl:DevLogOverlay/>
+        <!-- 开发阶段日志浮层已移除，日志改写入文件（ReleaseLogger），通过开发者选项导出 -->
     </Grid>
 </UserControl>
