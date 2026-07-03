@@ -22,6 +22,16 @@
     <SourceRevisionId></SourceRevisionId>
     <InformationalVersion>0.0.0</InformationalVersion>
     <ApplicationDisplayVersion>0.0.0</ApplicationDisplayVersion>
+
+    <!-- ★ 固定签名配置（解决 CI 每次构建签名不一致导致无法覆盖安装的问题）
+         本地 Debug 构建不生效（AndroidSigningKeyStore 为空时走默认 debug 签名）；
+         CI 通过 -p:AndroidSigningKeyStore=/path/to/keystore 等参数注入固定签名。 -->
+    <AndroidSigningKeyStore Condition="'$(AndroidSigningKeyStore)' != ''">$(AndroidSigningKeyStore)</AndroidSigningKeyStore>
+    <AndroidSigningStorePass Condition="'$(AndroidSigningStorePass)' != ''">$(AndroidSigningStorePass)</AndroidSigningStorePass>
+    <AndroidSigningKeyAlias Condition="'$(AndroidSigningKeyAlias)' != ''">$(AndroidSigningKeyAlias)</AndroidSigningKeyAlias>
+    <AndroidSigningKeyPass Condition="'$(AndroidSigningKeyPass)' != ''">$(AndroidSigningKeyPass)</AndroidSigningKeyPass>
+    <!-- 签名方案：v1 (JAR) + v2 (APK) 都启用，兼容 Android 7+ -->
+    <AndroidUseApkSigner>true</AndroidUseApkSigner>
   </PropertyGroup>
 
   <ItemGroup>

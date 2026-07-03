@@ -124,14 +124,51 @@ jobs:
         shell: bash
         run: dotnet workload install android
 
+      # ===============================================================
+      # Android 固定签名：从 GitHub Secrets 解码 keystore 到临时文件
+      # 依赖仓库 Secrets：
+      #   ANDROID_KEYSTORE_BASE64  - keystore 文件的 base64 编码
+      #   ANDROID_KEYSTORE_PASS    - keystore 密码
+      #   ANDROID_KEY_ALIAS        - 签名 key 别名
+      #   ANDROID_KEY_PASS         - key 密码
+      # 未配置 Secrets 时跳过签名，回退到默认 debug 签名（无法覆盖安装）
+      # ===============================================================
+      - name: Decode Android signing keystore
+        if: matrix.target == 'android' && env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > $HOME/childnotes.keystore
+          echo "Keystore decoded to $HOME/childnotes.keystore"
+          ls -la $HOME/childnotes.keystore
+
       - name: Build Android app
         if: matrix.target == 'android'
         shell: bash
         working-directory: ChildNotes
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
         run: |
-          # .NET 10 + Avalonia.Android，产出 APK（默认 debug 签名，可自行重签）
+          # .NET 10 + Avalonia.Android，产出 APK
           # 显式传入 ApplicationDisplayVersion 覆盖 csproj 默认值（0.0.0），
           # 确保 release 版本号与 git tag 一致
+          #
+          # 签名：若 Secrets 已配置（keystore 文件存在），通过 -p: 注入固定签名参数；
+          #       否则回退到默认 debug 签名（无法覆盖安装，仅用于测试构建）
+          SIGN_ARGS=""
+          if [ -f "$HOME/childnotes.keystore" ]; then
+            SIGN_ARGS="-p:AndroidSigningKeyStore=$HOME/childnotes.keystore \
+              -p:AndroidSigningStorePass=$ANDROID_KEYSTORE_PASS \
+              -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS \
+              -p:AndroidSigningKeyPass=$ANDROID_KEY_PASS"
+            echo "::notice::使用固定 keystore 签名"
+          else
+            echo "::warning::未配置 ANDROID_KEYSTORE_BASE64 Secret，使用默认 debug 签名（无法覆盖安装旧版本）"
+          fi
+
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
@@ -141,6 +178,7 @@ jobs:
             -p:Version=${{ steps.version.outputs.version }} \
             -p:InformationalVersion=${{ steps.version.outputs.version }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.version }} \
+            $SIGN_ARGS \
             -o ../artifacts/android
 
       - name: Collect Android APK
@@ -325,7 +363,7 @@ jobs:
             | 平台 | 文件 | 说明 |
             | ---- | ---- | ---- |
             | Windows 桌面 | `ChildNotes-windows-*.zip` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |
-            | Android | `ChildNotes-android-*.apk` | APK 安装包（debug 签名），生产环境请用正式签名重签 |
+            | Android | `ChildNotes-android-*.apk` | APK 安装包（固定 keystore 签名，可覆盖安装旧版本） |
             | 服务端 | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |
             | Docker 镜像 | `ghcr.io/${{ github.repository }}/api:*` | 推送至 GitHub Container Registry |
 
@@ -370,7 +408,9 @@ jobs:
             - 产物为**未签名**的 `.app` 包，需用开发者证书重签后通过 Xcode / AltStore / Sideloadly 安装。
 
             ### Android 部署说明
-            - APK 使用 debug 签名，生产环境请用正式签名重签后再发布。
+            - APK 使用固定 keystore 签名（由仓库 Secrets `ANDROID_KEYSTORE_BASE64` 等配置），
+              同一 keystore 签出的新版本可直接 `adb install -r` 覆盖旧版本，无需先卸载。
+            - 若 CI 未配置签名 Secrets，则回退到默认 debug 签名（每次构建签名不同，无法覆盖安装）。
             - 安装时需在设备上开启"允许安装未知来源应用"。
 
             ### 构建状态
