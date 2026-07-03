@@ -16,10 +16,16 @@
         Row=1: 首页底部输入栏（仅首页可见，含 [输入框][发送/+]）
         Row=2: 功能面板（点 + 后在输入栏下方展开的 4×2 图标网格）
         Row=3: TabBar（首页/喂养/成长/我的）
-    -->
-    <Grid RowDefinitions="*,Auto,Auto,Auto">
 
-        <ContentControl Grid.Row="0" Content="{Binding CurrentTab}" IsTabStop="False"/>
+        键盘上推策略（仅 Android）：
+          当软键盘弹出时，通过减小主内容区(Row=0)的有效高度，
+          让 Grid 自动将 Row=1(QuickInput) 上推到键盘上方。
+          这比在 QuickInputView 内部用 RenderTransform 更可靠，
+          因为 Grid 的原生布局系统能正确处理所有子元素的重排。
+    -->
+    <Grid x:Name="RootGrid" RowDefinitions="*,Auto,Auto,Auto">
+
+        <ContentControl x:Name="MainContentArea" Grid.Row="0" Content="{Binding CurrentTab}" IsTabStop="False"/>
 
         <ContentControl Grid.Row="0" Content="{Binding RecordSheet}" IsTabStop="False"
                         IsVisible="{Binding IsRecordSheetOpen}"/>
@@ -54,7 +60,7 @@
         <!-- 首页底部快捷输入栏：仅在首页显示 且 未打开底部抽屉。
              内含 [输入框][发送按钮(有内容时)] [+ 按钮(无内容时)]，互斥切换。
              抽屉打开时隐藏，避免与 RecordSheet 底部抽屉视觉重叠。 -->
-        <ContentControl Grid.Row="1" Content="{Binding QuickInput}" IsTabStop="False"
+        <ContentControl x:Name="QuickInputContainer" Grid.Row="1" Content="{Binding QuickInput}" IsTabStop="False"
                         IsVisible="{Binding IsQuickInputVisible}"/>
 
         <!-- 功能面板：输入栏下方的 4×2 图标网格（成长/辅食/.../喂奶），
@@ -72,7 +78,7 @@
             <TextBlock FontSize="13" Foreground="White" Text="{Binding QuickInput.ToastMessage}" />
         </Border>
 
-        <Border Grid.Row="3" Classes="tab-bar">
+        <Border x:Name="TabBarBorder" Grid.Row="3" Classes="tab-bar">
             <Grid ColumnDefinitions="*,*,*,*">
                 <Button Grid.Column="0" Classes="tab-item"
                         Classes.active="{Binding IsHomeSelected}"
