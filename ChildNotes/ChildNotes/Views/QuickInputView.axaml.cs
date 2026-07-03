@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -14,8 +13,11 @@ namespace ChildNotes.Views;
 /// 首页底部快捷输入栏 code-behind。
 /// 仅承载输入框焦点行为与软键盘上推（仅 Android）。
 /// 按需求"点击输入框才聚焦"，不主动调用 Focus()。
-/// 键盘弹出时把输入栏整体上推到键盘上方，逻辑对照 RecordSheetView 的成熟方案，
-/// 但不调整 MaxHeight（QuickInput 是固定高度输入栏，非底部抽屉）。
+/// 键盘弹出时把输入栏整体上推到键盘上方。
+///
+/// XAML 结构（与 RecordSheetView 一致）：
+///   UserControl → Panel（根，自由布局容器）→ QuickInputRoot（Border, VerticalAlignment=Bottom）
+/// RenderTransform 设在内部 QuickInputRoot 上，Panel 不约束子元素位置，变换能正常生效。
 /// </summary>
 public partial class QuickInputView : UserControl
 {
@@ -132,8 +134,17 @@ public partial class QuickInputView : UserControl
         }
     }
 
+    /// <summary>
+    /// 对内部 QuickInputRoot 设 RenderTransform（与 RecordSheetView.SheetRoot 同模式）。
+    ///
+    /// 为什么必须设在内部子元素而非 UserControl 自身：
+    ///   - UserControl 被嵌套在 ContentControl > Grid.Row=1 中
+    ///   - 对 UserControl 自身设 RenderTransform/Margin 在 Android Avalonia 中不正确传播
+    ///   - 内部子元素在 Panel 容器内，Panel 不裁剪不约束，TranslateTransform 能正常生效
+    /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
+        if (QuickInputRoot is null) return;
         if (!OperatingSystem.IsAndroid()) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
@@ -143,14 +154,12 @@ public partial class QuickInputView : UserControl
         if (kbHeight > 10)
         {
             // ★ 原生键盘高度可用：扣除 TabBar 高度（TabBar 被键盘覆盖，输入栏只需上推到键盘上方）
-            //   与 RecordSheetView 保持一致
             offset = Math.Max(0, kbHeight - _tabBarHeight);
             offsetSource = "native";
         }
         else if (_textBoxFocused)
         {
             // 原生回调未到但输入框已聚焦：用 fallback 偏移
-            // 同样扣除 TabBar 高度，避免上推过多
             var fallbackRaw = _tabBarHeight > 0 ? 270.0 : 320.0;
             offset = Math.Max(0, fallbackRaw - _tabBarHeight);
             offsetSource = "fallback";
@@ -164,25 +173,21 @@ public partial class QuickInputView : UserControl
             return;
         }
 
-        // ★ 使用 Margin 而非 RenderTransform 实现上推。
-        //   原因：在 Android Avalonia 中，UserControl 被嵌套在 ContentControl > Grid.Row=1 时，
-        //   RenderTransform（纯视觉后布局变换）可能不正确传播或被布局约束抵消，
-        //   导致视觉上没有上移。Margin 会触发真正的布局重排，更可靠。
-        //   注意：负的 Top Margin 会让控件在视觉上向上移动，但不影响 Grid.Row=1 的 Auto 高度
-        //   （因为 Margin 是控件外部空间，不影响 DesiredSize）。
-        //   为防止内容被上方元素遮挡，设置 ZIndex 确保输入栏在最上层。
-        Margin = new Thickness(0, -offset, 0, 0);
-        ZIndex = 100;
+        // ★ 与 RecordSheetView 完全一致的模式：
+        //   对 Panel 内部的子元素设 TranslateTransform，纯视觉偏移
+        QuickInputRoot.RenderTransform = new TranslateTransform(0, -offset);
+        QuickInputRoot.Margin = new Thickness(0);
         _lastKbOffset = offset;
 
         DevLogger.Log("QuickInput",
-            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | rootH={Bounds.Height:F1}lp");
+            $"ApplyOffset | {reason} | src={offsetSource} | kbH={kbHeight:F1}lp | tabBarH={_tabBarHeight:F1}lp | offset={offset:F1}lp | rootH={Bounds.Height:F1}lp | rootY={QuickInputRoot.Bounds.Y:F0}");
     }
 
     private void ClearKeyboardOffset(string reason)
     {
-        Margin = new Thickness(0);
-        ZIndex = 0;
+        if (QuickInputRoot is null) return;
+        QuickInputRoot.RenderTransform = null;
+        QuickInputRoot.Margin = new Thickness(0);
         _lastKbOffset = 0;
         DevLogger.Log("QuickInput", $"ClearOffset | {reason}");
     }

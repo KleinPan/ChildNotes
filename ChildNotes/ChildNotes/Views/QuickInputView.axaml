@@ -7,7 +7,7 @@
              d:DesignHeight="56"
              d:DesignWidth="390"
              x:DataType="vm:QuickInputViewModel"
-             Background="White"
+             Background="Transparent"
              mc:Ignorable="d">
 
     <UserControl.Styles>
@@ -52,36 +52,46 @@
         </Style>
     </UserControl.Styles>
 
-    <Border x:Name="QuickInputRoot"
-            Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
-        <Grid ColumnDefinitions="*,Auto">
-            <!-- 输入框 -->
-            <TextBox Grid.Column="0"
-                    Classes="quick-input"
-                    PlaceholderText="用一句话记录，AI 帮你分类"
-                    Text="{Binding InputText}" />
+    <!--
+        根元素使用 Panel（与 RecordSheetView 一致）。
+        原因：键盘上推需要对内部子元素设 RenderTransform，
+        Panel 是自由布局容器，不裁剪不约束子元素位置，TranslateTransform 能正常生效。
+    -->
+    <Panel>
+        <!-- 输入栏主体：VerticalAlignment=Bottom 确保贴底排列，
+             RenderTransform 由 code-behind 在键盘弹出时设置（与 RecordSheetView.SheetRoot 同模式） -->
+        <Border x:Name="QuickInputRoot"
+                Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0"
+                VerticalAlignment="Bottom">
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- 输入框 -->
+                <TextBox Grid.Column="0"
+                        Classes="quick-input"
+                        PlaceholderText="用一句话记录，AI 帮你分类"
+                        Text="{Binding InputText}" />
 
-            <!-- 有内容时显示发送按钮 -->
-            <Button Grid.Column="1"
-                    Margin="8,0,0,0"
-                    Classes="send-btn"
-                    Command="{Binding SendCommand}"
-                    IsEnabled="{Binding !IsParsing}"
-                    ToolTip.Tip="发送"
-                    IsVisible="{Binding HasContent}">
-                发送
-            </Button>
+                <!-- 有内容时显示发送按钮 -->
+                <Button Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Classes="send-btn"
+                        Command="{Binding SendCommand}"
+                        IsEnabled="{Binding !IsParsing}"
+                        ToolTip.Tip="发送"
+                        IsVisible="{Binding HasContent}">
+                    发送
+                </Button>
 
-            <!-- 无内容时显示 + 按钮（展开功能面板） -->
-            <Button Grid.Column="1"
-                    Margin="8,0,0,0"
-                    Classes="plus-btn"
-                    Command="{Binding ToggleActionsCommand}"
-                    ToolTip.Tip="更多记录类型"
-                    IsVisible="{Binding !HasContent}">
-                <TextBlock Text="＋" FontSize="22" FontWeight="Bold"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Button>
-        </Grid>
-    </Border>
+                <!-- 无内容时显示 + 按钮（展开功能面板） -->
+                <Button Grid.Column="1"
+                        Margin="8,0,0,0"
+                        Classes="plus-btn"
+                        Command="{Binding ToggleActionsCommand}"
+                        ToolTip.Tip="更多记录类型"
+                        IsVisible="{Binding !HasContent}">
+                    <TextBlock Text="＋" FontSize="22" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Button>
+            </Grid>
+        </Border>
+    </Panel>
 </UserControl>
