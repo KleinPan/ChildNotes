@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -163,11 +164,15 @@ public partial class QuickInputView : UserControl
             return;
         }
 
-        // ★ 关键修复：给 UserControl 本身设 RenderTransform，而不是内部的 QuickInputRoot。
-        //   QuickInputView 被放在 MainShellView 的 ContentControl(Grid.Row=1) 里，
-        //   给内部 Border 设 RenderTransform 时，UserControl 的布局位置不变，视觉上不会上移。
-        //   必须给 UserControl 自身设 RenderTransform，才能让整个控件视觉上移。
-        RenderTransform = new TranslateTransform(0, -offset);
+        // ★ 使用 Margin 而非 RenderTransform 实现上推。
+        //   原因：在 Android Avalonia 中，UserControl 被嵌套在 ContentControl > Grid.Row=1 时，
+        //   RenderTransform（纯视觉后布局变换）可能不正确传播或被布局约束抵消，
+        //   导致视觉上没有上移。Margin 会触发真正的布局重排，更可靠。
+        //   注意：负的 Top Margin 会让控件在视觉上向上移动，但不影响 Grid.Row=1 的 Auto 高度
+        //   （因为 Margin 是控件外部空间，不影响 DesiredSize）。
+        //   为防止内容被上方元素遮挡，设置 ZIndex 确保输入栏在最上层。
+        Margin = new Thickness(0, -offset, 0, 0);
+        ZIndex = 100;
         _lastKbOffset = offset;
 
         DevLogger.Log("QuickInput",
@@ -176,7 +181,8 @@ public partial class QuickInputView : UserControl
 
     private void ClearKeyboardOffset(string reason)
     {
-        RenderTransform = null;
+        Margin = new Thickness(0);
+        ZIndex = 0;
         _lastKbOffset = 0;
         DevLogger.Log("QuickInput", $"ClearOffset | {reason}");
     }
