@@ -52,7 +52,8 @@
         </Style>
     </UserControl.Styles>
 
-    <Border Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
+    <Border x:Name="QuickInputRoot"
+            Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
         <Grid ColumnDefinitions="*,Auto">
             <!-- 输入框 -->
             <TextBox Grid.Column="0"
