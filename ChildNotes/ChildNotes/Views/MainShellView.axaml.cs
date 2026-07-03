@@ -1,6 +1,7 @@
 using System;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.ViewModels;
@@ -12,10 +13,13 @@ namespace ChildNotes.Views;
 /// 承载首页/喂养/成长/我的 四个 Tab + TabBar + 快捷输入栏 + 功能面板。
 ///
 /// Android 键盘上推策略：
-///   当软键盘弹出时，通过给主内容区(Row=0)设置底部 Margin 来减小其有效高度，
-///   Grid 布局系统会自动将 Row=1(QuickInput) 上推到键盘上方。
-///   这比在 QuickInputView 内部用 RenderTransform 更可靠，
-///   因为 RenderTransform 是后布局视觉变换，在 Grid.Row=Auto 的嵌套链中可能被裁剪或忽略。
+///   当软键盘弹出时，对 RootGrid（MainShellView 的直接子元素）设 RenderTransform，
+///   将整个 Grid 视觉上移，输入栏自然跟随到键盘上方。
+///
+///   为什么对 RootGrid 设 RenderTransform 能成功（而对 QuickInputView 不行）：
+///     - RootGrid 是 UserControl 的直接子元素，拥有全窗口空间，不会被父容器裁剪
+///     - QuickInputView 嵌套在 ContentControl > Grid.Row=1(Auto) 内部，
+///       父容器只有 ~53lp 高度，内部 Transform 超出边界被裁剪
 /// </summary>
 public partial class MainShellView : UserControl
 {
@@ -47,7 +51,6 @@ public partial class MainShellView : UserControl
         if (OperatingSystem.IsAndroid())
         {
             KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
-            // 延迟获取 TabBar 高度（布局完成后）
             DispatcherTimer.RunOnce(FetchTabBarHeight, TimeSpan.FromMilliseconds(500));
         }
     }
@@ -61,7 +64,6 @@ public partial class MainShellView : UserControl
         }
     }
 
-    /// <summary>获取 TabBar 高度，用于计算精确的上推偏移量</summary>
     private void FetchTabBarHeight()
     {
         _tabBarHeight = 0;
@@ -92,32 +94,20 @@ public partial class MainShellView : UserControl
     }
 
     /// <summary>
-    /// 核心上推逻辑：通过减小 Row=0 主内容区的有效高度来推动 QuickInput 上移。
+    /// 对 RootGrid（UserControl 直接子元素）设 RenderTransform 上推整个界面。
     ///
-    /// 原理：
-    ///   Grid 有 4 行：Row=0(*) / Row=1(Auto) / Row=2(Auto) / Row=3(Auto)
-    ///   给 MainContentArea 设置 Margin(0,0,0,kbH-tabBarH) 后，
-    ///   Row=0 的可用空间减少 → Grid 重排 → Row=1 自动上移
-    ///
-    /// 为什么不用 RenderTransform：
-    ///   RenderTransform 是"后布局视觉变换"，不参与布局计算。
-    ///   QuickInputView 在 Grid.Row=1(Auto) 内部，Panel 只有内容高度(~53lp)，
-    ///   TranslateY(-300) 会超出 Panel 边界被裁剪。
-    ///   而 Margin 触发真正的 Grid 重排，所有行都正确移动。
+    /// RootGrid 与 QuickInputView 的关键区别：
+    ///   QuickInputView: ContentControl → Grid.Row=1(Auto) → UserControl → ... → 父容器仅 53lp 高 → Transform 被裁剪 ❌
+    ///   RootGrid:       MainShellView(UserControl, 全屏高) → Grid(直接子元素) → 充足空间不裁剪 ✅
     /// </summary>
     private void ApplyKeyboardOffset(string reason)
     {
         if (RootGrid is null) return;
 
         var kbHeight = KeyboardHeightProvider.CurrentHeight;
-        // 扣除 TabBar 高度：键盘弹出时 TabBar 被覆盖，输入栏只需推到键盘上方
         var offset = Math.Max(0, kbHeight - _tabBarHeight);
 
-        // ★ 给 Grid 本身设底部 Margin：将整个 Grid 向上偏移，
-        //   所有子元素（Row=0/1/2/3）都会被整体推上去。
-        //   注意：不能用子元素 ContentControl.Margin（只在行内部加边距，不影响其他行），
-        //   必须操作容器本身才能触发整体重排。
-        RootGrid.Margin = new Thickness(0, 0, 0, offset);
+        RootGrid.RenderTransform = new TranslateTransform(0, -offset);
         _lastKbOffset = offset;
 
         DevLogger.Log("Shell",
@@ -127,7 +117,7 @@ public partial class MainShellView : UserControl
     private void ClearKeyboardOffset(string reason)
     {
         if (RootGrid is null) return;
-        RootGrid.Margin = new Thickness(0);
+        RootGrid.RenderTransform = null;
         _lastKbOffset = 0;
         DevLogger.Log("Shell", $"ClearOffset | {reason}");
     }
