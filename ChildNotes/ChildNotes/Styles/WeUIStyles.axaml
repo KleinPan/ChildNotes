@@ -35,12 +35,25 @@
          经全项目 grep 验证从未被任何 axaml 引用（HomeView/StatisticsView/RecordSheetView 均自定义了局部样式）。
          若后续需统一这些样式，应在 View 内显式声明 Classes，避免死代码堆积。 -->
 
+    <!-- 按钮交互反馈（Avalonia 12 规范）：Transitions + :pressed 伪类 -->
+    <!-- 必须设置 RenderTransform="none" 初始值，否则首次过渡从 null 跳变 -->
     <Style Selector="Button.weui-btn">
         <Setter Property="CornerRadius" Value="{StaticResource WeuiBtnRadius}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="FontSize" Value="15" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="RenderTransform" Value="none"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform"
+                                               Duration="0:0:0.08"
+                                               Easing="QuadraticEaseOut"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.weui-btn:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.97)"/>
     </Style>
 
     <Style Selector="Button.weui-btn.primary">
@@ -90,6 +103,18 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <!-- 原版 tabBar 高度 100rpx ≈ 50px -->
         <Setter Property="MinHeight" Value="50" />
+        <!-- Tab 交互反馈：Transitions + :pressed -->
+        <Setter Property="RenderTransform" Value="none"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform"
+                                               Duration="0:0:0.1"
+                                               Easing="QuadraticEaseOut"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.tab-item:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.9)"/>
     </Style>
     <Style Selector="Button.tab-item PathIcon">
         <Setter Property="Foreground" Value="#999999" />

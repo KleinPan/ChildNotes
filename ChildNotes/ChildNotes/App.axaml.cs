@@ -6,6 +6,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using ChildNotes.Controls;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 using ChildNotes.Views;
 using SQLitePCL;
@@ -46,6 +47,9 @@ public partial class App : Application
         {
             Batteries_V2.Init();
             DevLogger.Log("Startup", $"Batteries_V2.Init: {sw.ElapsedMilliseconds}ms");
+
+            // 加载动画设置
+            LoadAnimationSettings();
 
             // 启动时尝试恢复登录会话（30 天滑动过期）
             var restored = TryRestoreSession();
@@ -342,5 +346,25 @@ public partial class App : Application
         DevLogger.Log("EX:" + source, ex);
         ReleaseLogger.Error("EX:" + source, ex, $"Unhandled exception from {source}");
         System.Diagnostics.Debug.WriteLine($"[UnhandledException:{source}] {ex}");
+    }
+
+    /// <summary>
+    /// 从开发者选项配置中加载动画设置，应用到 AnimationService 全局开关。
+    /// </summary>
+    private void LoadAnimationSettings()
+    {
+        try
+        {
+            var config = DeveloperPreferences.Load();
+            AnimationService.IsEnabled = config.EnableAnimations;
+            DevLogger.Log("Startup", $"Animation settings loaded: EnableAnimations={config.EnableAnimations}");
+            ReleaseLogger.Info("Startup", $"Animation settings loaded: EnableAnimations={config.EnableAnimations}");
+        }
+        catch (Exception ex)
+        {
+            // 加载失败时使用默认值（开启动画）
+            AnimationService.IsEnabled = true;
+            DevLogger.Log("Startup", $"Failed to load animation settings, using default (enabled): {ex.Message}");
+        }
     }
 }

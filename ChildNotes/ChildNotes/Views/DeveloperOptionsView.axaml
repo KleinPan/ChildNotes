@@ -23,6 +23,22 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
+                <!-- 动画设置 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="动画设置"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="启用动画效果" FontSize="15"/>
+                                <TextBlock Text="开启后弹窗、按钮、页面切换等会有流畅的过渡动画。关闭可提升性能或满足无障碍需求。" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAnimations}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- 调试工具 -->
                 <Border Classes="section-title">
                     <TextBlock Text="调试工具"/>

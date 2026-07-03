@@ -3,9 +3,47 @@
              xmlns:controls="using:ChildNotes.Controls"
              x:Class="ChildNotes.Controls.DialogHost"
              x:DataType="controls:DialogHost">
-    <Panel IsVisible="{Binding IsOpen, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}">
-        <Border Classes="modal-mask"/>
-        <Border Background="White" CornerRadius="12" Padding="24,20"
+
+    <!--
+        动画方案（Avalonia 12 规范）：
+        使用 Transitions + Classes.open 驱动属性变化动画。
+        - 打开：IsVisible=true → 下一帧添加 open class → Opacity/RenderTransform 变化触发 Transitions
+        - 关闭：移除 open class → Transitions 动画 → 延迟后 IsVisible=false
+        初始值必须显式设置（RenderTransform="scale(0.9)" / Opacity=0），避免首次过渡从 null 跳变。
+    -->
+    <UserControl.Styles>
+        <Style Selector="Border.dialog-mask">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.dialog-mask.open">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <Style Selector="Border.dialog-card">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="RenderTransform" Value="scale(0.9)"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.dialog-card.open">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="none"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Panel x:Name="DialogContainer" IsVisible="False">
+        <Border x:Name="ModalMask" Classes="dialog-mask modal-mask"/>
+        <Border x:Name="DialogContent" Classes="dialog-card" Background="White" CornerRadius="12" Padding="24,20"
                 MaxWidth="300" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="12">
                 <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"

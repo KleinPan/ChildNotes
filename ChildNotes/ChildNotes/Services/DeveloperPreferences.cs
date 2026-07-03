@@ -12,6 +12,8 @@ namespace ChildNotes.Services;
 /// </summary>
 public sealed class DeveloperOptionsConfig
 {
+    /// <summary>是否启用动画效果（默认 true）。关闭后所有弹窗、过渡、反馈动画将禁用。</summary>
+    public bool EnableAnimations { get; set; } = true;
 }
 
 /// <summary>
@@ -57,5 +59,8 @@ public static class DeveloperPreferences
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    private static DeveloperOptionsConfig Clone(DeveloperOptionsConfig src) => new();
+    private static DeveloperOptionsConfig Clone(DeveloperOptionsConfig src) => new()
+    {
+        EnableAnimations = src.EnableAnimations
+    };
 }

@@ -5,16 +5,55 @@ using ChildNotes.Services;
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 开发者选项页 ViewModel：管理日志导出等开发工具。
+/// 开发者选项页 ViewModel：管理日志导出、动画设置等开发工具。
 /// </summary>
 public partial class DeveloperOptionsViewModel : ViewModelBase
 {
     /// <summary>是否正在导出日志（防止重复点击）。</summary>
     [ObservableProperty] private bool _isExporting;
 
+    /// <summary>是否启用动画效果。</summary>
+    [ObservableProperty] private bool _enableAnimations = true;
+
     public DeveloperOptionsViewModel()
     {
         Title = "开发者选项";
+        LoadSettings();
+    }
+
+    /// <summary>从持久化配置加载设置。</summary>
+    private void LoadSettings()
+    {
+        try
+        {
+            var config = DeveloperPreferences.Load();
+            EnableAnimations = config.EnableAnimations;
+        }
+        catch
+        {
+            // 加载失败时使用默认值
+            EnableAnimations = true;
+        }
+    }
+
+    /// <summary>保存当前设置到持久化配置。</summary>
+    private void SaveSettings()
+    {
+        try
+        {
+            var config = new DeveloperOptionsConfig
+            {
+                EnableAnimations = EnableAnimations
+            };
+            DeveloperPreferences.Save(config);
+
+            // 实时应用动画开关
+            AnimationService.IsEnabled = EnableAnimations;
+        }
+        catch (Exception ex)
+        {
+            DisplayToast("保存设置失败：" + ex.Message);
+        }
     }
 
     /// <summary>导出当前运行日志到 .txt 文件。</summary>
@@ -55,4 +94,7 @@ public partial class DeveloperOptionsViewModel : ViewModelBase
     protected override int ToastDurationMs => 5000;
 
     partial void OnIsExportingChanged(bool value) => ExportLogCommand.NotifyCanExecuteChanged();
+
+    /// <summary>动画开关变化时自动保存并实时生效。</summary>
+    partial void OnEnableAnimationsChanged(bool value) => SaveSettings();
 }

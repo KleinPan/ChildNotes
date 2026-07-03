@@ -12,6 +12,32 @@
              Background="#80000000">
 
     <UserControl.Styles>
+        <!-- 抽屉遮罩淡入淡出 -->
+        <Style Selector="Border.drawer-mask">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.drawer-mask.open">
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+
+        <!-- 抽屉内容从底部滑入 -->
+        <Style Selector="Border.drawer-panel">
+            <Setter Property="RenderTransform" Value="translateY(100%)"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.drawer-panel.open">
+            <Setter Property="RenderTransform" Value="none"/>
+        </Style>
+
         <Style Selector="Button.gender-btn">
             <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Padding" Value="18,10"/>
@@ -108,8 +134,9 @@
         </Border>
 
         <!-- 编辑/添加表单（统一为：标题栏 ✕ 关闭 + 底部 保存按钮，与 RecordSheetView 一致） -->
-        <Border x:Name="EditorSheet" Classes="modal-mask" IsVisible="{Binding IsEditorOpen}">
-            <Border Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
+        <!-- 抽屉动画：mask 淡入淡出 + panel 从底部滑入，由 code-behind 控制 open class -->
+        <Border x:Name="EditorSheet" Classes="drawer-mask" IsVisible="{Binding IsEditorOpen}">
+            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">

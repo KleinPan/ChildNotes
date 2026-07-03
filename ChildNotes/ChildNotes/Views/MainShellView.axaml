@@ -25,6 +25,9 @@
     -->
     <Grid x:Name="RootGrid" RowDefinitions="*,Auto,Auto,Auto">
 
+        <!-- 页面切换：通过 IsVisible 叠加实现（与微信小程序一致）。
+             不使用 PageTransition/TransitioningContentControl，因为架构为多 ContentControl 叠加而非单 Content 切换。
+             Tab 切换瞬时显示是常见模式，强行添加 Opacity 过渡会导致隐藏控件仍占布局空间。 -->
         <ContentControl x:Name="MainContentArea" Grid.Row="0" Content="{Binding CurrentTab}" IsTabStop="False"/>
 
         <ContentControl Grid.Row="0" Content="{Binding RecordSheet}" IsTabStop="False"
@@ -70,9 +73,11 @@
                         IsVisible="{Binding IsQuickInputVisible}"/>
 
         <!-- Toast 浮层：首页快捷输入栏的提示（位于输入栏上方） -->
-        <Border Grid.Row="1" Margin="0,0,0,8" Padding="16,10"
+        <!-- RenderTransform="none" 初始值必须显式设置，避免首次过渡从 null 跳变 -->
+        <Border x:Name="ToastBorder" Grid.Row="1" Margin="0,0,0,8" Padding="16,10"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
                 Background="#CC000000" CornerRadius="8"
+                RenderTransform="none"
                 IsVisible="{Binding QuickInput.ShowToast}"
                 ZIndex="100">
             <TextBlock FontSize="13" Foreground="White" Text="{Binding QuickInput.ToastMessage}" />

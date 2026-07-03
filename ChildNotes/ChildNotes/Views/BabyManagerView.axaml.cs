@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
@@ -5,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.ViewModels;
@@ -42,10 +42,27 @@ public partial class BabyManagerView : UserControl
 
     private void OnEditorSheetPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        // 监听 IsVisible 从 false→true 的变更，触发自动聚焦
-        if (e.Property == IsVisibleProperty && e.NewValue is true)
+        // 监听 IsVisible 变更，切换 open class 触发 Transitions 动画
+        if (e.Property == IsVisibleProperty)
         {
-            DispatcherTimer.RunOnce(TryFocusBabyName, TimeSpan.FromMilliseconds(200));
+            if (e.NewValue is true)
+            {
+                // 打开抽屉：容器已显示，下一帧添加 open class 触发入场动画
+                Dispatcher.UIThread.Post(() =>
+                {
+                    EditorSheet?.Classes.Add("open");
+                    DrawerPanel?.Classes.Add("open");
+                });
+                DispatcherTimer.RunOnce(TryFocusBabyName, TimeSpan.FromMilliseconds(300));
+            }
+            else
+            {
+                // 关闭抽屉：移除 open class 触发退场动画
+                // 注意：IsVisible 已被绑定设为 false，容器会立即隐藏
+                // 但由于关闭前用户已点击按钮（交互完成），瞬时隐藏不影响体验
+                EditorSheet?.Classes.Remove("open");
+                DrawerPanel?.Classes.Remove("open");
+            }
         }
     }
 

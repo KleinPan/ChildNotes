@@ -1,9 +1,11 @@
 using System;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -53,6 +55,14 @@ public partial class MainShellView : UserControl
             KeyboardHeightProvider.HeightChanged += OnKeyboardHeightChanged;
             DispatcherTimer.RunOnce(FetchTabBarHeight, TimeSpan.FromMilliseconds(500));
         }
+
+        // 订阅 Toast 控件可见性变化，触发入场动画
+        var toast = this.FindControl<Border>("ToastBorder");
+        if (toast != null)
+        {
+            toast.PropertyChanged -= OnToastPropertyChanged; // 避免重复订阅
+            toast.PropertyChanged += OnToastPropertyChanged;
+        }
     }
 
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
@@ -61,6 +71,13 @@ public partial class MainShellView : UserControl
         if (OperatingSystem.IsAndroid())
         {
             KeyboardHeightProvider.HeightChanged -= OnKeyboardHeightChanged;
+        }
+
+        // 取消订阅 Toast 事件，避免内存泄漏
+        var toast = this.FindControl<Border>("ToastBorder");
+        if (toast != null)
+        {
+            toast.PropertyChanged -= OnToastPropertyChanged;
         }
     }
 
@@ -120,5 +137,49 @@ public partial class MainShellView : UserControl
         RootGrid.RenderTransform = null;
         _lastKbOffset = 0;
         DevLogger.Log("Shell", $"ClearOffset | {reason}");
+    }
+
+    /// <summary>
+    /// Toast 入场动画：从上方滑入 + 淡入。
+    /// </summary>
+    private async System.Threading.Tasks.Task OnToastOpeningAsync(Border toast)
+    {
+        if (toast == null) return;
+
+        try
+        {
+            await AnimationService.ToastEnter(toast);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Toast 入场动画异常: {ex.Message}");
+        }
+    }
+
+    private async System.Threading.Tasks.Task OnToastExitingAsync(Border toast)
+    {
+        if (toast == null) return;
+
+        try
+        {
+            await AnimationService.ToastExit(toast);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Toast 退场动画异常: {ex.Message}");
+        }
+    }
+
+    private void OnToastPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (sender is Border toast && e.Property == IsVisibleProperty)
+        {
+            if (e.NewValue is true)
+            {
+                _ = OnToastOpeningAsync(toast);
+            }
+            // 注意：Toast 的隐藏由 ViewModel 的定时器控制，不需要退场动画（直接消失即可）
+            // 如果需要退场动画，需要在 ViewModel 中延迟设置 IsVisible=false
+        }
     }
 }
