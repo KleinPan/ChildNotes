@@ -62,6 +62,7 @@ public partial class BabyManagerView : UserControl
     /// <summary>
     /// 底部抽屉入场动画：遮罩淡入 + 面板从底部滑入。
     /// 使用 Animation KeyFrame API，不依赖 Transitions。
+    /// 动画完成后显式设置最终值，确保跨平台一致。
     /// </summary>
     private async Task OnDrawerOpeningAsync()
     {
@@ -69,6 +70,14 @@ public partial class BabyManagerView : UserControl
 
         try
         {
+            // 动画关闭时：直接设置最终状态
+            if (!AnimationService.IsEnabled)
+            {
+                EditorSheet.Opacity = 1;
+                DrawerPanel.RenderTransform = TransformOperations.Parse("none");
+                return;
+            }
+
             // 初始状态
             EditorSheet.Opacity = 0;
             DrawerPanel.RenderTransform = TransformOperations.Parse("translateY(100%)");
@@ -76,20 +85,25 @@ public partial class BabyManagerView : UserControl
             // 等待一帧让布局完成
             await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
-            var duration = AnimationService.IsEnabled ? 250 : 1;
-
             // 并行执行：遮罩淡入 + 面板滑入
-            var maskAnim = CreateFadeAnimation(0, 1, duration, new CubicEaseOut());
-            var panelAnim = CreateSlideUpAnimation(duration, new CubicEaseOut());
+            var maskAnim = CreateFadeAnimation(0, 1, 250, new CubicEaseOut());
+            var panelAnim = CreateSlideUpAnimation(250, new CubicEaseOut());
 
             await Task.WhenAll(
                 maskAnim.RunAsync(EditorSheet),
                 panelAnim.RunAsync(DrawerPanel)
             );
+
+            // ★ 显式设置最终值，避免 FillMode.Forward 在安卓上不生效
+            EditorSheet.Opacity = 1;
+            DrawerPanel.RenderTransform = TransformOperations.Parse("none");
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"抽屉入场动画异常: {ex.Message}");
+            // 异常时确保抽屉仍可用
+            EditorSheet.Opacity = 1;
+            DrawerPanel.RenderTransform = TransformOperations.Parse("none");
         }
     }
 

@@ -14,7 +14,8 @@ namespace ChildNotes.Controls;
 
 /// <summary>
 /// 统一确认对话框控件：模态遮罩 + 居中白底卡片 + 标题 / 消息 / 取消&amp;确认按钮。
-/// 动画方案：使用 Animation KeyFrame API（C# 代码驱动），不依赖 Transitions 的属性变化检测。
+/// 动画方案：使用 Animation KeyFrame API（C# 代码驱动）。
+/// 安卓兼容性：动画完成后显式设置最终属性值，避免 FillMode 在不同平台行为不一致。
 /// </summary>
 public partial class DialogHost : UserControl
 {
@@ -74,32 +75,58 @@ public partial class DialogHost : UserControl
 
     /// <summary>
     /// 打开弹窗：显示容器后执行入场动画（遮罩淡入 + 卡片缩放+淡入）。
+    /// 动画完成后显式设置最终值，确保跨平台一致。
     /// </summary>
     private async Task OpenDialogAsync()
     {
         if (DialogContainer == null || ModalMask == null || DialogContent == null) return;
 
-        DialogContainer.IsVisible = true;
+        try
+        {
+            DialogContainer.IsVisible = true;
 
-        // 确保初始状态
-        ModalMask.Opacity = 0;
-        DialogContent.Opacity = 0;
-        DialogContent.RenderTransform = TransformOperations.Parse("scale(0.9)");
-        DialogContent.RenderTransformOrigin = RelativePoint.Center;
+            // 动画关闭时：直接设置最终状态，跳过动画
+            if (!AnimationService.IsEnabled)
+            {
+                ModalMask.Opacity = 1;
+                DialogContent.Opacity = 1;
+                DialogContent.RenderTransform = TransformOperations.Parse("none");
+                DialogContent.RenderTransformOrigin = RelativePoint.Center;
+                return;
+            }
 
-        // 等待一帧让布局完成
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+            // 确保初始状态
+            ModalMask.Opacity = 0;
+            DialogContent.Opacity = 0;
+            DialogContent.RenderTransform = TransformOperations.Parse("scale(0.9)");
+            DialogContent.RenderTransformOrigin = RelativePoint.Center;
 
-        var duration = AnimationService.IsEnabled ? 250 : 1;
+            // 等待一帧让布局完成
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
 
-        // 并行执行：遮罩淡入 + 卡片缩放淡入
-        var maskAnim = CreateFadeAnimation(0, 1, duration, new CubicEaseOut());
-        var cardAnim = CreateDialogEnterAnimation(duration, new CubicEaseOut());
+            // 并行执行：遮罩淡入 + 卡片缩放淡入
+            var maskAnim = CreateFadeAnimation(0, 1, 250, new CubicEaseOut());
+            var cardAnim = CreateDialogEnterAnimation(250, new CubicEaseOut());
 
-        await Task.WhenAll(
-            maskAnim.RunAsync(ModalMask),
-            cardAnim.RunAsync(DialogContent)
-        );
+            await Task.WhenAll(
+                maskAnim.RunAsync(ModalMask),
+                cardAnim.RunAsync(DialogContent)
+            );
+
+            // ★ 显式设置最终值，避免 FillMode.Forward 在安卓上不生效
+            ModalMask.Opacity = 1;
+            DialogContent.Opacity = 1;
+            DialogContent.RenderTransform = TransformOperations.Parse("none");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DialogHost 打开动画异常: {ex.Message}");
+            // 异常时确保弹窗仍可用
+            DialogContainer.IsVisible = true;
+            ModalMask.Opacity = 1;
+            DialogContent.Opacity = 1;
+            DialogContent.RenderTransform = TransformOperations.Parse("none");
+        }
     }
 
     /// <summary>
@@ -109,18 +136,31 @@ public partial class DialogHost : UserControl
     {
         if (DialogContainer == null || ModalMask == null || DialogContent == null) return;
 
-        var duration = AnimationService.IsEnabled ? 200 : 1;
+        try
+        {
+            // 动画关闭时：直接隐藏
+            if (!AnimationService.IsEnabled)
+            {
+                DialogContainer.IsVisible = false;
+                return;
+            }
 
-        // 并行执行：遮罩淡出 + 卡片缩小淡出
-        var maskAnim = CreateFadeAnimation(1, 0, duration, new CubicEaseIn());
-        var cardAnim = CreateDialogExitAnimation(duration, new CubicEaseIn());
+            // 并行执行：遮罩淡出 + 卡片缩小淡出
+            var maskAnim = CreateFadeAnimation(1, 0, 200, new CubicEaseIn());
+            var cardAnim = CreateDialogExitAnimation(200, new CubicEaseIn());
 
-        await Task.WhenAll(
-            maskAnim.RunAsync(ModalMask),
-            cardAnim.RunAsync(DialogContent)
-        );
+            await Task.WhenAll(
+                maskAnim.RunAsync(ModalMask),
+                cardAnim.RunAsync(DialogContent)
+            );
 
-        DialogContainer.IsVisible = false;
+            DialogContainer.IsVisible = false;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DialogHost 关闭动画异常: {ex.Message}");
+            DialogContainer.IsVisible = false;
+        }
     }
 
     /// <summary>创建淡入淡出动画。</summary>

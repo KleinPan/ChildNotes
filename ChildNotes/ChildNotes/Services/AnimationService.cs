@@ -51,10 +51,19 @@ public static class AnimationService
     /// <summary>
     /// Toast 提示入场动画：从上方滑入 + 淡入。
     /// 使用 Avalonia Animation KeyFrame API，符合规范。
+    /// 动画完成后显式设置最终值，确保跨平台一致。
     /// </summary>
     public static async Task ToastEnter(Control control)
     {
-        if (!IsEnabled || control == null) return;
+        if (control == null) return;
+
+        // 动画关闭时：直接设置最终状态
+        if (!IsEnabled)
+        {
+            control.Opacity = 1;
+            control.RenderTransform = TransformOperations.Parse("none");
+            return;
+        }
 
         var animation = new Animation
         {
@@ -74,6 +83,10 @@ public static class AnimationService
         animation.Children.Add(endFrame);
 
         await animation.RunAsync(control);
+
+        // ★ 显式设置最终值，避免 FillMode.Forward 在安卓上不生效
+        control.Opacity = 1;
+        control.RenderTransform = TransformOperations.Parse("none");
     }
 
     /// <summary>
@@ -81,7 +94,14 @@ public static class AnimationService
     /// </summary>
     public static async Task ToastExit(Control control)
     {
-        if (!IsEnabled || control == null) return;
+        if (control == null) return;
+
+        // 动画关闭时：直接设置最终状态
+        if (!IsEnabled)
+        {
+            control.Opacity = 0;
+            return;
+        }
 
         var animation = new Animation
         {
@@ -101,6 +121,9 @@ public static class AnimationService
         animation.Children.Add(endFrame);
 
         await animation.RunAsync(control);
+
+        // ★ 显式设置最终值
+        control.Opacity = 0;
     }
 
     #endregion
