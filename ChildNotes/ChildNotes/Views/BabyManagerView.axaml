@@ -12,31 +12,7 @@
              Background="#80000000">
 
     <UserControl.Styles>
-        <!-- 抽屉遮罩淡入淡出 -->
-        <Style Selector="Border.drawer-mask">
-            <Setter Property="Opacity" Value="0"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.drawer-mask.open">
-            <Setter Property="Opacity" Value="1"/>
-        </Style>
-
-        <!-- 抽屉内容从底部滑入 -->
-        <Style Selector="Border.drawer-panel">
-            <Setter Property="RenderTransform" Value="translateY(100%)"/>
-            <Setter Property="Transitions">
-                <Transitions>
-                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut"/>
-                </Transitions>
-            </Setter>
-        </Style>
-        <Style Selector="Border.drawer-panel.open">
-            <Setter Property="RenderTransform" Value="none"/>
-        </Style>
+        <!-- 抽屉动画由 code-behind 用 Animation KeyFrame API 驱动，无需 XAML Transitions -->
 
         <Style Selector="Button.gender-btn">
             <Setter Property="CornerRadius" Value="20"/>

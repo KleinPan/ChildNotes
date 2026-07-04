@@ -1,13 +1,19 @@
 using System;
+using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media.Transformation;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 using System.Globalization;
 
@@ -24,8 +30,7 @@ public partial class BabyManagerView : UserControl
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
-        // ★ 订阅编辑弹层的可见性变化：从 false→true 时自动聚焦姓名输入框
-        //    EditorSheet.IsVisible 绑定到 IsEditorOpen
+        // ★ 订阅编辑弹层的可见性变化：触发抽屉滑入动画 + 自动聚焦
         if (EditorSheet is not null)
         {
             EditorSheet.PropertyChanged += OnEditorSheetPropertyChanged;
@@ -42,28 +47,92 @@ public partial class BabyManagerView : UserControl
 
     private void OnEditorSheetPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        // 监听 IsVisible 变更，切换 open class 触发 Transitions 动画
         if (e.Property == IsVisibleProperty)
         {
             if (e.NewValue is true)
             {
-                // 打开抽屉：容器已显示，下一帧添加 open class 触发入场动画
-                Dispatcher.UIThread.Post(() =>
-                {
-                    EditorSheet?.Classes.Add("open");
-                    DrawerPanel?.Classes.Add("open");
-                });
+                // 打开抽屉：执行滑入动画
+                _ = OnDrawerOpeningAsync();
                 DispatcherTimer.RunOnce(TryFocusBabyName, TimeSpan.FromMilliseconds(300));
             }
-            else
-            {
-                // 关闭抽屉：移除 open class 触发退场动画
-                // 注意：IsVisible 已被绑定设为 false，容器会立即隐藏
-                // 但由于关闭前用户已点击按钮（交互完成），瞬时隐藏不影响体验
-                EditorSheet?.Classes.Remove("open");
-                DrawerPanel?.Classes.Remove("open");
-            }
+            // 关闭时 IsVisible 已被绑定设为 false，瞬时隐藏（交互已完成，不影响体验）
         }
+    }
+
+    /// <summary>
+    /// 底部抽屉入场动画：遮罩淡入 + 面板从底部滑入。
+    /// 使用 Animation KeyFrame API，不依赖 Transitions。
+    /// </summary>
+    private async Task OnDrawerOpeningAsync()
+    {
+        if (EditorSheet == null || DrawerPanel == null) return;
+
+        try
+        {
+            // 初始状态
+            EditorSheet.Opacity = 0;
+            DrawerPanel.RenderTransform = TransformOperations.Parse("translateY(100%)");
+
+            // 等待一帧让布局完成
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+
+            var duration = AnimationService.IsEnabled ? 250 : 1;
+
+            // 并行执行：遮罩淡入 + 面板滑入
+            var maskAnim = CreateFadeAnimation(0, 1, duration, new CubicEaseOut());
+            var panelAnim = CreateSlideUpAnimation(duration, new CubicEaseOut());
+
+            await Task.WhenAll(
+                maskAnim.RunAsync(EditorSheet),
+                panelAnim.RunAsync(DrawerPanel)
+            );
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"抽屉入场动画异常: {ex.Message}");
+        }
+    }
+
+    /// <summary>创建淡入淡出动画。</summary>
+    private static Animation CreateFadeAnimation(double from, double to, int durationMs, Easing easing)
+    {
+        var anim = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            Easing = easing,
+            FillMode = FillMode.Forward
+        };
+
+        var start = new KeyFrame { Cue = new Cue(0.0) };
+        start.Setters.Add(new Setter(Visual.OpacityProperty, from));
+        anim.Children.Add(start);
+
+        var end = new KeyFrame { Cue = new Cue(1.0) };
+        end.Setters.Add(new Setter(Visual.OpacityProperty, to));
+        anim.Children.Add(end);
+
+        return anim;
+    }
+
+    /// <summary>创建从底部滑入动画（translateY 100%→0）。</summary>
+    private static Animation CreateSlideUpAnimation(int durationMs, Easing easing)
+    {
+        var anim = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            Easing = easing,
+            FillMode = FillMode.Forward
+        };
+
+        var start = new KeyFrame { Cue = new Cue(0.0) };
+        start.Setters.Add(new Setter(Visual.RenderTransformProperty, TransformOperations.Parse("translateY(100%)")));
+        anim.Children.Add(start);
+
+        var end = new KeyFrame { Cue = new Cue(1.0) };
+        end.Setters.Add(new Setter(Visual.RenderTransformProperty, TransformOperations.Parse("none")));
+        anim.Children.Add(end);
+
+        return anim;
     }
 
     /// <summary>

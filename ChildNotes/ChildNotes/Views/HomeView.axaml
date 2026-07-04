@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:m="using:ChildNotes.Models.Home"
              xmlns:v="using:ChildNotes.Views"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -224,7 +225,7 @@
                             </ItemsPanelTemplate>
                         </ListBox.ItemsPanel>
                         <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:VaccineItem">
+                            <DataTemplate x:DataType="m:VaccineItem">
                                 <!-- VaccineItem 是只读 POCO，属性创建后不变，全部用 OneTime 绑定跳过变更监听订阅 -->
                                 <Border Background="{StaticResource WeuiBg1Brush}" CornerRadius="6" Padding="10,8" Margin="0,4,0,0">
                                     <Grid ColumnDefinitions="Auto,*,Auto">
@@ -390,7 +391,7 @@
                         <ItemsControl ItemsSource="{Binding ActivityTimelineGroups}"
                                       IsVisible="{Binding !IsActivityLoading}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ActivityTimelineGroup">
+                                <DataTemplate x:DataType="m:ActivityTimelineGroup">
                                     <StackPanel Margin="0,0,0,16">
                                         <!-- 日期分组标签 -->
                                         <TextBlock Text="{Binding Label, Mode=OneTime}" FontSize="12" Foreground="#999999"
@@ -398,7 +399,7 @@
                                         <!-- 组内时间轴项 -->
                                         <ItemsControl ItemsSource="{Binding Items}">
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:ActivityTimelineItem">
+                                                <DataTemplate x:DataType="m:ActivityTimelineItem">
                                                     <Grid ColumnDefinitions="20,*" Margin="0,0,0,14">
                                                         <!-- 左轴：竖线 + 圆点 -->
                                                         <Panel Grid.Column="0">
