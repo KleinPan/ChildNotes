@@ -1,11 +1,16 @@
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Media.Transformation;
+using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using ChildNotes.Infrastructure;
@@ -78,18 +83,117 @@ public partial class RecordSheetView : UserControl
     }
 
     /// <summary>
-    /// 监听 IsVisible 变化：弹窗显示时自动聚焦当前记录类型的主输入框。
-    /// 通过重写 OnPropertyChanged 捕获 IsVisibleProperty 从 false→true 的变更，
-    /// 延迟 200ms 后聚焦目标输入框，确保表单切换 IsVisible 后的布局已刷新。
+    /// 监听 IsVisible 变化：
+    /// - 显示时：执行底部滑入入场动画 + 延迟聚焦输入框
+    /// - 隐藏时：清除动画残留状态
     /// </summary>
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == IsVisibleProperty && change.NewValue is true)
+        if (change.Property == IsVisibleProperty)
         {
-            DispatcherTimer.RunOnce(TryFocusPrimaryTextBox, TimeSpan.FromMilliseconds(200));
+            if (change.NewValue is true)
+            {
+                _ = PlaySheetEnterAnimationAsync();
+                DispatcherTimer.RunOnce(TryFocusPrimaryTextBox, TimeSpan.FromMilliseconds(350));
+            }
+            else if (change.OldValue is true)
+            {
+                // 隐藏时清除动画可能残留的 RenderTransform，避免影响下次键盘偏移逻辑
+                if (SheetRoot is not null && _lastKbOffset == 0)
+                {
+                    SheetRoot.RenderTransform = null;
+                }
+            }
         }
+    }
+
+    /// <summary>
+    /// 底部功能卡片入场动画：遮罩淡入 + 面板从底部滑入。
+    /// 使用 Animation KeyFrame API，动画完成后显式清除 RenderTransform，
+    /// 避免与键盘偏移逻辑（也操作 SheetRoot.RenderTransform）冲突。
+    /// </summary>
+    private async Task PlaySheetEnterAnimationAsync()
+    {
+        if (SheetRoot is null) return;
+
+        try
+        {
+            // 动画关闭时：直接显示，跳过动画
+            if (!AnimationService.IsEnabled)
+            {
+                SheetRoot.RenderTransform = null;
+                if (SheetMask is not null) SheetMask.Opacity = 1;
+                return;
+            }
+
+            // 初始状态：面板在屏幕底部之外，遮罩透明
+            SheetRoot.RenderTransform = TransformOperations.Parse("translateY(100%)");
+            if (SheetMask is not null) SheetMask.Opacity = 0;
+
+            // 等待一帧让布局完成
+            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Render);
+
+            // 并行执行：遮罩淡入（250ms）+ 面板滑入（350ms CubicEaseOut 自然减速）
+            var maskAnim = CreateMaskFadeAnimation(0, 1, 250, new CubicEaseOut());
+            var slideAnim = CreateSlideUpAnimation(350, new CubicEaseOut());
+
+            var tasks = new System.Collections.Generic.List<Task>();
+            if (SheetMask is not null) tasks.Add(maskAnim.RunAsync(SheetMask));
+            tasks.Add(slideAnim.RunAsync(SheetRoot));
+
+            await Task.WhenAll(tasks);
+
+            // ★ 动画完成后：清除 RenderTransform 让键盘偏移逻辑接管，遮罩设为完全不透明
+            SheetRoot.RenderTransform = null;
+            if (SheetMask is not null) SheetMask.Opacity = 1;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"功能卡片入场动画异常: {ex.Message}");
+            // 异常时确保面板正常显示
+            SheetRoot.RenderTransform = null;
+            if (SheetMask is not null) SheetMask.Opacity = 1;
+        }
+    }
+
+    /// <summary>创建遮罩淡入淡出动画。</summary>
+    private static Animation CreateMaskFadeAnimation(double from, double to, int durationMs, Easing easing)
+    {
+        var anim = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            Easing = easing,
+            FillMode = FillMode.Forward
+        };
+        var start = new KeyFrame { Cue = new Cue(0.0) };
+        start.Setters.Add(new Setter(Visual.OpacityProperty, from));
+        anim.Children.Add(start);
+        var end = new KeyFrame { Cue = new Cue(1.0) };
+        end.Setters.Add(new Setter(Visual.OpacityProperty, to));
+        anim.Children.Add(end);
+        return anim;
+    }
+
+    /// <summary>创建从底部滑入动画（translateY 100%→0）。</summary>
+    private static Animation CreateSlideUpAnimation(int durationMs, Easing easing)
+    {
+        var anim = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            Easing = easing,
+            FillMode = FillMode.Forward
+        };
+        var start = new KeyFrame { Cue = new Cue(0.0) };
+        start.Setters.Add(new Setter(Visual.RenderTransformProperty,
+            TransformOperations.Parse("translateY(100%)")));
+        anim.Children.Add(start);
+        var end = new KeyFrame { Cue = new Cue(1.0) };
+        end.Setters.Add(new Setter(Visual.RenderTransformProperty,
+            TransformOperations.Parse("none")));
+        anim.Children.Add(end);
+        return anim;
     }
 
     /// <summary>

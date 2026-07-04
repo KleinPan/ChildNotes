@@ -224,7 +224,7 @@
     </UserControl.Styles>
 
     <Panel>
-        <Border Classes="modal-mask" IsVisible="{Binding IsVisible}"/>
+        <Border x:Name="SheetMask" Classes="modal-mask" IsVisible="{Binding IsVisible}"/>
 
         <!-- 底部抽屉：MaxHeight 由 code-behind 根据软键盘状态动态调整，
              避免键盘弹出时遮挡输入框和保存按钮。
