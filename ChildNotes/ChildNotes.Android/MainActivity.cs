@@ -36,44 +36,13 @@ public class MainActivity : AvaloniaMainActivity
         {
             try
             {
-                var ex = e.Exception;
-                Log.Error("ChildNotes", $"[JavaUnhandled] {ex}");
+                Log.Error("ChildNotes", $"[JavaUnhandled] {e.Exception}");
             }
             catch { }
         };
 
-        // 移除 Avalonia 根 View 的无障碍 delegate，绕过 Avalonia 12.0.5 的崩溃 bug。
-        // 崩溃路径：MIUI/HyperOS 长按输入框 → 无障碍服务主动遍历查询控件树
-        //   → AvaloniaAccessHelper.OnPopulateNodeForVirtualView（无 try-catch 保护）
-        //   → ToggleNodeInfoProvider.PopulateNodeInfo → GetProvider<IToggleProvider>()
-        //   → peer 不实现 IToggleProvider → throw InvalidOperationException → FATAL EXCEPTION
-        //
-        // 之前尝试对 Window.DecorView 设置 ImportantForAccessibility=NoHideDescendants 无效，
-        // 因为 AccessibilityNodeProvider（虚拟视图机制）通过 ViewCompat.SetAccessibilityDelegate
-        // 绑定在 AvaloniaView 本身，DecorView 的设置影响不到它。
-        //
-        // 正确做法：反射拿到 AvaloniaActivity._view（AvaloniaView 实例，internal 字段），
-        // 对其本身设置 ImportantForAccessibility 并移除 AccessibilityDelegate。
-        // 副作用：TalkBack 无法朗读本应用（对儿童疫苗记录 app 可接受）。
-        try
-        {
-            var viewField = typeof(AvaloniaActivity).GetField("_view",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (viewField?.GetValue(this) is View avaloniaView)
-            {
-                avaloniaView.ImportantForAccessibility = ImportantForAccessibility.NoHideDescendants;
-                ViewCompat.SetAccessibilityDelegate(avaloniaView, null);
-                Log.Info("ChildNotes", "[Accessibility] 已移除 AvaloniaView 的 AccessibilityDelegate");
-            }
-            else
-            {
-                Log.Warn("ChildNotes", "[Accessibility] 未能反射到 _view 字段，崩溃防护未生效");
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Log.Error("ChildNotes", $"[Accessibility] 移除 AccessibilityDelegate 失败: {ex}");
-        }
+        // 首次移除无障碍 delegate（详见 DisableAvaloniaAccessibility 注释）
+        DisableAvaloniaAccessibility();
 
         // 启动原生键盘高度监听，通过回调通知 Avalonia 层
         KeyboardHeightService.StartObserving(this);
@@ -84,11 +53,58 @@ public class MainActivity : AvaloniaMainActivity
         // 注册后，侧滑返回手势会先经 HandleSystemBack() 判断是否拦截：
         //   - 有弹层打开 → 吞掉事件，关闭弹层，不退出应用
         //   - 无弹层 → 不拦截，系统执行默认返回（finish Activity 回桌面）
-        if ((int)Build.VERSION.SdkInt >= 33)
+        if ((int)Build.Version.SdkInt >= 33)
         {
             _backCallback = new BackInvokedCallback(this);
             OnBackInvokedDispatcher.RegisterOnBackInvokedCallback(
                 IOnBackInvokedDispatcher.PriorityDefault, _backCallback);
+        }
+    }
+
+    protected override void OnResume()
+    {
+        base.OnResume();
+
+        // Activity 重建后 AvaloniaView.OnAttachedToWindow 会重新绑定 AvaloniaAccessHelper，
+        // 必须再次移除 delegate，否则崩溃防护在重建后失效。
+        DisableAvaloniaAccessibility();
+    }
+
+    /// <summary>
+    /// 移除 Avalonia 根 View 的无障碍 delegate，绕过 Avalonia 12.0.5 的崩溃 bug。
+    ///
+    /// 崩溃路径：MIUI/HyperOS 长按输入框 → 无障碍服务主动遍历查询控件树
+    ///   → AvaloniaAccessHelper.OnPopulateNodeForVirtualView（无 try-catch 保护）
+    ///   → ToggleNodeInfoProvider.PopulateNodeInfo → GetProvider&lt;IToggleProvider&gt;()
+    ///   → peer 不实现 IToggleProvider → throw InvalidOperationException → FATAL EXCEPTION
+    ///
+    /// 之前尝试对 Window.DecorView 设置 ImportantForAccessibility=NoHideDescendants 无效，
+    /// 因为 AccessibilityNodeProvider（虚拟视图机制）通过 ViewCompat.SetAccessibilityDelegate
+    /// 绑定在 AvaloniaView 本身，DecorView 的设置影响不到它。
+    ///
+    /// 正确做法：反射拿到 AvaloniaActivity._view（AvaloniaView 实例，internal 字段），
+    /// 对其本身设置 ImportantForAccessibility 并移除 AccessibilityDelegate。
+    /// 副作用：TalkBack 无法朗读本应用（对儿童疫苗记录 app 可接受）。
+    /// </summary>
+    private void DisableAvaloniaAccessibility()
+    {
+        try
+        {
+            var viewField = typeof(AvaloniaActivity).GetField("_view",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (viewField?.GetValue(this) is View avaloniaView)
+            {
+                avaloniaView.ImportantForAccessibility = ImportantForAccessibility.NoHideDescendants;
+                ViewCompat.SetAccessibilityDelegate(avaloniaView, null);
+            }
+            else
+            {
+                Log.Warn("ChildNotes", "[Accessibility] 未能反射到 _view 字段，崩溃防护未生效");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Log.Error("ChildNotes", $"[Accessibility] 移除 AccessibilityDelegate 失败: {ex}");
         }
     }
 
