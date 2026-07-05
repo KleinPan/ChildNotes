@@ -9,8 +9,8 @@ services:
     environment:
       # 数据库连接（使用 compose 服务名作为 host）
       ConnectionStrings__Default: "Host=db;Port=5432;Database=${DB_NAME:-child_notes};Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-childnotes123};"
-      # JWT（必须配置 JWT_SECRET 环境变量，至少 32 字符；未配置则启动失败）
-      Jwt__Secret: "${JWT_SECRET:?JWT_SECRET is required (>=32 chars)}"
+      # JWT（默认内置密钥，生产环境请通过 JWT_SECRET 环境变量覆盖）
+      Jwt__Secret: "${JWT_SECRET:-please-change-this-default-jwt-secret-key-at-least-32-chars}"
       Jwt__ExpireDays: "30"
       # DeepSeek（可选，不配则 AI 分析不可用）
       DeepSeek__BaseUrl: "${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
@@ -20,9 +20,9 @@ services:
       RateLimit__Enabled: "true"
       RateLimit__MaxRequestsPerSecond: "5"
       RateLimit__TrustProxyHeaders: "true"
-      # Admin 初始账号（必须配置 ADMIN_PASSWORD 环境变量；未配置则启动失败）
+      # Admin 初始账号（默认密码 admin123，生产环境请通过 ADMIN_PASSWORD 环境变量覆盖）
       Admin__InitUsername: "admin"
-      Admin__InitPassword: "${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}"
+      Admin__InitPassword: "${ADMIN_PASSWORD:-admin123}"
       # ASP.NET Core 环境变量
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://0.0.0.0:8080

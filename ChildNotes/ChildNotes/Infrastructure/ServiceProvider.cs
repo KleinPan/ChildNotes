@@ -61,7 +61,7 @@ public sealed class ServiceProvider
         var babyRepo = new BabyRepository(DbFactory);
         var recordRepo = new RecordRepository(DbFactory);
         SessionRepository = new SessionRepository(DbFactory);
-        AuthService = new AuthService(userRepo, SessionRepository, AppState);
+        AuthService = new AuthService(userRepo, SessionRepository, AppState, SyncConfigRepository);
         BabyService = new BabyService(babyRepo, AppState);
         RecordService = new RecordService(recordRepo, AppState);
         StatisticsService = new StatisticsService(RecordService);

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
@@ -11,17 +12,19 @@ public sealed class AuthService
     private readonly UserRepository _users;
     private readonly SessionRepository _sessions;
     private readonly AppState _state;
+    private readonly SyncConfigRepository _cfgRepo;
 
     /// <summary>会话有效期 30 天（滑动过期：每次启动自动续期）。</summary>
     public static readonly TimeSpan SessionLifetime = TimeSpan.FromDays(30);
 
     public AppUser? CurrentUser { get; private set; }
 
-    public AuthService(UserRepository users, SessionRepository sessions, AppState state)
+    public AuthService(UserRepository users, SessionRepository sessions, AppState state, SyncConfigRepository cfgRepo)
     {
         _users = users;
         _sessions = sessions;
         _state = state;
+        _cfgRepo = cfgRepo;
     }
 
     public bool IsLoggedIn => CurrentUser is not null;
@@ -68,7 +71,49 @@ public sealed class AuthService
         CurrentUser = user;
         SaveSession(user.Id);
         DevLogger.Log("Auth", $"Register success: user={username}, id={user.Id}");
+        // 本地注册成功后，尝试同步到后端（失败不阻塞，同步时还会重试登录）
+        _ = TryRegisterOnServerAsync(username, password, nickName);
         return LoginResult.Ok(user);
+    }
+
+    /// <summary>
+    /// 尝试在远端服务器创建同名账号。失败不影响本地注册（fire-and-forget），
+    /// 后续同步时 ApiSyncService 会再次尝试登录，用户感知不到。
+    /// </summary>
+    private async Task TryRegisterOnServerAsync(string username, string password, string? nickName)
+    {
+        try
+        {
+            var cfg = _cfgRepo.Get();
+            var serverUrl = cfg.ServerUrl;
+            if (string.IsNullOrWhiteSpace(serverUrl))
+            {
+                DevLogger.Log("Auth", "Skip remote register: server url not configured");
+                return;
+            }
+
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var body = JsonSerializer.Serialize(new
+            {
+                username,
+                password,
+                nickName = string.IsNullOrWhiteSpace(nickName) ? username : nickName,
+            });
+            using var resp = await http.PostAsync(
+                serverUrl.TrimEnd('/') + "/api/auth/register",
+                new StringContent(body, Encoding.UTF8, "application/json"));
+
+            var text = await resp.Content.ReadAsStringAsync();
+            if (resp.IsSuccessStatusCode)
+                DevLogger.Log("Auth", $"Remote register ok: user={username}, status={resp.StatusCode}");
+            else
+                DevLogger.Log("Auth", $"Remote register non-2xx: status={resp.StatusCode}, body={text}");
+        }
+        catch (Exception ex)
+        {
+            // 常见原因：服务器未启动/地址未配置/网络不通。仅记日志，不抛出。
+            DevLogger.Log("Auth", $"Remote register failed (non-fatal): {ex.Message}");
+        }
     }
 
     public LoginResult Login(string username, string password)
