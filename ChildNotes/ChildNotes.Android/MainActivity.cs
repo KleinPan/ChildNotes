@@ -5,6 +5,7 @@ using Android.Runtime;
 using Android.Util;
 using Android.Views;
 using Android.Window;
+using AndroidX.Core.View;
 using Avalonia;
 using Avalonia.Android;
 using ChildNotes.Android.Services;
@@ -41,17 +42,37 @@ public class MainActivity : AvaloniaMainActivity
             catch { }
         };
 
-        // 关闭 Avalonia 根 View 的无障碍查询，绕过 Avalonia 12.0.5 的崩溃 bug。
+        // 移除 Avalonia 根 View 的无障碍 delegate，绕过 Avalonia 12.0.5 的崩溃 bug。
         // 崩溃路径：MIUI/HyperOS 长按输入框 → 无障碍服务主动遍历查询控件树
         //   → AvaloniaAccessHelper.OnPopulateNodeForVirtualView（无 try-catch 保护）
         //   → ToggleNodeInfoProvider.PopulateNodeInfo → GetProvider<IToggleProvider>()
         //   → peer 不实现 IToggleProvider → throw InvalidOperationException → FATAL EXCEPTION
-        // 设置 ImportantForAccessibility = NoHideDescendants 后，系统不会向 Avalonia view
-        // 查询无障碍节点，绕过崩溃路径。副作用：TalkBack 无法朗读本应用。
-        var rootView = Window?.DecorView;
-        if (rootView is not null)
+        //
+        // 之前尝试对 Window.DecorView 设置 ImportantForAccessibility=NoHideDescendants 无效，
+        // 因为 AccessibilityNodeProvider（虚拟视图机制）通过 ViewCompat.SetAccessibilityDelegate
+        // 绑定在 AvaloniaView 本身，DecorView 的设置影响不到它。
+        //
+        // 正确做法：反射拿到 AvaloniaActivity._view（AvaloniaView 实例，internal 字段），
+        // 对其本身设置 ImportantForAccessibility 并移除 AccessibilityDelegate。
+        // 副作用：TalkBack 无法朗读本应用（对儿童疫苗记录 app 可接受）。
+        try
         {
-            rootView.ImportantForAccessibility = ImportantForAccessibility.NoHideDescendants;
+            var viewField = typeof(AvaloniaActivity).GetField("_view",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (viewField?.GetValue(this) is View avaloniaView)
+            {
+                avaloniaView.ImportantForAccessibility = ImportantForAccessibility.NoHideDescendants;
+                ViewCompat.SetAccessibilityDelegate(avaloniaView, null);
+                Log.Info("ChildNotes", "[Accessibility] 已移除 AvaloniaView 的 AccessibilityDelegate");
+            }
+            else
+            {
+                Log.Warn("ChildNotes", "[Accessibility] 未能反射到 _view 字段，崩溃防护未生效");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("ChildNotes", $"[Accessibility] 移除 AccessibilityDelegate 失败: {ex}");
         }
 
         // 启动原生键盘高度监听，通过回调通知 Avalonia 层
