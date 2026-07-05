@@ -70,7 +70,7 @@ public class MainActivity : AvaloniaMainActivity
                 Log.Warn("ChildNotes", "[Accessibility] 未能反射到 _view 字段，崩溃防护未生效");
             }
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             Log.Error("ChildNotes", $"[Accessibility] 移除 AccessibilityDelegate 失败: {ex}");
         }
