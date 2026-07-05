@@ -53,7 +53,7 @@ public class MainActivity : AvaloniaMainActivity
         // 注册后，侧滑返回手势会先经 HandleSystemBack() 判断是否拦截：
         //   - 有弹层打开 → 吞掉事件，关闭弹层，不退出应用
         //   - 无弹层 → 不拦截，系统执行默认返回（finish Activity 回桌面）
-        if ((int)Build.Version.SdkInt >= 33)
+        if ((int)Build.VERSION.SdkInt >= 33)
         {
             _backCallback = new BackInvokedCallback(this);
             OnBackInvokedDispatcher.RegisterOnBackInvokedCallback(
