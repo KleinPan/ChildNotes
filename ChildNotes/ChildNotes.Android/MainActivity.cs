@@ -1,6 +1,9 @@
-﻿﻿﻿﻿using Android.App;
+﻿﻿﻿using Android.App;
 using Android.Content.PM;
 using Android.OS;
+using Android.Runtime;
+using Android.Util;
+using Android.Views;
 using Android.Window;
 using Avalonia;
 using Avalonia.Android;
@@ -23,6 +26,34 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+
+        // 捕获 Java/ART 层未处理异常（如 Avalonia.Android 无障碍回调中抛出的异常）。
+        // .NET 的 AppDomain.UnhandledException 只能捕获托管异常，Java 层异常会直接走 AndroidRuntime
+        // 崩溃流程导致闪退且 Serilog 无记录。此处兜底记录到 logcat，便于后续排查。
+        // 注意：此回调只能记录日志，无法阻止进程退出（Java 层未处理异常必然导致进程终止）。
+        AndroidEnvironment.UnhandledExceptionRaiser += (_, e) =>
+        {
+            try
+            {
+                var ex = e.Exception;
+                Log.Error("ChildNotes", $"[JavaUnhandled] {ex}");
+            }
+            catch { }
+        };
+
+        // 关闭 Avalonia 根 View 的无障碍查询，绕过 Avalonia 12.0.5 的崩溃 bug。
+        // 崩溃路径：MIUI/HyperOS 长按输入框 → 无障碍服务主动遍历查询控件树
+        //   → AvaloniaAccessHelper.OnPopulateNodeForVirtualView（无 try-catch 保护）
+        //   → ToggleNodeInfoProvider.PopulateNodeInfo → GetProvider<IToggleProvider>()
+        //   → peer 不实现 IToggleProvider → throw InvalidOperationException → FATAL EXCEPTION
+        // 设置 ImportantForAccessibility = NoHideDescendants 后，系统不会向 Avalonia view
+        // 查询无障碍节点，绕过崩溃路径。副作用：TalkBack 无法朗读本应用。
+        var rootView = Window?.DecorView;
+        if (rootView is not null)
+        {
+            rootView.ImportantForAccessibility = ImportantForAccessibility.NoHideDescendants;
+        }
+
         // 启动原生键盘高度监听，通过回调通知 Avalonia 层
         KeyboardHeightService.StartObserving(this);
         KeyboardHeightService.OnKeyboardHeightChanged = OnKeyboardHeightChanged;
