@@ -42,7 +42,7 @@
                         </StackPanel>
 
                         <!-- 服务器地址配置（可折叠，默认展开让首次部署用户先填地址再注册） -->
-                        <Button Command="{Binding ToggleServerConfig}" Background="Transparent" BorderThickness="0"
+                        <Button Command="{Binding ToggleServerConfigCommand}" Background="Transparent" BorderThickness="0"
                                 HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚙" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
