@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
+using ChildNotes.Models;
 
 namespace ChildNotes.Services;
 
@@ -19,21 +20,101 @@ public abstract class BaseApiClient
     protected static readonly JsonSerializerOptions JsonOpts = new()
     {
         PropertyNamingPolicy = null,
+        // 后端 ASP.NET Core 默认 camelCase 序列化（serverTime/expireAt 等），
+        // 前端 DTO 用 PascalCase（ServerTime/ExpireAt）。开启大小写不敏感，
+        // 避免字段名大小写不匹配导致 DateTime 等类型用默认值（0001-01-01）。
+        PropertyNameCaseInsensitive = true,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     /// <summary>使用配置中的 ServerUrl/Token 发送请求；401 时自动清空 token 并返回 null。</summary>
+    /// <remarks>
+    /// 与仅做"有 token 就发、没有就放弃"的早期实现不同，现在 token 为空时会尝试用
+    /// sync_config 中的 username/password 自动登录换取 token，避免同步流程已登录、
+    /// 但其它在线功能（如家人管理）因读到的缓存 token 仍为空而报"未配置"。
+    /// 登录失败仍返回 null，由调用方决定如何提示。
+    /// </remarks>
     protected async Task<HttpResponseMessage?> SendAsync(
         SyncConfigRepository cfgRepo,
         HttpMethod method, string path, string? body, CancellationToken ct)
     {
         var cfg = cfgRepo.Get();
-        if (string.IsNullOrWhiteSpace(cfg.ServerUrl) || string.IsNullOrWhiteSpace(cfg.Token))
+        if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
         {
-            DevLogger.Log(GetType().Name, $"{method} {path}: server/token 未配置");
+            DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
             return null;
         }
-        return await SendCoreAsync(cfgRepo, cfg.ServerUrl!, cfg.Token!, method, path, body, ct);
+        var token = cfg.Token;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            token = await TryLoginAsync(cfgRepo, cfg, ct);
+            if (string.IsNullOrEmpty(token))
+            {
+                DevLogger.Log(GetType().Name, $"{method} {path}: token 未配置且自动登录失败");
+                return null;
+            }
+        }
+        var resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, token, method, path, body, ct);
+        // 401 时 SendCoreAsync 已清空 token，这里再尝试重新登录重试一次，
+        // 覆盖"token 在 DB 中已过期、但本地缓存还在用旧值"的场景。
+        if (resp is null && string.IsNullOrEmpty(cfgRepo.Get().Token))
+        {
+            var newToken = await TryLoginAsync(cfgRepo, cfg, ct);
+            if (!string.IsNullOrEmpty(newToken))
+            {
+                resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, newToken, method, path, body, ct);
+            }
+        }
+        return resp;
+    }
+
+    /// <summary>
+    /// 用 sync_config 中的 username/password 向服务器登录换取 token，
+    /// 成功后写回 DB（UpdateToken）并返回 token；失败返回 null。
+    /// 供 <see cref="SendAsync"/> 在 token 缺失时自动补救，以及派生类按需调用。
+    /// </summary>
+    protected static async Task<string?> TryLoginAsync(
+        SyncConfigRepository cfgRepo, SyncConfig cfg, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(cfg.Username) || string.IsNullOrWhiteSpace(cfg.Password))
+            return null;
+
+        var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
+            ? ServerEndpoints.Primary
+            : cfg.ServerUrl!;
+        var url = serverUrl.TrimEnd('/') + "/api/auth/login";
+        var body = Serialize(new { username = cfg.Username, password = cfg.Password });
+        using var req = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "application/json"),
+        };
+        try
+        {
+            using var resp = await Http.SendAsync(req, ct);
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                DevLogger.Log("ApiClient", $"Auto-login fail: {(int)resp.StatusCode} {json}");
+                return null;
+            }
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("data", out var data) ||
+                !data.TryGetProperty("token", out var tokenEl) ||
+                string.IsNullOrWhiteSpace(tokenEl.GetString()))
+            {
+                DevLogger.Log("ApiClient", "Auto-login fail: 响应缺少 data.token");
+                return null;
+            }
+            var token = tokenEl.GetString()!;
+            cfgRepo.UpdateToken(token);
+            DevLogger.Log("ApiClient", "Auto-login ok, token updated");
+            return token;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("ApiClient", "Auto-login exception: " + ex.Message);
+            return null;
+        }
     }
 
     /// <summary>使用显式 token 发送（用于登录或暂未持久化 token 的多步流程）。</summary>

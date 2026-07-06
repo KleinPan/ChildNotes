@@ -105,10 +105,16 @@ public static class DbParam
         return cmd;
     }
 
-    /// <summary>添加 UTC 时间参数（"O" round-trip 格式）。</summary>
+    /// <summary>
+    /// 添加 UTC 时间参数（"O" round-trip 格式，带 "Z" 后缀）。
+    /// 强制转换为 Utc Kind：若传入 Local/Unspecified 时间，会先转 UTC 再格式化，
+    /// 保证 DB 中所有时间字符串统一为 "...Z" 后缀，避免与带 "+08:00" 偏移的字符串
+    /// 做字典序比较时出错（SQLite TEXT 比较不感知时区）。
+    /// </summary>
     public static SqliteCommand AddUtc(this SqliteCommand cmd, string name, DateTime value)
     {
-        cmd.Parameters.AddWithValue(name, value.ToString("O"));
+        var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+        cmd.Parameters.AddWithValue(name, utc.ToString("O"));
         return cmd;
     }
 

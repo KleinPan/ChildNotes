@@ -25,11 +25,40 @@ public sealed class SyncConfigRepository : BaseRepository
     {
         lock (_cacheLock)
         {
-            if (_cached is not null) return _cached;
+            if (_cached is not null) return Clone(_cached);
         }
         var cfg = QueryFirstOrDefault(SelectSql, _ => { }, Map) ?? new SyncConfig();
         lock (_cacheLock) { _cached = cfg; }
-        return cfg;
+        return Clone(cfg);
+    }
+
+    /// <summary>
+    /// 返回配置对象的浅拷贝。调用方拿到的是独立实例，
+    /// 修改其字段不会污染内存缓存，避免引用共享导致的隐性状态错乱。
+    /// </summary>
+    private static SyncConfig Clone(SyncConfig c) => new()
+    {
+        Id = c.Id,
+        Enabled = c.Enabled,
+        ServerUrl = c.ServerUrl,
+        Username = c.Username,
+        Password = c.Password,
+        Token = c.Token,
+        LastSyncAt = c.LastSyncAt,
+        LastSyncStatus = c.LastSyncStatus,
+        LastSyncMsg = c.LastSyncMsg,
+        DeviceId = c.DeviceId,
+    };
+
+    /// <summary>
+    /// 将 DateTime 统一为 UTC 并输出 "O" round-trip 格式字符串（带 "Z" 后缀）。
+    /// SQLite TEXT 字典序比较不感知时区，必须保证所有时间字符串格式一致，
+    /// 否则 "09:38:25Z" 与 "17:37:29+08:00" 比较会得出错误结果（前者被判定更小）。
+    /// </summary>
+    private static string ToUtcO(DateTime value)
+    {
+        var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+        return utc.ToString("O");
     }
 
     public void Save(SyncConfig cfg)
@@ -47,7 +76,7 @@ public sealed class SyncConfigRepository : BaseRepository
                    .AddString("@un", cfg.Username, emptyAsNull: true)
                    .AddString("@p", cfg.Password, emptyAsNull: true)
                    .AddString("@t", cfg.Token, emptyAsNull: true)
-                   .Add("@lsa", (object?)cfg.LastSyncAt?.ToString("O") ?? DBNull.Value)
+                   .Add("@lsa", cfg.LastSyncAt is null ? DBNull.Value : (object)ToUtcO(cfg.LastSyncAt.Value))
                    .AddString("@lss", cfg.LastSyncStatus, emptyAsNull: true)
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
                    .AddString("@did", cfg.DeviceId, emptyAsNull: true);
