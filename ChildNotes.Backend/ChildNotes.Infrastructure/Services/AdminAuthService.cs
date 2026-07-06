@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
 using ChildNotes.Core.Constants;
@@ -66,9 +64,10 @@ public class AdminAuthService : IAdminAuthService
             || !_passwordHasher.Verify(req.Password, admin.PasswordHash))
             throw new BusinessException("Invalid username or password", 400);
 
-        // 生成随机 token，但数据库只存其 SHA256 哈希，避免数据库泄露后 token 被直接复用
+        // 生成随机 token 并明文存入数据库，便于开发/调试期间直接查看当前有效 token
+        // 注意：明文存储 token 在数据库泄露后可被直接复用，仅适用于开发阶段
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        admin.Token = HashToken(rawToken);
+        admin.Token = rawToken;
         admin.TokenExpireAt = DateTime.UtcNow.AddHours(_opt.TokenExpireHours);
         admin.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -86,9 +85,8 @@ public class AdminAuthService : IAdminAuthService
     public async Task<AdminAccount?> AuthenticateAsync(string? token, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(token)) return null;
-        var tokenHash = HashToken(token);
         return await _db.AdminAccounts.FirstOrDefaultAsync(
-            a => a.Token == tokenHash && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
+            a => a.Token == token && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
     }
 
     public Task<AdminAccount?> GetCurrentAdminAsync(CancellationToken ct = default)
@@ -101,15 +99,5 @@ public class AdminAuthService : IAdminAuthService
         admin.Token = null;
         admin.TokenExpireAt = null;
         await _db.SaveChangesAsync(ct);
-    }
-
-    /// <summary>
-    /// 将明文 token 转为 SHA256 哈希（64 位 hex 字符串）。
-    /// 数据库只存哈希值，即使数据库泄露攻击者也无法直接复用 token 登录。
-    /// </summary>
-    private static string HashToken(string rawToken)
-    {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

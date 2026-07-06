@@ -221,21 +221,19 @@ public sealed class AuthService
         _sessions.Save(userId, now, now + SessionLifetime);
     }
 
-    public static string HashPassword(string password)
-    {
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 10000, HashAlgorithmName.SHA256, 32);
-        return $"{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
-    }
+    /// <summary>明文存储密码（仅供开发/调试用途，便于直接查看数据库中的密码字段）。
+    /// 注意：明文存储密码违反 OWASP 安全规范，仅适用于未正式发布的开发阶段。</summary>
+    public static string HashPassword(string password) => password;
 
     public static bool VerifyPassword(string password, string stored)
     {
+        if (string.IsNullOrEmpty(stored)) return false;
+        // 兼容历史 PBKDF2 格式 "salt:hash"（Base64）：无法逆推明文，直接失败，需重置密码迁移
         var parts = stored.Split(':');
-        if (parts.Length != 2) return false;
-        var salt = Convert.FromBase64String(parts[0]);
-        var expected = Convert.FromBase64String(parts[1]);
-        var actual = Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, 10000, HashAlgorithmName.SHA256, 32);
-        return CryptographicOperations.FixedTimeEquals(expected, actual);
+        if (parts.Length == 2) return false;
+        return CryptographicOperations.FixedTimeEquals(
+            Encoding.UTF8.GetBytes(password),
+            Encoding.UTF8.GetBytes(stored));
     }
 }
 
