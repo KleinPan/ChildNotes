@@ -128,9 +128,9 @@ public class SyncService : ISyncService
                 existing.Name = item.Name;
                 existing.Avatar = item.Avatar;
                 existing.Gender = item.Gender;
-                existing.BirthDate = item.BirthDate;
+                existing.BirthDate = item.BirthDate is null ? null : DateTime.SpecifyKind(item.BirthDate.Value, DateTimeKind.Utc);
                 existing.Deleted = item.Deleted;
-                existing.UpdatedAt = item.UpdatedAt;
+                existing.UpdatedAt = DateTime.SpecifyKind(item.UpdatedAt, DateTimeKind.Utc);
                 babiesUpserted++;
             }
         }
@@ -207,10 +207,10 @@ public class SyncService : ISyncService
         Name = i.Name,
         Avatar = i.Avatar,
         Gender = i.Gender,
-        BirthDate = i.BirthDate,
+        BirthDate = i.BirthDate is null ? null : DateTime.SpecifyKind(i.BirthDate.Value, DateTimeKind.Utc),
         Deleted = i.Deleted,
-        CreatedAt = i.CreatedAt,
-        UpdatedAt = i.UpdatedAt,
+        CreatedAt = DateTime.SpecifyKind(i.CreatedAt, DateTimeKind.Utc),
+        UpdatedAt = DateTime.SpecifyKind(i.UpdatedAt, DateTimeKind.Utc),
     };
 
     private static ChildRecord FromItem(SyncRecordItem i) => new()
@@ -232,8 +232,8 @@ public class SyncService : ISyncService
         WeightKg = i.WeightKg,
         PayloadJson = i.PayloadJson,
         Deleted = i.Deleted,
-        CreatedAt = i.CreatedAt,
-        UpdatedAt = i.UpdatedAt,
+        CreatedAt = DateTime.SpecifyKind(i.CreatedAt, DateTimeKind.Utc),
+        UpdatedAt = DateTime.SpecifyKind(i.UpdatedAt, DateTimeKind.Utc),
     };
 
     private static void CopyTo(ChildRecord existing, SyncRecordItem src)
@@ -252,7 +252,7 @@ public class SyncService : ISyncService
         existing.WeightKg = src.WeightKg;
         existing.PayloadJson = src.PayloadJson;
         existing.Deleted = src.Deleted;
-        existing.UpdatedAt = src.UpdatedAt;
+        existing.UpdatedAt = DateTime.SpecifyKind(src.UpdatedAt, DateTimeKind.Utc);
     }
 
     private static SyncMilestoneItem ToMilestoneItem(Milestone m) => new()
@@ -279,8 +279,8 @@ public class SyncService : ISyncService
         RecordDate = DateTime.SpecifyKind(i.RecordDate, DateTimeKind.Utc),
         PhotosJson = i.PhotosJson ?? "[]",
         Deleted = i.Deleted,
-        CreatedAt = i.CreatedAt,
-        UpdatedAt = i.UpdatedAt,
+        CreatedAt = DateTime.SpecifyKind(i.CreatedAt, DateTimeKind.Utc),
+        UpdatedAt = DateTime.SpecifyKind(i.UpdatedAt, DateTimeKind.Utc),
     };
 
     private static void CopyTo(Milestone existing, SyncMilestoneItem src)
@@ -291,6 +291,6 @@ public class SyncService : ISyncService
         existing.PhotosJson = src.PhotosJson ?? "[]";
         existing.BabyId = src.BabyId;
         existing.Deleted = src.Deleted;
-        existing.UpdatedAt = src.UpdatedAt;
+        existing.UpdatedAt = DateTime.SpecifyKind(src.UpdatedAt, DateTimeKind.Utc);
     }
 }
