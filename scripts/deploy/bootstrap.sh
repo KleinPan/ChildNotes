@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ChildNotes 后端服务器首次初始化脚本
 # 用法: sudo bash bootstrap.sh
-# 完成: 建目录 / 建用户 / 装 PostgreSQL / 写 systemd / 准备配置占位
+# 作用: 建用户/目录/数据库/systemd/生成生产配置
+# 注意: 不装 .NET (后端用 self-contained 产物,自带运行时)
 set -euo pipefail
 
 if [[ $EUID -ne 0 ]]; then
@@ -16,7 +17,7 @@ DB_NAME="child_notes"
 DB_USER="childnotes"
 DB_PASSWORD="childnotes123"
 
-echo "==> 1. 安装依赖"
+echo "==> 1. 安装依赖 (curl/jq/tar/postgresql)"
 apt-get update -y
 apt-get install -y curl jq tar postgresql postgresql-contrib || true
 
@@ -49,7 +50,7 @@ else
   echo "   用户 ${DB_USER} 已存在,跳过"
 fi
 
-echo "==> 5. 准备生产配置"
+echo "==> 5. 生成生产配置 (含随机 JWT Secret 和 Admin 密码)"
 PROD_CFG="${ROOT}/shared/appsettings.Production.json"
 if [[ ! -f "${PROD_CFG}" ]]; then
   JWT_SECRET="$(openssl rand -base64 48)"
@@ -91,17 +92,22 @@ JSONEOF
   echo "   已创建 ${PROD_CFG}"
   echo ""
   echo "   ================================================"
-  echo "   生成的密码 (请保存):"
-  echo "     Admin 初始密码: ${ADMIN_PASSWORD}"
-  echo "     JWT Secret: ${JWT_SECRET}"
-  echo "     数据库密码: ${DB_PASSWORD}"
-  echo "   配置文件: ${PROD_CFG}"
+  echo "   生成的密码 (请立即保存!)"
   echo "   ================================================"
+  echo "   Admin 初始密码: ${ADMIN_PASSWORD}"
+  echo "   JWT Secret:     ${JWT_SECRET}"
+  echo "   数据库密码:     ${DB_PASSWORD}  (默认,可改 ${PROD_CFG})"
+  echo "   配置文件:       ${PROD_CFG}"
+  echo "   ================================================"
+  echo ""
+  echo "   如需修改 DeepSeek API Key 等配置,编辑:"
+  echo "     sudo nano ${PROD_CFG}"
+  echo ""
 else
-  echo "   已存在,跳过"
+  echo "   已存在,跳过 (${PROD_CFG})"
 fi
 
-echo "==> 6. 准备 deploy 配置占位"
+echo "==> 6. 准备 deploy 配置"
 DEPLOY_ENV="/etc/childnotes/deploy.env"
 mkdir -p /etc/childnotes
 if [[ ! -f "${DEPLOY_ENV}" ]]; then
@@ -117,62 +123,43 @@ REPO=KleinPan/ChildNotes
 KEEP_RELEASES=3
 
 # 健康检查 URL（部署后会 curl 这个地址，非 2xx/3xx 就自动回滚）
+# /api/auth/me 返回 401 也算服务正常（未登录）
 HEALTH_URL=http://127.0.0.1:8080/api/auth/me
 EOF
   chmod 600 "${DEPLOY_ENV}"
-  echo "   已创建 ${DEPLOY_ENV}，请填入真实 GH_TOKEN"
+  echo "   已创建 ${DEPLOY_ENV}"
+  echo "   请编辑填入真实 GH_TOKEN: sudo nano ${DEPLOY_ENV}"
 fi
 
 echo "==> 7. 安装 systemd unit"
-cat > /etc/systemd/system/childnotes-api.service <<EOF
-[Unit]
-Description=ChildNotes API (.NET 10)
-Documentation=https://github.com/KleinPan/ChildNotes
-After=network-online.target postgresql.service
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=${DEPLOY_USER}
-Group=${DEPLOY_USER}
-WorkingDirectory=${ROOT}/current
-ExecStart=${ROOT}/current/ChildNotes.Api
-Restart=always
-RestartSec=5
-KillSignal=SIGINT
-SyslogIdentifier=childnotes-api
-Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://127.0.0.1:8080
-Environment=DOTNET_PRINT_TELEMETRY_MESSAGE=false
-Environment=DOTNET_CLI_TELEMETRY_OPTOUT=1
-Environment=DOTNET_NOLOGO=1
-NoNewPrivileges=true
-PrivateTmp=true
-ProtectSystem=full
-ProtectHome=true
-ReadWritePaths=${ROOT} /var/log/childnotes
-
-[Install]
-WantedBy=multi-user.target
-EOF
+install -m 644 "$(dirname "$0")/childnotes-api.service" /etc/systemd/system/childnotes-api.service
 systemctl daemon-reload
 systemctl enable childnotes-api.service
 
-echo "==> 8. 安装 deploy.sh"
+echo "==> 8. 安装 deploy.sh 到 /usr/local/bin/childnotes-deploy"
 install -m 755 "$(dirname "$0")/deploy.sh" /usr/local/bin/childnotes-deploy
 
 echo ""
 echo "================================================================"
 echo " 初始化完成!下一步:"
+echo ""
 echo "   1) 编辑 ${DEPLOY_ENV} (填 GH_TOKEN)"
-echo "   2) 编辑 ${PROD_CFG} (确认数据库密码/JWT/Admin 密码)"
-echo "   3) 首次部署:   sudo childnotes-deploy --first"
-echo "      指定版本:   sudo childnotes-deploy v0.5.4 --first"
+echo "      sudo nano ${DEPLOY_ENV}"
+echo ""
+echo "   2) (可选) 编辑 ${PROD_CFG} 调整配置"
+echo "      sudo nano ${ROOT}/shared/appsettings.Production.json"
+echo ""
+echo "   3) 首次部署:   sudo childnotes-deploy v0.5.4 --first"
+echo "      拉最新版:   sudo childnotes-deploy --first"
+echo ""
 echo "   4) 看日志:     journalctl -u childnotes-api -f"
 echo ""
-echo "   配置 Caddy 反代 (如已有 Caddy,在 Caddyfile 末尾加):"
-echo "     childnotes.hacloud.asia {"
-echo "         reverse_proxy 127.0.0.1:8080"
-echo "     }"
-echo "   然后: sudo systemctl reload caddy"
+echo "   5) 配置 Caddy 反代 (如已有 Caddy,在 Caddyfile 末尾追加):"
+echo "        childnotes.hacloud.asia {"
+echo "            reverse_proxy 127.0.0.1:8080"
+echo "        }"
+echo "      sudo systemctl reload caddy"
+echo ""
+echo "   6) 验证: curl https://childnotes.hacloud.asia/api/auth/me"
+echo "            应返回 {\"code\":401,...} (未登录 = 服务正常)"
 echo "================================================================"
