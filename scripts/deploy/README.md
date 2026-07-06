@@ -112,26 +112,23 @@ nslookup childnotes.hacloud.asia
 
 ### 步骤 3: 上传部署脚本到云服务器
 
-**方式 A: scp 上传(推荐,跟 HA_Cloud 一致)**
+**只能用 scp 上传**(私有仓库不能匿名 wget raw 文件)。
 
 在本地 Windows PowerShell:
 ```powershell
 # 进入本地仓库的部署脚本目录
 cd E:\0_Code\5_Git\AiJi\scripts\deploy
 
+# 先在云服务器上建目录 (SSH 进去执行 mkdir -p ~/childnotes-deploy)
+# 或直接 scp -r 会自动建
+
 # 上传 3 个文件到云服务器的 ~/childnotes-deploy/
 scp bootstrap.sh deploy.sh childnotes-api.service 用户名@云服务器IP:~/childnotes-deploy/
 ```
 
-**方式 B: 在云服务器上 wget(如脚本已推送)**
-
+如果云服务器上没有 `~/childnotes-deploy` 目录,先 SSH 进去建:
 ```bash
-# 在云服务器上
-mkdir -p ~/childnotes-deploy && cd ~/childnotes-deploy
-# 假设脚本已在 GitHub 仓库 master 分支
-for f in bootstrap.sh deploy.sh childnotes-api.service; do
-  wget https://raw.githubusercontent.com/KleinPan/ChildNotes/master/scripts/deploy/$f
-done
+mkdir -p ~/childnotes-deploy
 ```
 
 ### 步骤 4: 跑初始化(只做一次)
