@@ -41,6 +41,25 @@
                             <TextBox Text="{Binding NickName}" PlaceholderText="请输入昵称（选填）" CornerRadius="6"/>
                         </StackPanel>
 
+                        <!-- 服务器地址配置（可折叠，默认展开让首次部署用户先填地址再注册） -->
+                        <Button Command="{Binding ToggleServerConfig}" Background="Transparent" BorderThickness="0"
+                                HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="⚙" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBlock Text="服务器设置" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                           VerticalAlignment="Center" IsVisible="{Binding !ShowServerConfig}"/>
+                                <TextBlock Text="服务器设置 ▼" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                           VerticalAlignment="Center" IsVisible="{Binding ShowServerConfig}"/>
+                            </StackPanel>
+                        </Button>
+                        <StackPanel IsVisible="{Binding ShowServerConfig}" Margin="0,0,0,12">
+                            <TextBlock Text="服务器地址（留空=纯本地模式）" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://your-server.com"
+                                     CornerRadius="6"/>
+                            <TextBlock Text="注册前先填地址，账号会同步到后端服务器" FontSize="11"
+                                       Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0"/>
+                        </StackPanel>
+
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}"
                                    FontSize="13" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 

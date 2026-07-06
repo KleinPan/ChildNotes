@@ -14,8 +14,21 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private string _password = string.Empty;
     [ObservableProperty] private string _nickName = string.Empty;
     [ObservableProperty] private bool _isRegisterMode;
+    [ObservableProperty] private string _serverUrl = string.Empty;
+    [ObservableProperty] private bool _showServerConfig;
 
     public event Action? LoginSucceeded;
+
+    public LoginViewModel()
+    {
+        // 启动时读取已保存的服务器地址，方便用户确认/修改
+        try
+        {
+            var cfg = _cfgRepo.Get();
+            _serverUrl = cfg.ServerUrl ?? string.Empty;
+        }
+        catch { /* 首次启动表还没建，忽略 */ }
+    }
 
     [RelayCommand]
     private void ToggleMode()
@@ -25,12 +38,20 @@ public partial class LoginViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void ToggleServerConfig()
+    {
+        ShowServerConfig = !ShowServerConfig;
+    }
+
+    [RelayCommand]
     private async Task Submit()
     {
         ErrorMessage = string.Empty;
         try
         {
             DevLogger.Log("Login", $"Submit start: Mode={IsRegisterMode}, User='{Username}', PwdLen={Password?.Length ?? 0}, Nick='{NickName}'");
+            // 先把服务器地址写入 sync_config，让 Register 里的 TryRegisterOnServerAsync 能拿到地址同步到后端
+            SaveServerUrlToSyncConfig();
             // PBKDF2 哈希 + DB 查询放后台线程，避免阻塞 UI 30-80ms
             var result = await Task.Run(() => IsRegisterMode
                 ? _auth.Register(Username, Password, NickName)
@@ -96,6 +117,38 @@ public partial class LoginViewModel : ViewModelBase
         catch (Exception ex)
         {
             DevLogger.Log("Login", "SaveCredentialsToSyncConfig failed: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 把登录页输入的服务器地址写入 sync_config。
+    /// 必须在 Register/Login 之前调用，让 AuthService.TryRegisterOnServerAsync 能拿到地址。
+    /// 空值也保存（=纯本地模式，不同步到后端）。
+    /// </summary>
+    private void SaveServerUrlToSyncConfig()
+    {
+        try
+        {
+            var cfg = _cfgRepo.Get();
+            var url = (ServerUrl ?? string.Empty).Trim();
+            // 简单校验：非空时必须以 http:// 或 https:// 开头
+            if (!string.IsNullOrEmpty(url) && !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                                           && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                ErrorMessage = "服务器地址必须以 http:// 或 https:// 开头";
+                throw new InvalidOperationException("Invalid server url");
+            }
+            cfg.ServerUrl = url;
+            _cfgRepo.Save(cfg);
+            DevLogger.Log("Login", $"SyncConfig server url updated: {url}");
+        }
+        catch (InvalidOperationException)
+        {
+            throw; // 让 Submit 的 catch 捕获，显示 ErrorMessage
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Login", "SaveServerUrlToSyncConfig failed: " + ex.Message);
         }
     }
 }
