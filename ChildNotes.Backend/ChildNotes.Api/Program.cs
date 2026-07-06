@@ -146,11 +146,10 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(p => p
 
 var app = builder.Build();
 
-// 数据库迁移：开发/测试环境自动迁移，生产环境需手动执行 dotnet ef database update
-// （Testing 用 InMemoryDatabase，MigrateAsync 是空操作）
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+// 数据库初始化：所有环境自动建表（EnsureCreated 在数据库已存在且有表时是空操作）
+// 生产环境首次部署时自动建表，后续启动跳过；如需 schema 变更走 EF migrations
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
     db.Database.EnsureCreated();
 }
