@@ -287,6 +287,13 @@ public sealed class ApiSyncService : BaseApiClient
                 throw new SyncException(SyncErrorKind.Business, "登录响应缺少 token");
             var token = tokenEl.GetString()!;
             _cfgRepo.UpdateToken(token);
+            // 读取后端 user.id 并做本地迁移（修复本地注册 id 与后端 id 不一致导致推送 0 条的问题）
+            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
+            {
+                var remoteUserId = idEl.GetString();
+                if (!string.IsNullOrEmpty(remoteUserId))
+                    MigrateLocalUserIdIfNeeded(remoteUserId);
+            }
             return token;
         }
     }

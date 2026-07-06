@@ -52,6 +52,44 @@ public sealed class UserRepository : BaseRepository
                 .AddUtc("@t", DateTime.UtcNow)
                 .Add("@i", user.Id));
 
+    /// <summary>
+    /// 将本地旧 user_id 全量替换为后端 user_id（含 app_user 主键 + 所有关联表）。
+    /// 用于首次同步登录后发现本地注册生成的 id 与后端 id 不一致的场景。
+    /// 返回是否发生了替换。
+    /// </summary>
+    public bool UpdateIdIfDifferent(string oldLocalId, string remoteId)
+    {
+        if (string.IsNullOrEmpty(oldLocalId) || string.IsNullOrEmpty(remoteId) || oldLocalId == remoteId)
+            return false;
+
+        DevLogger.Log("UserRepo", $"UpdateIdIfDifferent: {oldLocalId} -> {remoteId}");
+
+        // 关闭外键约束检查，避免因子表引用导致主键更新失败
+        // （SQLite 默认 PRAGMA foreign_keys=OFF，但显式关闭更稳妥）
+        ExecuteNonQuery("PRAGMA foreign_keys = OFF", _ => { });
+        try
+        {
+            // 主键更新
+            ExecuteNonQuery("UPDATE app_user SET id=@new WHERE id=@old",
+                cmd => cmd.Add("@new", remoteId).Add("@old", oldLocalId));
+            // 所有关联表 user_id 替换
+            ExecuteNonQuery("UPDATE baby SET user_id=@new WHERE user_id=@old",
+                cmd => cmd.Add("@new", remoteId).Add("@old", oldLocalId));
+            ExecuteNonQuery("UPDATE child_record SET user_id=@new WHERE user_id=@old",
+                cmd => cmd.Add("@new", remoteId).Add("@old", oldLocalId));
+            ExecuteNonQuery("UPDATE milestone SET user_id=@new WHERE user_id=@old",
+                cmd => cmd.Add("@new", remoteId).Add("@old", oldLocalId));
+            ExecuteNonQuery("UPDATE ai_analysis_record SET user_id=@new WHERE user_id=@old",
+                cmd => cmd.Add("@new", remoteId).Add("@old", oldLocalId));
+        }
+        finally
+        {
+            ExecuteNonQuery("PRAGMA foreign_keys = ON", _ => { });
+        }
+
+        return true;
+    }
+
     private static AppUser Map(SqliteDataReader r) => new()
     {
         Id = r.GetString(0),

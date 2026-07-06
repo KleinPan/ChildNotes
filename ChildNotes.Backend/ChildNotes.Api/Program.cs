@@ -199,6 +199,10 @@ app.UseStaticFiles();
 
 app.MapControllers();
 
+// 健康检查端点：供前端 AI 设置"服务器模式"连通性测试使用。
+// 不需要鉴权，仅返回 200 OK。
+app.MapGet("/health", () => Results.Ok(new { state = "ok", ts = DateTime.UtcNow }));
+
 app.Run();
 
 // 暴露给 WebApplicationFactory 测试用

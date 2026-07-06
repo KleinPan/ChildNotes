@@ -72,6 +72,7 @@ public abstract class BaseApiClient
     /// 用 sync_config 中的 username/password 向服务器登录换取 token，
     /// 成功后写回 DB（UpdateToken）并返回 token；失败返回 null。
     /// 供 <see cref="SendAsync"/> 在 token 缺失时自动补救，以及派生类按需调用。
+    /// 同时读取响应中的 data.user.id，若与本地 user.id 不一致会触发全量迁移。
     /// </summary>
     protected static async Task<string?> TryLoginAsync(
         SyncConfigRepository cfgRepo, SyncConfig cfg, CancellationToken ct)
@@ -107,6 +108,13 @@ public abstract class BaseApiClient
             }
             var token = tokenEl.GetString()!;
             cfgRepo.UpdateToken(token);
+            // 读取后端 user.id 并做本地迁移
+            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
+            {
+                var remoteUserId = idEl.GetString();
+                if (!string.IsNullOrEmpty(remoteUserId))
+                    MigrateLocalUserIdIfNeeded(remoteUserId);
+            }
             DevLogger.Log("ApiClient", "Auto-login ok, token updated");
             return token;
         }
@@ -114,6 +122,33 @@ public abstract class BaseApiClient
         {
             DevLogger.Log("ApiClient", "Auto-login exception: " + ex.Message);
             return null;
+        }
+    }
+
+    /// <summary>
+    /// 若本地 CurrentUser.Id 与后端返回的 remoteUserId 不一致，
+    /// 全量替换本地 user_id 及所有关联表（baby/child_record/milestone/ai_analysis_record）。
+    /// 这是首次同步推送 0 条数据的根因：本地注册生成的 id 与后端 id 不同，
+    /// 后端 PushAsync 的 `item.UserId != uid` 校验会静默跳过所有数据。
+    /// </summary>
+    internal static void MigrateLocalUserIdIfNeeded(string remoteUserId)
+    {
+        try
+        {
+            var localUser = ServiceProvider.Instance.AuthService.CurrentUser;
+            if (localUser is null || localUser.Id == remoteUserId)
+                return;
+            var userRepo = ServiceProvider.Instance.UserRepository;
+            if (userRepo.UpdateIdIfDifferent(localUser.Id, remoteUserId))
+            {
+                // localUser 与 AppState.User 是同一引用，更新 Id 后两边都生效
+                localUser.Id = remoteUserId;
+                DevLogger.Log("ApiClient", $"Local user_id migrated: -> {remoteUserId}");
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("ApiClient", "MigrateLocalUserId failed: " + ex.Message);
         }
     }
 

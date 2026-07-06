@@ -115,6 +115,7 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
     /// <summary>
     /// 测试连接：根据当前 NoteSource 选择测试目标。
     /// local=本地 LLM；server=后端服务器连通性。
+    /// 测试前会自动保存当前配置，避免用户切换选项后未保存就测试导致状态丢失。
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanTest))]
     private async Task TestConnectionAsync()
@@ -125,11 +126,14 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
         TestResult = string.Empty;
         TestSuccess = false;
 
+        // 测试前先保存当前 UI 配置，确保返回页面后选项不丢失
+        Save();
+
         try
         {
             if (IsServerSource)
             {
-                // 后端模式：检查服务器地址是否可达
+                // 后端模式：检查服务器 /health 端点是否可达
                 var server = ServerUrl;
                 if (string.IsNullOrWhiteSpace(server))
                 {

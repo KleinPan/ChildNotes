@@ -12,6 +12,7 @@ public sealed class ServiceProvider
     public DbConnectionFactory DbFactory { get; }
     public AppState AppState { get; }
     public SessionRepository SessionRepository { get; }
+    public UserRepository UserRepository { get; }
     public AuthService AuthService { get; }
     public BabyService BabyService { get; }
     public RecordService RecordService { get; }
@@ -57,11 +58,11 @@ public sealed class ServiceProvider
         EnsureDeviceId();
 
         AppState = new AppState();
-        var userRepo = new UserRepository(DbFactory);
+        UserRepository = new UserRepository(DbFactory);
         var babyRepo = new BabyRepository(DbFactory);
         var recordRepo = new RecordRepository(DbFactory);
         SessionRepository = new SessionRepository(DbFactory);
-        AuthService = new AuthService(userRepo, SessionRepository, AppState, SyncConfigRepository);
+        AuthService = new AuthService(UserRepository, SessionRepository, AppState, SyncConfigRepository);
         BabyService = new BabyService(babyRepo, AppState);
         RecordService = new RecordService(recordRepo, AppState);
         StatisticsService = new StatisticsService(RecordService);
