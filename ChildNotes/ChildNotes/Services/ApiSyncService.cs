@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using ChildNotes.Data;
@@ -233,7 +234,14 @@ public sealed class ApiSyncService : BaseApiClient
         // 简单策略：本地有 token 就直接复用，不再做 me 探活（减少请求次数）
         // 失效由后续 Pull 触发的 401 重新登录处理（SyncPolicy 对 Auth 错误重试一次）
         if (!string.IsNullOrWhiteSpace(cfg.Token))
+        {
+            // 复用 token 时，主动调用 /api/auth/me 获取后端 user.id 并做本地迁移。
+            // 修复：v0.5.10 之前本地注册生成的 user.id 与后端不一致，导致 PushAsync
+            // 的 `item.UserId != uid` 校验静默跳过所有数据，推送 0 条。
+            // 迁移逻辑只在登录时触发，已有 token 缓存的用户不会重新登录，所以这里补一次。
+            await VerifyRemoteUserIdAsync(cfg, serverUrl, ct);
             return cfg.Token;
+        }
 
         try
         {
@@ -245,6 +253,37 @@ public sealed class ApiSyncService : BaseApiClient
         {
             DevLogger.Log("Sync", $"Login failed after retry: {ex.Kind} {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// 调用 /api/auth/me 获取后端 user.id，与本地不一致则触发迁移。
+    /// 失败静默处理（不阻塞同步主流程，后续 Push 校验失败会在日志中体现）。
+    /// </summary>
+    private async Task VerifyRemoteUserIdAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
+    {
+        try
+        {
+            var url = serverUrl.TrimEnd('/') + "/api/auth/me";
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Token);
+            using var resp = await Http.SendAsync(req, ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                DevLogger.Log("Sync", $"VerifyRemoteUserId /api/auth/me HTTP {(int)resp.StatusCode}");
+                return;
+            }
+            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
+            if (doc.RootElement.TryGetProperty("id", out var idEl))
+            {
+                var remoteId = idEl.GetString();
+                if (!string.IsNullOrEmpty(remoteId))
+                    BaseApiClient.MigrateLocalUserIdIfNeeded(remoteId);
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Sync", "VerifyRemoteUserId exception: " + ex.Message);
         }
     }
 
