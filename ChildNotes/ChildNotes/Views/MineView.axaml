@@ -12,7 +12,7 @@
         <StackPanel>
 
             <Border Background="{StaticResource WeuiBg2Brush}" Padding="14,16" Margin="0,0,0,8">
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <Grid ColumnDefinitions="Auto,*">
                     <!-- 原版头像: 绿色渐变背景 -->
                     <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="{StaticResource AvatarGradientBrush}">
                         <TextBlock Text="👤" FontSize="28" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -21,7 +21,6 @@
                         <TextBlock Text="{Binding NickName}" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A"/>
                         <TextBlock Text="{Binding RoleText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="2" Text="›" FontSize="24" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 

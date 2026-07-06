@@ -88,12 +88,13 @@ PostgreSQL 实例共用(5432),数据库独立;Caddy 实例共用,各走各的子
 
 ### 步骤 1: GitHub 配置(只做一次)
 
-1. **仓库 Visibility**:确认 `KleinPan/ChildNotes` 是 Public
-2. **生成 PAT**:访问 https://github.com/settings/tokens?type=beta
+1. **生成 PAT (Personal Access Token)**:访问 https://github.com/settings/tokens?type=beta
    - 选 Fine-grained token
    - Repository access: Only select repositories → `KleinPan/ChildNotes`
-   - Permissions: Contents = Read-only
-   - 复制 token(形如 `github_pat_xxx...`)
+   - Permissions: Contents = Read-only (用于下载 Release 资源)
+   - 复制 token(形如 `github_pat_xxx...`),后面要填到 `/etc/childnotes/deploy.env`
+
+   > 私有仓库必须用 PAT,deploy.sh 调用 GitHub API 时会带这个 token 认证。
 
 ### 步骤 2: DNS 解析(只做一次)
 
