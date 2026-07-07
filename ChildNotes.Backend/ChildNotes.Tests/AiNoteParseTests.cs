@@ -7,6 +7,7 @@ using ChildNotes.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ChildNotes.Tests;
 
@@ -50,7 +51,7 @@ public class AiNoteParseTests
     {
         // 用一个会抛异常的 DeepSeekClient stub，强制走规则解析路径
         var failingAi = new FailingDeepSeekClient();
-        return new AiNoteService(failingAi);
+        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance);
     }
 
     [Theory]
@@ -58,6 +59,11 @@ public class AiNoteParseTests
     [InlineData("刚才喝了90毫升", RecordType.Feed, FeedType.Bottle, 90)]
     [InlineData("吃了80ml母乳", RecordType.Feed, FeedType.Bottle, 80)]
     [InlineData("瓶喂150ml", RecordType.Feed, FeedType.Bottle, 150)]
+    // 无单位写法（数字+奶粉/奶/母乳）——规则兜底的常见盲区
+    [InlineData("16点20吃了40奶粉", RecordType.Feed, FeedType.Bottle, 40)]
+    [InlineData("吃了40奶", RecordType.Feed, FeedType.Bottle, 40)]
+    [InlineData("喝了50母乳", RecordType.Feed, FeedType.Bottle, 50)]
+    [InlineData("60奶粉", RecordType.Feed, FeedType.Bottle, 60)]
     public void RuleParse_FeedBottle_DetectsAmount(string text, string expectedType, string expectedSub, int expectedAmount)
     {
         var svc = NewServiceWithFailingAi();

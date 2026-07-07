@@ -1,3 +1,5 @@
+using ChildNotes.Core.Constants;
+
 namespace ChildNotes.Core.Dtos;
 
 public class GenerateAiAnalysisRequest
@@ -50,4 +52,10 @@ public record AiNoteParseResponse
     public double Confidence { get; set; }
     public bool Saved { get; set; }
     public string? RecordId { get; set; }
+
+    /// <summary>
+    /// 解析来源：标识本条记录是由 AI 还是规则兜底产生。
+    /// 取值见 <see cref="ChildNotes.Core.Constants.ParseSource"/>。
+    /// </summary>
+    public string Source { get; set; } = ParseSource.Ai;
 }

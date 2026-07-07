@@ -7,6 +7,7 @@ using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.External;
+using Microsoft.Extensions.Logging;
 
 namespace ChildNotes.Infrastructure.Services;
 
@@ -17,6 +18,7 @@ namespace ChildNotes.Infrastructure.Services;
 /// </summary>
 public partial class AiNoteService : IAiNoteService
 {
+    private readonly ILogger<AiNoteService> _logger;
     private const string SystemPrompt = """
 你是一名育儿记录解析助手。请将用户输入的自然语言文本解析为一条结构化的育儿记录，并仅输出 JSON。
 
@@ -60,9 +62,10 @@ public partial class AiNoteService : IAiNoteService
 
     private readonly DeepSeekClient _ai;
 
-    public AiNoteService(DeepSeekClient ai)
+    public AiNoteService(DeepSeekClient ai, ILogger<AiNoteService> logger)
     {
         _ai = ai;
+        _logger = logger;
     }
 
     public async Task<AiNoteParseResponse> ParseAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
@@ -79,10 +82,11 @@ public partial class AiNoteService : IAiNoteService
         {
             parsed = await ParseByAiAsync(text, ct);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // 降级到规则解析：保证可用性，置信度下调
-            parsed = ParseByRules(text) with { Confidence = 0.4 };
+            _logger.LogWarning(ex, "AI 解析失败，降级到规则兜底。Text={Text}", text);
+            parsed = ParseByRules(text) with { Confidence = 0.4, Source = ParseSource.Rule };
         }
 
         // 时间未提供则使用当前时间
@@ -93,6 +97,8 @@ public partial class AiNoteService : IAiNoteService
         // 仅解析，不落库。调用方（前端 AiNoteParseService）拿到 DTO 后自行 SaveLocally 写入本地库，
         // 再由 SyncTrigger 推送到后端，避免后端替用户决定 baby_id 和时区。
         parsed.Time = time;
+        _logger.LogInformation("智能记解析完成 Source={Source} Type={RecordType} SubType={SubType} Confidence={Confidence} Text={Text}",
+            parsed.Source, parsed.RecordType, parsed.RecordSubType, parsed.Confidence, text);
         return parsed;
     }
 
@@ -105,6 +111,7 @@ public partial class AiNoteService : IAiNoteService
         if (string.IsNullOrEmpty(parsed.RecordType) || !RecordType.All.Contains(parsed.RecordType))
             throw new InvalidOperationException("AI 返回的记录类型无效");
         if (parsed.Confidence <= 0) parsed.Confidence = 0.8;
+        parsed.Source = ParseSource.Ai;
         return parsed;
     }
 
@@ -132,17 +139,22 @@ public partial class AiNoteService : IAiNoteService
     public AiNoteParseResponse ParseByRules(string text)
     {
         // 1) 喂奶：奶量/亲喂时长
+        // FeedAmountRegex 同时覆盖带单位（ml/毫升）和无单位（奶/奶粉/母乳）的写法，
+        // 无单位时置信度略降（0.5），因歧义更大（如"40奶" vs"40g 奶糕"）。
         var feedMlMatch = FeedAmountRegex().Match(text);
         if (feedMlMatch.Success)
         {
+            int? amount = int.TryParse(feedMlMatch.Groups[1].Value, out var a) ? a : null;
+            var unit = feedMlMatch.Groups[2].Value; // ml / 毫升 / 奶粉 / 奶 / 母乳
+            var hasExplicitUnit = unit is "ml" or "毫升" or "mL";
             return new AiNoteParseResponse
             {
                 RecordType = RecordType.Feed,
                 RecordSubType = FeedType.Bottle,
-                Amount = int.TryParse(feedMlMatch.Groups[1].Value, out var a) ? a : null,
+                Amount = amount,
                 Time = ExtractTime(text),
-                Summary = "瓶喂 " + feedMlMatch.Groups[1].Value + "ml",
-                Confidence = 0.6,
+                Summary = "瓶喂 " + amount + (hasExplicitUnit ? "ml" : ""),
+                Confidence = hasExplicitUnit ? 0.6 : 0.5,
             };
         }
 
@@ -377,7 +389,12 @@ public partial class AiNoteService : IAiNoteService
         };
     }
 
-    [GeneratedRegex(@"(\d+)\s*(?:ml|毫升|mL)")]
+    /// <summary>
+    /// 喂奶奶量正则：捕获数字 + 单位。
+    /// 单位覆盖：ml / 毫升 / mL（显式容量单位）+ 奶粉 / 奶 / 母乳（无单位词，置信度下调）。
+    /// 注意：奶粉 必须放在 奶 之前，否则交替匹配会先吃掉"奶"导致"奶粉"被截断。
+    /// </summary>
+    [GeneratedRegex(@"(\d+)\s*(ml|毫升|mL|奶粉|母乳|奶)")]
     private static partial Regex FeedAmountRegex();
 
     [GeneratedRegex(@"(?:左|left)\s*(\d+)\s*(?:分|min|分钟).*(?:右|right)\s*(\d+)\s*(?:分|min|分钟)")]
