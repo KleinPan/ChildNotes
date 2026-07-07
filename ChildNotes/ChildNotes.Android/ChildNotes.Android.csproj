@@ -12,6 +12,11 @@
          本项目未启用 trimming，故显式关闭 AOT，避免 XA1030 错误。 -->
     <RunAOTCompilation>false</RunAOTCompilation>
 
+    <!-- ★ D8/DEX 编译配置（显式声明，避免 R8 默认行为差异导致崩溃）
+         D8 是 Android 官方推荐的 DEX 编译器，替代已废弃的 dx -->
+    <AndroidDexTool>d8</AndroidDexTool>
+    <AndroidEnableProguard>false</AndroidEnableProguard>
+
     <!-- ★ Android 版本号修复（三管齐下确保 versionName 干净）
          问题：.NET SDK 在 Debug 构建时自动追加源版本控制后缀到 Version 属性
                （如 0.0.0 → 0.0.0+14a6b2c），Android 的 android:versionName 不支持此格式。

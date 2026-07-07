@@ -179,6 +179,15 @@ jobs:
             keytool -list -keystore $HOME/childnotes.keystore -storepass "$ANDROID_KEYSTORE_PASS" 2>&1 | head -20 || echo "keytool 验证失败（不阻塞构建）"
           fi
 
+      - name: Clean Android build cache
+        if: matrix.target == 'android'
+        shell: bash
+        working-directory: ChildNotes
+        run: |
+          # 清理上一次构建的 obj 目录，避免 R8/D8 因缓存损坏而崩溃
+          rm -rf ChildNotes.Android/obj
+          echo "::notice::Android build cache cleaned"
+
       - name: Build Android app
         if: matrix.target == 'android'
         shell: bash
@@ -187,6 +196,8 @@ jobs:
           ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
+          # R8/D8 是 JVM 工具，增大堆内存防止 OOM 崩溃（默认堆可能不足处理 Avalonia + AndroidX 全量类）
+          _JAVA_OPTIONS: '-Xmx4g'
         run: |
           # .NET 10 + Avalonia.Android，产出 APK
           # 显式传入 ApplicationDisplayVersion 覆盖 csproj 默认值（0.0.0），
