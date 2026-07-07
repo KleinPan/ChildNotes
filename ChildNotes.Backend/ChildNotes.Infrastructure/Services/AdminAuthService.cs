@@ -64,6 +64,12 @@ public class AdminAuthService : IAdminAuthService
             || !_passwordHasher.Verify(req.Password, admin.PasswordHash))
             throw new BusinessException("Invalid username or password", 400);
 
+        // 自动迁移历史明文密码到 PBKDF2 格式
+        if (_passwordHasher.NeedsUpgrade(admin.PasswordHash))
+        {
+            admin.PasswordHash = _passwordHasher.Hash(req.Password);
+        }
+
         // 生成随机 token 并明文存入数据库，便于开发/调试期间直接查看当前有效 token
         // 注意：明文存储 token 在数据库泄露后可被直接复用，仅适用于开发阶段
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");

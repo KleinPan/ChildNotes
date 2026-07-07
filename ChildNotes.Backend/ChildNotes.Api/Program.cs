@@ -146,12 +146,15 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(p => p
 
 var app = builder.Build();
 
-// 数据库初始化：所有环境自动建表（EnsureCreated 在数据库已存在且有表时是空操作）
-// 生产环境首次部署时自动建表，后续启动跳过；如需 schema 变更走 EF migrations
+// 数据库初始化：自动应用未执行的 EF Core Migrations
+// InMemory 等非关系型数据库跳过迁移（仅生产 PostgreSQL 环境执行）
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
-    db.Database.EnsureCreated();
+    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+    {
+        db.Database.Migrate();
+    }
 }
 
 if (app.Environment.IsDevelopment())

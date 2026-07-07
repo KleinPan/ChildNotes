@@ -52,6 +52,14 @@ public sealed class UserRepository : BaseRepository
                 .AddUtc("@t", DateTime.UtcNow)
                 .Add("@i", user.Id));
 
+    public void UpdatePassword(string userId, string passwordHash)
+        => ExecuteNonQuery(
+            "UPDATE app_user SET password_hash=@p, updated_at=@t WHERE id=@i",
+            cmd => cmd
+                .Add("@p", passwordHash)
+                .AddUtc("@t", DateTime.UtcNow)
+                .Add("@i", userId));
+
     /// <summary>
     /// 将本地旧 user_id 全量替换为后端 user_id（含 app_user 主键 + 所有关联表）。
     /// 用于首次同步登录后发现本地注册生成的 id 与后端 id 不一致的场景。

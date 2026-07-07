@@ -54,6 +54,12 @@ public class AuthService : IAuthService
             ?? throw new BusinessException("用户不存在", 400, "USER_NOT_FOUND");
         if (!_passwordHasher.Verify(req.Password, user.PasswordHash))
             throw new BusinessException("密码错误", 400, "WRONG_PASSWORD");
+        // 自动迁移历史明文密码到 PBKDF2 格式
+        if (_passwordHasher.NeedsUpgrade(user.PasswordHash))
+        {
+            user.PasswordHash = _passwordHasher.Hash(req.Password);
+            await _db.SaveChangesAsync(ct);
+        }
         return await BuildLoginResponseAsync(user, false, ct);
     }
 

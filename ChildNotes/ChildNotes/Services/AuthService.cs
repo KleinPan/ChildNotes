@@ -152,6 +152,13 @@ public sealed class AuthService
             DevLogger.Log("Auth", "Login fail: password mismatch");
             return Fail("密码错误");
         }
+        // 自动迁移历史明文密码到 PBKDF2 格式
+        if (PasswordNeedsUpgrade(user.PasswordHash))
+        {
+            user.PasswordHash = HashPassword(password);
+            _users.UpdatePassword(user.Id, user.PasswordHash);
+            DevLogger.Log("Auth", $"Password upgraded to PBKDF2 for user={username}");
+        }
         CurrentUser = user;
         SaveSession(user.Id);
         DevLogger.Log("Auth", $"Login success: user={username}, id={user.Id}");
@@ -221,19 +228,47 @@ public sealed class AuthService
         _sessions.Save(userId, now, now + SessionLifetime);
     }
 
-    /// <summary>明文存储密码（仅供开发/调试用途，便于直接查看数据库中的密码字段）。
-    /// 注意：明文存储密码违反 OWASP 安全规范，仅适用于未正式发布的开发阶段。</summary>
-    public static string HashPassword(string password) => password;
+    /// <summary>PBKDF2-SHA256 密码哈希（格式：iterations:salt:hash，Base64 编码）。
+    /// 兼容历史明文密码：VerifyPassword 自动识别，登录成功后自动迁移。</summary>
+    public static string HashPassword(string password)
+    {
+        var iterations = 600_000;
+        var salt = RandomNumberGenerator.GetBytes(16);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
+        return $"{iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+    }
 
     public static bool VerifyPassword(string password, string stored)
     {
         if (string.IsNullOrEmpty(stored)) return false;
-        // 兼容历史 PBKDF2 格式 "salt:hash"（Base64）：无法逆推明文，直接失败，需重置密码迁移
+        // PBKDF2 格式：iterations:salt:hash（三段，首段为整数）
         var parts = stored.Split(':');
-        if (parts.Length == 2) return false;
+        if (parts.Length == 3 && int.TryParse(parts[0], out var iterations))
+        {
+            try
+            {
+                var salt = Convert.FromBase64String(parts[1]);
+                var expectedHash = Convert.FromBase64String(parts[2]);
+                var computedHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
+                return CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+        // 历史明文格式：恒定时间比较
         return CryptographicOperations.FixedTimeEquals(
             Encoding.UTF8.GetBytes(password),
             Encoding.UTF8.GetBytes(stored));
+    }
+
+    /// <summary>判断存储的密码是否需要升级到 PBKDF2 格式。</summary>
+    public static bool PasswordNeedsUpgrade(string stored)
+    {
+        if (string.IsNullOrEmpty(stored)) return false;
+        var parts = stored.Split(':');
+        return parts.Length != 3 || !int.TryParse(parts[0], out _);
     }
 }
 

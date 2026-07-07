@@ -9,8 +9,11 @@ public interface IPasswordHasher
     /// <summary>对密码进行哈希，返回 "iterations:salt:hash" 格式（Base64）。</summary>
     string Hash(string password);
 
-    /// <summary>校验密码是否匹配 "iterations:salt:hash" 格式的存储值。</summary>
+    /// <summary>校验密码是否匹配存储值。支持 PBKDF2 格式和明文格式（兼容历史数据）。</summary>
     bool Verify(string password, string stored);
+
+    /// <summary>判断存储的哈希值是否需要升级（如历史明文格式需要迁移到 PBKDF2）。</summary>
+    bool NeedsUpgrade(string stored);
 }
 
 /// <summary>密码哈希参数配置。</summary>

@@ -1,12 +1,12 @@
+using System.Security.Cryptography;
 using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Infrastructure.Auth;
 
 /// <summary>
-/// 明文密码哈希实现（仅供开发/调试用途）。
-/// 替换原 PBKDF2 哈希方案，便于在数据库中直接查看密码字段，加速问题排查。
-/// 注意：明文存储密码违反 OWASP 安全规范，仅适用于未正式发布的开发阶段。
-/// 生产环境正式发布前必须切换回 PBKDF2 或更强方案。
+/// PBKDF2-SHA256 密码哈希实现。
+/// 格式：iterations:salt:hash（Base64 编码，冒号分隔）。
+/// 兼容历史明文密码：Verify 时自动识别，NeedsUpgrade 标记需迁移。
 /// </summary>
 public class Pbkdf2PasswordHasher : IPasswordHasher
 {
@@ -14,19 +14,59 @@ public class Pbkdf2PasswordHasher : IPasswordHasher
 
     public Pbkdf2PasswordHasher(IOptions<PasswordHashOptions> opt) => _opt = opt.Value;
 
-    /// <summary>直接返回明文密码，不做任何哈希处理。</summary>
-    public string Hash(string password) => password;
+    public string Hash(string password)
+    {
+        var salt = RandomNumberGenerator.GetBytes(_opt.SaltSize);
+        var hash = Rfc2898DeriveBytes.Pbkdf2(
+            password,
+            salt,
+            _opt.Iterations,
+            HashAlgorithmName.SHA256,
+            _opt.HashSize);
+        return $"{_opt.Iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+    }
 
-    /// <summary>恒定时间比较明文密码与存储值；兼容旧的 "iterations:salt:hash" 格式（无法逆推，校验失败）。</summary>
     public bool Verify(string password, string stored)
     {
         if (string.IsNullOrEmpty(stored)) return false;
-        // 兼容历史 PBKDF2 格式：包含冒号分隔的三段视为旧哈希，无法逆推明文，直接失败
-        // （需通过重置密码流程迁移到明文格式）
+
         var parts = stored.Split(':');
-        if (parts.Length == 3 && int.TryParse(parts[0], out _)) return false;
-        return System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
+        // PBKDF2 格式：iterations:salt:hash（3 段，首段为整数）
+        if (parts.Length == 3 && int.TryParse(parts[0], out var iterations))
+        {
+            return VerifyPbkdf2(password, stored, iterations, parts[1], parts[2]);
+        }
+        // 历史明文格式：直接恒定时间比较（兼容旧数据，NeedsUpgrade 会标记迁移）
+        return CryptographicOperations.FixedTimeEquals(
             System.Text.Encoding.UTF8.GetBytes(password),
             System.Text.Encoding.UTF8.GetBytes(stored));
+    }
+
+    public bool NeedsUpgrade(string stored)
+    {
+        if (string.IsNullOrEmpty(stored)) return false;
+        var parts = stored.Split(':');
+        // 不是 PBKDF2 格式（3 段 + 首段为整数）则需要升级
+        return parts.Length != 3 || !int.TryParse(parts[0], out _);
+    }
+
+    private static bool VerifyPbkdf2(string password, string stored, int iterations, string saltBase64, string hashBase64)
+    {
+        try
+        {
+            var salt = Convert.FromBase64String(saltBase64);
+            var expectedHash = Convert.FromBase64String(hashBase64);
+            var computedHash = Rfc2898DeriveBytes.Pbkdf2(
+                password,
+                salt,
+                iterations,
+                HashAlgorithmName.SHA256,
+                expectedHash.Length);
+            return CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 }
