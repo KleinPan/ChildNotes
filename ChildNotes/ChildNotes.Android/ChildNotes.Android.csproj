@@ -58,7 +58,6 @@
     <PackageReference Include="Avalonia.Android" />
     <!-- AndroidX.Core：用于 WindowInsetsCompat.Type.ime() 获取精确键盘高度，
          替代旧式 ViewTreeObserver screenHeight-rectBottom 计算（后者在部分设备上偏小导致间隙） -->
-    <PackageReference Include="Xamarin.AndroidX.Core" />
   </ItemGroup>
 
   <ItemGroup>
