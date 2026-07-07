@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Data.Repositories;
@@ -20,9 +21,13 @@ namespace ChildNotes.ViewModels;
 public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
+    private readonly SyncLogRepository _logRepo = ServiceProvider.Instance.SyncLogRepository;
     private readonly SyncTrigger _trigger = ServiceProvider.Instance.SyncTrigger;
     private readonly NetworkMonitor _networkMonitor = ServiceProvider.Instance.NetworkMonitor;
     private bool _disposed;
+
+    /// <summary>最近同步日志（按时间倒序，最新在最上方）。供 UI 底部日志区绑定。</summary>
+    public ObservableCollection<SyncLogEntry> SyncLogs { get; } = new();
 
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private string _lastSyncText = "尚未同步";
@@ -87,6 +92,22 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
         _trigger.SyncCompleted += OnSyncCompleted;
     }
 
+    /// <summary>从数据库重新加载最近 10 条同步日志到 SyncLogs 集合。</summary>
+    private void ReloadSyncLogs()
+    {
+        try
+        {
+            var logs = _logRepo.GetRecent();
+            SyncLogs.Clear();
+            foreach (var log in logs)
+                SyncLogs.Add(log);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Sync", "ReloadSyncLogs failed: " + ex.Message);
+        }
+    }
+
     /// <summary>
     /// 退订外部单例事件，避免内存泄漏。
     /// 调用时机：MainShell 关闭 SyncSettings overlay 时（或应用退出时）。
@@ -107,6 +128,7 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
         Enabled = cfg.Enabled;
         ServerUrlInput = cfg.ServerUrl ?? string.Empty;
         UpdateLastSyncText(cfg);
+        ReloadSyncLogs();
         _loading = false;
     }
 
@@ -153,6 +175,7 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
         {
             UpdateLastSyncText(_cfgRepo.Get());
             StatusText = result.Success ? "同步成功" : "同步失败";
+            ReloadSyncLogs();
         });
     }
 
@@ -162,11 +185,15 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
         if (IsSyncing) return;
         IsSyncing = true;
         StatusText = "同步中…";
+        // 立即插入一条 running 日志并刷新 UI（SyncTrigger 内部也会写日志，
+        // 但 RunNowAsync 完成前 UI 不会刷新，这里先刷新让用户看到"进行中"状态）
+        ReloadSyncLogs();
         try
         {
             var result = await _trigger.RunNowAsync();
             StatusText = result.Success ? "同步成功" : "同步失败";
             UpdateLastSyncText(_cfgRepo.Get());
+            ReloadSyncLogs();
             DisplayToast(result.Success ? result.Message : ("失败：" + result.Message));
         }
         finally

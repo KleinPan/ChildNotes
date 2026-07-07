@@ -1,5 +1,7 @@
 using System.Threading;
+using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
+using ChildNotes.Models;
 
 namespace ChildNotes.Services;
 
@@ -11,6 +13,7 @@ namespace ChildNotes.Services;
 public sealed class SyncTrigger : IDisposable
 {
     private readonly ApiSyncService _sync;
+    private readonly SyncLogRepository? _logRepo;
     private readonly Timer _startupTimer;
     private Timer? _debounceTimer;
     private Timer? _keepaliveTimer;
@@ -28,9 +31,13 @@ public sealed class SyncTrigger : IDisposable
     /// </summary>
     public NetworkMonitor? NetworkMonitor { get; set; }
 
-    public SyncTrigger(ApiSyncService sync)
+    public SyncTrigger(ApiSyncService sync) : this(sync, null) { }
+
+    /// <summary>带 SyncLogRepository 的构造函数：启用同步日志记录。</summary>
+    public SyncTrigger(ApiSyncService sync, SyncLogRepository? logRepo)
     {
         _sync = sync;
+        _logRepo = logRepo;
         _startupTimer = new Timer(_ => RunOnce("startup"), null, TimeSpan.FromSeconds(8), Timeout.InfiniteTimeSpan);
         // 长空闲期保活：每 15 分钟一次，防止 LastSyncAt 漂移过大
         _keepaliveTimer = new Timer(_ => RunOnce("keepalive"), null, TimeSpan.FromMinutes(15), TimeSpan.FromMinutes(15));
@@ -86,20 +93,71 @@ public sealed class SyncTrigger : IDisposable
             }
         }
 
+        // 节流跳过的同步（如未启用、配置不完整）不记录日志，避免噪音
+        // 仅真正进入同步流程时写入 running 日志
+        long logId = 0;
+        if (_logRepo is not null)
+        {
+            try
+            {
+                logId = _logRepo.Add(new SyncLogEntry
+                {
+                    DoneAt = DateTime.Now,
+                    Status = "running",
+                    DataVolume = string.Empty,
+                    Message = $"同步中（{source}）",
+                });
+            }
+            catch (Exception ex)
+            {
+                DevLogger.Log("Sync", "SyncLog add running failed: " + ex.Message);
+            }
+        }
+
         try
         {
             _lastRunAt = DateTime.UtcNow;
             DevLogger.Log("Sync", $"Sync triggered by '{source}'");
             var result = await _sync.SyncAsync();
             DevLogger.Log("Sync", $"Sync done ({source}): success={result.Success}, msg={result.Message}");
+            RecordFinalLog(logId, result);
             SyncCompleted?.Invoke(result);
             return result;
         }
         catch (Exception ex)
         {
             DevLogger.Log("Sync", ex);
-            return new ApiSyncService.SyncResult { Success = false, Message = ex.Message };
+            var failResult = new ApiSyncService.SyncResult { Success = false, Message = ex.Message };
+            RecordFinalLog(logId, failResult);
+            return failResult;
         }
+    }
+
+    /// <summary>把最终同步结果写入日志（running → success/failed）。</summary>
+    private void RecordFinalLog(long logId, ApiSyncService.SyncResult result)
+    {
+        if (_logRepo is null || logId <= 0) return;
+        try
+        {
+            var status = result.Success ? "success" : "failed";
+            var volume = BuildDataVolume(result);
+            _logRepo.UpdateFinal(logId, DateTime.Now, status, volume, result.Message ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Sync", "SyncLog update final failed: " + ex.Message);
+        }
+    }
+
+    /// <summary>根据 SyncResult 生成数据量描述。</summary>
+    private static string BuildDataVolume(ApiSyncService.SyncResult r)
+    {
+        if (!r.Success)
+        {
+            // 失败时通常无数据量；PullPages > 0 时仍提示拉取页数便于诊断
+            return r.PullPages > 0 ? $"已拉取 {r.PullPages} 页" : string.Empty;
+        }
+        return $"拉取 {r.PulledBabies}宝/{r.PulledRecords}条/{r.PulledMilestones}里程碑；推送 {r.PushedBabies}宝/{r.PushedRecords}条/{r.PushedMilestones}里程碑";
     }
 
     public void Dispose()

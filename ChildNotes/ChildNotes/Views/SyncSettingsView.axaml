@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:m="using:ChildNotes.Models"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -88,6 +89,47 @@
                         <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center"
                                  Fill="{Binding IsOnline, Converter={x:Static v:SyncSettingsView.OnlineColorConverter}}"/>
                     </Grid>
+                </Border>
+
+                <!-- 同步日志（最近 10 条，按时间倒序） -->
+                <Border Classes="section-title">
+                    <TextBlock Text="同步日志"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <!-- 限定最大高度，超出后内部独立垂直滚动；不影响整页滚动 -->
+                    <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding SyncLogs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="m:SyncLogEntry">
+                                        <StackPanel Margin="14,10" Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Grid.Column="0" Text="{Binding DoneAt, StringFormat='yyyy-MM-dd HH:mm:ss'}"
+                                                           FontSize="13" FontWeight="Medium"/>
+                                                <!-- 状态标识：颜色区分 success/failed/running -->
+                                                <Border Grid.Column="1" Padding="6,2" CornerRadius="4"
+                                                        Background="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusBrushConverter}}">
+                                                    <TextBlock Text="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusTextConverter}}"
+                                                               FontSize="11" Foreground="White"/>
+                                                </Border>
+                                            </Grid>
+                                            <TextBlock Text="{Binding DataVolume}" FontSize="12"
+                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       IsVisible="{Binding DataVolume, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                            <TextBlock Text="{Binding Message}" FontSize="12"
+                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- 空状态：暂无日志 -->
+                            <TextBlock Text="暂无同步记录" FontSize="13"
+                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       HorizontalAlignment="Center" Margin="0,20"
+                                       IsVisible="{Binding SyncLogs.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Border>
 
                 <!-- 说明 -->

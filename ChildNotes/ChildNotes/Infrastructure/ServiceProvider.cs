@@ -26,6 +26,7 @@ public sealed class ServiceProvider
     public LlmClient LlmClient { get; }
     public AiAnalysisService AiAnalysisService { get; }
     public SyncConfigRepository SyncConfigRepository { get; }
+    public SyncLogRepository SyncLogRepository { get; }
     public ApiSyncService ApiSyncService { get; }
     public SyncTrigger SyncTrigger { get; }
     public NetworkMonitor NetworkMonitor { get; }
@@ -62,6 +63,7 @@ public sealed class ServiceProvider
 
         // SyncConfigRepository 提前初始化：UploadService 依赖它做异步上传
         SyncConfigRepository = new SyncConfigRepository(DbFactory);
+        SyncLogRepository = new SyncLogRepository(DbFactory);
         EnsureDeviceId();
 
         AppState = new AppState();
@@ -84,7 +86,7 @@ public sealed class ServiceProvider
         NetworkMonitor = new NetworkMonitor();
         ApiSyncService = new ApiSyncService(SyncConfigRepository, babyRepo, recordRepo, MilestoneRepository, DbFactory);
         ApiSyncService.NetworkMonitor = NetworkMonitor;
-        SyncTrigger = new SyncTrigger(ApiSyncService);
+        SyncTrigger = new SyncTrigger(ApiSyncService, SyncLogRepository);
         SyncTrigger.NetworkMonitor = NetworkMonitor;
         NetworkMonitor.StateChanged += SyncTrigger.OnNetworkStateChanged;
         // 注入回写触发，避免循环依赖

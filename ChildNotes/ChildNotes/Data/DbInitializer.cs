@@ -222,6 +222,16 @@ VALUES (1, 0, '', '', '', '');
         // sync_config 增量迁移：device_id 字段（用于设备级追踪与冲突归因）
         AddColumnIfNotExists(conn, "sync_config", "device_id", "TEXT");
 
+        // ===== 同步日志表（保留最近 10 条，用于数据同步页底部展示）=====
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS sync_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    done_at TEXT NOT NULL,
+    status TEXT NOT NULL,
+    data_volume TEXT NOT NULL DEFAULT '',
+    message TEXT NOT NULL DEFAULT ''
+);");
+
         // child_record 增量索引：updated_at 用于增量上送查询
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_updated ON child_record (updated_at);");
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_baby_updated ON baby (updated_at);");
