@@ -11,24 +11,11 @@
     <FileVersion Condition="'$(FileVersion)' == ''">$(Version).0</FileVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
 
-    <!-- Android 版本号：从 Version 安全派生
-         ApplicationDisplayVersion = 版本字符串（如 0.3.2），对应 android:versionName
-         ApplicationVersion = 整数 versionCode，Android 要求 > 0。
-         用 Major*10000 + Minor*100 + Patch 计算，保证单调递增且永远 >= 1
-         （Version=0.0.0 时回退为 1，避免 versionCode=0 触发 "invalid android:versionCode"）。
-
-         ⚠️ 注意：ApplicationDisplayVersion 在 ChildNotes.Android.csproj 中被显式覆盖为 "0.0.0"
-         （Debug 默认值），CI Release 构建时通过 -p:ApplicationDisplayVersion=x.y.z 覆盖。
-         此处仅作为非 Android 项目或未覆盖时的 fallback。
-
-         ★ 安全设计：用正则提取版本号各段，避免 [System.Version]::Parse 在非 SemVer 输入
-         （如分支名 "master"）时抛出 MSB4184 异常。正则不匹配时各段为空字符串，
-         ApplicationVersion 条件判断跳过计算，最终回退到 1。 -->
+    <!-- Android 版本号：versionCode 由 CI（release.yml 的 bash）计算后通过 -p:ApplicationVersion= 传入。
+         本地 Debug 构建或未传入时，回退为 1（Android 要求 versionCode > 0）。
+         不在 MSBuild 中解析 Version 字符串，避免 [System.Version]::Parse 在非 SemVer 输入
+         （如分支名 "master"）时抛 MSB4184 异常。 -->
     <ApplicationDisplayVersion Condition="'$(ApplicationDisplayVersion)' == ''">$(Version)</ApplicationDisplayVersion>
-    <_VersionMajor>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^(\d+)\.(\d+)\.(\d+)').Groups[1].Value)</_VersionMajor>
-    <_VersionMinor>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^(\d+)\.(\d+)\.(\d+)').Groups[2].Value)</_VersionMinor>
-    <_VersionPatch>$([System.Text.RegularExpressions.Regex]::Match('$(Version)', '^(\d+)\.(\d+)\.(\d+)').Groups[3].Value)</_VersionPatch>
-    <ApplicationVersion Condition="'$(ApplicationVersion)' == '' And '$(_VersionMajor)' != ''">$([MSBuild]::Add($([MSBuild]::Add($([MSBuild]::Multiply($([System.Convert]::ToInt32($(_VersionMajor))), 10000)), $([MSBuild]::Multiply($([System.Convert]::ToInt32($(_VersionMinor))), 100)))), $([System.Convert]::ToInt32($(_VersionPatch)))))</ApplicationVersion>
     <ApplicationVersion Condition="'$(ApplicationVersion)' == '' Or '$(ApplicationVersion)' == '0'">1</ApplicationVersion>
   </PropertyGroup>
 

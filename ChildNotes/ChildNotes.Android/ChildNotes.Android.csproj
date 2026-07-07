@@ -28,6 +28,11 @@
     <InformationalVersion>0.0.0</InformationalVersion>
     <ApplicationDisplayVersion>0.0.0</ApplicationDisplayVersion>
 
+    <!-- ★ ApplicationVersion 保险（Android versionCode 必须 > 0）
+         Directory.Build.props 中已用正则安全派生，但此处作为 Android 项目专属的最后防线：
+         如果上层未设置或计算出 0/空值，强制回退为 1，避免 aapt2 报 APT2140。 -->
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == '' Or '$(ApplicationVersion)' == '0'">1</ApplicationVersion>
+
     <!-- ★ 固定签名配置（解决 CI 每次构建签名不一致导致无法覆盖安装的问题）
          本地 Debug 构建不生效（AndroidSigningKeyStore 为空时 AndroidKeyStore=false，走默认 debug 签名）；
          CI 通过 -p:AndroidSigningKeyStore=/path/to/keystore 等参数注入固定签名。
