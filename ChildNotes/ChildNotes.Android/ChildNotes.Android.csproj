@@ -16,13 +16,6 @@
          D8 是 Android 官方推荐的 DEX 编译器，替代已废弃的 dx -->
     <AndroidDexTool>d8</AndroidDexTool>
     <AndroidEnableProguard>false</AndroidEnableProguard>
-    <!-- ★ 解决 androidx.core.core 与 androidx.core.core-ktx 重复类冲突
-         问题：Avalonia.Android 传递依赖 core-ktx，与项目显式引用的 Xamarin.AndroidX.Core
-               （映射到 androidx.core.core）存在重叠的 Kotlin 扩展类（如 AnimatorKt），
-               导致 D8 编译时报 "defined multiple times" 错误。
-         方案：启用编译时类路径解析（.NET 8+ 特性），自动处理重复类。
-         参考：https://github.com/xamarin/xamarin-android/issues/7888 -->
-    <AndroidEnableAppCompileTimeClassPathResolution>true</AndroidEnableAppCompileTimeClassPathResolution>
 
     <!-- ★ Android 版本号修复（三管齐下确保 versionName 干净）
          问题：.NET SDK 在 Debug 构建时自动追加源版本控制后缀到 Version 属性
@@ -66,4 +59,16 @@
   <ItemGroup>
     <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" />
   </ItemGroup>
+
+  <!-- ★ 移除 AAR 中重复的 Kotlin 类（AndroidX 打包 bug）
+       AnimatorKt$addListener$1 等类在 core 和 core-ktx 两个 AAR 中均有定义，
+       D8 严格检测重复类导致编译失败。此 target 在 D8 编译前从所有 AAR 的
+       classes.jar 中移除这些重复类（两个副本相同，移除任一即可消除冲突）。
+       BeforeTargets="_CompileToDalvik" 确保在 D8 处理前执行。 -->
+  <Target Name="RemoveDuplicateCoreKtxClasses" BeforeTargets="_CompileToDalvik">
+    <ItemGroup>
+      <_AllLpJars Include="$(IntermediateOutputPath)lp\*\jl\classes.jar" />
+    </ItemGroup>
+    <Exec Command="zip -d &quot;%(_AllLpJars.Identity)&quot; 'androidx/core/animation/AnimatorKt$addListener$1.class'" ContinueOnError="true" />
+  </Target>
 </Project>
