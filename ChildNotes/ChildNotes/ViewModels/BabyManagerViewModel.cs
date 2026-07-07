@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Input.Platform;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -147,6 +148,28 @@ public partial class BabyManagerViewModel : ViewModelBase
         DeleteConfirmName = baby.Name;
         EditingId = baby.Id;
         IsDeleteConfirmOpen = true;
+    }
+
+    /// <summary>
+    /// 复制当前编辑宝宝的 ID 到系统剪贴板。
+    /// 宝宝主人可发送给家人，家人凭此 ID 在「家人管理」中加入家庭。
+    /// </summary>
+    public async Task CopyEditingIdAsync()
+    {
+        var id = EditingId;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DisplayToast("宝宝 ID 为空");
+            return;
+        }
+        var clipboard = ServiceProvider.Instance.MainView?.Clipboard;
+        if (clipboard is null)
+        {
+            DisplayToast("剪贴板不可用");
+            return;
+        }
+        await clipboard.SetTextAsync(id);
+        DisplayToast("宝宝 ID 已复制");
     }
 
     [RelayCommand]

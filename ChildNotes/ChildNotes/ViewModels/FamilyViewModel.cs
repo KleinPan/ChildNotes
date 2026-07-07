@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -143,5 +144,30 @@ public partial class FamilyViewModel : ViewModelBase
         IsRoleEditorOpen = false;
         DisplayToast($"角色已更新为：{FamilyRoles.GetRoleName(EditingRoleCode)}");
         await LoadAsync();
+    }
+
+    // ===== 复制宝宝 ID =====
+    // 家人管理需要宝宝 ID 才能加入家庭，但 UI 之前无处可复制。
+    // 由家庭卡片上的"复制 ID"按钮调用，把宝宝 ID 写入系统剪贴板。
+
+    /// <summary>
+    /// 复制指定宝宝 ID 到系统剪贴板，并提示用户。
+    /// 通过 TopLevel 代理获取 Clipboard，避免 ViewModel 直接依赖 Avalonia 控件。
+    /// </summary>
+    public async Task CopyBabyIdAsync(string babyId)
+    {
+        if (string.IsNullOrWhiteSpace(babyId))
+        {
+            DisplayToast("宝宝 ID 为空");
+            return;
+        }
+        var clipboard = ServiceProvider.Instance.MainView?.Clipboard;
+        if (clipboard is null)
+        {
+            DisplayToast("剪贴板不可用");
+            return;
+        }
+        await clipboard.SetTextAsync(babyId);
+        DisplayToast("宝宝 ID 已复制");
     }
 }

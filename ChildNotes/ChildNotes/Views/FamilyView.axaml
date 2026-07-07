@@ -55,6 +55,21 @@
                                     </Grid>
                                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
 
+                                    <!-- 宝宝 ID 行：宝宝主人可复制给家人用于加入家庭 -->
+                                    <Grid Margin="14,10" ColumnDefinitions="Auto,*,Auto">
+                                        <TextBlock Grid.Column="0" Text="宝宝 ID" FontSize="12"
+                                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding BabyId}" FontSize="12"
+                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                   FontFamily="Consolas,Menlo,monospace"
+                                                   VerticalAlignment="Center" Margin="8,0,0,0"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <Button Grid.Column="2" Content="复制" Classes="weui-btn mini"
+                                                Click="OnCopyBabyIdTap" Tag="{Binding BabyId}"/>
+                                    </Grid>
+                                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+
                                     <!-- 成员列表 -->
                                     <ItemsControl ItemsSource="{Binding Members}">
                                         <ItemsControl.ItemTemplate>

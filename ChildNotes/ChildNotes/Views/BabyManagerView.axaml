@@ -189,6 +189,21 @@
                             <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
                                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+                            <!-- 宝宝 ID 行（仅编辑模式可见）：主人可复制给家人用于加入家庭 -->
+                            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0"
+                                  IsVisible="{Binding IsEditing}">
+                                <TextBlock Grid.Column="0" Text="宝宝 ID" FontSize="13"
+                                           Foreground="{StaticResource WeuiFg1Brush}"
+                                           VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding EditingId}" FontSize="12"
+                                           Foreground="{StaticResource WeuiFg2Brush}"
+                                           FontFamily="Consolas,Menlo,monospace"
+                                           VerticalAlignment="Center" Margin="8,0,0,0"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <Button Grid.Column="2" Content="复制" Classes="weui-btn mini"
+                                        Click="OnCopyEditingIdTap"/>
+                            </Grid>
+
                             <!-- 删除按钮（仅编辑模式） -->
                             <Button Content="删除此宝宝" Classes="weui-btn warn" CornerRadius="24"
                                     IsVisible="{Binding IsEditing}"

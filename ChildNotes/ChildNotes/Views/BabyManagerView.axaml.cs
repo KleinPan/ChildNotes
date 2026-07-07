@@ -226,6 +226,14 @@ public partial class BabyManagerView : UserControl
         var editing = ServiceProvider.Instance.AppState.BabyList.FirstOrDefault(b => b.Id == vm.EditingId);
         if (editing is not null) vm.OpenDeleteConfirm(editing);
     }
+
+    /// <summary>
+    /// 复制当前编辑宝宝的 ID 到剪贴板：主人可发送给家人用于加入家庭。
+    /// </summary>
+    private async void OnCopyEditingIdTap(object? sender, RoutedEventArgs e)
+    {
+        if (Vm is { } vm) await vm.CopyEditingIdAsync();
+    }
 }
 
 file sealed class IsCurrentBabyConverter : IValueConverter

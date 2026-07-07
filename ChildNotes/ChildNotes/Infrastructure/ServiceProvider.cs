@@ -1,4 +1,5 @@
 using System.IO;
+using Avalonia.Controls;
 using ChildNotes.Data;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Services;
@@ -31,6 +32,12 @@ public sealed class ServiceProvider
     public FamilyApiClient FamilyApiClient { get; }
     public AiParseApiClient AiParseApiClient { get; }
     public IDateTimeFormatter DateTimeFormatter { get; }
+
+    /// <summary>
+    /// 主窗口引用：用于在 ViewModel 中获取 TopLevel.Clipboard 等平台能力。
+    /// 由 MainWindow 构造完成后赋值；VM 在调用前判空即可。
+    /// </summary>
+    public TopLevel? MainView { get; set; }
 
     private ServiceProvider()
     {
