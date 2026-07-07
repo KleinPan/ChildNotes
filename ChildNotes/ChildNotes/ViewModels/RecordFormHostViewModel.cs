@@ -10,7 +10,7 @@ namespace ChildNotes.ViewModels;
 
 /// <summary>
 /// RecordSheetViewModel 的公共基类。
-/// 统一管理：12 个表单 VM 属性、ActiveType/IsVisible/SheetTitle 状态、
+/// 统一管理：11 个表单 VM 属性、ActiveType/IsVisible/SheetTitle 状态、
 /// 类型→标题映射、Validate 调度、FillForm（编辑模式回填）。
 /// </summary>
 public abstract partial class RecordFormHostViewModel : ViewModelBase

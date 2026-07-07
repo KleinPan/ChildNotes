@@ -12,7 +12,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     /// <summary>保存成功后触发（用于刷新首页/喂养页数据）。</summary>
     public event Action? Saved;
 
-    /// <summary>疫苗内联操作（已打/跳过/修改）后触发：刷新首页数据但不关闭抽屉，便于连续操作。</summary>
+    /// <summary>疫苗内联操作（已打/跳过/修改/取消）后触发：刷新首页数据但不关闭抽屉，便于连续操作。</summary>
     public event Action? VaccineInlineChanged;
 
     /// <summary>抽屉关闭时触发（无论保存还是点 X 关闭，统一通知 Shell 重置 IsRecordSheetOpen）。</summary>
@@ -176,7 +176,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         ShowVaccineCancelConfirm = true;
     }
 
-    /// <summary>直接取消已跳过剂次：无数据损失（跳过仅标记状态），与"跳过"操作对称，不弹窗。
+    /// <summary>直接取消已跳过剂次：无数据损失（跳过仅标记状态），与"跳过"操作互逆，不弹窗。
     /// 删除 DB 记录并原地恢复为待接种状态。</summary>
     public void CancelVaccineSkippedDirect(VaccinePlanView plan)
     {

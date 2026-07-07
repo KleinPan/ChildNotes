@@ -26,7 +26,12 @@ public sealed class SyncLogRepository : BaseRepository
         return Query(sql, _ => { }, Map);
     }
 
-    /// <summary>插入一条日志，并裁剪超出上限的旧记录。返回自增 id。</summary>
+    /// <summary>
+    /// 插入一条日志，并裁剪超出上限的旧记录。
+    /// 返回最新插入行的自增 id（供 running → 终态更新使用）。
+    /// 注意：实现通过独立连接查询 last_insert_rowid()，依赖 BaseRepository 的连接池复用同一连接才能拿到正确值；
+    /// 若未来重构为每次开新连接，需改为在 INSERT 同一连接内 RETURNING id 或使用 SCOPE_IDENTITY 等价方案。
+    /// </summary>
     public long Add(SyncLogEntry entry)
     {
         ExecuteNonQuery(

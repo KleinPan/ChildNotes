@@ -6,9 +6,9 @@ namespace ChildNotes.Services;
 
 /// <summary>
 /// 网络状态监测器：三层探测 + 事件驱动。
-/// L1: NetworkChange 系统事件（即时感知网卡通断，桌面端可靠，移动端需平台桥接）。
-/// L2: NetworkInterface.GetIsNetworkAvailable 兜底（L1 在部分平台不可靠时定时轮询）。
-/// L3: HTTP HEAD /api/health 探活（区分"有网但服务不可用"与"完全离线"）。
+/// L1: NetworkChange 系统事件（作为触发器：网卡通断时立即触发 ProbeAsync 探测，桌面端可靠，移动端需平台桥接）。
+/// L2: NetworkInterface.GetIsNetworkAvailable（ProbeAsync 内部第一层状态判断，判断本地网卡是否在线）。
+/// L3: HTTP HEAD /api/health 探活（ProbeAsync 内部第二层判断，区分"有网但服务不可用"与"完全离线"）。
 /// 状态变化时触发 <see cref="StateChanged"/>，供 SyncTrigger 在网络恢复时立即触发同步。
 /// </summary>
 public sealed class NetworkMonitor : IDisposable

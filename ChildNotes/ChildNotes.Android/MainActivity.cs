@@ -1,4 +1,4 @@
-﻿﻿﻿using Android.App;
+﻿﻿using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
@@ -49,7 +49,8 @@ public class MainActivity : AvaloniaMainActivity
         KeyboardHeightService.OnKeyboardHeightChanged = OnKeyboardHeightChanged;
 
         // 注册预测式返回回调（Android 13+ / API 33+）。
-        // OnBackPressed 在 API 33+ 已废弃，targetSdk=36 时系统不再调用它，必须用 OnBackInvokedCallback。
+        // OnBackPressed 在 API 33+ 已废弃，当前 .NET 10 Android SDK 默认 targetSdk 为 36，
+        // 系统不再调用 OnBackPressed，必须用 OnBackInvokedCallback。
         // 注册后，侧滑返回手势会先经 HandleSystemBack() 判断是否拦截：
         //   - 有弹层打开 → 吞掉事件，关闭弹层，不退出应用
         //   - 无弹层 → 不拦截，系统执行默认返回（finish Activity 回桌面）
@@ -183,9 +184,9 @@ public class MainActivity : AvaloniaMainActivity
             {
                 return; // 弹层已关闭，吞掉返回事件
             }
-            // 无弹层可关：不拦截，让系统执行默认返回（finish Activity）。
-            // 注意：OnBackInvokedCallback 没有"放行"API，不调用任何方法即视为已消费。
-            // 若需放行，需调用 Finish() 显式结束 Activity。
+            // 无弹层可关：显式调用 Finish() 结束 Activity。
+            // 注意：OnBackInvokedCallback 没有"放行"API，不调用任何方法即视为已消费回调，
+            // 因此必须主动调用 Finish() 才能让系统销毁 Activity。
             _owner.Finish();
         }
     }

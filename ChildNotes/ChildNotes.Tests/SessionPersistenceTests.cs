@@ -44,8 +44,9 @@ public class SessionPersistenceTests : IDisposable
 
     public void Dispose()
     {
-        // DbConnectionFactory 不持有原生资源，无需显式释放
-        // 临时 db 文件由 OS 在 temp 目录清理
+        // DbConnectionFactory 仅持有连接字符串与 dbPath，不缓存 SqliteConnection 实例，
+        // 每次 Create() 由调用方负责 using 释放，因此此处无需显式释放。
+        // 临时 db 文件由 OS 在 temp 目录清理。
     }
 
     /// <summary>辅助：注册一个用户并退出（仅写入 app_user 表，不保留会话）。</summary>

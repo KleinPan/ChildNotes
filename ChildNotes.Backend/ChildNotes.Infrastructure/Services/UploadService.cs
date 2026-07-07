@@ -153,9 +153,10 @@ public class UploadService : IUploadService
 
     private Task<string> UploadToOssAsync(Stream stream, string key, CancellationToken ct)
     {
-        // 阶段 2 先不引入阿里云 OSS SDK，阶段 3 补全
-        // 目前若配置了 OSS，降级到本地存储并拼接 OSS 风格 URL（便于测试）
-        // 阶段 3 替换为真实 OSS 上传
+        // TODO: 尚未引入阿里云 OSS SDK，当前实现仅返回拼接的 OSS 风格 URL，
+        // 不会真正上传文件流，流数据被丢弃。配置 OSS 时调用方需注意此限制，
+        // 或在未配置 OSS 时走 UploadToLocalAsync 分支落盘。
+        // 后续需替换为真实 OSS 上传（引入 aliyun-oss-dotnet-sdk）。
         var baseUrl = !string.IsNullOrEmpty(_oss.BaseUrl)
             ? _oss.BaseUrl.TrimEnd('/')
             : $"https://{_oss.BucketName}.{_oss.Endpoint}";

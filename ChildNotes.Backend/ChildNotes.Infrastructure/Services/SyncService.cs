@@ -9,7 +9,7 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// 后端同步服务：增量拉取 + 批量上行。
-/// 同步范围：baby + child_record（不含 app_user.password_hash / baby_member.role_code）。
+/// 同步范围：baby + child_record + milestone（不含 app_user.password_hash / baby_member.role_code）。
 /// 权限：只同步当前用户有访问权的宝宝及其记录。
 /// </summary>
 public class SyncService : ISyncService

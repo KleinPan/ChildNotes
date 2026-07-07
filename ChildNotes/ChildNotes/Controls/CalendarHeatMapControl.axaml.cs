@@ -76,7 +76,7 @@ public partial class CalendarHeatMapControl : UserControl
     public static readonly StyledProperty<string> TypeColorProperty =
         AvaloniaProperty.Register<CalendarHeatMapControl, string>(nameof(TypeColor), defaultValue: "#07C160");
 
-    /// <summary>单元格宽度（由 Mode 自动计算：Day≈38, Month≈计算值）。</summary>
+    /// <summary>单元格宽度（默认 38；仅 Day 模式生效，Month 模式由面板布局自动撑开，不读取此值）。</summary>
     public static readonly StyledProperty<double> CellWidthProperty =
         AvaloniaProperty.Register<CalendarHeatMapControl, double>(nameof(CellWidth), defaultValue: 38);
 

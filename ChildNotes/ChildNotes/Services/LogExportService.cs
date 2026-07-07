@@ -4,10 +4,9 @@ using ChildNotes.Infrastructure;
 namespace ChildNotes.Services;
 
 /// <summary>
-/// 日志导出服务：
-/// - Debug 构建：导出 <see cref="DevLogger"/> 环形缓冲区（应用内调试日志）。
-/// - Release 构建（或 Debug 中 ReleaseLogger 已初始化）：合并导出 Serilog 文件日志（app-*.log），
-///   用于闪退后的问题定位。两者可同时导出。
+/// 日志导出服务：同时尝试导出 DevLogger 内存日志与 ReleaseLogger 文件日志（app-*.log）。
+/// - DevLogger.Entries：应用内调试日志环形缓冲区（DevLogger 已移除 [Conditional("DEBUG")]，Debug/Release 均写入）。
+/// - ReleaseLogger 文件日志：用于闪退后的问题定位。
 /// 跨平台兼容：
 /// - Android 10+ (API 29+)：通过 MediaStore.Downloads 写入公共 Download 目录（无需存储权限）。
 /// - Android 9 及以下 (API &lt; 29)：直接写 /storage/emulated/0/Download（需 WRITE_EXTERNAL_STORAGE，已由 manifest 声明）。

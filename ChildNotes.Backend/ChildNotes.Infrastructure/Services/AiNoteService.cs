@@ -90,7 +90,7 @@ public partial class AiNoteService : IAiNoteService
             ? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             : NormalizeTime(parsed.Time);
 
-        // 仅解析，不落库。调用方（前端）拿到 DTO 后自行 SaveLocally 写入本地库，
+        // 仅解析，不落库。调用方（前端 AiNoteParseService）拿到 DTO 后自行 SaveLocally 写入本地库，
         // 再由 SyncTrigger 推送到后端，避免后端替用户决定 baby_id 和时区。
         parsed.Time = time;
         return parsed;
@@ -250,7 +250,7 @@ public partial class AiNoteService : IAiNoteService
             };
         }
 
-        // 兜底：作为异常记录的 note
+        // 兜底：无法识别具体类型时作为 Activity 记录，原文存入 Note 字段
         return new AiNoteParseResponse
         {
             RecordType = RecordType.Activity,

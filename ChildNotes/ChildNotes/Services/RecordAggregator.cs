@@ -38,9 +38,9 @@ public sealed class RecordAggregate
 public static class RecordAggregator
 {
     /// <summary>
-    /// 遍历一组记录，返回聚合结果。这是唯一的 switch 遍历点。
-    /// 关于"最近值"：LatestTemperature / LatestHeightCm / LatestWeightKg 采用"遍历顺序最后一个生效"
-    /// （与原 StatisticsService.GetDayStats 行为一致）。
+    /// 遍历一组记录，返回聚合结果。这是聚合统计的 switch 遍历点
+    /// （AiNoteParseService.SaveLocally 另有按 RecordType 落库的 switch，但非聚合统计）。
+    /// 关于"最近值"：LatestTemperature / LatestHeightCm / LatestWeightKg 采用"遍历顺序最后一个生效"。
     /// 调用方如需按时间排序后的"最新值"，应在传入前对 records 排序，或自行从原始记录中取最新。
     /// </summary>
     public static RecordAggregate Aggregate(IEnumerable<ChildRecord> records)

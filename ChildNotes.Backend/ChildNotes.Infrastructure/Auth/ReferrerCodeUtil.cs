@@ -7,7 +7,7 @@ namespace ChildNotes.Infrastructure.Auth;
 /// <summary>
 /// 推荐码工具：HMAC-SHA256 签名 + Base64Url 编码。
 /// userId 为 GUID 字符串（32 位无连字符）。
-/// 格式：u_ + Base64Url(userId + ":" + HMAC_SHA256(userId) 前12字节 hex)
+/// 格式：u_ + Base64Url(userId + ":" + HMAC_SHA256(userId) 完整 32 字节 hex)
 /// </summary>
 public class ReferrerCodeUtil : IReferrerCodeUtil
 {

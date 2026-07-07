@@ -11,7 +11,7 @@ namespace ChildNotes.Services;
 
 /// <summary>
 /// HTTP API 客户端基类：统一 HttpClient、Bearer 鉴权、{state,msg,data} 信封解析与 401 处理。
-/// 派生类仅需实现具体业务方法，复用 SendAsync/SendWithTokenAsync/ExtractData 等工具方法。
+/// 派生类仅需实现具体业务方法，复用 SendAsync/SendWithTokenV2Async/ExtractData 等工具方法。
 /// </summary>
 public abstract class BaseApiClient
 {

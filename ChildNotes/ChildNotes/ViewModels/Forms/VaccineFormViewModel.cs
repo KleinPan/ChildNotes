@@ -252,7 +252,8 @@ public partial class VaccineFormViewModel : ObservableObject, IRecordFormViewMod
         };
     }
 
-    /// <summary>添加自定义疫苗到本地集合（不立即持久化，加入时间轴后随「已打」记录一起保存）</summary>
+    /// <summary>添加自定义疫苗到本地内存集合（不立即持久化到 DB，仅作为时间轴的候选项；
+    /// 用户点击「已打」后通过 MarkDone 构造 DTO 并由 RecordService 持久化，CustomVaccine 本身不会被单独落库）</summary>
     public async Task<(bool Ok, string Error)> AddCustomVaccineAsync()
     {
         var name = (CustomVaccineName ?? string.Empty).Trim();

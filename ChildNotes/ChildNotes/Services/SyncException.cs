@@ -9,7 +9,9 @@ public enum SyncErrorKind
     /// <summary>网络层错误（DNS 解析失败、连接被拒、TLS 错误等）。</summary>
     Network,
 
-    /// <summary>请求超时（HttpClient Timeout 或服务端 408）。</summary>
+    /// <summary>请求超时（HttpClient.Timeout 触发的 TaskCanceledException）。</summary>
+    /// <remarks>注意：服务端返回 408 当前被归为 <see cref="Business"/>（不可重试），
+    /// 因为 <see cref="FromHttpStatus"/> 中 408 落入 `&gt;= 400` 分支。</remarks>
     Timeout,
 
     /// <summary>鉴权失败（401）。需要重新登录，重试一次。</summary>

@@ -236,7 +236,7 @@ public static class VaccineCatalog
 
     /// <summary>
     /// 缓存的剂次展开列表（含分类信息）。疫苗目录是静态数据，
-    /// 结果不可变，缓存后避免每次 RefreshAsync 重新枚举 52 项 + 字符串拼接。
+    /// 结果不可变，缓存后避免每次 RefreshAsync 重新枚举 57 项 + 字符串拼接。
     /// </summary>
     private static readonly List<(string Key, string Name, string AgeLabel, int? DueDays, string Category)> FlattenedDosesCache =
         BuildFlattenedDosesCache();

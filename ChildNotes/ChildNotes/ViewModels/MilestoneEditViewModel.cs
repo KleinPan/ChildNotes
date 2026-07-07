@@ -19,7 +19,8 @@ namespace ChildNotes.ViewModels;
 ///   <item><description>LocalPath: 本地持久化路径；新增时与 Source 相同；编辑加载远程 URL 时为 null</description></item>
 ///   <item><description>RemoteUrl: 异步上传成功后的服务器 URL；尚未上传或上传失败为 null</description></item>
 /// </list>
-/// 序列化到 PhotosJson 时优先用 RemoteUrl，回退 LocalPath。
+/// 序列化到 PhotosJson 时优先用 RemoteUrl，回退 Source（Source 在新增时为本地路径，
+/// 编辑加载远程 URL 时为远程 URL，因此 LocalPath 为 null 时仍可正确序列化）。
 /// </summary>
 public sealed class MilestonePhotoItem : ObservableObject
 {

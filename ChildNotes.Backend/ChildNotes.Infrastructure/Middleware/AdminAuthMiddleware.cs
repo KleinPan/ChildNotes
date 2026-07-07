@@ -45,7 +45,7 @@ public class AdminAuthMiddleware
             return;
         }
 
-        // 复用 AdminAuthService.AuthenticateAsync，避免中间件直接访问 DbContext 重复查询逻辑
+        // 通过 AdminAuthService.AuthenticateAsync 校验 token（内部查询 AdminAccounts 表）
         var admin = await adminAuth.AuthenticateAsync(token);
         if (admin is null)
         {

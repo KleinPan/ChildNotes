@@ -13,8 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
-/// AI 分析服务：对齐 Java AiAnalysisServiceImpl。
-/// 固定 7 天区间，按 (user_id, baby_id, range_start_date, range_end_date) 幂等。
+/// AI 分析服务：固定 7 天区间，按 (user_id, baby_id, range_start_date, range_end_date) 幂等。
 /// </summary>
 public class AiAnalysisService : IAiAnalysisService
 {

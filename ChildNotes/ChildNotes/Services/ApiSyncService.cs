@@ -231,14 +231,14 @@ public sealed class ApiSyncService : BaseApiClient
 
     private async Task<string?> EnsureTokenAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
     {
-        // 简单策略：本地有 token 就直接复用，不再做 me 探活（减少请求次数）
-        // 失效由后续 Pull 触发的 401 重新登录处理（SyncPolicy 对 Auth 错误重试一次）
+        // 本地有 token 就直接复用，不做主动 me 探活以减少请求次数；
+        // token 失效由后续 Pull 触发的 401 重新登录处理（SyncPolicy 对 Auth 错误重试一次）。
+        // 但复用 token 时需主动调用一次 /api/auth/me 获取后端 user.id 并做本地迁移：
+        // 修复 v0.5.10 之前本地注册生成的 user.id 与后端不一致，导致 PushAsync
+        // 的 `item.UserId != uid` 校验静默跳过所有数据，推送 0 条。
+        // 迁移逻辑只在登录时触发，已有 token 缓存的用户不会重新登录，所以这里补一次。
         if (!string.IsNullOrWhiteSpace(cfg.Token))
         {
-            // 复用 token 时，主动调用 /api/auth/me 获取后端 user.id 并做本地迁移。
-            // 修复：v0.5.10 之前本地注册生成的 user.id 与后端不一致，导致 PushAsync
-            // 的 `item.UserId != uid` 校验静默跳过所有数据，推送 0 条。
-            // 迁移逻辑只在登录时触发，已有 token 缓存的用户不会重新登录，所以这里补一次。
             await VerifyRemoteUserIdAsync(cfg, serverUrl, ct);
             return cfg.Token;
         }

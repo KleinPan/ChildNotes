@@ -31,13 +31,14 @@ public partial class VaccineTrackingViewModel : ObservableObject
     public bool NeedsVaccineExpand => VaccineItems.Count > VaccineDefaultVisibleCount;
 
     /// <summary>
-    /// 疫苗列表 ScrollViewer 的 MaxHeight：折叠态约 3 项高度（180），展开态约 6 项高度（360）。
-    /// 配合 VirtualizingStackPanel 实现虚拟化：仅渲染可见区域内的项，52 个剂次不再一次性创建全部 UI 元素。
+    /// 疫苗列表 ScrollViewer 的 MaxHeight：折叠态约 3 项高度（120，40px/项），展开态约 6 项高度（360，60px/项）。
+    /// 配合 VirtualizingStackPanel 实现虚拟化：仅渲染可见区域内的项，57 个剂次不再一次性创建全部 UI 元素。
     /// 展开时通过滚动查看剩余项，而非一次性渲染全部。
     /// </summary>
     public double VaccineListMaxHeight => IsVaccineExpanded ? 360 : 120;
 
-    /// <summary>从快照数据应用疫苗进度（对齐小程序 findNextDosePlans 逻辑：只显示未处理且未到期的下一剂推荐）。</summary>
+    /// <summary>从快照数据应用疫苗进度（对齐小程序 findNextDosePlans 逻辑：只显示未处理且未到期的下一剂推荐；
+    /// 无出生日期或无推荐日的剂次不会被过期过滤跳过，保留为"待安排"候选）。</summary>
     public void ApplyVaccines(List<ChildRecord> vaccineRecords, DateTime? birthDate, DateTime today)
     {
         VaccineItems.Clear();

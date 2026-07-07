@@ -101,7 +101,7 @@ public static class AppConverters
     public static readonly IValueConverter TestResultForegroundConverter = new BoolToBrushConverter("#06AD56", "#E64340");
 
     // ===== 头像路径 → Bitmap =====
-    // Baby.Avatar 存储本地文件路径，UI 的 Image.Source 需要 IBitmap。
+    // BabyBase.Avatar 存储本地文件路径（前端 Baby 继承自 BabyBase），UI 的 Image.Source 需要 IBitmap。
     // 文件不存在或路径为空时返回 null，配合 XAML 中 IsVisible 控制 Image 显隐。
     public static readonly IValueConverter AvatarPathToBitmap = new AvatarPathToBitmapConverter();
 }

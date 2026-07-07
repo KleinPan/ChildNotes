@@ -39,7 +39,8 @@ public static class AnimationService
 
     /// <summary>
     /// 全局动画开关（默认开启）。
-    /// 关闭后 C# 代码动画立即返回；XAML Transitions 仍存在但 Duration 被设为 0。
+    /// 关闭后仅影响 C# 代码动画（Toast/FAB 等会立即返回，不播放 KeyFrame）；
+    /// XAML 声明式 Transitions 不受此开关影响，仍按自身 Duration 播放。
     /// 在设置页面通过 DeveloperOptionsViewModel 控制持久化和实时生效。
     /// </summary>
     public static bool IsEnabled { get; set; } = true;

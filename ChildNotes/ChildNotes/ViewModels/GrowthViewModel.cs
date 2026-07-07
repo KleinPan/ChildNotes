@@ -27,7 +27,6 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
 
     /// <summary>
     /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI。
-    /// 修复：原 LoadData 在 UI 线程同步调 _milestoneRepo.GetAll。
     /// </summary>
     private async Task LoadDataAsync()
     {

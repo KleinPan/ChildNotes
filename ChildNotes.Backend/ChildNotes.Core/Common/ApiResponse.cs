@@ -1,7 +1,7 @@
 namespace ChildNotes.Core.Common;
 
 /// <summary>
-/// 统一响应格式，对齐 Java 后端 {state, msg, data}
+/// 统一响应格式 {state, msg, data}（与前端约定的协议契约）。
 /// </summary>
 public sealed class ApiResponse<T>
 {

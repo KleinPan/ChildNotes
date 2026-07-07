@@ -24,12 +24,10 @@
     <PackageVersion Include="Serilog" Version="4.3.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
-    <!-- AndroidX Core：用于 WindowInsetsCompat API 获取精确键盘高度（与 Avalonia.Android 传递依赖一致） -->
-    <PackageVersion Include="Xamarin.AndroidX.Core" Version="1.19.0.1" />
-    <!-- AndroidX Core Ktx：Avalonia.Android 传递依赖版本 1.17.0.2，与显式引用的 Core 1.19.0.1 版本不一致，
-         导致 AnimatorKt$addListener$1 等类在两个 AAR 中重复定义，D8 编译报 "defined multiple times"。
-         固定版本与 Core 对齐（1.19.0.1），消除重复类冲突。 -->
-    <PackageVersion Include="Xamarin.AndroidX.Core.Core.Ktx" Version="1.19.0.1" />
+    <!-- AndroidX Core / Core.Core.Ktx 不再显式引用：Avalonia.Android 会传递依赖所需版本。
+         历史教训：显式锁定 Core 版本会与 core-ktx AAR 中重复的 Kotlin 扩展类（AnimatorKt$addListener$1）
+         冲突，D8 报 "defined multiple times"。KeyboardHeightService 仅用 WindowInsetsCompat.Type.SystemBars()，
+         该 API 自 AndroidX Core 1.0 即存在，无需高版本。 -->
     <!-- Test packages -->
     <PackageVersion Include="coverlet.collector" Version="6.0.0" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />

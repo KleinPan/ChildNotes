@@ -9,7 +9,7 @@ namespace ChildNotes.Services;
 /// <summary>
 /// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的降级解析逻辑。
 /// 抽取自原 AiNote 模态的解析逻辑，供首页快捷输入框共用。
-/// 降级顺序（按 AiSettings.NoteSource 配置）：
+/// 降级顺序（按 LlmConfig.NoteSource 配置）：
 /// - local（默认）：本地 LLM → 规则降级
 /// - server：后端接口 → 规则降级
 /// </summary>

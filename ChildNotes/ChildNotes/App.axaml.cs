@@ -122,7 +122,7 @@ public partial class App : Application
 
     /// <summary>
     /// 恢复登录成功后直接进入主界面（复用 OnLoginSucceeded 的初始化逻辑）。
-    /// desktopHost 非空时直接设为 MainWindow.Content；为空则走 RootContainer 模式（移动端）。
+    /// desktopHost 为 MainWindow 类型时设为 desktop.MainWindow.Content；否则走 RootContainer 模式（移动端）。
     /// </summary>
     private void EnterMainShell(object? desktopHost)
     {

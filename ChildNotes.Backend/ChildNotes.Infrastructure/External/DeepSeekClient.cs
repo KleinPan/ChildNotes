@@ -9,7 +9,7 @@ namespace ChildNotes.Infrastructure.External;
 
 /// <summary>
 /// DeepSeek OpenAI 兼容 API 客户端。
-/// 对齐 Java AgentScopeBabyAnalysisAgent 的请求格式。
+/// 请求体遵循 OpenAI Chat Completions 格式（messages + temperature + response_format）。
 /// </summary>
 public class DeepSeekClient
 {

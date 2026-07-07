@@ -11,13 +11,8 @@ namespace ChildNotes.ViewModels;
 /// <summary>
 /// 同步设置页 ViewModel：管理 sync_config 的 enabled 开关 + 服务器地址配置 + 手动触发同步。
 /// 服务器地址可编辑可保存（持久化到 sync_config），后期可通过隐藏 UI 编辑入口改为只读展示。
+/// 实现 IDisposable 在 Dispose 中退订 NetworkMonitor / SyncTrigger 事件，避免 VM 多次创建叠加订阅。
 /// </summary>
-/// <remarks>
-/// 修复：原实现订阅了外部单例（NetworkMonitor / SyncTrigger）事件但从未退订，
-/// 若 VM 被多次创建会叠加订阅。现实现 IDisposable 在 Dispose 中退订。
-/// 同时移除与基类 ViewModelBase 冲突的 _toast / _showToast 字段（基类已有 _toastMessage / _showToast），
-/// 并删除 ShowToastMsg 包装方法（直接调用基类 DisplayToast）。
-/// </remarks>
 public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
 {
     private readonly SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;

@@ -7,7 +7,7 @@ namespace ChildNotes.Infrastructure.Data;
 
 /// <summary>
 /// 审计时间戳拦截器：自动维护 <see cref="IAuditable"/> / <see cref="ICreatedAuditable"/> 实体的 CreatedAt/UpdatedAt。
-/// 消除各 Service 中 30+ 处手动赋值 DateTime.UtcNow 的样板代码。
+/// 消除各 Service 中手动赋值 DateTime.UtcNow 的样板代码。
 /// </summary>
 public class AuditableSaveChangesInterceptor : SaveChangesInterceptor
 {

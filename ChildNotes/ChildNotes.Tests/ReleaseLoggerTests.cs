@@ -223,25 +223,27 @@ public class ReleaseLoggerTests : IDisposable
     #region 速率限制测试
 
     [Fact]
-    public void ErrorRateLimit_DropsExcessAfter50PerMinute()
+    public void ErrorRateLimit_DoesNotThrowWhenExceedingThreshold()
     {
         ReleaseLogger.Initialize(_tempDir);
         try
         {
-            // 写入 50 条应该全部被接受
+            // 写入 50 条 Error 日志（ReleaseLogger 内部阈值 ErrorRateLimitPerMinute=50，
+            // 超出后应丢弃而非抛异常）
             for (int i = 0; i < 50; i++)
             {
                 ReleaseLogger.Error("Rate", $"error {i}");
             }
 
-            // 第 51 条之后应该被丢弃（不报错，只是不写入）
-            // 由于速率限制是私有的，我们通过不抛异常 + 不崩溃来验证
+            // 再写入 100 条超出阈值，验证速率限制不抛异常
+            // 注意：本测试仅验证"不崩溃"，不验证日志条数（速率限制为私有实现，
+            // 无法直接断言丢弃数量；如需精确验证需暴露内部计数器或改写为可观察实现）
             for (int i = 0; i < 100; i++)
             {
                 ReleaseLogger.Error("Rate", $"excess {i}");
             }
 
-            // 验证不抛异常即通过（速率限制正确工作）
+            // 验证不抛异常即通过
             Assert.True(true);
         }
         finally

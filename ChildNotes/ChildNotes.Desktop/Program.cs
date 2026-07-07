@@ -10,14 +10,13 @@ namespace ChildNotes.Desktop;
 
 sealed class Program
 {
-    // Initialization code. Don't use any Avalonia, third-party APIs or any
-    // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
-    // yet and stuff might break.
+    // 注意：在 AppMain 调用前不要使用任何 Avalonia / 第三方 API 或 SynchronizationContext 相关代码，
+    // 此时未初始化，可能导致异常。
     [STAThread]
     public static void Main(string[] args) => BuildAvaloniaApp()
         .StartWithClassicDesktopLifetime(args);
 
-    // Avalonia configuration, don't remove; also used by visual designer.
+    // Avalonia 配置入口（可视化设计器也使用此方法，请勿删除）。
     public static AppBuilder BuildAvaloniaApp()
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()

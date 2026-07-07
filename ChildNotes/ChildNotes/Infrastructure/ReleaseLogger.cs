@@ -8,14 +8,15 @@ using Serilog.Sinks.Async;
 namespace ChildNotes.Infrastructure;
 
 /// <summary>
-/// Release 构建专用的分级日志服务。基于 Serilog 实现：
+/// 基于 Serilog 的分级文件日志服务（在 Debug/Release 均生效）：
 /// - 分级（Debug/Info/Warning/Error/Fatal）
 /// - 文件按天滚动，自动清理 N 天前日志
 /// - 异步写入（后台线程），不阻塞 UI/业务
 /// - 内置脱敏器（Token / 手机号 / 密码字段 / 连接串中的凭证），避免敏感数据落盘
 /// - 按级别采样限流，防止异常风暴时日志爆炸
-/// 与 <see cref="DevLogger"/> 并存：DevLogger 仅 Debug 阶段使用（条件编译消除），
-/// ReleaseLogger 在 Debug/Release 均生效，但仅记录关键事件（崩溃 + 关键生命周期 + Warning+）。
+/// 与 <see cref="DevLogger"/> 协作：DevLogger 已移除 [Conditional("DEBUG")]，
+/// 在 Debug/Release 均写入内存环形缓冲区，且每次写日志时通过 ReleaseLogger.Info 落盘文件。
+/// 因此 ReleaseLogger 不仅记录关键事件，也会接管所有 Info 级别日志输出到文件。
 /// </summary>
 public static class ReleaseLogger
 {

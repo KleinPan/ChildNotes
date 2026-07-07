@@ -10,8 +10,9 @@ namespace ChildNotes.Infrastructure.Middleware;
 
 /// <summary>
 /// 限流中间件：内存滑动窗口，按 IP + METHOD + 路由模板 维度。
-/// 超过 MaxRequestsPerSecond 返回 429，超过 BlacklistRequestsPerSecond 永久拉黑 403。
-/// 对齐 Java ApiRateLimitInterceptor。
+/// 超过 MaxRequestsPerSecond 返回 429，超过 BlacklistRequestsPerSecond 加入内存黑名单返回 403。
+/// 注意：黑名单仅存在于当前进程内存（_blacklist 字段），进程重启或多实例部署时不共享、不持久化，
+/// 语义上并非真正"永久"，响应文案中的"永久限制"指当前进程生命周期内生效。
 /// </summary>
 public class RateLimitMiddleware
 {

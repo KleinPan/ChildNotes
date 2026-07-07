@@ -6,7 +6,7 @@ namespace ChildNotes.Views;
 
 /// <summary>
 /// 在 <see cref="DateTimeOffset?"/>（DatePicker.SelectedDate）与 "yyyy-MM-dd" 字符串之间双向转换。
-/// 仅取日期部分（不含时间），用于 VaccineForm.RecordTimeText 的日期部分。
+/// 仅取日期部分（不含时间），用于 VaccineFormViewModel.RecordTimeText 的日期部分。
 /// </summary>
 public sealed class DateTextToDateTimeOffsetConverter : IValueConverter
 {

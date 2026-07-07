@@ -41,12 +41,13 @@ public class VaccineTimelinePerformanceTests : IDisposable
     /// 这是首次打开疫苗面板的最坏情况（所有剂次都需要计算状态）。
     /// 注：使用 null birthDate 避免 ServiceProvider 静态初始化（BuildPlans 在 birthDate 非空时
     /// 会调用 DateTimeFormatter，该服务依赖 ServiceProvider 单例，不适合单元测试）。
+    /// today 硬编码为 2025-06-29 以保证测试可重复，不依赖运行日期。
     /// </summary>
     [Fact]
     public void BuildTimeline_EmptyDb_CompletesWithin500ms()
     {
         DateTime? birthDate = null;  // 跳过 RecommendedDateText 计算，避免 ServiceProvider 依赖
-        var today = new DateTime(2025, 6, 29);
+        var today = new DateTime(2025, 6, 29);  // 硬编码保证可重复，不依赖运行日期
         var customVaccines = new List<CustomVaccine>();
 
         var sw = Stopwatch.StartNew();

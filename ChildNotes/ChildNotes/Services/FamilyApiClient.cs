@@ -93,7 +93,7 @@ public sealed class FamilyApiClient : BaseApiClient
         return result;
     }
 
-    /// <summary>通过宝宝 ID 加入家庭（后端会把当前用户加到宝宝主人名下所有宝宝）。</summary>
+    /// <summary>通过宝宝 ID 加入家庭（后端会把当前用户加到该宝宝所属家庭的所有宝宝下）。</summary>
     public async Task<FamilyMemberItem?> JoinFamilyAsync(string babyId, string roleCode, CancellationToken ct = default)
     {
         var body = Serialize(new { babyId, roleCode });

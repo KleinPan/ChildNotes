@@ -72,8 +72,8 @@ public sealed class UserRepository : BaseRepository
 
         DevLogger.Log("UserRepo", $"UpdateIdIfDifferent: {oldLocalId} -> {remoteId}");
 
-        // 关闭外键约束检查，避免因子表引用导致主键更新失败
-        // （SQLite 默认 PRAGMA foreign_keys=OFF，但显式关闭更稳妥）
+        // 显式关闭外键约束检查（本项目 DbConnectionFactory.Create() 会强制 PRAGMA foreign_keys=ON，
+        // 此处虽然 schema 中未声明 FOREIGN KEY，但显式关闭为防御性写法，避免未来加外键时出错）
         ExecuteNonQuery("PRAGMA foreign_keys = OFF", _ => { });
         try
         {

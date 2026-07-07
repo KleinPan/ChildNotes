@@ -144,7 +144,7 @@ public sealed class MilestoneRecordDto
     public List<string> Photos { get; set; } = new();
 }
 
-/// <summary>按日期分组的记录响应（后端专用，前端不需要但保留以保持共享契约完整）。</summary>
+/// <summary>按日期分组的记录响应（后端专用，保留在 Shared 以保持契约完整；前端目前不直接消费此类型）。</summary>
 public sealed class DailyRecordsResponse
 {
     public DateTime Date { get; set; }

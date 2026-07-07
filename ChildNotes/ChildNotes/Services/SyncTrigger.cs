@@ -93,7 +93,9 @@ public sealed class SyncTrigger : IDisposable
             }
         }
 
-        // 节流跳过的同步（如未启用、配置不完整）不记录日志，避免噪音
+        // 节流跳过的同步不记录日志，避免噪音。
+        // 注意：后续若 SyncAsync 内部因"未启用/配置不完整"返回失败，
+        // 仍会写入 running + failed 两条日志（因为此处已先写入 running 日志）。
         // 仅真正进入同步流程时写入 running 日志
         long logId = 0;
         if (_logRepo is not null)

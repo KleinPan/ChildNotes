@@ -38,10 +38,9 @@ public abstract partial class ViewModelBase : ObservableObject
 
     /// <summary>
     /// 显示 Toast，并在 <see cref="ToastDurationMs"/> 后自动隐藏。
-    /// 子类无需再各自实现 ShowToastMsg / ShowToastMessage。
     /// 注：方法名与属性 ShowToast 不同（DisplayToast），避免与 [ObservableProperty] 生成的属性冲突。
-    /// 修复：原实现用 ContinueWith 默认不在 UI 线程，且快速连续调用会启动多个 Delay 任务提前关闭。
-    ///       改用 CancellationTokenSource + TaskScheduler.FromCurrentSynchronizationContext() 确保 UI 线程更新。
+    /// 使用 CancellationTokenSource + TaskScheduler.FromCurrentSynchronizationContext() 确保 UI 线程更新，
+    /// 且快速连续调用时取消上一次的隐藏任务，避免提前关闭。
     /// </summary>
     private CancellationTokenSource? _toastCts;
     protected void DisplayToast(string msg)

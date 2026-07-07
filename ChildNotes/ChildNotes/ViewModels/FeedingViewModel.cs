@@ -44,7 +44,6 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
 
     /// <summary>
     /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI 100-300ms。
-    /// 修复：原 LoadData 在 UI 线程同步调 GetDayStats + GetByDate。
     /// </summary>
     private async Task LoadDataAsync()
     {
@@ -156,7 +155,8 @@ public sealed partial class RecordDisplayItem : ObservableObject
         RecordType.Supplement => "💊",
         RecordType.Pump => "🥛",
         RecordType.Complementary => "🥣",
-        // 疫苗记录不在喂养页面显示，移除 Vaccine 图标分支
+        // 疫苗记录不在喂养页面显示，已移除 Vaccine 图标分支
+        // 注：Activity 同样被过滤（见 Where 条件），此处保留分支仅为防御性写法
         RecordType.Abnormal => "⚠️",
         RecordType.Activity => "🏃",
         _ => "📝",

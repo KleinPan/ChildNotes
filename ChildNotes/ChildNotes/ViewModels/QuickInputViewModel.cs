@@ -10,7 +10,7 @@ namespace ChildNotes.ViewModels;
 /// 用户在输入框输入自然语言 → 点发送按钮触发解析保存（Ai 记）；
 /// 或点 + 按钮展开下方功能面板选择记录类型。
 /// 发送按钮与 + 按钮互斥：有内容时显示发送、隐藏 +；无内容时相反。
-/// AI 不可用时（未配置本地 LLM 且无服务端地址）发送按钮置灰并提示。
+/// AI 不可用时（本地 LLM 未启用且服务端地址未配置，两者均未配置）发送按钮置灰并提示。
 /// </summary>
 public partial class QuickInputViewModel : ViewModelBase
 {

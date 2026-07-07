@@ -11,11 +11,11 @@ public sealed class DbConnectionFactory
     public DbConnectionFactory(string dbPath)
     {
         _dbPath = dbPath;
-        // 启用 WAL 模式提升并发读性能；设置 BusyTimeout 避免写入冲突时立即失败
+        // 启用 WAL 模式提升并发读性能（数据库级持久化属性，构造期设置一次即可）
         _connectionString = $"Data Source={dbPath};Mode=ReadWriteCreate";
         DevLogger.Log("DB", $"DbConnectionFactory ctor: path={dbPath}, dir exists={System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(dbPath))}");
         // WAL 是数据库级持久化属性，只需在首次构造时设置一次；
-        // foreign_keys 是连接级属性，必须在每个新连接的 Create() 中重新启用
+        // foreign_keys 与 busy_timeout 是连接级属性，必须在每个新连接的 Create() 中重新启用
         using var initConn = new SqliteConnection(_connectionString);
         initConn.Open();
         using (var pragma = initConn.CreateCommand())

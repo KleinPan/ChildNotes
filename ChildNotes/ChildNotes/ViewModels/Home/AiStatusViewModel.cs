@@ -19,8 +19,6 @@ public partial class AiStatusViewModel : ObservableObject
     [ObservableProperty] private string _aiTipText = DailyTipsCatalog.Current.DefaultTip;
 
     // 轮播提示相关：对齐小程序 good-status 组件 <swiper interval=5000> 行为
-    // 修复：原实现传入空 lambda 作为构造回调，实际工作靠 Tick += 重复订阅，每次 Tick 触发两个回调。
-    //       改为构造时直接传真正回调，去掉 StartTipCarousel 中的 -=/+ = 模式。
     private readonly DispatcherTimer _tipCarouselTimer;
     private IReadOnlyList<string> _currentTipPool = Array.Empty<string>();
     private int _tipCarouselIndex;

@@ -7,9 +7,7 @@ using Avalonia.Media;
 
 namespace ChildNotes.iOS;
 
-// The UIApplicationDelegate for the application. This class is responsible for launching the 
-// User Interface of the application, as well as listening (and optionally responding) to 
-// application events from iOS.
+// iOS 应用 UIApplicationDelegate：负责启动 UI 并响应 iOS 应用生命周期事件。
 [Register("AppDelegate")]
 #pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 public partial class AppDelegate : AvaloniaAppDelegate<App>

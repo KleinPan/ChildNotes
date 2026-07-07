@@ -46,7 +46,8 @@ public sealed class AiAnalysisRepository : BaseRepository
     public void Delete(string id)
         => ExecuteNonQuery("DELETE FROM ai_analysis_record WHERE id = @i", cmd => cmd.Add("@i", id));
 
-    /// <summary>LlmConfig 内存缓存：单行配置表，仅在 SaveLlmConfig 后失效。</summary>
+    /// <summary>LlmConfig 内存缓存：单行配置表，在 SaveLlmConfig 后失效；
+    /// 注意：若 DB schema 迁移或外部进程修改 llm_config 行，缓存不会自动失效，需重启进程或调用 SaveLlmConfig。</summary>
     private LlmConfig? _llmCached;
     private readonly object _llmCacheLock = new();
 

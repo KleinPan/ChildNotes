@@ -9,7 +9,7 @@ namespace ChildNotes;
 
 /// <summary>
 /// ViewModel → View 映射。完全显式 switch，不使用反射，
-/// 兼容 AOT / Trimming（iOS Release、Android Profiled AOT）。
+/// 兼容 AOT / Trimming（iOS Release、Android Release AOT）。
 /// 新增 ViewModel 时在此追加一条分支即可。
 /// </summary>
 public class ViewLocator : IDataTemplate

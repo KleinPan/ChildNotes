@@ -73,7 +73,7 @@ public partial class StatisticsViewModel : ViewModelBase
     [ObservableProperty] private DateTime _endDate = DateTime.Today;
 
     // ---- 柱状图自适应 ----
-    [ObservableProperty] private double _barWidth = 30;       // day=30, month=42, range=72/自适应
+    [ObservableProperty] private double _barWidth = 30;       // month=42, day=30, range=72/0(自适应)
 
     // ---- 自动滚动到今日 ----
     [ObservableProperty] private double _chartScrollLeft = 0;

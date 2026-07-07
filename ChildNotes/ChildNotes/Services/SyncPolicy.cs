@@ -20,7 +20,7 @@ public static class SyncPolicy
         _ => 0,
     };
 
-    /// <summary>第 attempt 次重试前的等待毫秒（attempt 从 0 起）。</summary>
+    /// <summary>第 attempt 次重试前的等待毫秒（attempt 从 0 起，0 表示首次失败后的第一次重试前）。</summary>
     private static int BackoffMs(int attempt, SyncErrorKind kind) => kind switch
     {
         SyncErrorKind.Network or SyncErrorKind.Timeout => (1 << attempt) * 1000,  // 1s, 2s, 4s
@@ -30,7 +30,7 @@ public static class SyncPolicy
 
     /// <summary>
     /// 执行一次可重试操作。每次重试会传入当前 attempt（0=首次）与当前服务器地址。
-    /// 重试到第 2 次时切换到 <see cref="ServerEndpoints.Fallback"/>（若配置）。
+    /// 首次失败后的第一次重试（attempt 从 0 自增为 1）即切换到 <see cref="ServerEndpoints.Fallback"/>（若配置）。
     /// </summary>
     /// <typeparam name="T">返回类型。</typeparam>
     /// <param name="fn">业务函数，签名为 (attempt, serverUrl) => Task{T}。</param>

@@ -151,7 +151,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 复制当前编辑宝宝的 ID 到系统剪贴板。
+    /// 复制当前编辑/删除上下文中宝宝的 ID（EditingId 字段）到系统剪贴板。
     /// 宝宝主人可发送给家人，家人凭此 ID 在「家人管理」中加入家庭。
     /// </summary>
     public async Task CopyEditingIdAsync()

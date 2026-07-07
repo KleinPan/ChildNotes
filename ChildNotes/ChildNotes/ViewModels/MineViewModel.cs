@@ -18,7 +18,7 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private int _babyCount;
 
     /// <summary>
-    /// 应用版本号（从程序集 InformationalVersion 读取，CI 构建时由 git tag 注入）
+    /// 应用版本号（从程序集 InformationalVersion 读取；CI 构建时由 release workflow 用 tag 名覆盖版本号）
     /// </summary>
     public string AppVersion
     {

@@ -70,8 +70,9 @@ public class AdminAuthService : IAdminAuthService
             admin.PasswordHash = _passwordHasher.Hash(req.Password);
         }
 
-        // 生成随机 token 并明文存入数据库，便于开发/调试期间直接查看当前有效 token
-        // 注意：明文存储 token 在数据库泄露后可被直接复用，仅适用于开发阶段
+        // 生成随机 token 并明文存入数据库（便于调试期间直接查看当前有效 token）
+        // 安全提示：明文存储 token 在数据库泄露后可被直接复用，生产环境应改为哈希存储。
+        // 当前未做环境隔离（Debug/Release 均执行），后续应通过 #if DEBUG 或配置开关限制。
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
         admin.Token = rawToken;
         admin.TokenExpireAt = DateTime.UtcNow.AddHours(_opt.TokenExpireHours);

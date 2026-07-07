@@ -13,7 +13,7 @@ public abstract class MilestoneBase
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
     public DateTime RecordDate { get; set; }
-    /// <summary>图片 URL/本地路径的 JSON 数组字符串，如 ["url1","url2"]。空数组长字符串为 "[]"。</summary>
+    /// <summary>图片 URL/本地路径的 JSON 数组字符串，如 ["url1","url2"]。空数组字符串为 "[]"。</summary>
     public string PhotosJson { get; set; } = "[]";
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

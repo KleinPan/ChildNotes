@@ -9,7 +9,7 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// 宝宝访问权限校验服务实现。
-/// 消除原 AiAnalysisService/BabyService/RecordService/SyncService 中的重复 EnsureBabyAccessAsync 方法。
+/// 统一 AiAnalysisService/BabyService/RecordService/SyncService 中的权限校验逻辑到 EnsureAccessAsync 方法。
 /// </summary>
 public class BabyAccessService : IBabyAccessService
 {

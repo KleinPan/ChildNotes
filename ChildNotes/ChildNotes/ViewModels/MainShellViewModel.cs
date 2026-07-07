@@ -361,7 +361,7 @@ public partial class MainShellViewModel : ViewModelBase
         IsDeveloperOptionsOpen = true;
     }
 
-    /// <summary>OnRecordSaved 防抖取消令牌：5 秒内多次保存只触发一次刷新链。</summary>
+    /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>
     private CancellationTokenSource? _savedRefreshCts;
 
     /// <summary>
