@@ -3,6 +3,7 @@
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:m="using:ChildNotes.Models.Home"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -423,12 +424,20 @@
                                                                     <TextBlock Grid.Column="1" Text="{Binding CategoryEmoji, Mode=OneTime}"
                                                                                FontSize="14"/>
                                                                 </Grid>
-                                                                <StackPanel Orientation="Horizontal" Spacing="12">
-                                                                    <TextBlock Text="{Binding Time, Mode=OneTime}" FontSize="11" Foreground="#AAAAAA"/>
-                                                                    <TextBlock Text="{Binding DurationText, Mode=OneTime}" FontSize="11"
-                                                                               Foreground="#888888"
-                                                                               IsVisible="{Binding Duration, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-                                                                </StackPanel>
+                                                                <Grid ColumnDefinitions="*,Auto">
+                                                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
+                                                                        <TextBlock Text="{Binding Time, Mode=OneTime}" FontSize="11" Foreground="#AAAAAA"/>
+                                                                        <TextBlock Text="{Binding DurationText, Mode=OneTime}" FontSize="11"
+                                                                                   Foreground="#888888"
+                                                                                   IsVisible="{Binding Duration, Converter={x:Static ObjectConverters.IsNotNull}}"/>
+                                                                    </StackPanel>
+                                                                    <!-- 删除按钮（对齐喂养页 OnDeleteTap 模式） -->
+                                                                    <Border Grid.Column="1" Width="24" Height="24" VerticalAlignment="Center"
+                                                                            Background="#FFFFFF" CornerRadius="12" PointerPressed="OnActivityDeleteTap"
+                                                                            Tag="{Binding .}">
+                                                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" Text="🗑"/>
+                                                                    </Border>
+                                                                </Grid>
                                                             </StackPanel>
                                                         </Border>
                                                     </Grid>
@@ -453,6 +462,21 @@
                 </ScrollViewer>
             </Grid>
         </Border>
+
+        <!-- 删除确认对话框（对齐喂养页 DialogHost 模式） -->
+        <controls:DialogHost Title="确认删除"
+                             CancelCommand="{Binding CancelDeleteActivityCommand}"
+                             CancelText="取消"
+                             ConfirmCommand="{Binding ConfirmDeleteActivityCommand}"
+                             ConfirmText="确认删除"
+                             IsOpen="{Binding ShowActivityDeleteConfirm}">
+            <controls:DialogHost.MessageContent>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock FontSize="13" Foreground="#666" Text="确定要删除这条活动记录吗？" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="#999" Text="{Binding DeleteActivityTitle}" TextAlignment="Center" />
+                </StackPanel>
+            </controls:DialogHost.MessageContent>
+        </controls:DialogHost>
     </Panel>
 
     </Panel>

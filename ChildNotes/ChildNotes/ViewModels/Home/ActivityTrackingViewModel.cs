@@ -27,8 +27,15 @@ public partial class ActivityTrackingViewModel : ObservableObject
     /// <summary>活动详情面板加载状态：true 时显示 loading 占位，避免 UI 卡顿无反馈。</summary>
     [ObservableProperty] private bool _isActivityLoading;
 
+    // ===== 删除确认对话框状态（对齐喂养页 FeedingViewModel.ShowDeleteConfirm 模式） =====
+    [ObservableProperty] private bool _showActivityDeleteConfirm;
+    [ObservableProperty] private string _deleteActivityTitle = string.Empty;
+    private string _deletingActivityId = string.Empty;
+
+    /// <summary>请求宿主刷新首页（删除活动记录后需刷新最近活动展示）。</summary>
+    public event Action? RefreshRequested;
+
     // 距上次活动时间实时刷新（对齐小程序 startTimer 30 秒间隔）
-    // 修复：同 _tipCarouselTimer，去掉空 lambda + 重复订阅模式
     private readonly DispatcherTimer _activitySinceTimer;
     private DateTime? _lastActivityTime;
 
@@ -181,6 +188,7 @@ public partial class ActivityTrackingViewModel : ObservableObject
             }
             var dto = rec.GetPayload<ActivityRecordDto>();
             current!.Items.Add(new ActivityTimelineItem(
+                rec.Id,
                 dto?.Name ?? string.Empty,
                 dto?.Category ?? rec.RecordSubType ?? "play",
                 dto?.Duration,
@@ -255,5 +263,34 @@ public partial class ActivityTrackingViewModel : ObservableObject
     private void CloseActivityDetail()
     {
         IsActivityDetailOpen = false;
+    }
+
+    /// <summary>点击时间轴卡片上的删除按钮：记录待删除项并弹出确认对话框。</summary>
+    public void RequestDeleteActivity(ActivityTimelineItem item)
+    {
+        _deletingActivityId = item.RecordId;
+        DeleteActivityTitle = $"{item.CategoryEmoji} {item.Name} {item.Time}";
+        ShowActivityDeleteConfirm = true;
+    }
+
+    [RelayCommand]
+    private void CancelDeleteActivity()
+    {
+        ShowActivityDeleteConfirm = false;
+    }
+
+    [RelayCommand]
+    private void ConfirmDeleteActivity()
+    {
+        if (string.IsNullOrEmpty(_deletingActivityId)) return;
+        _recordService.Delete(_deletingActivityId);
+        ShowActivityDeleteConfirm = false;
+
+        // 删除后就地刷新时间轴缓存（避免用户重新打开面板才能看到效果）
+        _activityCache = null;
+        _ = BuildActivityTimelineAsync();
+
+        // 通知宿主刷新首页最近活动展示
+        RefreshRequested?.Invoke();
     }
 }

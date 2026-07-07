@@ -40,6 +40,8 @@ public sealed class ActivityTimelineGroup
 /// <summary>活动时间轴单项（对齐小程序 at-tl-item）。</summary>
 public sealed class ActivityTimelineItem
 {
+    /// <summary>对应 ChildRecord.Id，用于删除定位。</summary>
+    public string RecordId { get; }
     public string Name { get; }
     public string Category { get; }
     public int? Duration { get; }
@@ -47,8 +49,8 @@ public sealed class ActivityTimelineItem
     public string CategoryEmoji => Category == "outdoor" ? "🌳" : "🏠";
     public string DurationText => Duration.HasValue ? $"⏱ {Duration}分钟" : string.Empty;
 
-    public ActivityTimelineItem(string name, string category, int? duration, string time)
+    public ActivityTimelineItem(string recordId, string name, string category, int? duration, string time)
     {
-        Name = name; Category = category; Duration = duration; Time = time;
+        RecordId = recordId; Name = name; Category = category; Duration = duration; Time = time;
     }
 }

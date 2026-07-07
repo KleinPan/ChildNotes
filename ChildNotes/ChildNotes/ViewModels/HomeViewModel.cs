@@ -43,6 +43,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
         // 异常恢复后触发首页刷新
         AbnormalTracking.RefreshRequested += async () => await RefreshAsync();
+        // 活动记录删除后触发首页刷新
+        ActivityTracking.RefreshRequested += async () => await RefreshAsync();
 
         // 转发子 ViewModel 的 PropertyChanged 通知到 HomeViewModel，
         // 使 View 层（编译绑定）能在子 VM 属性变更时收到通知并更新 UI。
@@ -90,8 +92,8 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         }
     }
 
-    /// <summary>RefreshAsync 防重复令牌：启动时多个事件（Activate + BabySetup + BabyChanged）在 5 秒内依次触发，
-    /// 每次都执行完整 DB 查询（~140ms），浪费 ~280ms。此字段确保同一时刻只有一个 RefreshAsync 在跑。/// </summary>
+    /// <summary>RefreshAsync 防重复令牌：启动时多个事件（Activate + BabySetup + BabyChanged）短时间内依次触发，
+    /// 每次都执行完整 DB 查询（~140ms）。此字段确保同一时刻只有一个 RefreshAsync 在跑。/// </summary>
     private CancellationTokenSource? _refreshCts;
 
     /// <summary>上次 RefreshAsync 完成的 UTC 时间戳（用于最小间隔防抖）。
@@ -266,6 +268,12 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     public ICommand ToggleActivityDetailCommand => ActivityTracking.ToggleActivityDetailCommand;
     public ICommand CloseActivityDetailCommand => ActivityTracking.CloseActivityDetailCommand;
     public ICommand LoadMoreActivitiesCommand => ActivityTracking.LoadMoreActivitiesCommand;
+
+    // 活动删除确认对话框（对齐喂养页 ShowDeleteConfirm 模式）
+    public bool ShowActivityDeleteConfirm { get => ActivityTracking.ShowActivityDeleteConfirm; set => ActivityTracking.ShowActivityDeleteConfirm = value; }
+    public string DeleteActivityTitle { get => ActivityTracking.DeleteActivityTitle; set => ActivityTracking.DeleteActivityTitle = value; }
+    public ICommand CancelDeleteActivityCommand => ActivityTracking.CancelDeleteActivityCommand;
+    public ICommand ConfirmDeleteActivityCommand => ActivityTracking.ConfirmDeleteActivityCommand;
 
     // 异常追踪
     public bool HasActiveAbnormal { get => AbnormalTracking.HasActiveAbnormal; set => AbnormalTracking.HasActiveAbnormal = value; }

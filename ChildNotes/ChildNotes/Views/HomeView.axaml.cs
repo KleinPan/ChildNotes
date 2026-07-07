@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using Avalonia.Media;
 using ChildNotes.Infrastructure;
+using ChildNotes.Models.Home;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -32,5 +34,15 @@ public partial class HomeView : UserControl
     {
         base.OnAttachedToVisualTree(e);
         DevLogger.Log("HomeView", "OnAttachedToVisualTree");
+    }
+
+    /// <summary>点击活动时间轴卡片上的删除按钮：触发 ViewModel 弹出确认对话框。</summary>
+    private void OnActivityDeleteTap(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is Border border && border.Tag is ActivityTimelineItem item && DataContext is HomeViewModel vm)
+        {
+            vm.ActivityTracking.RequestDeleteActivity(item);
+        }
     }
 }
