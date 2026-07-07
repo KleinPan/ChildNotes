@@ -65,15 +65,19 @@
     <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" />
   </ItemGroup>
 
-  <!-- ★ 移除 AAR 中重复的 Kotlin 类（AndroidX 打包 bug）
-       AnimatorKt$addListener$1 等类在 core 和 core-ktx 两个 AAR 中均有定义，
-       D8 严格检测重复类导致编译失败。此 target 在 D8 编译前从所有 AAR 的
-       classes.jar 中移除这些重复类（两个副本相同，移除任一即可消除冲突）。
+  <!-- ★ 移除 core-ktx AAR 中的 classes.jar（AndroidX 打包 bug 终极修复）
+       core 和 core-ktx 两个 AAR 中存在大量重复的 Kotlin 扩展类（AnimatorKt$addListener$1 等），
+       D8 严格检测重复类导致 ConcurrentHashMap.merge NPE 崩溃。仅逐个删除类不够全面，
+       直接删除 core-ktx 的整个 classes.jar：
+         - core-ktx 仅是 Kotlin 语法糖（扩展函数），core AAR 已含全部 Java 实现
+         - 项目代码使用 C#，不依赖 Kotlin 扩展函数
+         - 删除后 D8 仅从 core AAR 读取，消除所有重复定义
        BeforeTargets="_CompileToDalvik" 确保在 D8 处理前执行。 -->
   <Target Name="RemoveDuplicateCoreKtxClasses" BeforeTargets="_CompileToDalvik">
     <ItemGroup>
-      <_AllLpJars Include="$(IntermediateOutputPath)lp\*\jl\classes.jar" />
+      <_CoreKtxJar Include="$(IntermediateOutputPath)lp\**\jl\classes.jar" Condition="$([System.String]::new('%(Identity)').Contains('core-ktx'))" />
     </ItemGroup>
-    <Exec Command="zip -d &quot;%(_AllLpJars.Identity)&quot; 'androidx/core/animation/AnimatorKt$addListener$1.class'" ContinueOnError="true" />
+    <Delete Files="@(_CoreKtxJar)" Condition="'@(_CoreKtxJar)' != ''" />
+    <Message Text="★ Removed core-ktx classes.jar to eliminate duplicate classes: @(_CoreKtxJar)" Importance="high" Condition="'@(_CoreKtxJar)' != ''" />
   </Target>
 </Project>

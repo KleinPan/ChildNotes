@@ -374,7 +374,7 @@ jobs:
 
   # -----------------------------------------------------------------
   # 发布 Release：所有平台构建完成后，将压缩包作为 GitHub Release 资源发布
-  # （Docker 镜像由独立 workflow docker-publish.yml 并行构建）
+  # （Docker 镜像构建已临时禁用，使用 Linux 服务器直接部署）
   # -----------------------------------------------------------------
   release:
     name: Publish GitHub Release
@@ -427,29 +427,8 @@ jobs:
             | Windows 桌面 | `ChildNotes-windows-*.zip` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |
             | Android | `ChildNotes-android-*.apk` | APK 安装包（固定 keystore 签名，可覆盖安装旧版本） |
             | 服务端 | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |
-            | Docker 镜像 | `ghcr.io/${{ github.repository }}/api:*` | 推送至 GitHub Container Registry |
 
-            ### Docker 部署（推荐）
-            ```bash
-            # 1. 在服务器上创建 .env 文件
-            cat > ChildNotes.Backend/.env << 'EOF'
-            DB_PASSWORD=your-strong-password
-            JWT_SECRET=your-production-jwt-secret-at-least-32-chars
-            ADMIN_PASSWORD=your-admin-password
-            DEEPSEEK_API_KEY=sk-xxx
-            EOF
-
-            # 2. 拉取代码中的 docker-compose.yml 并启动
-            git clone --depth 1 -b ${{ github.ref_name }} {{ github.server_url }}/{{ github.repository }}.git repo
-            cd repo/ChildNotes.Backend
-            cp ../.env .
-            docker compose up -d
-
-            # 或直接拉取镜像手动运行
-            docker pull ghcr.io/${{ github.repository }}/api:${{ github.ref_name }}
-            ```
-
-            ### 服务端传统部署
+            ### 服务端部署
             - 解压 `ChildNotes-backend-*.tar.gz` 后编辑 `appsettings.json`，填写数据库连接串、JWT Secret、DeepSeek ApiKey 等敏感配置。
             - 运行：`./ChildNotes.Api`
             - 目标机器为 Linux Ubuntu，无需额外安装 .NET 运行时。

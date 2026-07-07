@@ -1,17 +1,18 @@
 name: Docker Image
 
-# 触发条件与 release.yml 保持一致
+# [临时禁用] 已切换到 Linux 服务器直接部署，Docker 镜像构建暂不自动触发。
+# 恢复时把下面的 push 段取消注释即可。
 on:
-  push:
-    tags:
-      - 'v*'
-      - 'release-*'
   workflow_dispatch:
     inputs:
       ref:
         description: '要构建的分支/tag/commit'
         required: false
         default: ''
+  # push:
+  #   tags:
+  #     - 'v*'
+  #     - 'release-*'
 
 permissions:
   contents: read
