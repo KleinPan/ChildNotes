@@ -7,11 +7,11 @@ using ChildNotes.Shared.Constants;
 namespace ChildNotes.Services;
 
 /// <summary>
-/// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的三级降级解析逻辑。
+/// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的降级解析逻辑。
 /// 抽取自原 AiNote 模态的解析逻辑，供首页快捷输入框共用。
-/// 三级降级顺序（按 AiSettings.NoteSource 配置）：
-/// - local（默认）：本地 LLM → 后端接口 → 规则降级
-/// - server：后端接口 → 本地 LLM → 规则降级
+/// 降级顺序（按 AiSettings.NoteSource 配置）：
+/// - local（默认）：本地 LLM → 规则降级
+/// - server：后端接口 → 规则降级
 /// </summary>
 public sealed class AiNoteParseService
 {
@@ -45,7 +45,7 @@ note, summary(<=30字一句话), confidence(0~1)。
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
 
-        // 1) 首选路径
+        // 1) 按用户选择的路径调用 AI
         if (preferServer)
         {
             var remote = await TryServerAsync(text);
@@ -59,21 +59,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 return local;
         }
 
-        // 2) 降级到另一条 AI 路径
-        if (preferServer)
-        {
-            var local = await TryLocalLlmAsync(text, config);
-            if (local is not null && !string.IsNullOrEmpty(local.RecordType))
-                return local;
-        }
-        else
-        {
-            var remote = await TryServerAsync(text);
-            if (remote is not null && !string.IsNullOrEmpty(remote.RecordType))
-                return remote;
-        }
-
-        // 3) 最终规则降级
+        // 2) AI 失败则规则降级
         return LocalRuleParse(text);
     }
 

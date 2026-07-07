@@ -1,0 +1,34 @@
+{
+    // 使用 IntelliSense 了解相关属性。
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "ChildNotes Desktop (Windows)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build-desktop",
+            "program": "${workspaceFolder}/ChildNotes/ChildNotes.Desktop/bin/Debug/net10.0/ChildNotes.Desktop.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/ChildNotes/ChildNotes.Desktop",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "ChildNotes Desktop (无预构建)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/ChildNotes/ChildNotes.Desktop/bin/Debug/net10.0/ChildNotes.Desktop.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/ChildNotes/ChildNotes.Desktop",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": ".NET Core Attach",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

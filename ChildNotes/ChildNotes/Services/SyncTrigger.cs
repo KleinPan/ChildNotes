@@ -140,7 +140,9 @@ public sealed class SyncTrigger : IDisposable
         try
         {
             var status = result.Success ? "success" : "failed";
-            var volume = BuildDataVolume(result);
+            // 成功时：完整摘要只写在 Message，DataVolume 置空避免 UI 重复显示
+            // 失败时：Message 写错误原因，DataVolume 写部分进度（如有）
+            var volume = result.Success ? string.Empty : BuildPartialVolume(result);
             _logRepo.UpdateFinal(logId, DateTime.Now, status, volume, result.Message ?? string.Empty);
         }
         catch (Exception ex)
@@ -149,15 +151,10 @@ public sealed class SyncTrigger : IDisposable
         }
     }
 
-    /// <summary>根据 SyncResult 生成数据量描述。</summary>
-    private static string BuildDataVolume(ApiSyncService.SyncResult r)
+    /// <summary>失败时的部分数据量描述（仅 PullPages > 0 时有意义）。</summary>
+    private static string BuildPartialVolume(ApiSyncService.SyncResult r)
     {
-        if (!r.Success)
-        {
-            // 失败时通常无数据量；PullPages > 0 时仍提示拉取页数便于诊断
-            return r.PullPages > 0 ? $"已拉取 {r.PullPages} 页" : string.Empty;
-        }
-        return $"拉取 {r.PulledBabies}宝/{r.PulledRecords}条/{r.PulledMilestones}里程碑；推送 {r.PushedBabies}宝/{r.PushedRecords}条/{r.PushedMilestones}里程碑";
+        return r.PullPages > 0 ? $"已拉取 {r.PullPages} 页" : string.Empty;
     }
 
     public void Dispose()
