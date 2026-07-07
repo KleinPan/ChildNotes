@@ -74,6 +74,7 @@ jobs:
       # ===============================================================
       # 版本号解析：从 git tag 提取语义化版本号
       # tag 格式: v0.3.0 → VERSION=0.3.0, VERSION_MAJOR=0, VERSION_MINOR=3, VERSION_PATCH=0
+      # 非 tag ref（如 workflow_dispatch 手动触发未指定 tag）→ 回退到 0.0.0
       # ===============================================================
       - name: Parse version from git tag
         id: version
@@ -84,8 +85,17 @@ jobs:
           VERSION="${RAW_TAG#v}"
           # 提取主.次.修订号（去掉 pre-release 后缀，如 -rc.1）
           VERSION="${VERSION%%-*}"
+          # 校验是否为合法 SemVer（x.y.z），非 tag ref 回退到 0.0.0
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::warning::Ref '$RAW_TAG' 不是合法的版本号 tag，回退到 0.0.0"
+            VERSION="0.0.0"
+          fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Parsed version: $VERSION"
+          # 计算 Android versionCode（Major*10000 + Minor*100 + Patch）
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "Parsed version: $VERSION (versionCode: $VERSION_CODE)"
           echo "::notice::Git tag: $RAW_TAG → Version: $VERSION"
 
       # ===============================================================
@@ -229,6 +239,7 @@ jobs:
             -p:Version=${{ steps.version.outputs.version }} \
             -p:InformationalVersion=${{ steps.version.outputs.version }} \
             -p:ApplicationDisplayVersion=${{ steps.version.outputs.version }} \
+            -p:ApplicationVersion=${{ steps.version.outputs.version_code }} \
             $SIGN_ARGS \
             -o ../artifacts/android
 
