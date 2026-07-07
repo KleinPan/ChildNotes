@@ -106,7 +106,8 @@ public sealed class UserRepository : BaseRepository
         NickName = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         AvatarUrl = r.IsDBNull(4) ? string.Empty : r.GetString(4),
         Gender = r.IsDBNull(5) ? 0 : r.GetInt32(5),
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
+        // created_at / updated_at 以 UTC 存储，读入应用层统一转 Local（与其他 Repository 保持一致）
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(6)).ToLocalTime(),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(7)).ToLocalTime(),
     };
 }

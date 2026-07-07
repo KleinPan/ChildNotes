@@ -234,8 +234,12 @@ public sealed class RecordRepository : BaseRepository
         BabyId = r.IsDBNull(2) ? null : r.GetString(2),
         RecordType = r.GetString(3),
         RecordSubType = r.IsDBNull(4) ? null : r.GetString(4),
+        // record_date 以 "yyyy-MM-dd" 格式存储（纯日期，无时区），Unspecified 即可
         RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),
-        RecordTime = DateTimeExtensions.ParseDb(r.GetString(6)),
+        // record_time / created_at / updated_at / synced_at 均以 UTC 存储（带 Z 后缀）。
+        // 读入应用层统一转 Local，避免 UI 直接 ToString 时显示 UTC 时间（曾导致"16点"被显示成"08:00"）。
+        // 同步层在 MapToRecordItem / MapToRecord 出入端做 Local ↔ UTC 转换。
+        RecordTime = DateTimeExtensions.ParseDb(r.GetString(6)).ToLocalTime(),
         AmountMl = r.IsDBNull(7) ? null : r.GetInt32(7),
         DurationSec = r.IsDBNull(8) ? null : r.GetInt32(8),
         LeftDurationSec = r.IsDBNull(9) ? null : r.GetInt32(9),
@@ -246,9 +250,9 @@ public sealed class RecordRepository : BaseRepository
         WeightKg = r.IsDBNull(14) ? null : r.GetDecimal(14),
         PayloadJson = r.GetString(15),
         Deleted = r.IsDBNull(16) ? false : r.GetInt32(16) == 1,
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(17)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(18)),
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(17)).ToLocalTime(),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(18)).ToLocalTime(),
         DeviceId = r.IsDBNull(19) ? null : r.GetString(19),
-        SyncedAt = r.IsDBNull(20) ? null : DateTimeExtensions.ParseDb(r.GetString(20)),
+        SyncedAt = r.IsDBNull(20) ? null : DateTimeExtensions.ParseDb(r.GetString(20)).ToLocalTime(),
     };
 }

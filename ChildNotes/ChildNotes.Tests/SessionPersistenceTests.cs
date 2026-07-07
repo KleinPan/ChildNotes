@@ -39,7 +39,7 @@ public class SessionPersistenceTests : IDisposable
         _userRepo = new UserRepository(_factory);
         _sessionRepo = new SessionRepository(_factory);
         _state = new AppState();
-        _auth = new AuthService(_userRepo, _sessionRepo, _state);
+        _auth = new AuthService(_userRepo, _sessionRepo, _state, new SyncConfigRepository(_factory));
     }
 
     public void Dispose()
@@ -72,7 +72,7 @@ public class SessionPersistenceTests : IDisposable
         Assert.NotNull(firstExpireAt);
 
         // 模拟应用关闭：重建 AuthService（CurrentUser 丢失）
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
 
         // 恢复前未登录
         Assert.False(newAuth.IsLoggedIn);
@@ -110,7 +110,7 @@ public class SessionPersistenceTests : IDisposable
         Assert.NotNull(session);
 
         // 模拟应用重启：用新 AuthService 实例（CurrentUser 为空）
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
 
         // 手动把过期时间改为过去
         var pastExpire = DateTime.UtcNow.AddMinutes(-1);
@@ -143,7 +143,7 @@ public class SessionPersistenceTests : IDisposable
         cmd.ExecuteNonQuery();
 
         // 模拟应用重启：用新 AuthService 实例
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
 
         // 恢复应失败
         var restored = newAuth.TryRestoreSession();
@@ -175,7 +175,7 @@ public class SessionPersistenceTests : IDisposable
         Assert.Null(_sessionRepo.Get());
 
         // 模拟重启后恢复应失败
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
         Assert.False(newAuth.TryRestoreSession());
     }
 
@@ -192,7 +192,7 @@ public class SessionPersistenceTests : IDisposable
         Thread.Sleep(50);
 
         // 模拟重启并恢复
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
         var restored = newAuth.TryRestoreSession();
 
         Assert.True(restored);
@@ -218,7 +218,7 @@ public class SessionPersistenceTests : IDisposable
         Assert.Equal(result.User!.Id, session!.UserId);
 
         // 模拟重启恢复
-        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState());
+        var newAuth = new AuthService(_userRepo, _sessionRepo, new AppState(), new SyncConfigRepository(_factory));
         Assert.True(newAuth.TryRestoreSession());
         Assert.Equal("newreguser", newAuth.CurrentUser!.Username);
     }

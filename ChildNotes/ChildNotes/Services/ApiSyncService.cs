@@ -394,50 +394,73 @@ public sealed class ApiSyncService : BaseApiClient
     {
         Id = i.Id, UserId = i.UserId, Name = i.Name, Avatar = i.Avatar ?? "",
         Gender = i.Gender ?? "", BirthDate = i.BirthDate,
-        CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
+        // 服务器时间约定为 UTC，转 Local 与本地库读取行为一致；BirthDate 是纯日期原样保留
+        CreatedAt = ToLocal(i.CreatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
 
     private static ChildRecord MapToRecord(SyncRecordItem i) => new()
     {
         Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
         RecordType = i.RecordType, RecordSubType = i.RecordSubType,
-        RecordDate = i.RecordDate, RecordTime = i.RecordTime,
+        // 服务器传来的时间约定为 UTC（后端 SyncService 用 SpecifyKind(..., Utc) 标记）。
+        // 但 DTO 用 DateTime 传输、JSON 反序列化后 Kind=Unspecified。这里显式转 Local，
+        // 与 RecordRepository.Map 读本地库的行为一致，使应用层统一感知本地时间。
+        // 写库时 AddUtc 会再次转回 UTC（幂等）。
+        RecordDate = i.RecordDate,
+        RecordTime = ToLocal(i.RecordTime),
         AmountMl = i.AmountMl, DurationSec = i.DurationSec,
         LeftDurationSec = i.LeftDurationSec, RightDurationSec = i.RightDurationSec,
         AbnormalFlag = i.AbnormalFlag, TemperatureValue = i.TemperatureValue,
         HeightCm = i.HeightCm, WeightKg = i.WeightKg,
         PayloadJson = i.PayloadJson ?? "{}", Deleted = i.Deleted,
-        CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
+        CreatedAt = ToLocal(i.CreatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
+
+    /// <summary>
+    /// 把同步 DTO 反序列化后的 DateTime 视为 UTC 并转 Local。
+    /// 反序列化时 Kind 通常为 Unspecified（JSON 无时区信息时）或 Utc（带 Z 时），
+    /// 二者都先 SpecifyKind(Utc) 再 ToLocal，保证应用层始终拿到本地时间。
+    /// </summary>
+    private static DateTime ToLocal(DateTime dt)
+        => (dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc)).ToLocalTime();
+
+    /// <summary>把应用层的本地时间转回 UTC，用于上送服务器。</summary>
+    private static DateTime ToUtc(DateTime dt)
+        => dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
 
     private static SyncBabyItem MapToBabyItem(Baby b) => new()
     {
         Id = b.Id, UserId = b.UserId, Name = b.Name, Avatar = b.Avatar ?? "",
         Gender = b.Gender ?? "", BirthDate = b.BirthDate,
-        CreatedAt = b.CreatedAt, UpdatedAt = b.UpdatedAt,
+        // 应用层时间已是 Local，上送服务器需转 UTC；BirthDate 是纯日期原样上送
+        CreatedAt = ToUtc(b.CreatedAt), UpdatedAt = ToUtc(b.UpdatedAt),
     };
 
     private static SyncRecordItem MapToRecordItem(ChildRecord r) => new()
     {
         Id = r.Id, UserId = r.UserId, BabyId = r.BabyId,
         RecordType = r.RecordType, RecordSubType = r.RecordSubType,
-        RecordDate = r.RecordDate, RecordTime = r.RecordTime,
+        // 应用层 RecordTime/CreatedAt/UpdatedAt 已是 Local（RecordRepository.Map 转换过）。
+        // 服务器期望 UTC，这里显式转回。RecordDate 是纯日期无时区，原样上送。
+        RecordDate = r.RecordDate,
+        RecordTime = ToUtc(r.RecordTime),
         AmountMl = r.AmountMl, DurationSec = r.DurationSec,
         LeftDurationSec = r.LeftDurationSec, RightDurationSec = r.RightDurationSec,
         AbnormalFlag = r.AbnormalFlag, TemperatureValue = r.TemperatureValue,
         HeightCm = r.HeightCm, WeightKg = r.WeightKg,
         PayloadJson = r.PayloadJson ?? "{}", Deleted = r.Deleted,
-        CreatedAt = r.CreatedAt, UpdatedAt = r.UpdatedAt,
+        CreatedAt = ToUtc(r.CreatedAt), UpdatedAt = ToUtc(r.UpdatedAt),
     };
 
     private static Milestone MapToMilestone(SyncMilestoneItem i) => new()
     {
         Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
         Title = i.Title, Content = i.Content,
+        // RecordDate 是纯日期，原样保留；CreatedAt/UpdatedAt 服务器传 UTC，转 Local
         RecordDate = i.RecordDate,
         PhotosJson = string.IsNullOrEmpty(i.PhotosJson) ? "[]" : i.PhotosJson,
         Deleted = i.Deleted,
-        CreatedAt = i.CreatedAt, UpdatedAt = i.UpdatedAt,
+        CreatedAt = ToLocal(i.CreatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
 
     private static SyncMilestoneItem MapToMilestoneItem(Milestone m) => new()
@@ -447,6 +470,7 @@ public sealed class ApiSyncService : BaseApiClient
         RecordDate = m.RecordDate,
         PhotosJson = m.PhotosJson ?? "[]",
         Deleted = m.Deleted,
-        CreatedAt = m.CreatedAt, UpdatedAt = m.UpdatedAt,
+        // 应用层 Local 时间上送服务器转 UTC
+        CreatedAt = ToUtc(m.CreatedAt), UpdatedAt = ToUtc(m.UpdatedAt),
     };
 }

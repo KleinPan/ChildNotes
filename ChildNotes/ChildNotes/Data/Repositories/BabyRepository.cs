@@ -132,11 +132,13 @@ public sealed class BabyRepository : BaseRepository
         Name = r.GetString(2),
         Avatar = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         Gender = r.IsDBNull(4) ? string.Empty : r.GetString(4),
+        // birth_date 以 "yyyy-MM-dd" 存储（纯日期无时区），Unspecified 即可
         BirthDate = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
         Deleted = r.IsDBNull(6) ? false : r.GetInt64(6) != 0,
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
+        // created_at / updated_at / synced_at 以 UTC 存储，读入应用层统一转 Local（与 RecordRepository.Map 一致）
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)).ToLocalTime(),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)).ToLocalTime(),
         DeviceId = r.IsDBNull(9) ? null : r.GetString(9),
-        SyncedAt = r.IsDBNull(10) ? null : DateTimeExtensions.ParseDb(r.GetString(10)),
+        SyncedAt = r.IsDBNull(10) ? null : DateTimeExtensions.ParseDb(r.GetString(10)).ToLocalTime(),
     };
 }

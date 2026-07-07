@@ -142,12 +142,14 @@ public sealed class MilestoneRepository : BaseRepository
         BabyId = r.IsDBNull(2) ? null : r.GetString(2),
         Title = r.GetString(3),
         Content = r.IsDBNull(4) ? null : r.GetString(4),
+        // record_date 以 "yyyy-MM-dd" 存储（纯日期无时区），Unspecified 即可
         RecordDate = DateTimeExtensions.ParseDb(r.GetString(5)),
         PhotosJson = r.IsDBNull(6) ? "[]" : r.GetString(6),
-        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)),
-        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)),
+        // created_at / updated_at / synced_at 以 UTC 存储，读入应用层统一转 Local
+        CreatedAt = DateTimeExtensions.ParseDb(r.GetString(7)).ToLocalTime(),
+        UpdatedAt = DateTimeExtensions.ParseDb(r.GetString(8)).ToLocalTime(),
         Deleted = r.IsDBNull(9) ? false : r.GetInt64(9) != 0,
         DeviceId = r.IsDBNull(10) ? null : r.GetString(10),
-        SyncedAt = r.IsDBNull(11) ? null : DateTimeExtensions.ParseDb(r.GetString(11)),
+        SyncedAt = r.IsDBNull(11) ? null : DateTimeExtensions.ParseDb(r.GetString(11)).ToLocalTime(),
     };
 }

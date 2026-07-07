@@ -1,4 +1,4 @@
-﻿# ChildNotes 项目架构审视与改进分析报告
+# ChildNotes 项目架构审视与改进分析报告
 
 ## 1. 执行摘要
 
@@ -282,7 +282,7 @@ graph TB
 | **预期效果** | 消除时区歧义；LWW 判断准确；跨时区使用（如出国）数据一致。 |
 | **实施难度** | 中 |
 | **优先级** | **P1（高）** |
-| **实施状态** | **暂缓  评估后风险可控，投入产出比低**。见下方深度评估。 |
+| **实施状态** | **已完成**（2026-07-07）。采用"应用层统一 Local + 同步层边界转换"方案（非 DateTimeOffset 全量重构，见下方深度评估）。仓储读库时 `RecordTime`/`CreatedAt`/`UpdatedAt`/`SyncedAt` 统一 `ToLocalTime()`；`ApiSyncService` 新增 `ToLocal`/`ToUtc` 辅助方法在 Pull/Push 边界做转换；纯日期字段（`RecordDate`/`BirthDate`）保持 Unspecified。修复用户输入"16点"被显示成"08:00"的 bug。 |
 
 ##### 深度评估：统一时间模型可行性
 
@@ -304,7 +304,15 @@ graph TB
 2. **LWW 判断偏差**：同步冲突使用 `UpdatedAt` 比较，而 `UpdatedAt` 在前端已通过 `AddUtc` 正确存储为 UTC，后端也使用 UTC，因此**当前 LWW 判断实际是正确的**。
 3. **跨时区使用**：当前项目仅在中国大陆使用（UTC+8 固定），无跨时区需求。
 
-**结论**：改为 `DateTimeOffset` 需修改所有共享实体基类（约 30+ 类型）、所有 DTO 和同步协议、前端约 50+ 处 `DateTime.Now` 引用、SQLite 存储格式、PostgreSQL 列类型映射和所有 UI 绑定。收益有限但代价巨大。**建议暂不实施，优先修复前端 `RecordTime` 在同步前的 UTC 转换（小范围改动，消除唯一实际风险点）。** 待项目有跨时区用户需求时再评估。
+**结论**：改为 `DateTimeOffset` 需修改所有共享实体基类（约 30+ 类型）、所有 DTO 和同步协议、前端约 50+ 处 `DateTime.Now` 引用、SQLite 存储格式、PostgreSQL 列类型映射和所有 UI 绑定。收益有限但代价巨大。原建议暂不实施。
+
+**实际实施（2026-07-07）**：上述"小范围改动"在排查用户报告的"16点显示成08:00"bug 时被证伪——根因不是同步层，而是**应用层读库后未转 Local**。DB 存 `08:00Z`（UTC），UI 直接 `ToString("HH:mm")` 显示 UTC 时间，导致所有 `RecordTime` 显示偏移 8 小时（此前被"X 分钟前"差值计算 `Math.Max(0, ...)` 截断成"刚刚/0 分钟前"反向掩盖）。
+
+最终采用**折中方案**：保留现有 `DateTime` 类型与 UTC 存储格式（不引入 `DateTimeOffset`），但在两个边界做显式转换：
+- **仓储读库边界**（`RecordRepository`/`BabyRepository`/`MilestoneRepository`/`UserRepository` 的 `Map` 方法）：`RecordTime`/`CreatedAt`/`UpdatedAt`/`SyncedAt` 统一 `ToLocalTime()`，应用层始终持有 Local 时间；纯日期字段（`RecordDate`/`BirthDate`）保持 Unspecified。
+- **同步出入边界**（`ApiSyncService`）：新增 `ToLocal`/`ToUtc` 辅助方法，`MapToRecord`（Pull）做 UTC→Local，`MapToRecordItem`（Push）做 Local→UTC，保证 DB 字典序比较仍基于 UTC 字符串（LWW 正确性不受影响）。
+
+未做全量 `DateTimeOffset` 重构的原因与原结论一致：代价巨大、无跨时区需求。当前方案已彻底消除显示偏差与"X 分钟前"计算错误，是投入产出比最优的修复路径。
 
 
 #### 建议 3.3：为 PayloadJson 引入版本化契约
@@ -871,7 +879,7 @@ graph TB
 | **P0** | 8.1 | 前端密码哈希存储 | 安全合规 | ✅ 已完成 |
 | **P1** | 1.1 | 前端引入标准 DI 容器 | 可测试性、可维护性 | ⏸ 暂缓 |
 | **P1** | 2.1 | 同步版本向量/向量时钟 | 多设备数据一致性 | 待评估 |
-| **P1** | 3.2 | 统一前后端时间模型 | 时区正确性 | ⏸ 暂缓（风险可控） |
+| **P1** | 3.2 | 统一前后端时间模型 | 时区正确性 | ✅ 已完成 |
 | **P1** | 4.1 | RecordController 强类型 DTO | 类型安全 | ➖ 无需修改 |
 | **P1** | 5.1 | 统一 NuGet 版本并升级 EF Core 10 | 版本一致性 | ✅ 已完成 |
 | **P1** | 5.2 | 升级 SQLitePCLRaw 处理安全漏洞 | 安全修复 | ✅ 已是最新版 |
@@ -951,10 +959,10 @@ ChildNotes 项目已经具备一个成熟跨平台应用的雏形：前后端分
 | 5.2 SQLitePCLRaw | P1 | ✅ 已是最新版 | 3.0.3，无需升级 |
 | 4.1 RecordController | P1 | ➖ 无需修改 | `JsonElement`+`ParseDto` 是多态端点标准模式 |
 | 1.1 前端 DI | P1 | ⏸ 暂缓 | 成本高，当前 ServiceProvider 可用 |
-| 3.2 统一时间模型 | P1 | ⏸ 暂缓 | 风险可控，`UpdatedAt` 前后端一致用 UTC，LWW 正确 |
+| 3.2 统一时间模型 | P1 | ✅ 已完成 | 仓储读库转 Local，同步层做 Local↔UTC 边界转换 |
 | 4.2 API 版本控制 | P2 | ⏸ 暂缓 | 无多版本需求，留待首次破坏性变更时引入 |
 
-**测试验证：** 后端 115/115 测试通过，前端构建 0 错误。
+**测试验证：** 后端 119/119 测试通过，前端 63/63 测试通过（2026-07-07）。
 
 ### 14.2 后续建议
 
