@@ -16,6 +16,13 @@
          D8 是 Android 官方推荐的 DEX 编译器，替代已废弃的 dx -->
     <AndroidDexTool>d8</AndroidDexTool>
     <AndroidEnableProguard>false</AndroidEnableProguard>
+    <!-- ★ 解决 androidx.core.core 与 androidx.core.core-ktx 重复类冲突
+         问题：Avalonia.Android 传递依赖 core-ktx，与项目显式引用的 Xamarin.AndroidX.Core
+               （映射到 androidx.core.core）存在重叠的 Kotlin 扩展类（如 AnimatorKt），
+               导致 D8 编译时报 "defined multiple times" 错误。
+         方案：启用编译时类路径解析（.NET 8+ 特性），自动处理重复类。
+         参考：https://github.com/xamarin/xamarin-android/issues/7888 -->
+    <AndroidEnableAppCompileTimeClassPathResolution>true</AndroidEnableAppCompileTimeClassPathResolution>
 
     <!-- ★ Android 版本号修复（三管齐下确保 versionName 干净）
          问题：.NET SDK 在 Debug 构建时自动追加源版本控制后缀到 Version 属性
