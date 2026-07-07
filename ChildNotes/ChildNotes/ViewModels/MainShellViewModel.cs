@@ -414,10 +414,6 @@ public partial class MainShellViewModel : ViewModelBase
             await Home.RefreshAsync();
             // 无条件刷新 Feeding 列表：用户可能在首页用 AI 输入栏生成记录后切到喂奶 Tab 查看，
             // 也可能就在喂奶 Tab 内通过 RecordSheet 添加。两种场景都需要刷新。
-            // 后端落库的 AI 记录由 QuickInputViewModel 触发 SyncTrigger.RunNowAsync 拉取，
-            // 这里给同步 1.5 秒缓冲，确保 Feeding 列表能看到刚拉下的记录。
-            Feeding.Activate();
-            await Task.Delay(1500, ct);
             Feeding.Activate();
             // Statistics 不再主动刷新：用户进入统计页时 OpenStatistics 会触发 LoadAsync
             // 避免保存记录后无谓地刷新用户未查看的页面

@@ -50,7 +50,7 @@ public class AiNoteParseTests
     {
         // 用一个会抛异常的 DeepSeekClient stub，强制走规则解析路径
         var failingAi = new FailingDeepSeekClient();
-        return new AiNoteService(failingAi, null!);
+        return new AiNoteService(failingAi);
     }
 
     [Theory]

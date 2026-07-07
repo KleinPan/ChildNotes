@@ -102,7 +102,6 @@ note, summary(<=30字一句话), confidence(0~1)。
         {
             var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt, text);
             var parsed = ParseLlmJson(raw);
-            if (parsed is not null) parsed.Saved = false;
             return parsed;
         }
         catch (Exception ex)

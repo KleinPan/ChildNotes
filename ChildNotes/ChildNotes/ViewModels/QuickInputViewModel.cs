@@ -98,17 +98,9 @@ public partial class QuickInputViewModel : ViewModelBase
                 return;
             }
 
-            if (!result.Saved)
-            {
-                // 本地解析路径：直接写本地库
-                AiNoteParseService.SaveLocally(result, text, _recordService);
-            }
-            else
-            {
-                // 后端解析路径：后端已落库，本地需要主动拉取同步才能看到记录
-                // 否则只能等 SyncTrigger 启动同步(8s)或保活同步(15min)才会拉到本地
-                _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
-            }
+            // 后端只解析不落库，前端统一写本地库。
+            // 本地写入后会触发 SyncTrigger.NotifyWrite → 增量推送到后端
+            AiNoteParseService.SaveLocally(result, text, _recordService);
 
             var summary = result.Summary ?? "已记录";
             DisplayToast("已记录：" + summary);

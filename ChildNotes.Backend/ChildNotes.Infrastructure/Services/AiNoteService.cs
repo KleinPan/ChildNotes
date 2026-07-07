@@ -11,8 +11,9 @@ using ChildNotes.Infrastructure.External;
 namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
-/// AI 智能记服务：将自然语言文本解析为结构化育儿记录并保存。
+/// AI 智能记服务：将自然语言文本解析为结构化育儿记录。
 /// 优先调用 DeepSeek 进行语义解析；失败时降级到基于规则的正则解析，保证可用性。
+/// 注意：本服务仅做解析，不落库；调用方需自行持久化。
 /// </summary>
 public partial class AiNoteService : IAiNoteService
 {
@@ -58,15 +59,13 @@ public partial class AiNoteService : IAiNoteService
     };
 
     private readonly DeepSeekClient _ai;
-    private readonly IRecordService _recordService;
 
-    public AiNoteService(DeepSeekClient ai, IRecordService recordService)
+    public AiNoteService(DeepSeekClient ai)
     {
         _ai = ai;
-        _recordService = recordService;
     }
 
-    public async Task<AiNoteParseResponse> ParseAndSaveAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
+    public async Task<AiNoteParseResponse> ParseAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(req?.Text))
             throw new Core.Exceptions.BusinessException("记录文本不能为空", 400);
@@ -91,11 +90,9 @@ public partial class AiNoteService : IAiNoteService
             ? DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             : NormalizeTime(parsed.Time);
 
-        // 落库
-        var dto = BuildDto(parsed, time);
-        var id = await _recordService.AddRecordAsync(parsed.RecordType, dto, ct);
-        parsed.Saved = true;
-        parsed.RecordId = id;
+        // 仅解析，不落库。调用方（前端）拿到 DTO 后自行 SaveLocally 写入本地库，
+        // 再由 SyncTrigger 推送到后端，避免后端替用户决定 baby_id 和时区。
+        parsed.Time = time;
         return parsed;
     }
 
