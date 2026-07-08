@@ -359,7 +359,9 @@ jobs:
             ChildNotes-android-${{ github.ref_name }}.apk
             ChildNotes-backend-${{ github.ref_name }}.tar.gz
           if-no-files-found: error
-          retention-days: 30
+          # artifact 仅作 build→release job 中转用，release job 在同次 workflow 运行内即下载，
+          # 1 天保留足够调试排查；过短不利于复跑失败时查看产物
+          retention-days: 1
 
       - name: Summarize build status
         if: always()
