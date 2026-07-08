@@ -11,7 +11,7 @@ public partial class FeedingView : UserControl
         InitializeComponent();
     }
 
-    private void OnRecordTap(object? sender, PointerPressedEventArgs e)
+    private void OnRecordTap(object? sender, TappedEventArgs e)
     {
         if (sender is Border border && border.Tag is RecordDisplayItem item && DataContext is FeedingViewModel vm)
         {
@@ -19,7 +19,7 @@ public partial class FeedingView : UserControl
         }
     }
 
-    private void OnDeleteTap(object? sender, PointerPressedEventArgs e)
+    private void OnDeleteTap(object? sender, TappedEventArgs e)
     {
         e.Handled = true;
         if (sender is Border border && border.Tag is RecordDisplayItem item && DataContext is FeedingViewModel vm)

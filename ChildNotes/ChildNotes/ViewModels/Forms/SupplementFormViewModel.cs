@@ -1,25 +1,30 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 常用选项项模型
+/// 常用选项项模型。IsCustom 区分系统默认项与用户自定义项（影响样式与删除能力）。
 /// </summary>
 public partial class CommonItemViewModel : ObservableObject
 {
     public string Name { get; }
+    /// <summary>true 表示用户自定义项（白底绿描边样式，可长按删除）；false 表示系统默认项（灰底）。</summary>
+    public bool IsCustom { get; }
 
     [ObservableProperty] private bool _isSelected;
 
-    public CommonItemViewModel(string name)
+    public CommonItemViewModel(string name, bool isCustom = false)
     {
         Name = name;
+        IsCustom = isCustom;
         _isSelected = false;
     }
 }
@@ -33,23 +38,9 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     [ObservableProperty] private string _note = string.Empty;
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
     [ObservableProperty] private string _customItem = string.Empty;
+    [ObservableProperty] private string _errorMessage = string.Empty;
 
-    /// <summary>
-    /// 常用药品选项（用药类型）- 对齐小程序 DEFAULT_MEDICINES
-    /// </summary>
-    public ObservableCollection<CommonItemViewModel> MedicineCommonItems { get; } = new(new[]
-    {
-        new CommonItemViewModel("泰诺林"),
-        new CommonItemViewModel("布洛芬"),
-        new CommonItemViewModel("美林"),
-        new CommonItemViewModel("蒙脱石散"),
-        new CommonItemViewModel("口服补液盐"),
-        new CommonItemViewModel("西替利嗪"),
-    });
-
-    /// <summary>
-    /// 常用补充剂选项（补充剂类型）- 对齐小程序 DEFAULT_SUPPLEMENTS
-    /// </summary>
+    /// <summary>系统默认补充剂项（5项，对齐小程序 DEFAULT_SUPPLEMENTS）</summary>
     public ObservableCollection<CommonItemViewModel> SupplementCommonItems { get; } = new(new[]
     {
         new CommonItemViewModel("维生素D"),
@@ -57,68 +48,189 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         new CommonItemViewModel("DHA"),
         new CommonItemViewModel("钙剂"),
         new CommonItemViewModel("铁剂"),
-        new CommonItemViewModel("锌剂"),
     });
 
-    /// <summary>
-    /// 获取当前类型的常用选项列表
-    /// </summary>
-    public ObservableCollection<CommonItemViewModel> CurrentCommonItems =>
-        SuppType == "medicine" ? MedicineCommonItems : SupplementCommonItems;
+    /// <summary>系统默认用药项（5项，对齐小程序 DEFAULT_MEDICINES）</summary>
+    public ObservableCollection<CommonItemViewModel> MedicineCommonItems { get; } = new(new[]
+    {
+        new CommonItemViewModel("泰诺林"),
+        new CommonItemViewModel("布洛芬"),
+        new CommonItemViewModel("美林"),
+        new CommonItemViewModel("蒙脱石散"),
+        new CommonItemViewModel("口服补液盐"),
+    });
+
+    /// <summary>用户自定义补充剂项（从DB加载，IsCustom=true）</summary>
+    public ObservableCollection<CommonItemViewModel> CustomSupplementItems { get; } = new();
+
+    /// <summary>用户自定义用药项（从DB加载，IsCustom=true）</summary>
+    public ObservableCollection<CommonItemViewModel> CustomMedicineItems { get; } = new();
 
     /// <summary>
-    /// 添加自定义内容命令
+    /// 当前类型下的全部可选项（默认项 + 自定义项），供 UI 绑定。
+    /// 切换类型时通过 OnSuppTypeChanged 触发刷新。
     /// </summary>
+    public ObservableCollection<CommonItemViewModel> CurrentAllItems { get; } = new();
+
+    /// <summary>添加自定义内容命令</summary>
     public ICommand AddCustomCommand { get; }
+
+    /// <summary>删除自定义项命令（参数为 CommonItemViewModel）</summary>
+    public ICommand DeleteCustomCommand { get; }
 
     public SupplementFormViewModel()
     {
         AddCustomCommand = new RelayCommand(AddCustomItem);
+        DeleteCustomCommand = new RelayCommand<CommonItemViewModel>(DeleteCustomItem);
+        // 订阅所有默认项的属性变化
+        SubscribeItems(SupplementCommonItems);
+        SubscribeItems(MedicineCommonItems);
+        // 初始加载自定义项并合并到 CurrentAllItems
+        ReloadCustomItems();
+    }
+
+    private void SubscribeItems(ObservableCollection<CommonItemViewModel> items)
+    {
+        foreach (var item in items) item.PropertyChanged += OnItemPropertyChanged;
+    }
+
+    private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CommonItemViewModel.IsSelected))
+            RebuildName();
     }
 
     public void SwitchType(string type) => SuppType = type;
 
     /// <summary>
-    /// 添加自定义内容
+    /// 从DB重新加载当前类型的自定义项，并重建 CurrentAllItems（默认项在前，自定义项在后）。
+    /// </summary>
+    private void ReloadCustomItems()
+    {
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        var repo = ServiceProvider.Instance.SupplementItemRepository;
+
+        var customSupps = string.IsNullOrEmpty(userId)
+            ? new List<CommonItemViewModel>()
+            : repo.GetByUser(userId, "supplement")
+                  .Select(x => new CommonItemViewModel(x.Name, isCustom: true)).ToList();
+        var customMeds = string.IsNullOrEmpty(userId)
+            ? new List<CommonItemViewModel>()
+            : repo.GetByUser(userId, "medicine")
+                  .Select(x => new CommonItemViewModel(x.Name, isCustom: true)).ToList();
+
+        // 订阅新加载项的属性变化
+        foreach (var item in customSupps) item.PropertyChanged += OnItemPropertyChanged;
+        foreach (var item in customMeds) item.PropertyChanged += OnItemPropertyChanged;
+
+        CustomSupplementItems.Clear();
+        foreach (var i in customSupps) CustomSupplementItems.Add(i);
+        CustomMedicineItems.Clear();
+        foreach (var i in customMeds) CustomMedicineItems.Add(i);
+
+        RebuildCurrentAllItems();
+    }
+
+    /// <summary>合并当前类型的默认项 + 自定义项到 CurrentAllItems。</summary>
+    private void RebuildCurrentAllItems()
+    {
+        // 先解绑旧项的事件，避免内存泄漏
+        foreach (var item in CurrentAllItems) item.PropertyChanged -= OnItemPropertyChanged;
+        CurrentAllItems.Clear();
+
+        var defaults = SuppType == "medicine" ? MedicineCommonItems : SupplementCommonItems;
+        var customs = SuppType == "medicine" ? CustomMedicineItems : CustomSupplementItems;
+        foreach (var item in defaults) CurrentAllItems.Add(item);
+        foreach (var item in customs) CurrentAllItems.Add(item);
+        // CurrentAllItems 中的项本身就是 defaults/customs 中的同一个引用，事件已订阅，无需重复订阅
+    }
+
+    /// <summary>
+    /// 添加自定义内容：校验去重 → 写入DB → 加入集合 → 自动选中。
     /// </summary>
     public void AddCustomItem()
     {
-        if (!string.IsNullOrWhiteSpace(CustomItem))
+        ErrorMessage = string.Empty;
+        var value = CustomItem?.Trim();
+        if (string.IsNullOrEmpty(value))
         {
-            // 将自定义内容追加到名称字段
-            if (!string.IsNullOrWhiteSpace(Name))
-                Name += $"、{CustomItem}";
-            else
-                Name = CustomItem;
-
-            CustomItem = string.Empty;
+            ErrorMessage = "请输入名称";
+            return;
         }
+
+        // 去重：默认项和当前类型的自定义项都不能重复
+        var defaults = SuppType == "medicine" ? MedicineCommonItems : SupplementCommonItems;
+        var customs = SuppType == "medicine" ? CustomMedicineItems : CustomSupplementItems;
+        if (defaults.Any(x => x.Name == value) || customs.Any(x => x.Name == value))
+        {
+            ErrorMessage = "该名称已存在";
+            return;
+        }
+
+        // 写入DB（用户未登录时 userId 为空，仅内存保存）
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            ServiceProvider.Instance.SupplementItemRepository.Insert(userId, SuppType, value);
+        }
+
+        // 加入集合并选中
+        var newItem = new CommonItemViewModel(value, isCustom: true);
+        newItem.PropertyChanged += OnItemPropertyChanged;
+        customs.Add(newItem);
+        CurrentAllItems.Add(newItem);
+        newItem.IsSelected = true;  // 自动选中，触发 RebuildName
+
+        CustomItem = string.Empty;
     }
 
     /// <summary>
-    /// 类型切换时：清空旧选中状态、清空名称、通知 UI 刷新常用项列表
+    /// 删除自定义项（长按触发）：从DB和集合中移除，并同步 Name。
+    /// </summary>
+    private void DeleteCustomItem(CommonItemViewModel? item)
+    {
+        if (item is null || !item.IsCustom) return;
+        ErrorMessage = string.Empty;
+
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            ServiceProvider.Instance.SupplementItemRepository.Delete(userId, SuppType, item.Name);
+        }
+
+        var customs = SuppType == "medicine" ? CustomMedicineItems : CustomSupplementItems;
+        customs.Remove(item);
+        CurrentAllItems.Remove(item);
+        item.PropertyChanged -= OnItemPropertyChanged;
+        if (item.IsSelected) RebuildName();
+    }
+
+    /// <summary>合并"当前列表选中项"为 Name（自定义项通过 IsSelected 选中即可，无需单独累积）。</summary>
+    private void RebuildName()
+    {
+        var selected = CurrentAllItems.Where(x => x.IsSelected).Select(x => x.Name).Distinct().ToList();
+        Name = string.Join("、", selected);
+    }
+
+    /// <summary>
+    /// 类型切换时：清空选中状态、重新加载对应类型的自定义项、通知 UI 刷新。
     /// </summary>
     partial void OnSuppTypeChanged(string value)
     {
-        // 清空旧类型的选中状态
-        foreach (var item in MedicineCommonItems) item.IsSelected = false;
+        // 清空所有选中状态（默认项 + 自定义项）
         foreach (var item in SupplementCommonItems) item.IsSelected = false;
-        // 清空名称（对齐小程序 switchType 中 name: '' 逻辑）
+        foreach (var item in MedicineCommonItems) item.IsSelected = false;
+        foreach (var item in CustomSupplementItems) item.IsSelected = false;
+        foreach (var item in CustomMedicineItems) item.IsSelected = false;
         Name = string.Empty;
-        // 清空自定义输入
         CustomItem = string.Empty;
-        // 通知 UI 刷新常用项列表
-        OnPropertyChanged(nameof(CurrentCommonItems));
+        ErrorMessage = string.Empty;
+        // 重建 CurrentAllItems（切换默认项 + 对应自定义项）
+        RebuildCurrentAllItems();
     }
 
-    /// <summary>
-    /// 当选中项变化时刷新名称
-    /// </summary>
-    public void RefreshNameFromSelection()
-    {
-        var selected = CurrentCommonItems.Where(x => x.IsSelected).Select(x => x.Name).ToList();
-        Name = string.Join("、", selected);
-    }
+    /// <summary>当选中项变化时刷新名称（保留以兼容测试）。</summary>
+    public void RefreshNameFromSelection() => RebuildName();
 
     public bool Validate(out string error)
     {

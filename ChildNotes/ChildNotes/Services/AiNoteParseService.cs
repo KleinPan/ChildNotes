@@ -283,6 +283,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                         RightDuration = r.RightDuration,
                         LeftDurationSec = (r.LeftDuration ?? 0) * 60,
                         RightDurationSec = (r.RightDuration ?? 0) * 60,
+                        Note = r.Note,
                     });
                 }
                 else
@@ -292,6 +293,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                         Type = string.IsNullOrEmpty(r.RecordSubType) ? "bottle" : r.RecordSubType,
                         Time = time,
                         Amount = r.Amount,
+                        Note = r.Note,
                     });
                 }
                 break;

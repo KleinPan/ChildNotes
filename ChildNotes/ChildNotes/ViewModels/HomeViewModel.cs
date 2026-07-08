@@ -136,35 +136,35 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         // 失效活动时间轴缓存：保存记录后 RefreshAsync 会触发，下次打开活动面板需重查 DB 取最新数据
         ActivityTracking.InvalidateCache();
 
-        // 后台线程：一次性查询所有需要的数据（可被后续 RefreshAsync 取消）
-        var snapshot = await Task.Run(() =>
-        {
-            ct.ThrowIfCancellationRequested();
-            var baby = _babyService.LoadBabyList().FirstOrDefault(b => b.Id == currentBabyId)
-                       ?? appState.CurrentBaby;
-            ct.ThrowIfCancellationRequested();
-            if (baby is null)
-                return (Baby: (Baby?)null, TodayRecords: new List<ChildRecord>(),
-                        LatestFeed: (ChildRecord?)null, VaccineRecords: new List<ChildRecord>(),
-                        Activities: new List<ChildRecord>(), GrowthRecords: new List<ChildRecord>(),
-                        AbnormalRecords: new List<ChildRecord>(), Stats: (DayStats?)null);
-
-            var todayRecords = _recordService.GetByDate(DateTime.Today);
-            var stats = _statsService.GetDayStats(DateTime.Today, todayRecords);
-            var latestFeed = _recordService.GetLatest(RecordType.Feed);
-            var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
-            var activities = _recordService.GetByType(RecordType.Activity, 100);
-            var growthRecords = _recordService.GetByType(RecordType.Growth, 1);
-            var abnormalRecords = _recordService.GetByType(RecordType.Abnormal, 1);
-            return (Baby: (Baby?)baby, TodayRecords: todayRecords,
-                    LatestFeed: latestFeed, VaccineRecords: vaccineRecords,
-                    Activities: activities, GrowthRecords: growthRecords,
-                    AbnormalRecords: abnormalRecords, Stats: (DayStats?)stats);
-        }, ct);
-
         // UI 线程：属性赋值与集合更新（被取消则静默跳过）
         try
         {
+            // 后台线程：一次性查询所有需要的数据（可被后续 RefreshAsync 取消）
+            var snapshot = await Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                var baby = _babyService.LoadBabyList().FirstOrDefault(b => b.Id == currentBabyId)
+                           ?? appState.CurrentBaby;
+                ct.ThrowIfCancellationRequested();
+                if (baby is null)
+                    return (Baby: (Baby?)null, TodayRecords: new List<ChildRecord>(),
+                            LatestFeed: (ChildRecord?)null, VaccineRecords: new List<ChildRecord>(),
+                            Activities: new List<ChildRecord>(), GrowthRecords: new List<ChildRecord>(),
+                            AbnormalRecords: new List<ChildRecord>(), Stats: (DayStats?)null);
+
+                var todayRecords = _recordService.GetByDate(DateTime.Today);
+                var stats = _statsService.GetDayStats(DateTime.Today, todayRecords);
+                var latestFeed = _recordService.GetLatest(RecordType.Feed);
+                var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
+                var activities = _recordService.GetByType(RecordType.Activity, 100);
+                var growthRecords = _recordService.GetByType(RecordType.Growth, 1);
+                var abnormalRecords = _recordService.GetByType(RecordType.Abnormal, 1);
+                return (Baby: (Baby?)baby, TodayRecords: todayRecords,
+                        LatestFeed: latestFeed, VaccineRecords: vaccineRecords,
+                        Activities: activities, GrowthRecords: growthRecords,
+                        AbnormalRecords: abnormalRecords, Stats: (DayStats?)stats);
+            }, ct);
+
             appState.CurrentBaby = snapshot.Baby;
             DevLogger.Log("Home", $"RefreshAsync: baby={(snapshot.Baby is null ? "null" : snapshot.Baby.Name)}, db={sw.ElapsedMilliseconds}ms");
 

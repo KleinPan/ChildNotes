@@ -94,6 +94,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 FeedForm.AmountText = r.AmountMl?.ToString() ?? string.Empty;
                 FeedForm.LeftDurationText = (r.LeftDurationSec / 60).ToString();
                 FeedForm.RightDurationText = (r.RightDurationSec / 60).ToString();
+                FeedForm.Note = r.GetPayload<FeedRecordDto>()?.Note ?? string.Empty;
                 FeedForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 FeedForm.TimeText = time;
                 break;

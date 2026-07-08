@@ -232,6 +232,11 @@ CREATE TABLE IF NOT EXISTS sync_log (
     message TEXT NOT NULL DEFAULT ''
 );");
 
+        // 启动时清理上次未完成的 running 记录：进程被中断（崩溃/被杀）时
+        // SyncTrigger 已写入 running 但未执行 UpdateFinal，残留记录会让 UI
+        // 永久显示"进行中"。这里将其标记为 failed，语义与实际一致。
+        conn.ExecuteNonQuery("UPDATE sync_log SET status='failed', message=COALESCE(message,'') || '（上次未完成，已重置）' WHERE status='running';");
+
         // child_record 增量索引：updated_at 用于增量上送查询
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_updated ON child_record (updated_at);");
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_baby_updated ON baby (updated_at);");

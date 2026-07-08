@@ -20,6 +20,7 @@ public sealed class ServiceProvider
     public StatisticsService StatisticsService { get; }
     public PointsRepository PointsRepository { get; }
     public PointsService PointsService { get; }
+    public SupplementItemRepository SupplementItemRepository { get; }
     public MilestoneRepository MilestoneRepository { get; }
     public UploadService UploadService { get; }
     public AiAnalysisRepository AiAnalysisRepository { get; }
@@ -77,6 +78,7 @@ public sealed class ServiceProvider
         StatisticsService = new StatisticsService(RecordService);
         PointsRepository = new PointsRepository(DbFactory);
         PointsService = new PointsService(PointsRepository, RecordService, AppState);
+        SupplementItemRepository = new SupplementItemRepository(DbFactory);
         MilestoneRepository = new MilestoneRepository(DbFactory);
         UploadService = new UploadService(imageDir, SyncConfigRepository);
         AiAnalysisRepository = new AiAnalysisRepository(DbFactory);

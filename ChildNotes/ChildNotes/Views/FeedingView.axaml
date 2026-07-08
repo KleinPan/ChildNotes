@@ -119,31 +119,46 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:RecordDisplayItem">
                             <!--  原版 record-card: 白底，16rpx≈8px 圆角，24rpx≈12px padding，弱阴影  -->
+                            <!--  用 Tapped（轻触手势）替代 PointerPressed，避免上下滑动滚动页面时误触编辑  -->
                             <Border Margin="12,4" Padding="12" Background="White" BoxShadow="0 1 4 0 #08000000"
-                                    CornerRadius="8" PointerPressed="OnRecordTap"
+                                    CornerRadius="8" Tapped="OnRecordTap"
                                     Tag="{Binding .}">
-                                <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
-                                    <!--  原版 card-left: 时间在左侧  -->
-                                    <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
-                                               Foreground="#999999"
-                                               Text="{Binding TimeText}" />
-                                    <!--  原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底  -->
-                                    <Border Grid.Column="1" Width="30" Height="30" Margin="0,0,8,0"
-                                            Background="#F9F9F9" CornerRadius="8">
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Text="{Binding Icon}" />
-                                    </Border>
-                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"
-                                               Foreground="#333333"
-                                               Text="{Binding TitleText}" />
-                                    <TextBlock Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
-                                               Foreground="#999999"
-                                               IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               Text="{Binding SubText}" />
-                                    <!--  删除按钮  -->
-                                    <Border Grid.Column="5" Width="28" Height="28" VerticalAlignment="Center"
-                                            Background="#F5F5F5" CornerRadius="14" PointerPressed="OnDeleteTap"
-                                            Tag="{Binding .}">
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Text="🗑" />
+                                <Grid RowDefinitions="Auto,Auto">
+                                    <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
+                                        <!--  原版 card-left: 时间在左侧  -->
+                                        <TextBlock Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
+                                                   Foreground="#999999"
+                                                   Text="{Binding TimeText}" />
+                                        <!--  原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底  -->
+                                        <Border Grid.Column="1" Width="30" Height="30" Margin="0,0,8,0"
+                                                Background="#F9F9F9" CornerRadius="8">
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Text="{Binding Icon}" />
+                                        </Border>
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"
+                                                   Foreground="#333333"
+                                                   Text="{Binding TitleText}" />
+                                        <TextBlock Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
+                                                   Foreground="#999999"
+                                                   IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                   Text="{Binding SubText}" />
+                                        <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
+                                        <TextBlock Grid.Column="5" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
+                                                   FontWeight="Medium" Foreground="#07C160"
+                                                   IsVisible="{Binding ExtraText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                   Text="{Binding ExtraText}" />
+                                        <!--  删除按钮（Tapped 替代 PointerPressed，滑动时不误触）  -->
+                                        <Border Grid.Column="6" Width="28" Height="28" VerticalAlignment="Center"
+                                                Background="#F5F5F5" CornerRadius="14" Tapped="OnDeleteTap"
+                                                Tag="{Binding .}">
+                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Text="🗑" />
+                                        </Border>
+                                    </Grid>
+                                    <!--  备注（对齐小程序 card-note：浅灰背景块 + 深灰文字）  -->
+                                    <Border Grid.Row="1" Margin="0,6,0,0" Padding="8,6" CornerRadius="6"
+                                            Background="#F7F7F7"
+                                            HorizontalAlignment="Left"
+                                            IsVisible="{Binding NoteText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <TextBlock FontSize="12" Foreground="#666666" Text="{Binding NoteText}" TextWrapping="Wrap" />
                                     </Border>
                                 </Grid>
                             </Border>

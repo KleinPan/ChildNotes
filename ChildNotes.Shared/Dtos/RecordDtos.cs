@@ -25,6 +25,8 @@ public sealed class FeedRecordDto : BaseRecordDto
     public string? LeftStartTime { get; set; }
     public string? RightStartTime { get; set; }
     public int? Amount { get; set; }
+    /// <summary>备注（如"同时喝水 20ml"、"吃后半段哭闹"），存入 PayloadJson，对齐其他类型 Note 字段。</summary>
+    public string? Note { get; set; }
 }
 
 public sealed class DiaperRecordDto : BaseRecordDto

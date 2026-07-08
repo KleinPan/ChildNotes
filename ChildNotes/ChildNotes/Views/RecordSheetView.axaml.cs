@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
@@ -17,6 +18,7 @@ using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 using ChildNotes.ViewModels;
+using CommunityToolkit.Mvvm.Input;
 
 namespace ChildNotes.Views;
 
@@ -425,6 +427,92 @@ public partial class RecordSheetView : UserControl
     private void OnSuppMedicine(object sender, PointerPressedEventArgs e) => SwitchSupp("medicine");
     private void OnSuppNutrition(object sender, PointerPressedEventArgs e) => SwitchSupp("nutrition");
     private void SwitchSupp(string t) { if (DataContext is RecordSheetViewModel vm) vm.SupplementForm.SwitchType(t); }
+
+    /// <summary>点击 Chip 单选：先清空同列表其他项，再切换当前项（允许取消选中）。</summary>
+    private void OnSuppChipTap(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { Tag: CommonItemViewModel item } && DataContext is RecordSheetViewModel vm)
+        {
+            // 单选：除当前项外，清空其余所有项的选中态
+            foreach (var other in vm.SupplementForm.CurrentAllItems)
+            {
+                if (!ReferenceEquals(other, item)) other.IsSelected = false;
+            }
+            item.IsSelected = !item.IsSelected;
+        }
+    }
+
+    /// <summary>右键点击自定义 Chip 弹出删除确认对话框（桌面端右键 = 移动端长按的等效操作）。</summary>
+    private async void OnSuppChipPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (sender is not Border { Tag: CommonItemViewModel item }) return;
+        if (!item.IsCustom) return;  // 仅自定义项可删除
+        // 仅响应右键，左键由 Tapped 处理
+        var point = e.GetCurrentPoint((Visual)sender);
+        if (!point.Properties.IsRightButtonPressed) return;
+        if (DataContext is not RecordSheetViewModel vm) return;
+
+        e.Handled = true;
+        var confirmed = await ShowConfirmDialog("删除自定义项", $"确定删除「{item.Name}」吗？");
+        if (confirmed)
+        {
+            vm.SupplementForm.DeleteCustomCommand.Execute(item);
+        }
+    }
+
+    /// <summary>简单的确认对话框（用独立 Window 实现模态弹窗）。</summary>
+    private Task<bool> ShowConfirmDialog(string title, string message)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        Window? dialog = null;
+        dialog = new Window
+        {
+            Title = title,
+            Width = 300,
+            Height = 180,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            CanResize = false,
+            ShowInTaskbar = false,
+            Content = new StackPanel
+            {
+                Margin = new Thickness(20),
+                Children =
+                {
+                    new TextBlock { Text = message, Margin = new Thickness(0, 0, 0, 20), TextWrapping = TextWrapping.Wrap },
+                    new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        Children =
+                        {
+                            new Button
+                            {
+                                Content = "取消",
+                                Margin = new Thickness(0, 0, 8, 0),
+                                Command = new RelayCommand(() => { tcs.TrySetResult(false); dialog?.Close(); }),
+                            },
+                            new Button
+                            {
+                                Content = "删除",
+                                Background = Brushes.OrangeRed,
+                                Foreground = Brushes.White,
+                                Command = new RelayCommand(() => { tcs.TrySetResult(true); dialog?.Close(); }),
+                            },
+                        },
+                    },
+                },
+            },
+        };
+        if (TopLevel.GetTopLevel(this) is Window owner)
+        {
+            dialog.ShowDialog(owner);
+        }
+        else
+        {
+            dialog.Show();
+        }
+        return tcs.Task;
+    }
 
     private void OnTexturePuree(object sender, PointerPressedEventArgs e) => SwitchTexture("puree");
     private void OnTextureMashed(object sender, PointerPressedEventArgs e) => SwitchTexture("mashed");

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -293,6 +294,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.RightDurationSec = (feedDto.RightDuration ?? 0) * 60;
                 existing.DurationSec = ((feedDto.LeftDuration ?? 0) + (feedDto.RightDuration ?? 0)) * 60;
                 existing.RecordTime = ParseTime(feedDto.Time, _editingDate);
+                existing.PayloadJson = JsonSerializer.Serialize(feedDto);
                 break;
             case RecordType.Diaper:
                 var diaDto = DiaperForm.BuildDto();

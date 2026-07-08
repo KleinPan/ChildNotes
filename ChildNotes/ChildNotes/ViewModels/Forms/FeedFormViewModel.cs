@@ -10,6 +10,7 @@ public partial class FeedFormViewModel : ObservableObject, IRecordFormViewModel
     [ObservableProperty] private string _amountText = string.Empty;
     [ObservableProperty] private string _leftDurationText = string.Empty;
     [ObservableProperty] private string _rightDurationText = string.Empty;
+    [ObservableProperty] private string _note = string.Empty;
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
 
@@ -51,6 +52,7 @@ public partial class FeedFormViewModel : ObservableObject, IRecordFormViewModel
         {
             dto.Amount = int.TryParse(AmountText, out var a) ? a : 0;
         }
+        dto.Note = string.IsNullOrWhiteSpace(Note) ? null : Note.Trim();
         return dto;
     }
 }

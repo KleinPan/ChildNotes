@@ -163,38 +163,112 @@ public sealed partial class RecordDisplayItem : ObservableObject
     };
     public string TitleText { get; }
     public string SubText { get; }
+    /// <summary>右侧强调文本（绿色显示，用于睡眠时长、补给类型标签等，对齐小程序 card-extra）</summary>
+    public string ExtraText { get; }
+    /// <summary>备注内容（浅灰背景块显示，对齐小程序 card-note）</summary>
+    public string NoteText { get; }
 
     public RecordDisplayItem(ChildRecord record)
     {
         Record = record;
-        (TitleText, SubText) = BuildText(record);
+        (TitleText, SubText, ExtraText, NoteText) = BuildText(record);
     }
 
-    private static (string, string) BuildText(ChildRecord r)
+    private static (string Title, string Sub, string Extra, string Note) BuildText(ChildRecord r)
     {
         return r.RecordType switch
         {
             RecordType.Feed => r.RecordSubType == "breast"
-                ? ($"母乳亲喂 {(r.LeftDurationSec > 0 ? "左" : "")}{(r.RightDurationSec > 0 ? "右" : "")}", $"{(r.DurationSec ?? 0) / 60}分钟")
-                : ($"瓶喂{(r.RecordSubType == "expressed" ? "(母乳)" : "")}", $"{r.AmountMl ?? 0}ml"),
+                ? ($"母乳亲喂 {(r.LeftDurationSec > 0 ? "左" : "")}{(r.RightDurationSec > 0 ? "右" : "")}", $"{(r.DurationSec ?? 0) / 60}分钟", "", r.GetPayload<FeedRecordDto>()?.Note ?? "")
+                : ($"瓶喂{(r.RecordSubType == "expressed" ? "(母乳)" : "")}", $"{r.AmountMl ?? 0}ml", "", r.GetPayload<FeedRecordDto>()?.Note ?? ""),
             RecordType.Diaper => (r.RecordSubType switch
             {
                 "wet" => "小便",
                 "dirty" => "大便",
                 "both" => "大小便",
                 _ => "换尿布",
-            }, ""),
-            RecordType.Sleep => ("睡眠", $"{(r.DurationSec ?? 0) / 60}分钟"),
-            RecordType.Temperature => ("体温", $"{r.TemperatureValue:F1}℃"),
-            RecordType.Growth => ("成长记录", $"{(r.HeightCm.HasValue ? $"身高{r.HeightCm}cm " : "")}{(r.WeightKg.HasValue ? $"体重{r.WeightKg}kg" : "")}"),
-            RecordType.Supplement => ("补给", r.RecordSubType ?? ""),
-            RecordType.Pump => ("吸奶", $"{r.AmountMl ?? 0}ml"),
-            RecordType.Complementary => ("辅食", ""),
+            }, "", "", ""),
+            RecordType.Sleep => BuildSleepText(r),
+            RecordType.Temperature => ("体温", $"{r.TemperatureValue:F1}℃", "", ""),
+            RecordType.Growth => ("成长记录", $"{(r.HeightCm.HasValue ? $"身高{r.HeightCm}cm " : "")}{(r.WeightKg.HasValue ? $"体重{r.WeightKg}kg" : "")}", "", ""),
+            RecordType.Supplement => BuildSupplementText(r),
+            RecordType.Pump => ("吸奶", $"{r.AmountMl ?? 0}ml", "", ""),
+            RecordType.Complementary => BuildComplementaryText(r),
             // 疫苗记录仅在首页"疫苗追踪"模块展示，移除 BuildText 中的 Vaccine 分支
-            RecordType.Abnormal => ("异常记录", BuildAbnormalText(r)),
-            RecordType.Activity => ("活动", $"{(r.DurationSec ?? 0) / 60}分钟"),
-            _ => (r.RecordType, ""),
+            RecordType.Abnormal => ("异常记录", BuildAbnormalText(r), "", ""),
+            RecordType.Activity => ("活动", $"{(r.DurationSec ?? 0) / 60}分钟", "", ""),
+            _ => (r.RecordType, "", "", ""),
         };
+    }
+
+    /// <summary>
+    /// 睡眠记录：desc 显示"开始 → 结束"，extra（绿色）显示"共 X小时Y分钟"。
+    /// 对齐小程序 feeding 页 sleep 卡片的 desc/extra 拆分显示逻辑。
+    /// </summary>
+    private static (string Title, string Sub, string Extra, string Note) BuildSleepText(ChildRecord r)
+    {
+        string sub = "";
+        string extra = "";
+        var dto = r.GetPayload<SleepRecordDto>();
+        var startStr = dto?.StartTime;
+        var endStr = dto?.EndTime;
+        if (!string.IsNullOrEmpty(startStr))
+        {
+            // StartTime/EndTime 存储为 "HH:mm" 格式
+            var s = startStr.Length >= 5 ? startStr[..5] : startStr;
+            if (!string.IsNullOrEmpty(endStr))
+            {
+                var e = endStr.Length >= 5 ? endStr[..5] : endStr;
+                sub = $"{s} → {e}";
+            }
+            else
+            {
+                sub = $"{s} 开始";
+            }
+        }
+        // 时长（绿色）
+        var totalMin = (r.DurationSec ?? 0) / 60;
+        if (totalMin > 0)
+        {
+            extra = totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟";
+        }
+        return ("睡眠", sub, extra, "");
+    }
+
+    /// <summary>
+    /// 补给/用药记录：title 显示实际名称，sub 显示剂量，extra（绿色）显示"补充剂"/"用药"类型标签。
+    /// 对齐小程序 feeding 页 supplement 卡片的渲染逻辑。
+    /// </summary>
+    private static (string Title, string Sub, string Extra, string Note) BuildSupplementText(ChildRecord r)
+    {
+        var isMedicine = r.RecordSubType == "medicine";
+        var dto = r.GetPayload<SupplementRecordDto>();
+        var name = dto?.Name;
+        var title = !string.IsNullOrWhiteSpace(name)
+            ? name
+            : (isMedicine ? "用药记录" : "补充剂记录");
+        var sub = !string.IsNullOrWhiteSpace(dto?.Dose) ? dto!.Dose! : "";
+        var extra = isMedicine ? "用药" : "补充剂";
+        var note = !string.IsNullOrWhiteSpace(dto?.Note) ? dto!.Note! : "";
+        return (title, sub, extra, note);
+    }
+
+    /// <summary>
+    /// 辅食记录：title 显示食物名称，sub 显示量，note 显示备注。
+    /// </summary>
+    private static (string Title, string Sub, string Extra, string Note) BuildComplementaryText(ChildRecord r)
+    {
+        var dto = r.GetPayload<ComplementaryRecordDto>();
+        var title = !string.IsNullOrWhiteSpace(dto?.FoodName)
+            ? dto!.FoodName!
+            : "辅食";
+        var parts = new List<string>();
+        if (dto?.FoodTypes.Count > 0) parts.Add(string.Join("、", dto!.FoodTypes));
+        if (!string.IsNullOrWhiteSpace(dto?.Amount))
+            parts.Add($"{dto!.Amount}{dto.AmountUnit ?? ""}");
+        var sub = string.Join(" · ", parts);
+        var note = !string.IsNullOrWhiteSpace(dto?.Note) ? dto!.Note! : "";
+        return (title, sub, "", note);
     }
 
     /// <summary>

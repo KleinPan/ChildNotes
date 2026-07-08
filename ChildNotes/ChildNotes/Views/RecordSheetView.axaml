@@ -49,6 +49,38 @@
             <Setter Property="Background" Value="#E8F9EF"/>
             <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
         </Style>
+        <!--  补给 Chip：默认项（灰底）  -->
+        <Style Selector="Border.supp-chip">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Margin" Value="0,0,4,4"/>
+            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Border.supp-chip TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#666666"/>
+        </Style>
+        <!--  自定义项（白底 + 绿色描边）  -->
+        <Style Selector="Border.supp-chip.custom">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#07C160"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Border.supp-chip.custom TextBlock">
+            <Setter Property="Foreground" Value="#07C160"/>
+        </Style>
+        <!--  选中态（绿底白字）  -->
+        <Style Selector="Border.supp-chip.active">
+            <Setter Property="Background" Value="#07C160"/>
+            <Setter Property="BorderBrush" Value="#07C160"/>
+        </Style>
+        <Style Selector="Border.supp-chip.active TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
         <Style Selector="TextBox.form-input">
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Background" Value="#F5F5F5"/>
@@ -303,6 +335,12 @@
                                                 ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
                                 </StackPanel>
                             </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
+                                    <TextBox Classes="form-input" Text="{Binding FeedForm.Note}" PlaceholderText="如：同时喝水 20ml"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsDiaper}}">
@@ -463,7 +501,7 @@
                                 <Border Grid.Column="0" Classes="type-tab"
                                         Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsSupplementType}}"
                                         PointerPressed="OnSuppSupplement">
-                                    <TextBlock Text="� 补充剂"/>
+                                    <TextBlock Text="💚 补充剂"/>
                                 </Border>
                                 <Border Grid.Column="1" Classes="type-tab" Margin="12,0,0,0"
                                         Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsMedicine}}"
@@ -472,11 +510,11 @@
                                 </Border>
                             </Grid>
 
-                            <!-- 常用选择区域 -->
+                            <!-- 常用选择区域（含系统默认项 + 用户自定义项） -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用内容（可多选）"/>
-                                    <ItemsControl ItemsSource="{Binding SupplementForm.CurrentCommonItems}">
+                                    <TextBlock Classes="form-label" Text="常用内容（右键自定义项可删除）"/>
+                                    <ItemsControl ItemsSource="{Binding SupplementForm.CurrentAllItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
                                                 <WrapPanel/>
@@ -484,12 +522,15 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="vm:CommonItemViewModel">
-                                                <CheckBox Content="{Binding Name}"
-                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                         Theme="{StaticResource PureCardCheckBox}"
-                                                         Margin="0,0,4,4"
-                                                         Padding="8,4"
-                                                         FontSize="12"/>
+                                                <!--  Chip 样式：默认项灰底，自定义项白底+绿描边，选中态绿底  -->
+                                                <Border Classes="supp-chip"
+                                                        Classes.custom="{Binding IsCustom}"
+                                                        Classes.active="{Binding IsSelected, Mode=OneWay}"
+                                                        Tapped="OnSuppChipTap"
+                                                        PointerReleased="OnSuppChipPointerReleased"
+                                                        Tag="{Binding .}">
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -514,6 +555,9 @@
                                                 BorderThickness="0"
                                                 CornerRadius="8"/>
                                     </Grid>
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
+                                               IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                               Text="{Binding SupplementForm.ErrorMessage}"/>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
