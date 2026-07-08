@@ -60,6 +60,12 @@
         <ContentControl Grid.Row="0" Content="{Binding DeveloperOptions}" IsTabStop="False"
                         IsVisible="{Binding IsDeveloperOptionsOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding PrivacyPolicy}" IsTabStop="False"
+                        IsVisible="{Binding IsPrivacyPolicyOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding InAppMessage}" IsTabStop="False"
+                        IsVisible="{Binding IsInAppMessageOpen}"/>
+
         <!-- 首页底部快捷输入栏：仅在首页显示 且 未打开底部抽屉。
              内含 [输入框][发送按钮(有内容时)] [+ 按钮(无内容时)]，互斥切换。
              抽屉打开时隐藏，避免与 RecordSheet 底部抽屉视觉重叠。 -->

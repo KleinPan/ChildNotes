@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using ChildNotes.Data;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Services;
+using ChildNotes.Services.Push;
 
 namespace ChildNotes.Infrastructure;
 
@@ -34,6 +35,11 @@ public sealed class ServiceProvider
     public FamilyApiClient FamilyApiClient { get; }
     public AiParseApiClient AiParseApiClient { get; }
     public IDateTimeFormatter DateTimeFormatter { get; }
+    public Data.Repositories.InAppMessageRepository InAppMessageRepository { get; }
+    public Services.InAppMessageService InAppMessageService { get; }
+    public Services.Push.IPushPlatform PushPlatform { get; }
+    public Services.Push.ILocalNotification LocalNotification { get; }
+    public Services.Push.IPushService PushService { get; }
 
     /// <summary>
     /// 主窗口引用：用于在 ViewModel 中获取 TopLevel.Clipboard 等平台能力。
@@ -97,6 +103,16 @@ public sealed class ServiceProvider
         FamilyApiClient = new FamilyApiClient(SyncConfigRepository);
         AiParseApiClient = new AiParseApiClient(SyncConfigRepository);
         DateTimeFormatter = new DateTimeFormatterService();
+
+        // 应用内消息（轻量推送替代）
+        // 注：属性名与类型名相同，需用完整命名空间限定类型
+        InAppMessageRepository = new Data.Repositories.InAppMessageRepository(DbFactory);
+        InAppMessageService = new Services.InAppMessageService(InAppMessageRepository, AppState);
+
+        // 推送平台：默认 NullPushPlatform（未接入 SDK），后续 Android/iOS 平台替换为真实实现
+        PushPlatform = new Services.Push.NullPushPlatform();
+        LocalNotification = new Services.Push.NullLocalNotification();
+        PushService = new Services.Push.PushApiClient(SyncConfigRepository);
 
         DevLogger.Log("DI", "ServiceProvider ctor done");
     }

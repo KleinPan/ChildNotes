@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.PrivacyConsentView"
+             x:DataType="vm:PrivacyConsentViewModel"
+             Background="#80000000">
+
+    <!-- 隐私协议弹窗：模态遮罩 + 居中白底卡片，覆盖在整个应用之上 -->
+    <Panel>
+        <Border Background="White" CornerRadius="16" Padding="24,20"
+                MaxWidth="340" MaxHeight="520"
+                HorizontalAlignment="Center" VerticalAlignment="Center"
+                BoxShadow="0 4 24 0 #40000000">
+
+            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+
+                <!-- 标题 -->
+                <TextBlock Grid.Row="0" Text="隐私政策" FontSize="18" FontWeight="Bold"
+                           HorizontalAlignment="Center" Foreground="#1A1A1A"/>
+
+                <!-- 内容区：摘要视图 / 完整协议视图 二选一 -->
+                <Grid Grid.Row="1">
+                    <!-- 摘要视图 -->
+                    <ScrollViewer IsVisible="{Binding !ShowFullPolicy}"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="{Binding SummaryText}" FontSize="14"
+                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                            <Button Content="查看完整协议 ›" Classes="weui-btn mini default"
+                                    HorizontalAlignment="Center"
+                                    Command="{Binding ViewFullPolicyCommand}"/>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- 完整协议视图 -->
+                    <ScrollViewer IsVisible="{Binding ShowFullPolicy}"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12">
+                            <Button Content="‹ 返回摘要" Classes="weui-btn mini default"
+                                    HorizontalAlignment="Left"
+                                    Command="{Binding BackToSummaryCommand}"/>
+                            <TextBlock Text="{Binding FullPolicyText}" FontSize="13"
+                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 按钮区 -->
+                <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Button Grid.Column="0" Content="不同意"
+                            Classes="weui-btn default" CornerRadius="24" MinHeight="44"
+                            Command="{Binding DisagreeCommand}"/>
+                    <Button Grid.Column="1" Content="同意并继续"
+                            Classes="weui-btn primary" CornerRadius="24" MinHeight="44"
+                            Command="{Binding AgreeCommand}"/>
+                </Grid>
+
+            </Grid>
+        </Border>
+    </Panel>
+</UserControl>

@@ -11,11 +11,18 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 {
     private readonly AuthService _auth = ServiceProvider.Instance.AuthService;
     private readonly BabyService _babyService = ServiceProvider.Instance.BabyService;
+    private readonly InAppMessageService _msgService = ServiceProvider.Instance.InAppMessageService;
 
     [ObservableProperty] private string _nickName = string.Empty;
     [ObservableProperty] private string _avatarUrl = string.Empty;
     [ObservableProperty] private string _roleText = "家长";
     [ObservableProperty] private int _babyCount;
+
+    /// <summary>是否有未读应用内消息（控制 MineView 红点显示）。</summary>
+    [ObservableProperty] private bool _hasUnreadMessages;
+
+    /// <summary>未读消息数（控制 MineView 红点数字）。</summary>
+    [ObservableProperty] private int _unreadMessageCount;
 
     /// <summary>
     /// 应用版本号（从程序集 InformationalVersion 读取；CI 构建时由 release workflow 用 tag 名覆盖版本号）
@@ -47,6 +54,21 @@ public partial class MineViewModel : ViewModelBase, IActivatable
         var babies = _babyService.LoadBabyList();
         foreach (var b in babies) BabyList.Add(b);
         BabyCount = babies.Count;
+
+        // 刷新未读消息数（用于"我的"页红点显示）
+        RefreshUnreadMessages();
+    }
+
+    /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。</summary>
+    public void RefreshUnreadMessages()
+    {
+        try
+        {
+            var count = _msgService.GetUnreadCount();
+            UnreadMessageCount = count;
+            HasUnreadMessages = count > 0;
+        }
+        catch { /* 非致命 */ }
     }
 
     [RelayCommand]

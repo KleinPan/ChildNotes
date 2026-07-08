@@ -66,6 +66,8 @@ public partial class LoginViewModel : ViewModelBase
                 SaveCredentialsToSyncConfig();
                 ServiceProvider.Instance.BindUserToState();
                 DevLogger.Log("Login", "BindUserToState done");
+                // 登录成功后确保欢迎消息存在（仅当用户从未有过任何消息时注入一次）
+                ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
                 ServiceProvider.Instance.BabyService.LoadBabyList();
                 DevLogger.Log("Login", "LoadBabyList done");
                 var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;

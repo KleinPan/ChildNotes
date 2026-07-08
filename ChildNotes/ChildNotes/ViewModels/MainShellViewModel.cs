@@ -61,6 +61,14 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
 
+    /// <summary>隐私政策弹层（从"我的"页打开查看完整协议）。</summary>
+    [ObservableProperty] private bool _isPrivacyPolicyOpen;
+    [ObservableProperty] private PrivacyConsentViewModel _privacyPolicy;
+
+    /// <summary>应用内消息中心弹层。</summary>
+    [ObservableProperty] private bool _isInAppMessageOpen;
+    [ObservableProperty] private InAppMessageViewModel _inAppMessage;
+
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
     public GrowthViewModel Growth { get; }
@@ -177,6 +185,14 @@ public partial class MainShellViewModel : ViewModelBase
 
         _developerOptions = new DeveloperOptionsViewModel();
 
+        // 隐私政策弹层：复用 PrivacyConsentViewModel（只读模式，不展示同意/不同意按钮）
+        _privacyPolicy = new PrivacyConsentViewModel();
+
+        // 应用内消息中心
+        _inAppMessage = new InAppMessageViewModel();
+        // 消息中心内标记已读/全部已读后，同步刷新"我的"页红点
+        _inAppMessage.UnreadCountChanged += () => Mine.RefreshUnreadMessages();
+
         // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
         RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
         RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
@@ -187,6 +203,8 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
         RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
+        RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
+        RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
     }
 
     [RelayCommand]
@@ -359,6 +377,25 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenDeveloperOptions()
     {
         IsDeveloperOptionsOpen = true;
+    }
+
+    /// <summary>打开隐私政策查看（只读模式，不展示同意/不同意按钮）。</summary>
+    public void OpenPrivacyPolicy()
+    {
+        // 直接展示完整协议视图
+        PrivacyPolicy.ViewFullPolicyCommand.Execute(null);
+        IsPrivacyPolicyOpen = true;
+    }
+
+    /// <summary>打开应用内消息中心。</summary>
+    public async void OpenInAppMessage()
+    {
+        try
+        {
+            IsInAppMessageOpen = true;
+            await InAppMessage.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenInAppMessage failed: " + ex); }
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>

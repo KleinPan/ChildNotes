@@ -259,6 +259,25 @@ CREATE TABLE IF NOT EXISTS user_session (
     expire_at TEXT NOT NULL
 );");
 
+        // ===== 应用内消息表（轻量推送替代方案）=====
+        // 用于存储后端推送下发的消息（家庭成员加入/AI 报告生成完成/运营活动等）。
+        // 用户打开 App 时拉取并展示，无推送 SDK 依赖。
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS in_app_message (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'general',
+    data_json TEXT NOT NULL DEFAULT '{}',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    read_at TEXT
+);");
+        conn.ExecuteNonQuery(@"
+CREATE INDEX IF NOT EXISTS idx_in_app_message_user_read
+    ON in_app_message (user_id, is_read, created_at);");
+
         DevLogger.Log("DB", "DbInitializer.Initialize done");
     }
 

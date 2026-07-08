@@ -52,6 +52,16 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenDeveloperOptions();
     }
 
+    private void OnPrivacyPolicyTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenPrivacyPolicy();
+    }
+
+    private void OnInAppMessageTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenInAppMessage();
+    }
+
     private MainShellViewModel? FindShell()
     {
         var shell = this.FindAncestorOfType<UserControl>();

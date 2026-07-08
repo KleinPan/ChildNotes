@@ -24,6 +24,11 @@ public partial class App : Application
     /// 通过切换 Content 避免替换 MainView 导致视觉树丢失。</summary>
     private RootContainer? _rootContainer;
 
+    /// <summary>隐私协议视图：首次启动或协议版本升级时展示。</summary>
+    private PrivacyConsentView? _privacyView;
+    /// <summary>平台退出实现：用于隐私协议"不同意"时退出应用。</summary>
+    private IApplicationExit? _appExit;
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -51,33 +56,41 @@ public partial class App : Application
             // 加载动画设置
             LoadAnimationSettings();
 
-            // 启动时尝试恢复登录会话（30 天滑动过期）
-            var restored = TryRestoreSession();
-            DevLogger.Log("Startup", $"TryRestoreSession: {sw.ElapsedMilliseconds}ms (restored={restored})");
+            // 平台退出实现注入：桌面端用 DesktopApplicationExit，移动端由平台项目注入
+            _appExit = new DesktopApplicationExit();
 
+            // 先确定 Lifetime 并准备容器（RootContainer/MainWindow）
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow ??= new MainWindow();
                 DevLogger.Log("Startup", $"Lifetime=Desktop, MainWindow created: {sw.ElapsedMilliseconds}ms");
-                if (restored) EnterMainShell(desktop.MainWindow);
-                else ShowLogin(desktop.MainWindow);
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
                 DevLogger.Log("Startup", $"Lifetime=SingleView: {sw.ElapsedMilliseconds}ms");
-                // 移动端必须先创建 RootContainer（无论恢复成功与否都需要）
                 if (_rootContainer is null)
                 {
                     _rootContainer = new RootContainer();
                     singleViewPlatform.MainView = _rootContainer;
                     DevLogger.Log("Startup", $"RootContainer set: {sw.ElapsedMilliseconds}ms");
                 }
-                if (restored) EnterMainShell(null);
-                else ShowLogin(singleViewPlatform);
             }
             else
             {
                 DevLogger.Log("App", "Lifetime=Unknown: " + ApplicationLifetime?.GetType().Name);
+            }
+
+            // 隐私协议检查：未同意或版本升级时展示弹窗，用户同意后才继续启动。
+            // 这是上架应用商店的合规要求。
+            if (PrivacyConsent.ShouldShow())
+            {
+                ShowPrivacyConsent();
+                DevLogger.Log("Startup", $"Privacy consent shown: {sw.ElapsedMilliseconds}ms");
+            }
+            else
+            {
+                ContinueStartupAfterPrivacy();
+                DevLogger.Log("Startup", $"Privacy consent already agreed, continue: {sw.ElapsedMilliseconds}ms");
             }
         }
         catch (Exception ex)
@@ -91,6 +104,76 @@ public partial class App : Application
         DevLogger.Log("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
         ReleaseLogger.Info("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// 展示隐私协议弹窗。用户同意后继续启动流程，不同意则退出应用。
+    /// 此方法在 OnFrameworkInitializationCompleted 中被调用，不阻塞 UI 线程。
+    /// </summary>
+    private void ShowPrivacyConsent()
+    {
+        var vm = new PrivacyConsentViewModel();
+        vm.ConsentGiven += OnPrivacyConsentGiven;
+        vm.Disagreed += OnPrivacyDisagreed;
+        _privacyView = new PrivacyConsentView { DataContext = vm };
+
+        // 将隐私协议视图设为当前内容（覆盖在所有内容之上）
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            && desktop.MainWindow is not null)
+        {
+            desktop.MainWindow.Content = _privacyView;
+        }
+        else if (_rootContainer is not null)
+        {
+            _rootContainer.SetContent(_privacyView);
+        }
+    }
+
+    /// <summary>用户同意隐私协议：清理视图，继续启动流程。</summary>
+    private void OnPrivacyConsentGiven()
+    {
+        DevLogger.Log("App", "Privacy consent given, continuing startup");
+        ReleaseLogger.Info("App", "Privacy consent given");
+        if (_privacyView is not null)
+        {
+            if (_privacyView.DataContext is PrivacyConsentViewModel vm)
+            {
+                vm.ConsentGiven -= OnPrivacyConsentGiven;
+                vm.Disagreed -= OnPrivacyDisagreed;
+            }
+            _privacyView = null;
+        }
+        ContinueStartupAfterPrivacy();
+    }
+
+    /// <summary>用户不同意隐私协议：退出应用。</summary>
+    private void OnPrivacyDisagreed()
+    {
+        DevLogger.Log("App", "Privacy consent declined, exiting app");
+        ReleaseLogger.Info("App", "Privacy consent declined, exiting");
+        _appExit?.Exit();
+    }
+
+    /// <summary>
+    /// 隐私协议通过后的启动流程（与原 OnFrameworkInitializationCompleted 的恢复会话+展示逻辑一致）。
+    /// 抽取为独立方法供协议同意后调用。
+    /// </summary>
+    private void ContinueStartupAfterPrivacy()
+    {
+        var restored = TryRestoreSession();
+        DevLogger.Log("Startup", $"TryRestoreSession (restored={restored})");
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            && desktop.MainWindow is not null)
+        {
+            if (restored) EnterMainShell(desktop.MainWindow);
+            else ShowLogin(desktop.MainWindow);
+        }
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        {
+            if (restored) EnterMainShell(null);
+            else ShowLogin(singleViewPlatform);
+        }
     }
 
     /// <summary>
@@ -108,6 +191,8 @@ public partial class App : Application
                 return false;
             }
             ServiceProvider.Instance.BindUserToState();
+            // 会话恢复时确保欢迎消息存在（仅当用户从未有过任何消息时注入一次）
+            ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
             ServiceProvider.Instance.BabyService.LoadBabyList();
             ReleaseLogger.Info("App", "Session restored successfully");
             return true;

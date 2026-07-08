@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:m="using:ChildNotes.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.InAppMessageView"
+             x:DataType="vm:InAppMessageViewModel"
+             x:Name="root"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="应用消息"/>
+                <Button Grid.Column="2" Content="全部已读" Classes="weui-btn mini default"
+                        Margin="4,0" IsVisible="{Binding HasUnread}"
+                        Command="{Binding MarkAllReadCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- 消息列表 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding Messages}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="m:InAppMessage">
+                            <Border Background="{StaticResource WeuiBg2Brush}"
+                                    CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4"
+                                    Padding="14,12">
+                                <Grid RowDefinitions="Auto,Auto,Auto">
+                                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource WeuiFg0Brush}" TextTrimming="CharacterEllipsis"/>
+                                        <!-- 未读小圆点 -->
+                                        <Border Grid.Column="1" Width="8" Height="8" CornerRadius="4"
+                                                Background="{StaticResource WeuiRedBrush}"
+                                                IsVisible="{Binding !IsRead}"
+                                                VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    </Grid>
+                                    <TextBlock Grid.Row="1" Text="{Binding Body}" FontSize="13"
+                                               Foreground="{StaticResource WeuiFg1Brush}"
+                                               TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayTime}" FontSize="12"
+                                                   Foreground="{StaticResource WeuiFg2Brush}"/>
+                                        <Button Grid.Column="1" Content="删除" FontSize="12"
+                                                Classes="weui-btn mini default"
+                                                Command="{Binding $parent[ItemsControl].((vm:InAppMessageViewModel)DataContext).DeleteMessageCommand}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 空状态 -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Margin="0,80,0,0" Spacing="8"
+                            IsVisible="{Binding Messages.Count, Converter={x:Static v:InAppMessageView.ZeroToBoolConverter}}">
+                    <TextBlock Text="📬" FontSize="48" HorizontalAlignment="Center"/>
+                    <TextBlock Text="暂无消息" FontSize="14" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- 底部清理已读按钮 -->
+                <Button Content="清理已读消息" Classes="weui-btn mini default"
+                        HorizontalAlignment="Center" Margin="0,16,0,24"
+                        Command="{Binding ClearReadMessagesCommand}"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 加载中提示 -->
+        <Border Grid.Row="1" Background="#80000000" IsVisible="{Binding IsLoading}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <TextBlock Text="加载中..." Foreground="White" FontSize="14"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Toast 浮层 -->
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,24"
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"
+                       TextWrapping="Wrap" MaxWidth="320"/>
+        </Border>
+    </Grid>
+</UserControl>
