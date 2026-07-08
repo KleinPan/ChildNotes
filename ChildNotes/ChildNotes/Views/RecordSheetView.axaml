@@ -1,277 +1,287 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl x:Class="ChildNotes.Views.RecordSheetView"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:ChildNotes.ViewModels"
-             xmlns:v="using:ChildNotes.Views"
              xmlns:ctrl="using:ChildNotes.Controls"
-             xmlns:s="using:ChildNotes.Services"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
-             x:Class="ChildNotes.Views.RecordSheetView"
-             x:DataType="vm:RecordSheetViewModel"
+             xmlns:s="using:ChildNotes.Services"
+             xmlns:v="using:ChildNotes.Views"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             d:DesignHeight="844"
+             d:DesignWidth="390"
              x:CompileBindings="True"
-             IsVisible="{Binding IsVisible}">
+             x:DataType="vm:RecordSheetViewModel"
+             IsVisible="{Binding IsVisible}"
+             mc:Ignorable="d">
 
     <UserControl.Styles>
         <Style Selector="Border.form-section">
-            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="Margin" Value="0,0,0,16" />
         </Style>
         <Style Selector="TextBlock.form-label">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
-            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
         <Style Selector="Border.type-tab">
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="0,8"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="0,8" />
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
         </Style>
         <Style Selector="Border.type-tab.active">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
         </Style>
         <Style Selector="Border.type-tab TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.type-tab.active TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="Border.type-card">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="0,12"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="0,12" />
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.type-card.active">
-            <Setter Property="Background" Value="#E8F9EF"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Background" Value="#E8F9EF" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
         </Style>
         <!--  补给 Chip：默认项（灰底）  -->
         <Style Selector="Border.supp-chip">
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="10,5"/>
-            <Setter Property="Margin" Value="0,0,4,4"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="Margin" Value="0,0,4,4" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Border.supp-chip TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#666666" />
         </Style>
         <!--  自定义项（白底 + 绿色描边）  -->
         <Style Selector="Border.supp-chip.custom">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#07C160"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White" />
+            <Setter Property="BorderBrush" Value="#07C160" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.supp-chip.custom TextBlock">
-            <Setter Property="Foreground" Value="#07C160"/>
+            <Setter Property="Foreground" Value="#07C160" />
         </Style>
         <!--  选中态（绿底白字）  -->
         <Style Selector="Border.supp-chip.active">
-            <Setter Property="Background" Value="#07C160"/>
-            <Setter Property="BorderBrush" Value="#07C160"/>
+            <Setter Property="Background" Value="#07C160" />
+            <Setter Property="BorderBrush" Value="#07C160" />
         </Style>
         <Style Selector="Border.supp-chip.active TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="TextBox.form-input">
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Padding" Value="12,8" />
         </Style>
-        <!-- 疫苗时间轴样式 -->
+        <!--  疫苗时间轴样式  -->
         <Style Selector="Border.vf-entry">
-            <Setter Property="Background" Value="#F8FAFC"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Padding" Value="14,12"/>
-            <Setter Property="BorderBrush" Value="#E5E7EB"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Margin" Value="0,0,0,12"/>
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="14,12" />
+            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Margin" Value="0,0,0,12" />
         </Style>
         <Style Selector="Border.vf-card">
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Padding" Value="10,8"/>
-            <Setter Property="Margin" Value="0,4,0,0"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <!-- 默认：白色背景 + 浅灰边框（与小程序 vf-time-dose 基础样式一致）
-                 对应"将来要打"的默认状态 -->
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#EDF1F7"/>
-            <!-- 确保卡片不超出 Grid 列宽 -->
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="10,8" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <!--
+                默认：白色背景 + 浅灰边框（与小程序 vf-time-dose 基础样式一致）
+                对应"将来要打"的默认状态
+            -->
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#EDF1F7" />
+            <!--  确保卡片不超出 Grid 列宽  -->
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
         </Style>
         <Style Selector="Border.vf-card.done">
-            <Setter Property="Background" Value="#EDFDF5"/>
-            <Setter Property="BorderBrush" Value="#9EE6C1"/>
+            <Setter Property="Background" Value="#EDFDF5" />
+            <Setter Property="BorderBrush" Value="#9EE6C1" />
         </Style>
         <Style Selector="Border.vf-card.skipped">
-            <Setter Property="Background" Value="#F7F8FA"/>
-            <Setter Property="BorderBrush" Value="#D0D5DD"/>
+            <Setter Property="Background" Value="#F7F8FA" />
+            <Setter Property="BorderBrush" Value="#D0D5DD" />
         </Style>
         <Style Selector="Border.vf-card.replaced">
-            <Setter Property="Background" Value="#ECFDF3"/>
-            <Setter Property="BorderBrush" Value="#9EE6C1"/>
+            <Setter Property="Background" Value="#ECFDF3" />
+            <Setter Property="BorderBrush" Value="#9EE6C1" />
         </Style>
-        <!-- 已到期：橘红色系 -->
+        <!--  已到期：橘红色系  -->
         <Style Selector="Border.vf-card.overdue">
-            <Setter Property="Background" Value="#FFF4ED"/>
-            <Setter Property="BorderBrush" Value="#FFBF9B"/>
+            <Setter Property="Background" Value="#FFF4ED" />
+            <Setter Property="BorderBrush" Value="#FFBF9B" />
         </Style>
-        <!-- 即将要打：淡黄色系 -->
+        <!--  即将要打：淡黄色系  -->
         <Style Selector="Border.vf-card.due">
-            <Setter Property="Background" Value="#FFFBE8"/>
-            <Setter Property="BorderBrush" Value="#F4D35E"/>
+            <Setter Property="Background" Value="#FFFBE8" />
+            <Setter Property="BorderBrush" Value="#F4D35E" />
         </Style>
         <Style Selector="Border.vf-card.soon">
-            <Setter Property="Background" Value="#FFFBE8"/>
-            <Setter Property="BorderBrush" Value="#F4D35E"/>
+            <Setter Property="Background" Value="#FFFBE8" />
+            <Setter Property="BorderBrush" Value="#F4D35E" />
         </Style>
-        <!-- 将来要打：与基础样式一致（白色背景 + 浅灰边框）
-             小程序 vf-time-dose 无单独 pending 样式，默认即为此效果 -->
+        <!--
+            将来要打：与基础样式一致（白色背景 + 浅灰边框）
+            小程序 vf-time-dose 无单独 pending 样式，默认即为此效果
+        -->
         <Style Selector="Border.vf-card.pending">
-            <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="BorderBrush" Value="#EDF1F7"/>
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#EDF1F7" />
         </Style>
         <Style Selector="Panel.vf-axis">
-            <Setter Property="Width" Value="60"/>
-            <Setter Property="Margin" Value="0,8,0,0"/>
+            <Setter Property="Width" Value="60" />
+            <Setter Property="Margin" Value="0,8,0,0" />
         </Style>
         <Style Selector="Border.vf-dot">
-            <Setter Property="Width" Value="10"/>
-            <Setter Property="Height" Value="10"/>
-            <Setter Property="CornerRadius" Value="5"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
-            <Setter Property="BorderBrush" Value="White"/>
-            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.vf-segment">
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="0,6"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="0,6" />
+            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
         <Style Selector="Border.vf-segment.active">
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
         </Style>
         <Style Selector="Border.vf-segment TextBlock">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.vf-segment.active TextBlock">
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="Button.vf-mark">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="MinHeight" Value="0"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.vf-skip">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="MinHeight" Value="0"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#FA9D3B"/>
-            <Setter Property="BorderBrush" Value="#FA9D3B"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="#FA9D3B" />
+            <Setter Property="BorderBrush" Value="#FA9D3B" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
-        <!-- 改时间按钮：蓝色边框风格，与 vf-skip 对称 -->
+        <!--  改时间按钮：蓝色边框风格，与 vf-skip 对称  -->
         <Style Selector="Button.vf-edit">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="MinHeight" Value="0"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiBlueBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiBlueBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
-        <!-- 取消按钮：灰色边框风格 -->
+        <!--  取消按钮：灰色边框风格  -->
         <Style Selector="Button.vf-cancel">
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="MinHeight" Value="0"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
-        <!-- 异常表单 chip 样式：呼吸道多选 chip -->
+        <!--  异常表单 chip 样式：呼吸道多选 chip  -->
         <Style Selector="Border.abn-chip">
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="12,6"/>
-            <Setter Property="Margin" Value="0,0,8,8"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.abn-chip.active">
-            <Setter Property="Background" Value="#FFF3E0"/>
-            <Setter Property="BorderBrush" Value="#FA9D3B"/>
+            <Setter Property="Background" Value="#FFF3E0" />
+            <Setter Property="BorderBrush" Value="#FA9D3B" />
         </Style>
         <Style Selector="Border.abn-chip TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#333333" />
         </Style>
         <Style Selector="Border.abn-chip.active TextBlock">
-            <Setter Property="Foreground" Value="#E67E22"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="#E67E22" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
-        <!-- 消化道异常 chip（红色强调，对齐小程序 .active-danger） -->
+        <!--  消化道异常 chip（红色强调，对齐小程序 .active-danger）  -->
         <Style Selector="Border.abn-chip-danger">
-            <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Padding" Value="12,8"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.abn-chip-danger.active">
-            <Setter Property="Background" Value="#FFEBEE"/>
-            <Setter Property="BorderBrush" Value="#E74C3C"/>
+            <Setter Property="Background" Value="#FFEBEE" />
+            <Setter Property="BorderBrush" Value="#E74C3C" />
         </Style>
         <Style Selector="Border.abn-chip-danger TextBlock">
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#333333"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Foreground" Value="#333333" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.abn-chip-danger.active TextBlock">
-            <Setter Property="Foreground" Value="#E74C3C"/>
-            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="#E74C3C" />
+            <Setter Property="FontWeight" Value="Medium" />
         </Style>
     </UserControl.Styles>
 
     <Panel>
-        <Border x:Name="SheetMask" Classes="modal-mask" IsVisible="{Binding IsVisible}"/>
+        <Border x:Name="SheetMask" Classes="modal-mask" IsVisible="{Binding IsVisible}" />
 
-        <!-- 底部抽屉：MaxHeight 由 code-behind 根据软键盘状态动态调整，
-             避免键盘弹出时遮挡输入框和保存按钮。
-             x:Name=SheetRoot 供 code-behind 访问。 -->
-        <Border x:Name="SheetRoot"
-                Background="{StaticResource WeuiBg2Brush}" CornerRadius="16,16,0,0"
-                VerticalAlignment="Bottom" MaxHeight="600" IsVisible="{Binding IsVisible}">
+        <!--
+            底部抽屉：MaxHeight 由 code-behind 根据软键盘状态动态调整，
+            避免键盘弹出时遮挡输入框和保存按钮。
+            x:Name=SheetRoot 供 code-behind 访问。
+        -->
+        <Border x:Name="SheetRoot" MaxHeight="600" VerticalAlignment="Bottom"
+                Background="{StaticResource WeuiBg2Brush}"
+                CornerRadius="16,16,0,0"
+                IsVisible="{Binding IsVisible}">
 
             <Grid RowDefinitions="Auto,*,Auto">
                 <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="{Binding SheetTitle}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
-                                Background="Transparent" BorderThickness="0"
-                                Command="{Binding CloseCommand}"/>
+                        <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="17" FontWeight="Bold"
+                                   Text="{Binding SheetTitle}" />
+                        <Button Grid.Column="1" Padding="8,2" Background="Transparent" BorderThickness="0"
+                                Command="{Binding CloseCommand}"
+                                Content="✕" FontSize="18" />
                     </Grid>
                 </Border>
 
@@ -279,35 +289,33 @@
                     <StackPanel x:Name="ContentStackPanel" Margin="16,16">
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
-                            <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Classes="type-tab"
-                                        Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBottle}}"
-                                        PointerPressed="OnFeedBottle">
-                                    <TextBlock Text="🍼 配方奶"/>
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*,*">
+                                <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBottle}}" PointerPressed="OnFeedBottle">
+                                    <TextBlock Text="🍼 配方奶" />
                                 </Border>
-                                <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                         Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBreast}}"
                                         PointerPressed="OnFeedBreast">
-                                    <TextBlock Text="🤱 亲喂"/>
+                                    <TextBlock Text="🤱 亲喂" />
                                 </Border>
-                                <Border Grid.Column="2" Classes="type-tab"
-                                        Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsExpressed}}"
-                                        PointerPressed="OnFeedExpressed">
-                                    <TextBlock Text="🍶 瓶喂母乳"/>
+                                <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsExpressed}}" PointerPressed="OnFeedExpressed">
+                                    <TextBlock Text="🍶 瓶喂母乳" />
                                 </Border>
                             </Grid>
 
                             <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBreast}}">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="← 左侧时长（分钟）"/>
-                                        <TextBox x:Name="FeedLeftDurationTextBox" Classes="form-input" Text="{Binding FeedForm.LeftDurationText}" PlaceholderText="0" KeyboardNavigation.IsTabStop="True"/>
+                                        <TextBlock Classes="form-label" Text="← 左侧时长（分钟）" />
+                                        <TextBox x:Name="FeedLeftDurationTextBox" Classes="form-input" KeyboardNavigation.IsTabStop="True"
+                                                 PlaceholderText="0"
+                                                 Text="{Binding FeedForm.LeftDurationText}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="→ 右侧时长（分钟）"/>
-                                        <TextBox Classes="form-input" Text="{Binding FeedForm.RightDurationText}" PlaceholderText="0"/>
+                                        <TextBlock Classes="form-label" Text="→ 右侧时长（分钟）" />
+                                        <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding FeedForm.RightDurationText}" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -315,111 +323,100 @@
                             <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.NotBreast}}">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="奶量（ml）"/>
-                                        <TextBox x:Name="FeedAmountTextBox" Classes="form-input" Text="{Binding FeedForm.AmountText}" PlaceholderText="请输入奶量"/>
+                                        <TextBlock Classes="form-label" Text="奶量（ml）" />
+                                        <TextBox x:Name="FeedAmountTextBox" Classes="form-input" PlaceholderText="请输入奶量" Text="{Binding FeedForm.AmountText}" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
 
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="5*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker MinWidth="250" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding FeedForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Background="#F5F5F5" CornerRadius="8" FontSize="14" SelectedTime="{Binding FeedForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding FeedForm.Note}" PlaceholderText="如：同时喝水 20ml"/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="如：同时喝水 20ml" Text="{Binding FeedForm.Note}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsDiaper}}">
-                            <Grid ColumnDefinitions="*,*,*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Classes="type-card"
-                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsWet}}"
-                                        PointerPressed="OnDiaperWet">
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*,*,*">
+                                <Border Grid.Column="0" Classes="type-card" Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsWet}}" PointerPressed="OnDiaperWet">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="💧" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="嘘嘘" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="24" Text="💧" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="嘘嘘" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Classes="type-card" Margin="8,0"
+                                <Border Grid.Column="1" Margin="8,0" Classes="type-card"
                                         Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsDirty}}"
                                         PointerPressed="OnDiaperDirty">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="💩" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="便便" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="24" Text="💩" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="便便" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="2" Classes="type-card"
-                                        Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsBoth}}"
-                                        PointerPressed="OnDiaperBoth">
+                                <Border Grid.Column="2" Classes="type-card" Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsBoth}}" PointerPressed="OnDiaperBoth">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="💧💩" FontSize="20" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="都有" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="20" Text="💧💩" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="都有" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="3" Classes="type-card" Margin="8,0,0,0"
+                                <Border Grid.Column="3" Margin="8,0,0,0" Classes="type-card"
                                         Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsDry}}"
                                         PointerPressed="OnDiaperDry">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="✅" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="干爽" FontSize="12" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                        <TextBlock HorizontalAlignment="Center" FontSize="24" Text="✅" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="干爽" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox x:Name="DiaperNoteTextBox" Classes="form-input" Text="{Binding DiaperForm.SelectedConsistency}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox x:Name="DiaperNoteTextBox" Classes="form-input" PlaceholderText="补充说明..." Text="{Binding DiaperForm.SelectedConsistency}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding DiaperForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding DiaperForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSleep}}">
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="开始时间"/>
-                                    <TimePicker SelectedTime="{Binding SleepForm.StartTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="开始时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding SleepForm.StartTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="结束时间"/>
-                                    <TimePicker SelectedTime="{Binding SleepForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                    <TextBlock Classes="form-label" Text="结束时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding SleepForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -427,108 +424,116 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsTemp}}">
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="体温（℃）"/>
-                                    <TextBox x:Name="TemperatureTextBox" Classes="form-input" Text="{Binding TemperatureForm.TemperatureText}" PlaceholderText="输入体温"/>
+                                    <TextBlock Classes="form-label" Text="体温（℃）" />
+                                    <TextBox x:Name="TemperatureTextBox" Classes="form-input" PlaceholderText="输入体温" Text="{Binding TemperatureForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section" Background="#FFF0F0" CornerRadius="8" Padding="10"
+                            <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding TemperatureForm.IsFeverWarning}">
-                                <TextBlock Text="⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪" FontSize="12" Foreground="{StaticResource WeuiRedBrush}"/>
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪" />
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding TemperatureForm.Note}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding TemperatureForm.Note}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                MinWidth="250"
+                                                SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding TemperatureForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding TemperatureForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsGrowth}}">
-                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="0,16">
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
+                                <Border Grid.Column="0" Padding="0,16" Background="#F9F9F9" CornerRadius="12">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="📏" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                        <TextBlock Text="身高" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox x:Name="GrowthHeightTextBox" Text="{Binding GrowthForm.HeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
-                                            <TextBlock Text="cm" FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="📏" />
+                                        <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
+                                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                                   Text="身高" />
+                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                            <TextBox x:Name="GrowthHeightTextBox" Width="80" HorizontalContentAlignment="Center" Background="White"
+                                                     CornerRadius="8" FontSize="22" FontWeight="Bold" PlaceholderText="0"
+                                                     Text="{Binding GrowthForm.HeightText}" />
+                                            <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
+                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Text="cm" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="0,16" Margin="12,0,0,0">
+                                <Border Grid.Column="1" Margin="12,0,0,0" Padding="0,16" Background="#F9F9F9"
+                                        CornerRadius="12">
                                     <StackPanel HorizontalAlignment="Center">
-                                        <TextBlock Text="⚖️" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                                        <TextBlock Text="体重" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <TextBox Text="{Binding GrowthForm.WeightText}" PlaceholderText="0" Width="80" FontSize="22" FontWeight="Bold" HorizontalContentAlignment="Center" CornerRadius="8" Background="White"/>
-                                            <TextBlock Text="kg" FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                        <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="⚖️" />
+                                        <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
+                                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                                   Text="体重" />
+                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                            <TextBox Width="80" HorizontalContentAlignment="Center" Background="White" CornerRadius="8"
+                                                     FontSize="22" FontWeight="Bold" PlaceholderText="0"
+                                                     Text="{Binding GrowthForm.WeightText}" />
+                                            <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
+                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Text="kg" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
                             </Grid>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding GrowthForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding GrowthForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSupplement}}">
-                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Classes="type-tab"
-                                        Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsSupplementType}}"
-                                        PointerPressed="OnSuppSupplement">
-                                    <TextBlock Text="💚 补充剂"/>
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
+                                <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsSupplementType}}" PointerPressed="OnSuppSupplement">
+                                    <TextBlock Text="💚 补充剂" />
                                 </Border>
-                                <Border Grid.Column="1" Classes="type-tab" Margin="12,0,0,0"
+                                <Border Grid.Column="1" Margin="12,0,0,0" Classes="type-tab"
                                         Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsMedicine}}"
                                         PointerPressed="OnSuppMedicine">
-                                    <TextBlock Text="💊 用药"/>
+                                    <TextBlock Text="💊 用药" />
                                 </Border>
                             </Grid>
 
-                            <!-- 常用选择区域（含系统默认项 + 用户自定义项） -->
+                            <!--  常用选择区域（含系统默认项 + 用户自定义项）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用内容（右键自定义项可删除）"/>
+                                    <TextBlock Classes="form-label" Text="常用内容（右键自定义项可删除）" />
                                     <ItemsControl ItemsSource="{Binding SupplementForm.CurrentAllItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <WrapPanel/>
+                                                <WrapPanel />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="vm:CommonItemViewModel">
                                                 <!--  Chip 样式：默认项灰底，自定义项白底+绿描边，选中态绿底  -->
                                                 <Border Classes="supp-chip"
-                                                        Classes.custom="{Binding IsCustom}"
                                                         Classes.active="{Binding IsSelected, Mode=OneWay}"
-                                                        Tapped="OnSuppChipTap"
+                                                        Classes.custom="{Binding IsCustom}"
                                                         PointerReleased="OnSuppChipPointerReleased"
-                                                        Tag="{Binding .}">
+                                                        Tag="{Binding .}"
+                                                        Tapped="OnSuppChipTap">
                                                     <TextBlock Text="{Binding Name}" />
                                                 </Border>
                                             </DataTemplate>
@@ -537,701 +542,662 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- 自定义输入 -->
+                            <!--  自定义输入  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="自定义添加"/>
+                                    <TextBlock Classes="form-label" Text="自定义添加" />
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0"
-                                                 Text="{Binding SupplementForm.CustomItem}"
-                                                 PlaceholderText="输入其他补充剂/药品..."
-                                                 Classes="form-input"/>
-                                        <Button Grid.Column="1"
-                                                Content="+ 添加"
-                                                Margin="8,0,0,0"
-                                                Command="{Binding SupplementForm.AddCustomCommand}"
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入其他补充剂/药品..." Text="{Binding SupplementForm.CustomItem}" />
+                                        <Button Grid.Column="1" Margin="8,0,0,0"
                                                 Background="{StaticResource WeuiGreenBrush}"
-                                                Foreground="White"
                                                 BorderThickness="0"
-                                                CornerRadius="8"/>
+                                                Command="{Binding SupplementForm.AddCustomCommand}"
+                                                Content="+ 添加" CornerRadius="8" Foreground="White" />
                                     </Grid>
                                     <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
                                                IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               Text="{Binding SupplementForm.ErrorMessage}"/>
+                                               Text="{Binding SupplementForm.ErrorMessage}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="剂量（选填）"/>
-                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" Text="{Binding SupplementForm.Dose}" PlaceholderText="如：1滴、5ml..."/>
+                                    <TextBlock Classes="form-label" Text="剂量（选填）" />
+                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" PlaceholderText="如：1滴、5ml..." Text="{Binding SupplementForm.Dose}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding SupplementForm.Note}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding SupplementForm.Note}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding SupplementForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding SupplementForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsPump}}">
-                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="12,10">
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
+                                <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Text="左侧时长（分钟）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                                        <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" Text="{Binding PumpForm.LeftDurationText}" PlaceholderText="0"/>
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="左侧时长（分钟）" />
+                                        <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftDurationText}" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="12,10" Margin="8,0,0,0">
+                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
+                                        CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Text="右侧时长（分钟）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                                        <TextBox Classes="form-input" Text="{Binding PumpForm.RightDurationText}" PlaceholderText="0"/>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                            <Grid ColumnDefinitions="*,*" Margin="0,0,0,16">
-                                <Border Grid.Column="0" Background="#F9F9F9" CornerRadius="12" Padding="12,10">
-                                    <StackPanel>
-                                        <TextBlock Text="左侧奶量（ml）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                                        <TextBox Classes="form-input" Text="{Binding PumpForm.LeftAmountText}" PlaceholderText="0"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Grid.Column="1" Background="#F9F9F9" CornerRadius="12" Padding="12,10" Margin="8,0,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="右侧奶量（ml）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                                        <TextBox Classes="form-input" Text="{Binding PumpForm.RightAmountText}" PlaceholderText="0"/>
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="右侧时长（分钟）" />
+                                        <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightDurationText}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
+                            <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
+                                <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
+                                    <StackPanel>
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="左侧奶量（ml）" />
+                                        <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftAmountText}" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
+                                        CornerRadius="12">
+                                    <StackPanel>
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="右侧奶量（ml）" />
+                                        <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightAmountText}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="总奶量（ml，选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding PumpForm.TotalAmountText}" PlaceholderText="不填则自动计算"/>
+                                    <TextBlock Classes="form-label" Text="总奶量（ml，选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="不填则自动计算" Text="{Binding PumpForm.TotalAmountText}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding PumpForm.Note}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding PumpForm.Note}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding PumpForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding PumpForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsComplementary}}">
 
-                            <!-- 常用辅食选择区域 -->
+                            <!--  常用辅食选择区域  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用辅食（可多选）"/>
+                                    <TextBlock Classes="form-label" Text="常用辅食（可多选）" />
                                     <ItemsControl ItemsSource="{Binding ComplementaryForm.AllCommonFoodItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <WrapPanel/>
+                                                <WrapPanel />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="vm:CommonItemViewModel">
-                                                <CheckBox Content="{Binding Name}"
-                                                         IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                         Theme="{StaticResource PureCardCheckBox}"
-                                                         Margin="0,0,4,4"
-                                                         Padding="8,4"
-                                                         FontSize="12"/>
+                                                <CheckBox Margin="0,0,4,4" Padding="8,4"
+                                                          Content="{Binding Name}"
+                                                          FontSize="12"
+                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                          Theme="{StaticResource PureCardCheckBox}" />
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                 </StackPanel>
                             </Border>
 
-                            <!-- 自定义输入 -->
+                            <!--  自定义输入  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="自定义添加"/>
+                                    <TextBlock Classes="form-label" Text="自定义添加" />
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0"
-                                                 Text="{Binding ComplementaryForm.CustomFood}"
-                                                 PlaceholderText="输入其他辅食名称..."
-                                                 Classes="form-input"/>
-                                        <Button Grid.Column="1"
-                                                Content="+ 添加"
-                                                Margin="8,0,0,0"
-                                                Command="{Binding ComplementaryForm.AddCustomCommand}"
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入其他辅食名称..." Text="{Binding ComplementaryForm.CustomFood}" />
+                                        <Button Grid.Column="1" Margin="8,0,0,0"
                                                 Background="{StaticResource WeuiGreenBrush}"
-                                                Foreground="White"
                                                 BorderThickness="0"
-                                                CornerRadius="8"/>
+                                                Command="{Binding ComplementaryForm.AddCustomCommand}"
+                                                Content="+ 添加" CornerRadius="8" Foreground="White" />
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="质地"/>
+                                    <TextBlock Classes="form-label" Text="质地" />
                                     <Grid ColumnDefinitions="*,*,*">
-                                        <Border Grid.Column="0" Classes="type-tab"
-                                                Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsPuree}}"
-                                                PointerPressed="OnTexturePuree">
-                                            <TextBlock Text="泥糊"/>
+                                        <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsPuree}}" PointerPressed="OnTexturePuree">
+                                            <TextBlock Text="泥糊" />
                                         </Border>
-                                        <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                        <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsMashed}}"
                                                 PointerPressed="OnTextureMashed">
-                                            <TextBlock Text="碎末"/>
+                                            <TextBlock Text="碎末" />
                                         </Border>
-                                        <Border Grid.Column="2" Classes="type-tab"
-                                                Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsLumpy}}"
-                                                PointerPressed="OnTextureLumpy">
-                                            <TextBlock Text="小块"/>
+                                        <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsLumpy}}" PointerPressed="OnTextureLumpy">
+                                            <TextBlock Text="小块" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="食量（选填）"/>
-                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" Text="{Binding ComplementaryForm.AmountText}" PlaceholderText="如：2勺、半碗..."/>
+                                    <TextBlock Classes="form-label" Text="食量（选填）" />
+                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" PlaceholderText="如：2勺、半碗..." Text="{Binding ComplementaryForm.AmountText}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="反应"/>
+                                    <TextBlock Classes="form-label" Text="反应" />
                                     <Grid ColumnDefinitions="*,*,*,*">
-                                        <Border Grid.Column="0" Classes="type-tab"
-                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsNoneReaction}}"
-                                                PointerPressed="OnReactionNone">
-                                            <TextBlock Text="无"/>
+                                        <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsNoneReaction}}" PointerPressed="OnReactionNone">
+                                            <TextBlock Text="无" />
                                         </Border>
-                                        <Border Grid.Column="1" Classes="type-tab" Margin="6,0"
+                                        <Border Grid.Column="1" Margin="6,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsAllergy}}"
                                                 PointerPressed="OnReactionAllergy">
-                                            <TextBlock Text="过敏"/>
+                                            <TextBlock Text="过敏" />
                                         </Border>
-                                        <Border Grid.Column="2" Classes="type-tab"
-                                                Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsVomitReaction}}"
-                                                PointerPressed="OnReactionVomit">
-                                            <TextBlock Text="呕吐"/>
+                                        <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsVomitReaction}}" PointerPressed="OnReactionVomit">
+                                            <TextBlock Text="呕吐" />
                                         </Border>
-                                        <Border Grid.Column="3" Classes="type-tab" Margin="6,0,0,0"
+                                        <Border Grid.Column="3" Margin="6,0,0,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsDiarrheaReaction}}"
                                                 PointerPressed="OnReactionDiarrhea">
-                                            <TextBlock Text="腹泻"/>
+                                            <TextBlock Text="腹泻" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding ComplementaryForm.Note}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding ComplementaryForm.Note}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding ComplementaryForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding ComplementaryForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsAbnormal}}">
-                            <!-- 体温（选填）：对齐小程序 abnormal-form 的 temperature 字段语义 -->
+                            <!--  体温（选填）：对齐小程序 abnormal-form 的 temperature 字段语义  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="体温（℃，选填）"/>
-                                    <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" Text="{Binding AbnormalForm.TemperatureText}" PlaceholderText="如有发热请填写"/>
+                                    <TextBlock Classes="form-label" Text="体温（℃，选填）" />
+                                    <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" PlaceholderText="如有发热请填写" Text="{Binding AbnormalForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section" Background="#FFF0F0" CornerRadius="8" Padding="10"
+                            <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding AbnormalForm.IsFeverWarning}">
-                                <TextBlock Text="⚠️ 体温 ≥ 37.3℃，建议持续监测并注意补水" FontSize="12" Foreground="{StaticResource WeuiRedBrush}"/>
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="⚠️ 体温 ≥ 37.3℃，建议持续监测并注意补水" />
                             </Border>
 
-                            <!-- 呼吸道症状（多选 chip） -->
+                            <!--  呼吸道症状（多选 chip）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="呼吸道症状（可多选）"/>
+                                    <TextBlock Classes="form-label" Text="呼吸道症状（可多选）" />
                                     <WrapPanel>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCough}}"
-                                                PointerPressed="OnRespCough">
-                                            <TextBlock Text="咳嗽(轻微)"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCough}}" PointerPressed="OnRespCough">
+                                            <TextBlock Text="咳嗽(轻微)" />
                                         </Border>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCoughFreq}}"
-                                                PointerPressed="OnRespCoughFreq">
-                                            <TextBlock Text="咳嗽(频繁)"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCoughFreq}}" PointerPressed="OnRespCoughFreq">
+                                            <TextBlock Text="咳嗽(频繁)" />
                                         </Border>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsSneeze}}"
-                                                PointerPressed="OnRespSneeze">
-                                            <TextBlock Text="打喷嚏"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsSneeze}}" PointerPressed="OnRespSneeze">
+                                            <TextBlock Text="打喷嚏" />
                                         </Border>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsRhinorrhea}}"
-                                                PointerPressed="OnRespRhinorrhea">
-                                            <TextBlock Text="流鼻涕"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsRhinorrhea}}" PointerPressed="OnRespRhinorrhea">
+                                            <TextBlock Text="流鼻涕" />
                                         </Border>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCongestion}}"
-                                                PointerPressed="OnRespCongestion">
-                                            <TextBlock Text="鼻塞"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCongestion}}" PointerPressed="OnRespCongestion">
+                                            <TextBlock Text="鼻塞" />
                                         </Border>
-                                        <Border Classes="abn-chip"
-                                                Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsTachypnea}}"
-                                                PointerPressed="OnRespTachypnea">
-                                            <TextBlock Text="呼吸急促"/>
+                                        <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsTachypnea}}" PointerPressed="OnRespTachypnea">
+                                            <TextBlock Text="呼吸急促" />
                                         </Border>
                                     </WrapPanel>
                                 </StackPanel>
                             </Border>
 
-                            <!-- 消化道异常（呕吐单选） -->
+                            <!--  消化道异常（呕吐单选）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="消化道异常"/>
+                                    <TextBlock Classes="form-label" Text="消化道异常" />
                                     <Grid ColumnDefinitions="*,*">
-                                        <Border Grid.Column="0" Classes="abn-chip-danger"
-                                                Classes.active="{Binding AbnormalForm.VomitType, Converter={x:Static v:AppConverters.IsVomitSpitUp}}"
-                                                PointerPressed="OnVomitSpitUp">
-                                            <TextBlock Text="溢奶(轻微)"/>
+                                        <Border Grid.Column="0" Classes="abn-chip-danger" Classes.active="{Binding AbnormalForm.VomitType, Converter={x:Static v:AppConverters.IsVomitSpitUp}}" PointerPressed="OnVomitSpitUp">
+                                            <TextBlock Text="溢奶(轻微)" />
                                         </Border>
-                                        <Border Grid.Column="1" Classes="abn-chip-danger" Margin="8,0,0,0"
+                                        <Border Grid.Column="1" Margin="8,0,0,0" Classes="abn-chip-danger"
                                                 Classes.active="{Binding AbnormalForm.VomitType, Converter={x:Static v:AppConverters.IsVomitProjectile}}"
                                                 PointerPressed="OnVomitProjectile">
-                                            <TextBlock Text="喷射状呕吐(严重)"/>
+                                            <TextBlock Text="喷射状呕吐(严重)" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
 
-                            <!-- 其他异常（自由文本） -->
+                            <!--  其他异常（自由文本）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="其他异常"/>
-                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.Other}"
-                                             PlaceholderText="如：精神差、哭闹、皮疹、辅食后反应异常等"
-                                             AcceptsReturn="True" TextWrapping="Wrap" MaxLength="300"/>
+                                    <TextBlock Classes="form-label" Text="其他异常" />
+                                    <TextBox AcceptsReturn="True" Classes="form-input" MaxLength="300" PlaceholderText="如：精神差、哭闹、皮疹、辅食后反应异常等"
+                                             Text="{Binding AbnormalForm.Other}"
+                                             TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
-                            <!-- 是否用药 -->
+                            <!--  是否用药  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="是否用药"/>
-                                    <CheckBox Content="已服用药物" IsChecked="{Binding AbnormalForm.HasMedicine}"/>
+                                    <TextBlock Classes="form-label" Text="是否用药" />
+                                    <CheckBox Content="已服用药物" IsChecked="{Binding AbnormalForm.HasMedicine}" />
                                 </StackPanel>
                             </Border>
 
-                            <!-- 备注（选填） -->
+                            <!--  备注（选填）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding AbnormalForm.Note}" PlaceholderText="补充说明..."/>
+                                    <TextBlock Classes="form-label" Text="备注（选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding AbnormalForm.Note}" />
                                 </StackPanel>
                             </Border>
 
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding AbnormalForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding AbnormalForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
-                        <!-- 用 Grid+RowDefinitions 替代 StackPanel：
-                             Grid 会正确传递有限宽度约束给子元素，让内部 Grid 的 * 列基于可用宽度计算。
-                             MaxWidth 在 code-behind 中动态绑定 ContentStackPanel.ActualWidth（自适应不同屏幕尺寸）
-                             解决 ScrollViewer 给无限宽度约束导致 Grid * 列计算偏大的问题 -->
-                        <Grid x:Name="VaccineGrid"
-                              IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsVaccine}}"
-                              HorizontalAlignment="Stretch">
+                        <!--
+                            用 Grid+RowDefinitions 替代 StackPanel：
+                            Grid 会正确传递有限宽度约束给子元素，让内部 Grid 的 * 列基于可用宽度计算。
+                            MaxWidth 在 code-behind 中动态绑定 ContentStackPanel.ActualWidth（自适应不同屏幕尺寸）
+                            解决 ScrollViewer 给无限宽度约束导致 Grid * 列计算偏大的问题
+                        -->
+                        <Grid x:Name="VaccineGrid" HorizontalAlignment="Stretch" IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsVaccine}}">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <!-- A. 添加自定义疫苗入口 -->
+                            <!--  A. 添加自定义疫苗入口  -->
                             <Border Grid.Row="0" Classes="vf-entry" PointerPressed="OnVaccineToggleCustomForm">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="添加自定义疫苗" FontSize="14" FontWeight="Medium"/>
-                                        <TextBlock Text="添加后会进入当前宝宝的疫苗时间线" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"/>
+                                        <TextBlock FontSize="14" FontWeight="Medium" Text="添加自定义疫苗" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Text="添加后会进入当前宝宝的疫苗时间线" />
                                     </StackPanel>
-                                    <Border Grid.Column="1" Background="#EEF8FF" CornerRadius="12" Padding="10,3" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding VaccineForm.ShowCustomVaccineForm, Converter={x:Static v:RecordSheetView.VaccineToggleTextConverter}}"
-                                                   FontSize="12" Foreground="#0675B8"/>
+                                    <Border Grid.Column="1" Padding="10,3" VerticalAlignment="Center" Background="#EEF8FF"
+                                            CornerRadius="12">
+                                        <TextBlock FontSize="12" Foreground="#0675B8" Text="{Binding VaccineForm.ShowCustomVaccineForm, Converter={x:Static v:RecordSheetView.VaccineToggleTextConverter}}" />
                                     </Border>
                                 </Grid>
                             </Border>
 
-                            <!-- B. 自定义疫苗表单（折叠） -->
-                            <StackPanel Grid.Row="1" IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Margin="0,0,0,12" Spacing="10">
+                            <!--  B. 自定义疫苗表单（折叠）  -->
+                            <StackPanel Grid.Row="1" Margin="0,0,0,12" IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Spacing="10">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="疫苗名称"/>
-                                        <TextBox Classes="form-input" Text="{Binding VaccineForm.CustomVaccineName}" PlaceholderText="如：流感疫苗加强针"/>
+                                        <TextBlock Classes="form-label" Text="疫苗名称" />
+                                        <TextBox Classes="form-input" PlaceholderText="如：流感疫苗加强针" Text="{Binding VaccineForm.CustomVaccineName}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="类型"/>
+                                        <TextBlock Classes="form-label" Text="类型" />
                                         <Grid ColumnDefinitions="*,*">
-                                            <Border Grid.Column="0" Classes="vf-segment" Margin="0,0,4,0"
+                                            <Border Grid.Column="0" Margin="0,0,4,0" Classes="vf-segment"
                                                     Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:AppConverters.IsCustomFree}}"
                                                     PointerPressed="OnCustomCategoryFree">
-                                                <TextBlock Text="免费疫苗"/>
+                                                <TextBlock Text="免费疫苗" />
                                             </Border>
-                                            <Border Grid.Column="1" Classes="vf-segment" Margin="4,0,0,0"
+                                            <Border Grid.Column="1" Margin="4,0,0,0" Classes="vf-segment"
                                                     Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:AppConverters.IsCustomPaid}}"
                                                     PointerPressed="OnCustomCategoryPaid">
-                                                <TextBlock Text="自费疫苗"/>
+                                                <TextBlock Text="自费疫苗" />
                                             </Border>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="接种时间"/>
+                                        <TextBlock Classes="form-label" Text="接种时间" />
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <TextBox Grid.Column="0" Classes="form-input" Margin="0,0,8,0"
-                                                     Text="{Binding VaccineForm.CustomVaccineAgeValue}" PlaceholderText="数值"/>
-                                            <ComboBox Grid.Column="1" MinWidth="100"
-                                                      SelectedIndex="{Binding VaccineForm.CustomVaccineAgeUnitIndex}"
-                                                      ItemsSource="{Binding VaccineForm.CustomVaccineAgeUnits}"/>
+                                            <TextBox Grid.Column="0" Margin="0,0,8,0" Classes="form-input" PlaceholderText="数值"
+                                                     Text="{Binding VaccineForm.CustomVaccineAgeValue}" />
+                                            <ComboBox Grid.Column="1" MinWidth="100" ItemsSource="{Binding VaccineForm.CustomVaccineAgeUnits}" SelectedIndex="{Binding VaccineForm.CustomVaccineAgeUnitIndex}" />
                                         </Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="预防疾病"/>
-                                        <TextBox Classes="form-input" Text="{Binding VaccineForm.CustomVaccineDisease}" PlaceholderText="可不填"/>
+                                        <TextBlock Classes="form-label" Text="预防疾病" />
+                                        <TextBox Classes="form-input" PlaceholderText="可不填" Text="{Binding VaccineForm.CustomVaccineDisease}" />
                                     </StackPanel>
                                 </Border>
-                                <Button Content="加入时间线" Classes="weui-btn primary" HorizontalAlignment="Stretch"
-                                        Click="OnAddCustomVaccine"/>
+                                <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Click="OnAddCustomVaccine" Content="加入时间线" />
                             </StackPanel>
 
-                            <!-- C. 已选剂次卡片 -->
-                            <Border Grid.Row="2" Classes="vf-entry" Background="#EEF8FF" BorderBrush="#BFE8FF"
-                                    IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}"
-                                    Margin="0,0,0,12">
+                            <!--  C. 已选剂次卡片  -->
+                            <Border Grid.Row="2" Margin="0,0,0,12" Background="#EEF8FF" BorderBrush="#BFE8FF"
+                                    Classes="vf-entry"
+                                    IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock Text="已选择" FontSize="11" Foreground="#0675B8"/>
-                                        <TextBlock Text="{Binding VaccineForm.SelectedPlan.Name}" FontSize="14" FontWeight="Medium"/>
+                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="已选择" />
+                                        <TextBlock FontSize="14" FontWeight="Medium" Text="{Binding VaccineForm.SelectedPlan.Name}" />
                                         <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}">
-                                            <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}"/>
-                                            <Run Text=" · "/>
-                                            <Run Text="{Binding VaccineForm.SelectedPlan.RecommendedDateText}"/>
+                                            <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}" />
+                                            <Run Text=" · " />
+                                            <Run Text="{Binding VaccineForm.SelectedPlan.RecommendedDateText}" />
                                         </TextBlock>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="6" Padding="8,3" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding VaccineForm.SelectedPlan.StatusText}" FontSize="11" Foreground="#0675B8"/>
+                                    <Border Grid.Column="1" Padding="8,3" VerticalAlignment="Center" Background="#FFFFFF"
+                                            CornerRadius="6">
+                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="{Binding VaccineForm.SelectedPlan.StatusText}" />
                                     </Border>
                                 </Grid>
                             </Border>
 
-                            <!-- D. 接种日期/时间已移至"改时间"弹窗中，主页面不再常驻显示 -->
+                            <!--  D. 接种日期/时间已移至"改时间"弹窗中，主页面不再常驻显示  -->
 
-                            <!-- E. 时间轴表头（三列 Grid，与分组模板完全对称） -->
-                            <Grid Grid.Row="3" ColumnDefinitions="*,60,*" Margin="0,4,0,4" ClipToBounds="True">
-                                <Border Grid.Column="0" Background="#EEF8FF" CornerRadius="6" Padding="8,6">
-                                    <TextBlock Text="免费疫苗" FontSize="12" Foreground="#0675B8" HorizontalAlignment="Center" FontWeight="Medium"/>
+                            <!--  E. 时间轴表头（三列 Grid，与分组模板完全对称）  -->
+                            <Grid Grid.Row="3" Margin="0,4,0,4" ClipToBounds="True" ColumnDefinitions="*,60,*">
+                                <Border Grid.Column="0" Padding="8,6" Background="#EEF8FF" CornerRadius="6">
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#0675B8"
+                                               Text="免费疫苗" />
                                 </Border>
-                                <Border Grid.Column="1" Background="#F3F4F6" CornerRadius="6" Padding="8,6" Margin="4,0">
-                                    <TextBlock Text="时间" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                                <Border Grid.Column="1" Margin="4,0" Padding="8,6" Background="#F3F4F6"
+                                        CornerRadius="6">
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="时间" />
                                 </Border>
-                                <Border Grid.Column="2" Background="#FFF7ED" CornerRadius="6" Padding="8,6">
-                                    <TextBlock Text="自费疫苗" FontSize="12" Foreground="#B45309" HorizontalAlignment="Center" FontWeight="Medium"/>
+                                <Border Grid.Column="2" Padding="8,6" Background="#FFF7ED" CornerRadius="6">
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#B45309"
+                                               Text="自费疫苗" />
                                 </Border>
                             </Grid>
 
-                            <!-- F. 时间轴分组：ItemsControl（非虚拟化）
-                                 注意：不用 ListBox/VirtualizingStackPanel，因为：
-                                 1. 外层已有 ContentScroll ScrollViewer，ListBox 会引入嵌套 ScrollViewer 导致滑动卡顿
-                                 2. 20 个 Group 总量不大（~300 卡片），一次性创建可接受
-                                 3. 真正的瓶颈是每个 vf-card 模板复杂度，通过扁平化和 OneTime 绑定优化
-                                 
-                                 布局策略：Grid 两列 *,* 强制 50/50 等分，中间竖线用 HorizontalAlignment=Center
-                                 的覆盖层定位，避免 Grid 三列分配受子元素 DesiredSize 影响导致偏移。 -->
+                            <!--
+                                F. 时间轴分组：ItemsControl（非虚拟化）
+                                注意：不用 ListBox/VirtualizingStackPanel，因为：
+                                1. 外层已有 ContentScroll ScrollViewer，ListBox 会引入嵌套 ScrollViewer 导致滑动卡顿
+                                2. 20 个 Group 总量不大（~300 卡片），一次性创建可接受
+                                3. 真正的瓶颈是每个 vf-card 模板复杂度，通过扁平化和 OneTime 绑定优化
+                                
+                                布局策略：Grid 两列 *,* 强制 50/50 等分，中间竖线用 HorizontalAlignment=Center
+                                的覆盖层定位，避免 Grid 三列分配受子元素 DesiredSize 影响导致偏移。
+                            -->
                             <Grid Grid.Row="4" HorizontalAlignment="Stretch">
-                            <ItemsControl ItemsSource="{Binding VaccineForm.TimelineGroups}"
-                                          HorizontalAlignment="Stretch">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="s:VaccineTimelineGroup">
-                                        <!-- 三列 Grid：左右 * 等分，中间 60px 固定宽度放竖线 -->
-                                        <Grid ColumnDefinitions="*,60,*" Margin="0,4,0,0" ClipToBounds="True">
-                                            <!-- 左：免费疫苗 -->
-                                            <StackPanel Grid.Column="0" Spacing="2">
-                                                <ItemsControl ItemsSource="{Binding FreeDoses}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <!-- 状态类绑定用 OneWay（默认），支持点击后 INPC 原地更新；
-                                                                 静态数据保持 OneTime，减少初始加载时的订阅开销。 -->
-                                                            <Border Classes="vf-card"
-                                                                    Classes.done="{Binding IsDone}"
-                                                                    Classes.skipped="{Binding IsSkipped}"
-                                                                    Classes.replaced="{Binding IsReplaced}"
-                                                                    Classes.overdue="{Binding IsOverdue}"
-                                                                    Classes.due="{Binding IsDue}"
-                                                                    Classes.soon="{Binding IsSoon}"
-                                                                    Classes.pending="{Binding IsPending}"
-                                                                    PointerPressed="OnVaccineDoseClick">
-                                                                <!-- 文本截断防溢出：长疫苗名/疾病名不会撑开超出 Grid 列宽 -->
-                                                                <StackPanel Spacing="0">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"
-                                                                               Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
-                                                                               MaxWidth="200" HorizontalAlignment="Left"/>
-                                                                    <!-- 合并 剂次·日期 + 疾病 为一行（静态数据 OneTime） -->
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"
-                                                                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
-                                                                               MaxWidth="220">
-                                                                        <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
-                                                                        <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
-                                                                        <Run Text="  "/>
-                                                                        <Run Text="{Binding Disease, Mode=OneTime}"/>
-                                                                    </TextBlock>
-                                                                    <!-- 状态文本（独立一行） -->
-                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"
-                                                                               Margin="0,4,0,0"/>
-                                                                    <!-- 操作按钮：独立一行，等宽平分（与小程序 vf-time-actions 一致） -->
-                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding NotHandled}">
-                                                                        <Button Grid.Column="0" Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                        <Button Grid.Column="1" Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                    <!-- 完成时间 -->
-                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 跳过时间 -->
-                                                                    <TextBlock Text="{Binding SkippedTime}" FontSize="10" Foreground="#B0B0B0" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 已打：改时间 / 取消 -->
-                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding IsDone}">
-                                                                        <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                        <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                    <!-- 已跳过：取消跳过（直接执行，不弹窗） -->
-                                                                    <Grid ColumnDefinitions="*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding IsSkipped}">
-                                                                        <Button Grid.Column="0" Classes="vf-cancel" Content="取消跳过" Click="OnVaccineCancelSkipped"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                </StackPanel>
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <TextBlock Text="暂无" FontSize="11" Foreground="{StaticResource WeuiFg3Brush}"
-                                                           HorizontalAlignment="Center" IsVisible="{Binding !HasFree}"/>
-                                            </StackPanel>
-
-                                            <!-- 中：时间轴节点（固定 60px 宽度，竖线在这里） -->
-                                            <Panel Grid.Column="1" Width="60">
-                                                <ctrl:TimelineAxisItem HorizontalAlignment="Center"
-                                                                       LineBrush="#E5E7EB" LineWidth="2"
-                                                                       DotSize="0" HalfSpacing="6"/>
-                                                <StackPanel HorizontalAlignment="Center" Spacing="2" Margin="0,0,0,0">
-                                                    <Border Classes="vf-dot"/>
-                                                    <TextBlock Text="{Binding Name, Mode=OneTime}" FontSize="10" FontWeight="Medium" HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding DateText, Mode=OneTime}" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
-                                                    <TextBlock FontSize="9" Foreground="{StaticResource WeuiFg3Brush}" HorizontalAlignment="Center">
-                                                        <Run Text="{Binding HandledCount, Mode=OneTime}"/>
-                                                        <Run Text="/"/>
-                                                        <Run Text="{Binding TotalCount, Mode=OneTime}"/>
-                                                    </TextBlock>
+                                <ItemsControl HorizontalAlignment="Stretch" ItemsSource="{Binding VaccineForm.TimelineGroups}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="s:VaccineTimelineGroup">
+                                            <!--  三列 Grid：左右 * 等分，中间 60px 固定宽度放竖线  -->
+                                            <Grid Margin="0,4,0,0" ClipToBounds="True" ColumnDefinitions="*,60,*">
+                                                <!--  左：免费疫苗  -->
+                                                <StackPanel Grid.Column="0" Spacing="2">
+                                                    <ItemsControl ItemsSource="{Binding FreeDoses}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="s:VaccinePlanView">
+                                                                <!--
+                                                                    状态类绑定用 OneWay（默认），支持点击后 INPC 原地更新；
+                                                                    静态数据保持 OneTime，减少初始加载时的订阅开销。
+                                                                -->
+                                                                <Border Classes="vf-card"
+                                                                        Classes.done="{Binding IsDone}"
+                                                                        Classes.due="{Binding IsDue}"
+                                                                        Classes.overdue="{Binding IsOverdue}"
+                                                                        Classes.pending="{Binding IsPending}"
+                                                                        Classes.replaced="{Binding IsReplaced}"
+                                                                        Classes.skipped="{Binding IsSkipped}"
+                                                                        Classes.soon="{Binding IsSoon}"
+                                                                        PointerPressed="OnVaccineDoseClick">
+                                                                    <!--  文本截断防溢出：长疫苗名/疾病名不会撑开超出 Grid 列宽  -->
+                                                                    <StackPanel Spacing="0">
+                                                                        <TextBlock MaxWidth="200" Margin="0,6,0,0" HorizontalAlignment="Left" FontSize="12"
+                                                                                   FontWeight="Medium"
+                                                                                   Text="{Binding VaccineName, Mode=OneTime}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                        <!--  合并 剂次·日期 + 疾病 为一行（静态数据 OneTime）  -->
+                                                                        <TextBlock MaxWidth="220" Margin="0,2,0,0" FontSize="10"
+                                                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                                                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap">
+                                                                            <Run Text="{Binding DoseLabel, Mode=OneTime}" />
+                                                                            <Run Text=" · " />
+                                                                            <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}" />
+                                                                            <Run Text="  " />
+                                                                            <Run Text="{Binding Disease, Mode=OneTime}" />
+                                                                        </TextBlock>
+                                                                        <!--  状态文本（独立一行）  -->
+                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding StatusText}" />
+                                                                        <!--  操作按钮：独立一行，等宽平分（与小程序 vf-time-actions 一致）  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
+                                                                                    Content="已打" />
+                                                                            <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-skip" Click="OnVaccineSkip"
+                                                                                    Content="跳过" />
+                                                                        </Grid>
+                                                                        <!--  完成时间  -->
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
+                                                                                   IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                                   Text="{Binding DoneTime}" />
+                                                                        <!--  跳过时间  -->
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#B0B0B0"
+                                                                                   IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                                   Text="{Binding SkippedTime}" />
+                                                                        <!--  已打：改时间 / 取消  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding IsDone}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-edit" Click="OnVaccineEdit"
+                                                                                    Content="改时间" />
+                                                                            <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelDone"
+                                                                                    Content="取消" />
+                                                                        </Grid>
+                                                                        <!--  已跳过：取消跳过（直接执行，不弹窗）  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*" IsVisible="{Binding IsSkipped}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelSkipped"
+                                                                                    Content="取消跳过" />
+                                                                        </Grid>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock HorizontalAlignment="Center" FontSize="11"
+                                                               Foreground="{StaticResource WeuiFg3Brush}"
+                                                               IsVisible="{Binding !HasFree}"
+                                                               Text="暂无" />
                                                 </StackPanel>
-                                            </Panel>
 
-                                            <!-- 右：自费疫苗 -->
-                                            <StackPanel Grid.Column="2" Spacing="2">
-                                                <ItemsControl ItemsSource="{Binding PaidDoses}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate x:DataType="s:VaccinePlanView">
-                                                            <!-- 状态类 OneWay，静态数据 OneTime（与左侧对称） -->
-                                                            <Border Classes="vf-card"
-                                                                    Classes.done="{Binding IsDone}"
-                                                                    Classes.skipped="{Binding IsSkipped}"
-                                                                    Classes.replaced="{Binding IsReplaced}"
-                                                                    Classes.overdue="{Binding IsOverdue}"
-                                                                    Classes.due="{Binding IsDue}"
-                                                                    Classes.soon="{Binding IsSoon}"
-                                                                    Classes.pending="{Binding IsPending}"
-                                                                    PointerPressed="OnVaccineDoseClick">
-                                                                <!-- 文本截断防溢出 -->
-                                                                <StackPanel Spacing="0">
-                                                                    <TextBlock Text="{Binding VaccineName, Mode=OneTime}" FontSize="12" FontWeight="Medium"
-                                                                               Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
-                                                                               MaxWidth="200" HorizontalAlignment="Left"/>
-                                                                    <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"
-                                                                               TextTrimming="CharacterEllipsis" TextWrapping="Wrap"
-                                                                               MaxWidth="220">
-                                                                        <Run Text="{Binding DoseLabel, Mode=OneTime}"/>
-                                                                        <Run Text=" · "/>
-                                                                        <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}"/>
-                                                                        <Run Text="  "/>
-                                                                        <Run Text="{Binding Disease, Mode=OneTime}"/>
-                                                                    </TextBlock>
-                                                                    <!-- 状态文本（独立一行） -->
-                                                                    <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}"
-                                                                               Margin="0,4,0,0"/>
-                                                                    <!-- 操作按钮：独立一行，等宽平分 -->
-                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding NotHandled}">
-                                                                        <Button Grid.Column="0" Classes="vf-mark" Content="已打" Click="OnVaccineMarkDone"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                        <Button Grid.Column="1" Classes="vf-skip" Content="跳过" Click="OnVaccineSkip"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                    <TextBlock Text="{Binding DoneTime}" FontSize="10" Foreground="#9EE6C1" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 跳过时间 -->
-                                                                    <TextBlock Text="{Binding SkippedTime}" FontSize="10" Foreground="#B0B0B0" Margin="0,2,0,0"
-                                                                               IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                    <!-- 已打：改时间 / 取消 -->
-                                                                    <Grid ColumnDefinitions="*,*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding IsDone}">
-                                                                        <Button Grid.Column="0" Classes="vf-edit" Content="改时间" Click="OnVaccineEdit"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                        <Button Grid.Column="1" Classes="vf-cancel" Content="取消" Click="OnVaccineCancelDone"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                    <!-- 已跳过：取消跳过（直接执行，不弹窗） -->
-                                                                    <Grid ColumnDefinitions="*" Margin="0,6,0,0"
-                                                                          IsVisible="{Binding IsSkipped}">
-                                                                        <Button Grid.Column="0" Classes="vf-cancel" Content="取消跳过" Click="OnVaccineCancelSkipped"
-                                                                                HorizontalAlignment="Stretch"/>
-                                                                    </Grid>
-                                                                </StackPanel>
-                                                            </Border>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <TextBlock Text="暂无" FontSize="11" Foreground="{StaticResource WeuiFg3Brush}"
-                                                           HorizontalAlignment="Center" IsVisible="{Binding !HasPaid}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                                <!--  中：时间轴节点（固定 60px 宽度，竖线在这里）  -->
+                                                <Panel Grid.Column="1" Width="60">
+                                                    <ctrl:TimelineAxisItem HorizontalAlignment="Center" DotSize="0" HalfSpacing="6" LineBrush="#E5E7EB"
+                                                                           LineWidth="2" />
+                                                    <StackPanel Margin="0,0,0,0" HorizontalAlignment="Center" Spacing="2">
+                                                        <Border Classes="vf-dot" />
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="10" FontWeight="Medium" Text="{Binding Name, Mode=OneTime}" />
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding DateText, Mode=OneTime}" />
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource WeuiFg3Brush}">
+                                                            <Run Text="{Binding HandledCount, Mode=OneTime}" />
+                                                            <Run Text="/" />
+                                                            <Run Text="{Binding TotalCount, Mode=OneTime}" />
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Panel>
+
+                                                <!--  右：自费疫苗  -->
+                                                <StackPanel Grid.Column="2" Spacing="2">
+                                                    <ItemsControl ItemsSource="{Binding PaidDoses}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate x:DataType="s:VaccinePlanView">
+                                                                <!--  状态类 OneWay，静态数据 OneTime（与左侧对称）  -->
+                                                                <Border Classes="vf-card"
+                                                                        Classes.done="{Binding IsDone}"
+                                                                        Classes.due="{Binding IsDue}"
+                                                                        Classes.overdue="{Binding IsOverdue}"
+                                                                        Classes.pending="{Binding IsPending}"
+                                                                        Classes.replaced="{Binding IsReplaced}"
+                                                                        Classes.skipped="{Binding IsSkipped}"
+                                                                        Classes.soon="{Binding IsSoon}"
+                                                                        PointerPressed="OnVaccineDoseClick">
+                                                                    <!--  文本截断防溢出  -->
+                                                                    <StackPanel Spacing="0">
+                                                                        <TextBlock MaxWidth="200" Margin="0,6,0,0" HorizontalAlignment="Left" FontSize="12"
+                                                                                   FontWeight="Medium"
+                                                                                   Text="{Binding VaccineName, Mode=OneTime}"
+                                                                                   TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock MaxWidth="220" Margin="0,2,0,0" FontSize="10"
+                                                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                                                   TextTrimming="CharacterEllipsis" TextWrapping="Wrap">
+                                                                            <Run Text="{Binding DoseLabel, Mode=OneTime}" />
+                                                                            <Run Text=" · " />
+                                                                            <Run Text="{Binding RecommendedDateText, TargetNullValue='--', Mode=OneTime}" />
+                                                                            <Run Text="  " />
+                                                                            <Run Text="{Binding Disease, Mode=OneTime}" />
+                                                                        </TextBlock>
+                                                                        <!--  状态文本（独立一行）  -->
+                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding StatusText}" />
+                                                                        <!--  操作按钮：独立一行，等宽平分  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
+                                                                                    Content="已打" />
+                                                                            <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-skip" Click="OnVaccineSkip"
+                                                                                    Content="跳过" />
+                                                                        </Grid>
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
+                                                                                   IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                                   Text="{Binding DoneTime}" />
+                                                                        <!--  跳过时间  -->
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#B0B0B0"
+                                                                                   IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                                                   Text="{Binding SkippedTime}" />
+                                                                        <!--  已打：改时间 / 取消  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding IsDone}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-edit" Click="OnVaccineEdit"
+                                                                                    Content="改时间" />
+                                                                            <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelDone"
+                                                                                    Content="取消" />
+                                                                        </Grid>
+                                                                        <!--  已跳过：取消跳过（直接执行，不弹窗）  -->
+                                                                        <Grid Margin="0,6,0,0" ColumnDefinitions="*" IsVisible="{Binding IsSkipped}">
+                                                                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelSkipped"
+                                                                                    Content="取消跳过" />
+                                                                        </Grid>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                    <TextBlock HorizontalAlignment="Center" FontSize="11"
+                                                               Foreground="{StaticResource WeuiFg3Brush}"
+                                                               IsVisible="{Binding !HasPaid}"
+                                                               Text="暂无" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </Grid>
                         </Grid>
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsActivity}}">
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="活动名称"/>
-                                    <TextBox x:Name="ActivityNameTextBox" Classes="form-input" Text="{Binding ActivityForm.Name}" PlaceholderText="如：翻身练习、户外散步..."/>
+                                    <TextBlock Classes="form-label" Text="活动名称" />
+                                    <TextBox x:Name="ActivityNameTextBox" Classes="form-input" PlaceholderText="如：翻身练习、户外散步..." Text="{Binding ActivityForm.Name}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="活动类型"/>
+                                    <TextBlock Classes="form-label" Text="活动类型" />
                                     <Grid ColumnDefinitions="*,*,*">
-                                        <Border Grid.Column="0" Classes="type-tab"
-                                                Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsPlay}}"
-                                                PointerPressed="OnCategoryPlay">
-                                            <TextBlock Text="游戏"/>
+                                        <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsPlay}}" PointerPressed="OnCategoryPlay">
+                                            <TextBlock Text="游戏" />
                                         </Border>
-                                        <Border Grid.Column="1" Classes="type-tab" Margin="8,0"
+                                        <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                                 Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsOutdoor}}"
                                                 PointerPressed="OnCategoryOutdoor">
-                                            <TextBlock Text="户外"/>
+                                            <TextBlock Text="户外" />
                                         </Border>
-                                        <Border Grid.Column="2" Classes="type-tab"
-                                                Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsExercise}}"
-                                                PointerPressed="OnCategoryExercise">
-                                            <TextBlock Text="运动"/>
+                                        <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsExercise}}" PointerPressed="OnCategoryExercise">
+                                            <TextBlock Text="运动" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）"/>
-                                    <TextBox Classes="form-input" Text="{Binding ActivityForm.DurationText}" PlaceholderText="0"/>
+                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding ActivityForm.DurationText}" />
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录日期"/>
-                                    <DatePicker SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                                FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="记录时间"/>
-                                    <TimePicker SelectedTime="{Binding ActivityForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                                ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding ActivityForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
-                            </Border>
+                            </Grid>
                         </StackPanel>
 
-                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
-                                   Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Margin="0,4" FontSize="13"
+                                   Foreground="{StaticResource WeuiRedBrush}"
+                                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Text="{Binding ErrorMessage}" />
                     </StackPanel>
                 </ScrollViewer>
 
-                <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0"
+                <Border Grid.Row="2" Padding="16,12"
+                        BorderBrush="{StaticResource WeuiFg3Brush}"
+                        BorderThickness="0,1,0,0"
                         IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.NotVaccine}}">
-                    <Button Content="保存记录" Classes="weui-btn primary" HorizontalAlignment="Stretch"
-                            Command="{Binding SaveCommand}"/>
+                    <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Command="{Binding SaveCommand}" Content="保存记录" />
                 </Border>
             </Grid>
         </Border>
-        <!-- 改时间弹窗：包含日期/时间选择器 -->
+        <!--  改时间弹窗：包含日期/时间选择器  -->
         <ctrl:DialogHost Title="改时间"
                          CancelCommand="{Binding CancelVaccineEditCommand}"
                          CancelText="取消"
@@ -1239,27 +1205,27 @@
                          ConfirmText="确认"
                          IsOpen="{Binding ShowVaccineEditConfirm}">
             <ctrl:DialogHost.MessageContent>
-                <StackPanel Spacing="12" Margin="0,8,0,0">
+                <StackPanel Margin="0,8,0,0" Spacing="12">
                     <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineEditConfirmTitle}" TextAlignment="Center" />
                     <Border Classes="form-section">
                         <StackPanel>
-                            <TextBlock Classes="form-label" Text="接种日期"/>
-                            <DatePicker SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}"
-                                        FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <TextBlock Classes="form-label" Text="接种日期" />
+                            <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                        SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                         </StackPanel>
                     </Border>
                     <Border Classes="form-section">
                         <StackPanel>
-                            <TextBlock Classes="form-label" Text="接种时间"/>
-                            <TimePicker SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}"
-                                        ClockIdentifier="24HourClock" FontSize="14" Background="#F5F5F5" CornerRadius="8" Padding="8,4"/>
+                            <TextBlock Classes="form-label" Text="接种时间" />
+                            <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                  SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </ctrl:DialogHost.MessageContent>
         </ctrl:DialogHost>
 
-        <!-- 取消已打操作确认弹窗 -->
+        <!--  取消已打操作确认弹窗  -->
         <ctrl:DialogHost Title="确认取消"
                          CancelCommand="{Binding CancelVaccineCancelCommand}"
                          CancelText="再想想"
@@ -1270,7 +1236,8 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="6">
                     <TextBlock FontSize="13" Foreground="#666" Text="确定要取消本次操作吗？" TextAlignment="Center" />
                     <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineCancelConfirmTitle}" TextAlignment="Center" />
-                    <TextBlock FontSize="12" Foreground="#999" Text="取消后该剂次将恢复为待接种状态。" TextAlignment="Center" TextWrapping="Wrap" />
+                    <TextBlock FontSize="12" Foreground="#999" Text="取消后该剂次将恢复为待接种状态。" TextAlignment="Center"
+                               TextWrapping="Wrap" />
                 </StackPanel>
             </ctrl:DialogHost.MessageContent>
         </ctrl:DialogHost>

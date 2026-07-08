@@ -1,0 +1,90 @@
+<Style xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       xmlns:ctrl="using:ChildNotes.Controls">
+
+    <!-- ToggleButton 悬停和选中样式 -->
+    <Style Selector="ctrl|TimeWheelPicker /template/ ToggleButton">
+        <Setter Property="Background" Value="#F5F5F5" />
+    </Style>
+    <Style Selector="ctrl|TimeWheelPicker /template/ ToggleButton:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#EBEBEB" />
+    </Style>
+    <Style Selector="ctrl|TimeWheelPicker /template/ ToggleButton:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="#EBEBEB" />
+    </Style>
+
+    <!-- TimeWheelPicker 默认模板：时间选择器复合控件 -->
+    <Style Selector="ctrl|TimeWheelPicker">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <!-- 使用 ToggleButton：IsChecked 双向绑定 IsDropdownOpen，无需事件处理 -->
+                    <ToggleButton Name="PART_Toggle"
+                                   IsChecked="{TemplateBinding IsDropdownOpen, Mode=TwoWay}"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Background="#F5F5F5"
+                                   BorderThickness="0"
+                                   CornerRadius="8"
+                                   Padding="8,4"
+                                   Margin="0,0,0,8"
+                                   Focusable="True">
+                        <TextBlock Name="PART_DisplayText"
+                                   VerticalAlignment="Center"
+                                   FontSize="14" />
+                    </ToggleButton>
+                    <!-- 弹出滚轮：紧凑布局 -->
+                    <Popup Name="PART_Popup"
+                           IsOpen="{TemplateBinding IsDropdownOpen}"
+                           IsLightDismissEnabled="True"
+                           Placement="BottomEdgeAlignedLeft"
+                           PlacementTarget="{TemplateBinding}">
+                        <Border Background="White"
+                                BorderBrush="#E0E0E0"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                BoxShadow="0 4 12 #20000000"
+                                Padding="6">
+                            <!-- 紧凑两列：时 : 分 -->
+                            <StackPanel Orientation="Horizontal" Spacing="-2">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="时" FontSize="13" Foreground="#999"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <ctrl:MomentumWheelList Name="PART_HourWheel"
+                                                             Width="42"
+                                                             Height="{TemplateBinding WheelHeight}"
+                                                             ItemHeight="{TemplateBinding ItemHeight}"
+                                                             ShouldLoop="True">
+                                        <ctrl:MomentumWheelList.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </DataTemplate>
+                                        </ctrl:MomentumWheelList.ItemTemplate>
+                                    </ctrl:MomentumWheelList>
+                                </StackPanel>
+                                <TextBlock Text=":" FontSize="14" FontWeight="Bold"
+                                           VerticalAlignment="Center" Margin="3,10,3,0"
+                                           Foreground="#6230E0" />
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="分" FontSize="13" Foreground="#999"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <ctrl:MomentumWheelList Name="PART_MinuteWheel"
+                                                             Width="42"
+                                                             Height="{TemplateBinding WheelHeight}"
+                                                             ItemHeight="{TemplateBinding ItemHeight}"
+                                                             ShouldLoop="True">
+                                        <ctrl:MomentumWheelList.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </DataTemplate>
+                                        </ctrl:MomentumWheelList.ItemTemplate>
+                                    </ctrl:MomentumWheelList>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Style>

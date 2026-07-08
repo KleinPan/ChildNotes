@@ -18,13 +18,11 @@
 - Avalonia 项目构建：`cd ChildNotes && dotnet build ChildNotes\ChildNotes.csproj -v quiet --nologo`
 - Web 项目构建：`cd web && npm run build`（如需要）
 
-## Git Push 规则（重要）
+## Git Push 规则
 
-- 本仓库 `remote.origin.push` 已配置为 `refs/heads/*:refs/for/*`（Gerrit 风格 review 推送），但远端是 GitHub（非 Gerrit），直接 `git push` 会被拒绝（non-fast-forward 到 `refs/for/master`）。
-- **推送分支必须显式指定 refspec**，例如：
-  - `git push origin master:refs/heads/master`
-  - `git push origin dev:refs/heads/dev`
-- 推送 tag 不受影响，可直接 `git push origin <tagname>` 或 `git push origin --tags`。
+- 本仓库远端为 GitHub，使用标准 Git 推送方式：
+  - 分支：`git push origin <branch>` 或直接 `git push`
+  - Tag：`git push origin <tagname>` 或 `git push origin --tags`
 - 推送前必须先设置代理环境变量（见 Proxy Settings 段）。
 - **禁止**使用 `git push --force` / `--force-with-lease` 推送到 master/main 分支，除非用户明确要求。
 - 推送前如遇 non-fast-forward，优先用 `git pull --rebase` 整合远端改动，不要强制覆盖。
@@ -95,8 +93,8 @@ git add ChildNotes.Backend/ChildNotes.Api/ ChildNotes.Backend/ChildNotes.Core/ .
 # 2. 提交（用 -F 文件方式）
 git commit -F .git\COMMIT_MSG_TMP.txt
 
-# 3. 推送分支（显式 refspec）
-git push origin master:refs/heads/master
+# 3. 推送分支
+git push origin master
 
 # 4. 打 tag（annotated）
 git tag -a v0.4.0 -F .git\TAG_MSG_TMP.txt
