@@ -329,11 +329,10 @@
                                 </Border>
                             </StackPanel>
 
-                            <Grid Margin="0,0,0,8" ColumnDefinitions="5*,2*">
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker MinWidth="250" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -388,8 +387,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -403,8 +401,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="开始时间" />
@@ -441,9 +438,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                MinWidth="250"
-                                                SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker MinWidth="250" Padding="8,4" SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -492,8 +487,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -574,8 +568,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -631,8 +624,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -737,8 +729,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -834,8 +825,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -1171,8 +1161,7 @@
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
-                                    <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                                SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="记录时间" />
@@ -1210,8 +1199,7 @@
                     <Border Classes="form-section">
                         <StackPanel>
                             <TextBlock Classes="form-label" Text="接种日期" />
-                            <DatePicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
-                                        SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                            <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                         </StackPanel>
                     </Border>
                     <Border Classes="form-section">

@@ -38,6 +38,9 @@ public partial class PrivacyConsentViewModel : ViewModelBase
     /// <summary>是否展示完整协议视图（替代摘要视图）。</summary>
     [ObservableProperty] private bool _showFullPolicy;
 
+    /// <summary>是否为只读模式（从"我的"页打开查看，不展示同意/不同意按钮）。</summary>
+    [ObservableProperty] private bool _isReadOnly;
+
     public PrivacyConsentViewModel()
     {
         Title = "隐私政策";
@@ -51,11 +54,18 @@ public partial class PrivacyConsentViewModel : ViewModelBase
         ConsentGiven?.Invoke();
     }
 
-    /// <summary>不同意：触发退出事件。</summary>
+    /// <summary>不同意：触发退出事件（仅首次启动模式有效）。</summary>
     [RelayCommand]
     private void Disagree()
     {
         Disagreed?.Invoke();
+    }
+
+    /// <summary>关闭弹窗（只读模式下由"关闭"按钮调用）。</summary>
+    [RelayCommand]
+    private void Close()
+    {
+        ConsentGiven?.Invoke();
     }
 
     /// <summary>查看完整协议：从 Assets 加载 markdown 文本并切换视图。</summary>

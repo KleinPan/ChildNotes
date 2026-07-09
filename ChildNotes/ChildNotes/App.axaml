@@ -22,5 +22,6 @@
         <semi:SemiTheme Locale="zh-CN"/>
         <StyleInclude Source="avares://ChildNotes/Styles/WeUIStyles.axaml"/>
         <StyleInclude Source="avares://ChildNotes/Styles/TimeWheelPickerStyles.axaml"/>
+        <StyleInclude Source="avares://ChildNotes/Styles/DateWheelPickerStyles.axaml"/>
     </Application.Styles>
 </Application>

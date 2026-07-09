@@ -51,7 +51,8 @@
                 </Grid>
 
                 <!-- 按钮区 -->
-                <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12"
+                      IsVisible="{Binding !IsReadOnly}">
                     <Button Grid.Column="0" Content="不同意"
                             Classes="weui-btn default" CornerRadius="24" MinHeight="44"
                             Command="{Binding DisagreeCommand}"/>
@@ -59,6 +60,12 @@
                             Classes="weui-btn primary" CornerRadius="24" MinHeight="44"
                             Command="{Binding AgreeCommand}"/>
                 </Grid>
+
+                <!-- 只读模式：仅显示关闭按钮 -->
+                <Button Grid.Row="2" Content="关闭"
+                        Classes="weui-btn primary" CornerRadius="24" MinHeight="44"
+                        Command="{Binding CloseCommand}"
+                        IsVisible="{Binding IsReadOnly}"/>
 
             </Grid>
         </Border>

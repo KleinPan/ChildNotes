@@ -105,28 +105,28 @@
                         <!--  P1-2: 日期选择器（对齐小程序 date-filter）  -->
                         <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
                             <!--  日模式：月份选择  -->
-                            <DatePicker x:Name="MonthPicker"
+                            <controls:DateWheelPicker x:Name="MonthPicker"
                                         SelectedDateChanged="OnMonthChanged"
-                                        HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
-                                        Background="#F6F7F8" FontSize="12"
+                                        HorizontalAlignment="Left" Padding="10,4"
+                                        FontSize="12"
                                         IsVisible="{Binding ShowMonthPicker}"/>
                             <!--  月模式：年份选择  -->
-                            <DatePicker x:Name="YearPicker"
+                            <controls:DateWheelPicker x:Name="YearPicker"
                                         SelectedDateChanged="OnYearChanged"
-                                        HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
-                                        Background="#F6F7F8" FontSize="12"
+                                        HorizontalAlignment="Left" Padding="10,4"
+                                        FontSize="12"
                                         IsVisible="{Binding ShowYearPicker}"/>
                             <!--  自定义模式：起止日期  -->
                             <StackPanel Orientation="Horizontal" Spacing="6"
                                         IsVisible="{Binding ShowRangePickers}">
-                                <DatePicker x:Name="StartPicker" SelectedDateChanged="OnStartDateChanged"
-                                            HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
-                                            Background="#F6F7F8" FontSize="12"/>
+                                <controls:DateWheelPicker x:Name="StartPicker" SelectedDateChanged="OnStartDateChanged"
+                                            HorizontalAlignment="Left" Padding="10,4"
+                                            FontSize="12"/>
                                 <TextBlock Text="至" VerticalAlignment="Center" FontSize="12"
                                            Foreground="{StaticResource WeuiFg2Brush}"/>
-                                <DatePicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
-                                            HorizontalAlignment="Left" Padding="10,4" CornerRadius="8"
-                                            Background="#F6F7F8" FontSize="12"/>
+                                <controls:DateWheelPicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
+                                            HorizontalAlignment="Left" Padding="10,4"
+                                            FontSize="12"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>

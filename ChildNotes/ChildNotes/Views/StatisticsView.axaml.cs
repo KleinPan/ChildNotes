@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using ChildNotes.Controls;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -23,10 +24,9 @@ public partial class StatisticsView : UserControl
             vm.SelectRangeCommand.Execute(opt.Key);
     }
 
-    //  P1-2: 日期选择器事件（Avalonia DatePicker 使用 SelectedDateChanged + DatePickerSelectedValueChangedEventArgs）  //
-    private void OnMonthChanged(object? sender, DatePickerSelectedValueChangedEventArgs e)
+    private void OnMonthChanged(object? sender, DateTimeOffset? e)
     {
-        if (sender is DatePicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
+        if (sender is DateWheelPicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
         {
             var m = $"{dp.SelectedDate.Value:yyyy-MM}";
             if (m != vm.SelectedMonth)
@@ -34,9 +34,9 @@ public partial class StatisticsView : UserControl
         }
     }
 
-    private void OnYearChanged(object? sender, DatePickerSelectedValueChangedEventArgs e)
+    private void OnYearChanged(object? sender, DateTimeOffset? e)
     {
-        if (sender is DatePicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
+        if (sender is DateWheelPicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
         {
             var y = $"{dp.SelectedDate.Value:yyyy}";
             if (y != vm.SelectedYear)
@@ -44,18 +44,17 @@ public partial class StatisticsView : UserControl
         }
     }
 
-    private void OnStartDateChanged(object? sender, DatePickerSelectedValueChangedEventArgs e)
+    private void OnStartDateChanged(object? sender, DateTimeOffset? e)
     {
-        if (sender is DatePicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
+        if (sender is DateWheelPicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
             vm.StartDate = dp.SelectedDate.Value.DateTime;
     }
 
-    private void OnEndDateChanged(object? sender, DatePickerSelectedValueChangedEventArgs e)
+    private void OnEndDateChanged(object? sender, DateTimeOffset? e)
     {
-        if (sender is DatePicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
+        if (sender is DateWheelPicker dp && dp.SelectedDate.HasValue && DataContext is StatisticsViewModel vm)
         {
             vm.EndDate = dp.SelectedDate.Value.DateTime;
-            // 起止日期都选完后自动刷新
             vm.SelectRangeCommand.Execute("range");
         }
     }

@@ -1,193 +1,242 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl x:Class="ChildNotes.Views.MineView"
+             xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
-             x:Class="ChildNotes.Views.MineView"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             d:DesignHeight="844"
+             d:DesignWidth="390"
              x:DataType="vm:MineViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource WeuiBg0Brush}"
+             mc:Ignorable="d">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel>
 
-            <Border Background="{StaticResource WeuiBg2Brush}" Padding="14,16" Margin="0,0,0,8">
+            <Border Margin="0,0,0,8" Padding="14,16" Background="{StaticResource WeuiBg2Brush}">
                 <Grid ColumnDefinitions="Auto,*">
-                    <!-- 原版头像: 绿色渐变背景 -->
-                    <Border Grid.Column="0" Width="56" Height="56" CornerRadius="28" Background="{StaticResource AvatarGradientBrush}">
-                        <TextBlock Text="👤" FontSize="28" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <!--  原版头像: 绿色渐变背景  -->
+                    <Border Grid.Column="0" Width="56" Height="56"
+                            Background="{StaticResource AvatarGradientBrush}"
+                            CornerRadius="28">
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="White"
+                                   Text="👤" />
                     </Border>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="14,0,0,0">
-                        <TextBlock Text="{Binding NickName}" FontSize="18" FontWeight="Bold" Foreground="#1A1A1A"/>
-                        <TextBlock Text="{Binding RoleText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                    <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
+                        <TextBlock FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Text="{Binding NickName}" />
+                        <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding RoleText}" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="宝宝"/>
+                <TextBlock Text="宝宝" />
             </Border>
 
-            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnBabyManagerTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="👶" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="宝宝管理" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="{Binding BabyCount, StringFormat=\{0\}个宝宝}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="👶" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="宝宝管理" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Text="{Binding BabyCount, StringFormat=\{0\}个宝宝}" />
+                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnFamilyTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="👨‍👩‍👧" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="家人管理" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="👨‍👩‍👧" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="家人管理" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
                 </StackPanel>
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="工具"/>
+                <TextBlock Text="工具" />
             </Border>
 
-            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnAiAnalysisTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="24" Height="24" CornerRadius="6" Background="{StaticResource WeuiBlueBrush}">
-                            <TextBlock Text="析" FontSize="13" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Grid.Column="0" Width="24" Height="24"
+                                Background="{StaticResource WeuiBlueBrush}"
+                                CornerRadius="6">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="White"
+                                       Text="析" />
                         </Border>
-                        <TextBlock Grid.Column="1" Text="宝宝喂养分析" FontSize="15" VerticalAlignment="Center" Margin="12,0,0,0"/>
-                        <TextBlock Grid.Column="2" Text="最近一周" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
+                                   Text="宝宝喂养分析" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Text="最近一周" />
+                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnStatisticsTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="📊" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="统计分析" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="📊" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="统计分析" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnPointsTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="🎁" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="积分任务" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="🎁" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="积分任务" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
                 </StackPanel>
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="设置"/>
+                <TextBlock Text="设置" />
             </Border>
 
-            <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnAiSettingsTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="🤖" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="AI 分析设置" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="🤖" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="AI 分析设置" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnSyncSettingsTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="☁️" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="数据同步" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="☁️" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="数据同步" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="🔧" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="开发者选项" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="🔧" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="开发者选项" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnPrivacyPolicyTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="📜" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="隐私政策" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="📜" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="隐私政策" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnInAppMessageTap">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="📬" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="应用消息" FontSize="15" VerticalAlignment="Center"/>
-                        <Border Grid.Column="2" Background="{StaticResource WeuiRedBrush}" CornerRadius="8"
-                                MinWidth="16" Height="16" Padding="4,0"
-                                IsVisible="{Binding HasUnreadMessages}"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="{Binding UnreadMessageCount}" FontSize="11" Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="📬" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="应用消息" />
+                        <Border Grid.Column="2" Height="16" MinWidth="16" Padding="4,0"
+                                VerticalAlignment="Center"
+                                Background="{StaticResource WeuiRedBrush}"
+                                CornerRadius="8"
+                                IsVisible="{Binding HasUnreadMessages}">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="White"
+                                       Text="{Binding UnreadMessageCount}" />
                         </Border>
-                        <TextBlock Grid.Column="2" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}"
-                                   VerticalAlignment="Center" Margin="4,0,0,0"/>
+                        <TextBlock Grid.Column="4" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
                     </Grid>
-                    <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="ℹ️" FontSize="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <TextBlock Grid.Column="1" Text="关于" FontSize="15" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="2" Text="{Binding AppVersion}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="ℹ️" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="关于" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Text="{Binding AppVersion}" />
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- 原版退出登录: 白底红字 -->
-            <Button Content="退出登录" Classes="weui-btn default" Margin="12,16" HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
+            <!--  原版退出登录: 白底红字  -->
+            <Button Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    Classes="weui-btn default"
                     Command="{Binding LogoutCommand}"
-                    Foreground="{StaticResource WeuiRedBrush}"/>
+                    Content="退出登录"
+                    Foreground="{StaticResource WeuiRedBrush}" />
 
         </StackPanel>
     </ScrollViewer>

@@ -1,0 +1,100 @@
+<Style xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       xmlns:ctrl="using:ChildNotes.Controls">
+
+    <!-- ToggleButton 悬停和选中样式 -->
+    <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton">
+        <Setter Property="Background" Value="#F5F5F5" />
+    </Style>
+    <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#EBEBEB" />
+    </Style>
+    <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="#EBEBEB" />
+    </Style>
+
+    <!-- DateWheelPicker 默认模板：日期选择器复合控件 -->
+    <Style Selector="ctrl|DateWheelPicker">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid>
+                    <ToggleButton Name="PART_Toggle"
+                                   IsChecked="{TemplateBinding IsDropdownOpen, Mode=TwoWay}"
+                                   HorizontalAlignment="Stretch"
+                                   HorizontalContentAlignment="Left"
+                                   Background="#F5F5F5"
+                                   BorderThickness="0"
+                                   CornerRadius="8"
+                                   Padding="8,4"
+                                   Margin="0,0,0,8"
+                                   Focusable="True">
+                        <TextBlock Name="PART_DisplayText"
+                                   VerticalAlignment="Center"
+                                   FontSize="14" />
+                    </ToggleButton>
+                    <Popup Name="PART_Popup"
+                           IsOpen="{TemplateBinding IsDropdownOpen}"
+                           IsLightDismissEnabled="True"
+                           Placement="BottomEdgeAlignedLeft"
+                           PlacementTarget="{TemplateBinding}">
+                        <Border Background="White"
+                                BorderBrush="#E0E0E0"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                BoxShadow="0 4 12 #20000000"
+                                Padding="6">
+                            <!-- 三列：年 月 日 -->
+                            <StackPanel Orientation="Horizontal" Spacing="-2">
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="年" FontSize="11" Foreground="#999"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <ctrl:MomentumWheelList Name="PART_YearWheel"
+                                                             Width="52"
+                                                             Height="{TemplateBinding WheelHeight}"
+                                                             ItemHeight="{TemplateBinding ItemHeight}"
+                                                             ShouldLoop="False">
+                                        <ctrl:MomentumWheelList.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </DataTemplate>
+                                        </ctrl:MomentumWheelList.ItemTemplate>
+                                    </ctrl:MomentumWheelList>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="月" FontSize="11" Foreground="#999"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <ctrl:MomentumWheelList Name="PART_MonthWheel"
+                                                             Width="42"
+                                                             Height="{TemplateBinding WheelHeight}"
+                                                             ItemHeight="{TemplateBinding ItemHeight}"
+                                                             ShouldLoop="True">
+                                        <ctrl:MomentumWheelList.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </DataTemplate>
+                                        </ctrl:MomentumWheelList.ItemTemplate>
+                                    </ctrl:MomentumWheelList>
+                                </StackPanel>
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Text="日" FontSize="11" Foreground="#999"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                    <ctrl:MomentumWheelList Name="PART_DayWheel"
+                                                             Width="42"
+                                                             Height="{TemplateBinding WheelHeight}"
+                                                             ItemHeight="{TemplateBinding ItemHeight}"
+                                                             ShouldLoop="True">
+                                        <ctrl:MomentumWheelList.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </DataTemplate>
+                                        </ctrl:MomentumWheelList.ItemTemplate>
+                                    </ctrl:MomentumWheelList>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+</Style>

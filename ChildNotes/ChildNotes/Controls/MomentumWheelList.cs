@@ -126,8 +126,9 @@ public class MomentumWheelList : Panel
             IsHitTestVisible = false
         });
 
-        // 4. 创建固定数量的容器（可视区约4-5项 + 上下各2项缓冲 = ~9个）
-        var containerCount = Math.Max(9, SourceCount);
+        // 4. 创建固定数量的容器（可视区约4-5项 + 上下各2项缓冲 = ~10个）
+        // 必须用偶数，使 halfContainerCount 为整数，避免相邻容器映射到同一数据索引
+        var containerCount = 10;
         for (var i = 0; i < containerCount; i++)
         {
             var container = new ContentControl
@@ -344,7 +345,7 @@ public class MomentumWheelList : Panel
         if (_recentMoves.Count > 5)
             _recentMoves.RemoveAt(0);
 
-        _offset -= delta;
+        _offset += delta;
         InvalidateArrange();
         UpdateVisuals();
         e.Handled = true;

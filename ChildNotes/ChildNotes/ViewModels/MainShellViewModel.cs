@@ -185,8 +185,9 @@ public partial class MainShellViewModel : ViewModelBase
 
         _developerOptions = new DeveloperOptionsViewModel();
 
-        // 隐私政策弹层：复用 PrivacyConsentViewModel（只读模式，不展示同意/不同意按钮）
-        _privacyPolicy = new PrivacyConsentViewModel();
+        // 隐私政策弹层：只读模式，仅展示完整协议 + 关闭按钮
+        _privacyPolicy = new PrivacyConsentViewModel { IsReadOnly = true };
+        _privacyPolicy.ConsentGiven += () => IsPrivacyPolicyOpen = false;
 
         // 应用内消息中心
         _inAppMessage = new InAppMessageViewModel();
