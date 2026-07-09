@@ -61,7 +61,10 @@ public class DeepSeekClient
         string? errBody = null;
         try
         {
-            resp = await _http.PostAsJsonAsync("/chat/completions", body, ct);
+            // 注意：请求路径不能以 "/" 开头，否则会替换 BaseAddress 的路径段
+            // （如 BaseAddress=https://api.1xm.ai/v1/ + "/chat/completions" 会变成 https://api.1xm.ai/chat/completions）
+            // 使用相对路径 "chat/completions" 才能正确拼接为 .../v1/chat/completions
+            resp = await _http.PostAsJsonAsync("chat/completions", body, ct);
             if (!resp.IsSuccessStatusCode)
             {
                 errBody = await resp.Content.ReadAsStringAsync(ct);

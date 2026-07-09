@@ -473,12 +473,14 @@ public partial class AiNoteService : IAiNoteService
         };
     }
 
-    /// <summary>从文本中提取药品/营养品名称（去掉时间、剂量、动作词）。</summary>
+    /// <summary>从文本中提取药品/营养品名称（去掉时间、时段词、剂量、动作词）。</summary>
     private static string? ExtractSupplementName(string text)
     {
         var s = text;
-        // 去掉时间
+        // 去掉时间（含"8:17"、"8点17"等）
         s = TimeRegex().Replace(s, "");
+        // 去掉时段词（"早上/早晨/上午/中午/下午/傍晚/晚上/夜里/夜间/半夜"）
+        s = Regex.Replace(s, @"早上|早晨|上午|中午|下午|傍晚|晚上|夜里|夜间|半夜|今早|今晚|昨日|明天", "");
         // 去掉剂量
         s = Regex.Replace(s, @"半包|半粒|半滴|\d+(?:\.\d+)?\s*(?:ml|毫升|包|粒|滴|片|丸)", "");
         // 去掉动作词

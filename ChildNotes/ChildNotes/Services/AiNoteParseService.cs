@@ -453,10 +453,12 @@ note, summary(<=30字一句话), confidence(0~1)。
         };
     }
 
-    /// <summary>从文本中提取药品/营养品名称（去掉剂量/动词等噪声词）。</summary>
+    /// <summary>从文本中提取药品/营养品名称（去掉时段词、时间、剂量、动词等噪声词）。</summary>
     private static string? ExtractSupplementName(string text)
     {
         var s = text;
+        // 去掉时段词（"早上/早晨/上午/中午/下午/傍晚/晚上/夜里/夜间/半夜"）
+        s = Regex.Replace(s, @"早上|早晨|上午|中午|下午|傍晚|晚上|夜里|夜间|半夜|今早|今晚|昨日|明天", "");
         // 去掉时间前缀
         s = Regex.Replace(s, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{1,2})?\s*", "");
         // 去掉动词
@@ -465,7 +467,7 @@ note, summary(<=30字一句话), confidence(0~1)。
         s = Regex.Replace(s, @"(\d+)?\s*(?:ml|毫升|mL|包|粒|滴|片|丸)", "");
         // "半包"等
         s = Regex.Replace(s, @"半\s*(?:包|粒|滴|片|丸)", "");
-        s = s.Trim();
+        s = s.Trim(' ', '，', ',', '。');
         return string.IsNullOrWhiteSpace(s) ? null : s;
     }
 

@@ -199,6 +199,20 @@ public class AiNoteParseTests
     }
 
     [Fact]
+    public void RuleParse_Supplement_StripsTimePeriodWord()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "早上8:17吃了半包宝泰康颗粒" - "早上"时段词应被去除，不应残留到 Note/Summary
+        var items = svc.ParseByRulesMulti("早上8:17吃了半包宝泰康颗粒");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Supplement, parsed.RecordType);
+        Assert.Contains("宝泰康", parsed.Note ?? "");
+        // 不应残留"早上"
+        Assert.DoesNotContain("早上", parsed.Note ?? "");
+        Assert.DoesNotContain("早上", parsed.Summary ?? "");
+    }
+
+    [Fact]
     public void RuleParse_Supplement_NotMistakenAsFeed()
     {
         var svc = NewServiceWithFailingAi();

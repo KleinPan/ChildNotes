@@ -126,6 +126,14 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 SupplementForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 SupplementForm.SwitchType(r.RecordSubType ?? "supplement");
                 SupplementForm.TimeText = time;
+                // 回填名称/剂量/备注（从 PayloadJson 反序列化），否则编辑时表单为空无法修改
+                var suppDto = r.GetPayload<SupplementRecordDto>();
+                if (suppDto is not null)
+                {
+                    SupplementForm.Name = suppDto.Name ?? string.Empty;
+                    SupplementForm.Dose = suppDto.Dose ?? string.Empty;
+                    SupplementForm.Note = suppDto.Note ?? string.Empty;
+                }
                 break;
             case RecordType.Pump:
                 PumpForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
