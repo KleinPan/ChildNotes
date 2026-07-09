@@ -24,7 +24,7 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
     /// <summary>搜索关键字（为空时不过滤）。</summary>
     [ObservableProperty] private string _searchText = string.Empty;
 
-    /// <summary>当前选中的级别筛选：0=全部, 1=Info, 2=Warn, 3=Error。</summary>
+    /// <summary>当前选中的级别筛选：0=全部, 1=Info, 2=Warn, 3=Error, 4=AI。</summary>
     [ObservableProperty] private int _levelFilter = 0;
 
     /// <summary>是否暂停自动滚动（用户手动滚动后可暂停，避免新日志把列表顶下去）。</summary>
@@ -37,6 +37,7 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
     public bool IsInfoLevel => LevelFilter == 1;
     public bool IsWarnLevel => LevelFilter == 2;
     public bool IsErrorLevel => LevelFilter == 3;
+    public bool IsAiLevel => LevelFilter == 4;
 
     public AppLogViewModel()
     {
@@ -89,6 +90,7 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
         OnPropertyChanged(nameof(IsInfoLevel));
         OnPropertyChanged(nameof(IsWarnLevel));
         OnPropertyChanged(nameof(IsErrorLevel));
+        OnPropertyChanged(nameof(IsAiLevel));
         ApplyFilter();
     }
 
@@ -99,6 +101,9 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
         if (LevelFilter == 1 && e.Level != DevLogger.Level.Info) return false;
         if (LevelFilter == 2 && e.Level != DevLogger.Level.Warn) return false;
         if (LevelFilter == 3 && e.Level != DevLogger.Level.Error) return false;
+        // AI 筛选：匹配 AiNote / LlmClient / QuickInput 等 AI 相关 Tag，
+        // 或消息含 [AI-LOG] 标记，或 LogLlmCall 生成的 "LLM [" 前缀
+        if (LevelFilter == 4 && !IsAiRelated(e)) return false;
 
         // 关键字搜索（Tag 或 Message）
         if (!string.IsNullOrWhiteSpace(SearchText))
@@ -109,6 +114,22 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
                 return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// 判断日志是否为 AI 相关：用于"AI"快捷筛选按钮。
+    /// 匹配规则（任一命中即视为 AI 相关）：
+    /// - Tag 以 AiNote / LlmClient / QuickInput 开头（含 LlmClient/Test 子标签）
+    /// - Message 含 "[AI-LOG]" 标记（AiNoteParseService / QuickInputViewModel 显式标记）
+    /// - Message 以 "LLM [" 开头（DevLogger.LogLlmCall 生成的格式化消息）
+    /// </summary>
+    private static bool IsAiRelated(DevLogger.LogEntry e)
+    {
+        return e.Tag.StartsWith("AiNote", StringComparison.OrdinalIgnoreCase)
+            || e.Tag.StartsWith("LlmClient", StringComparison.OrdinalIgnoreCase)
+            || e.Tag.StartsWith("QuickInput", StringComparison.OrdinalIgnoreCase)
+            || e.Message.Contains("[AI-LOG]", StringComparison.OrdinalIgnoreCase)
+            || e.Message.StartsWith("LLM [", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>按当前筛选条件刷新 Filtered 集合。</summary>
@@ -126,6 +147,7 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
     [RelayCommand] private void SelectInfoLevel() => LevelFilter = 1;
     [RelayCommand] private void SelectWarnLevel() => LevelFilter = 2;
     [RelayCommand] private void SelectErrorLevel() => LevelFilter = 3;
+    [RelayCommand] private void SelectAiLevel() => LevelFilter = 4;
 
     /// <summary>清空内存日志缓冲区（不影响已写入文件的日志）。</summary>
     [RelayCommand]

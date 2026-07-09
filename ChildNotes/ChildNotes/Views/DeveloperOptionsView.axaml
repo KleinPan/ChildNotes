@@ -32,7 +32,9 @@
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="启用动画效果" FontSize="15"/>
-                                <TextBlock Text="开启后弹窗、按钮、页面切换等会有流畅的过渡动画。关闭可提升性能或满足无障碍需求。" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="开启后弹窗、按钮、页面切换等会有流畅的过渡动画。关闭可提升性能或满足无障碍需求。"
+                                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                                           Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAnimations}"/>
                         </Grid>
@@ -45,29 +47,26 @@
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto" PointerPressed="OnAppLogTap">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                       Text="📋"/>
+                        <!-- 程序日志：使用统一 dev-cell 样式，修复右箭头对齐 -->
+                        <Grid Classes="dev-cell" ColumnDefinitions="Auto,*,Auto" PointerPressed="OnAppLogTap">
+                            <TextBlock Grid.Column="0" Classes="dev-icon" Text="📋"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock Text="程序日志" FontSize="15"/>
-                                <TextBlock Text="查看实时日志、LLM 调用明细，支持搜索与导出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Classes="dev-title" Text="程序日志"/>
+                                <TextBlock Classes="dev-desc" Text="查看实时日志、LLM 调用明细，支持搜索与导出"/>
                             </StackPanel>
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                       Foreground="{StaticResource WeuiFg2Brush}"
-                                       Text="›"/>
+                            <TextBlock Grid.Column="2" Classes="dev-chevron" Text="›"/>
                         </Grid>
                         <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                        <!-- 导出运行日志：标题+描述+操作按钮 -->
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="导出运行日志" FontSize="15"/>
-                                <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="导出运行日志" FontSize="15" Foreground="{StaticResource WeuiFg0Brush}"/>
+                                <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录"
+                                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                                           Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="{Binding IsExporting, Converter={x:Static v:DeveloperOptionsView.ExportingTextConverter}}"
+                            <Button Grid.Column="1"
+                                    Content="{Binding IsExporting, Converter={x:Static v:DeveloperOptionsView.ExportingTextConverter}}"
                                     Classes="weui-btn mini primary"
                                     Command="{Binding ExportLogCommand}"
                                     IsEnabled="{Binding !IsExporting}"/>
@@ -81,9 +80,12 @@
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 日志会自动写入应用文件目录，可通过上方按钮导出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 导出的日志文件位于系统 Download 目录，可通过文件管理器查看" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启"
+                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 日志会自动写入应用文件目录，可通过上方按钮导出"
+                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 导出的日志文件位于系统 Download 目录，可通过文件管理器查看"
+                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

@@ -1,5 +1,7 @@
 using Avalonia.Data.Converters;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using ChildNotes.Infrastructure;
 using ChildNotes.Shared.Constants;
 using System.Globalization;
 
@@ -105,6 +107,51 @@ public static class AppConverters
     // BabyBase.Avatar 存储本地文件路径（前端 Baby 继承自 BabyBase），UI 的 Image.Source 需要 IBitmap。
     // 文件不存在或路径为空时返回 null，配合 XAML 中 IsVisible 控制 Image 显隐。
     public static readonly IValueConverter AvatarPathToBitmap = new AvatarPathToBitmapConverter();
+
+    // ===== 程序日志：级别 → 徽章背景色 =====
+    // 用于 AppLogView 日志条目的级别徽章 Background 绑定。
+    // 修复原实现中 Border 同时挂 lvl-Info/Warn/Error/Debug 四个 class 导致 Debug 灰色覆盖所有的 Bug。
+    public static readonly IValueConverter LogLevelToBrush = new LogLevelToBrushConverter();
+
+    // ===== 程序日志：级别 → 徽章前景色（白） =====
+    // 所有级别徽章文字统一白色，单独提供以便未来支持暗色徽章时只改一处。
+    public static readonly IValueConverter LogLevelToTextBrush = new LogLevelToTextBrushConverter();
+}
+
+/// <summary>
+/// DevLogger.Level → 徽章背景色转换器。
+/// Info=#22A039 绿, Warn=#E6A23C 橙, Error=#F56C6C 红, Debug=#909399 灰。
+/// </summary>
+internal sealed class LogLevelToBrushConverter : IValueConverter
+{
+    private static readonly IBrush Info = Brush.Parse("#22A039");
+    private static readonly IBrush Warn = Brush.Parse("#E6A23C");
+    private static readonly IBrush Error = Brush.Parse("#F56C6C");
+    private static readonly IBrush Debug = Brush.Parse("#909399");
+
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is DevLogger.Level lvl
+            ? lvl switch
+            {
+                DevLogger.Level.Info => Info,
+                DevLogger.Level.Warn => Warn,
+                DevLogger.Level.Error => Error,
+                DevLogger.Level.Debug => Debug,
+                _ => Debug
+            }
+            : Debug;
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>DevLogger.Level → 徽章文字色（统一白色）。</summary>
+internal sealed class LogLevelToTextBrushConverter : IValueConverter
+{
+    private static readonly IBrush White = Brushes.White;
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => White;
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
 }
 
 /// <summary>

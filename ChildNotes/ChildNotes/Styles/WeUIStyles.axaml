@@ -200,4 +200,46 @@
     <Style Selector="Button.icon-only:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
     </Style>
+
+    <!-- 开发者选项 / 设置页通用可点击行：图标 + 标题 + 描述 + 右箭头 -->
+    <!-- 注意：ColumnDefinitions 不是 StyledProperty，无法在 Style 中设置，须在 Grid 上直接声明 -->
+    <Style Selector="Grid.dev-cell">
+        <Setter Property="Margin" Value="14,12"/>
+        <Setter Property="RenderTransform" Value="none"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.1"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Grid.dev-cell:pointerover">
+        <Setter Property="Background" Value="{StaticResource WeuiBgColorActiveBrush}"/>
+    </Style>
+    <Style Selector="Grid.dev-cell:pressed">
+        <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
+    </Style>
+    <!-- dev-cell 内：左图标列 -->
+    <Style Selector="Grid.dev-cell > TextBlock.dev-icon">
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="Margin" Value="0,0,12,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <!-- dev-cell 内：主标题 -->
+    <Style Selector="Grid.dev-cell > StackPanel > TextBlock.dev-title">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+    </Style>
+    <!-- dev-cell 内：副描述 -->
+    <Style Selector="Grid.dev-cell > StackPanel > TextBlock.dev-desc">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+        <Setter Property="Margin" Value="0,2,0,0"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <!-- dev-cell 内：右侧箭头（统一对齐 baseline，字号 20，灰色 30%） -->
+    <Style Selector="Grid.dev-cell > TextBlock.dev-chevron">
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
 </Styles>
