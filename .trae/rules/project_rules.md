@@ -27,6 +27,15 @@
 - **禁止**使用 `git push --force` / `--force-with-lease` 推送到 master/main 分支，除非用户明确要求。
 - 推送前如遇 non-fast-forward，优先用 `git pull --rebase` 整合远端改动，不要强制覆盖。
 
+## 提交粒度与 Tag 策略（重要）
+
+- **每个问题/bug 单独 commit**：每解决一个问题或修复一个 bug，必须独立成一个 commit，不要把多个不相关的修复打包到一个 commit 里。
+  - 一个任务涉及多个相关子改动可合并为一个 commit，但不同任务/bug 必须分开。
+  - commit message 遵循 Conventional Commits（如 `fix:` / `feat:` / `refactor:`），中文描述。
+- **默认不打 tag**：完成开发并推送分支后，**默认不打 tag**，也不主动询问打 tag 的时机。
+  - 仅当**用户明确要求**打 tag 时，才按下方"Tag 推送完整流程"操作。
+  - 不要因为"重大重构"或"新版本"自行决定打 tag，一切以用户指令为准。
+
 ## 提交信息（Commit Message）正确写法
 
 PowerShell 不支持 bash 的 heredoc 语法（`<<'EOF'`），多行 commit message 必须用文件方式：
@@ -143,7 +152,7 @@ git tag -d <tagname>
 - 修改共享代码或实体后，必须同时验证前后端构建均 0 错误，后端测试全通过，再提交。
 - 提交信息遵循 Conventional Commits（如 `refactor(shared):` / `feat:` / `fix:`），中文描述。
 - 不要在提交中包含 `.env`、凭据文件、`bin/`、`obj/`、运行产物（如 `ui-check-reports/`）。
-- 重大重构打 tag（如 `v0.2.0`），annotated tag，附简短说明。
+- **Tag 策略遵循"提交粒度与 Tag 策略"段**：默认不打 tag，需用户明确要求时才打。
 
 ## 版本号管理（.NET SDK Git 后缀问题）
 
