@@ -1,0 +1,133 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:infra="using:ChildNotes.Infrastructure"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.AppLogView"
+             x:DataType="vm:AppLogViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <!-- 级别徽章颜色 -->
+        <Style Selector="Border.lvl-Info">
+            <Setter Property="Background" Value="#22A039"/>
+        </Style>
+        <Style Selector="Border.lvl-Warn">
+            <Setter Property="Background" Value="#E6A23C"/>
+        </Style>
+        <Style Selector="Border.lvl-Error">
+            <Setter Property="Background" Value="#F56C6C"/>
+        </Style>
+        <Style Selector="Border.lvl-Debug">
+            <Setter Property="Background" Value="#909399"/>
+        </Style>
+        <!-- 级别筛选按钮选中态 -->
+        <Style Selector="Button.lvl-btn">
+            <Setter Property="Padding" Value="10,4"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+        </Style>
+        <Style Selector="Button.lvl-btn:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="程序日志"/>
+                <Button Grid.Column="2" Content="清空" Classes="weui-btn mini"
+                        Command="{Binding ClearLogsCommand}"
+                        Margin="0,0,8,0"/>
+            </Grid>
+        </Border>
+
+        <!-- 工具栏：搜索框 + 级别筛选 -->
+        <StackPanel Grid.Row="1" Spacing="6" Margin="10,8">
+            <TextBox Text="{Binding SearchText}" PlaceholderText="搜索 Tag 或内容…"
+                     Classes="weui-search"
+                     InnerLeftContent="🔍"
+                     Margin="0"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="lvl-btn" Content="全部"
+                        Command="{Binding SelectAllLevelCommand}"
+                        Classes.selected="{Binding IsAllLevel}"/>
+                <Button Classes="lvl-btn" Content="Info"
+                        Command="{Binding SelectInfoLevelCommand}"
+                        Classes.selected="{Binding IsInfoLevel}"/>
+                <Button Classes="lvl-btn" Content="Warn"
+                        Command="{Binding SelectWarnLevelCommand}"
+                        Classes.selected="{Binding IsWarnLevel}"/>
+                <Button Classes="lvl-btn" Content="Error"
+                        Command="{Binding SelectErrorLevelCommand}"
+                        Classes.selected="{Binding IsErrorLevel}"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- 日志列表 -->
+        <Border Grid.Row="2" Background="#1E1E1E" Margin="0,4">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding Filtered}" Margin="6,4">
+                    <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="infra:DevLogger+LogEntry">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,2">
+                            <Border Grid.Column="0" Width="44" Height="18"
+                                    Classes="lvl-Info lvl-Warn lvl-Error lvl-Debug"
+                                    CornerRadius="4" Margin="0,0,6,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Level}" FontSize="10"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="1">
+                                <TextBlock Text="{Binding Full}" FontSize="11"
+                                           FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                           Foreground="#D4D4D4"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="{Binding Time, StringFormat=HH:mm:ss}"
+                                       FontSize="10" Foreground="#888"
+                                       VerticalAlignment="Top" Margin="6,0,0,0"/>
+                        </Grid>
+                    </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 底部操作栏 -->
+        <Border Grid.Row="3" Padding="10,8" Background="{StaticResource WeuiBg2Brush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                           Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
+                <Button Grid.Column="1" Content="导出 .txt"
+                        Classes="weui-btn mini primary"
+                        Command="{Binding ExportCommand}"
+                        IsEnabled="{Binding !IsExporting}"/>
+            </Grid>
+        </Border>
+
+        <!-- Toast -->
+        <Border Grid.Row="0" Grid.RowSpan="4"
+                VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                Margin="16,0,16,16"
+                Background="#CC000000" CornerRadius="8" Padding="20,10"
+                IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White"
+                       FontSize="13" TextWrapping="Wrap" MaxWidth="320"/>
+        </Border>
+    </Grid>
+</UserControl>

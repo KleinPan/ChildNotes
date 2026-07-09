@@ -1,5 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
+using Avalonia.VisualTree;
+using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
 
@@ -27,5 +30,28 @@ public partial class DeveloperOptionsView : UserControl
     public DeveloperOptionsView()
     {
         InitializeComponent();
+    }
+
+    private void OnAppLogTap(object? sender, PointerPressedEventArgs e)
+    {
+        // 委托给当前 ViewModel 的命令（避免直接找 MainShell，DeveloperOptions 嵌套较深）
+        if (DataContext is DeveloperOptionsViewModel vm)
+        {
+            vm.OpenAppLogCommand.Execute(null);
+        }
+        else if (FindShell() is { } shell)
+        {
+            shell.OpenAppLog();
+        }
+    }
+
+    private MainShellViewModel? FindShell()
+    {
+        var node = this.FindAncestorOfType<UserControl>();
+        while (node is not null && node.DataContext is not MainShellViewModel)
+        {
+            node = node.FindAncestorOfType<UserControl>();
+        }
+        return node?.DataContext as MainShellViewModel;
     }
 }

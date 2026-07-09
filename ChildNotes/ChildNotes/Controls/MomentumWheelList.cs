@@ -345,7 +345,8 @@ public class MomentumWheelList : Panel
         if (_recentMoves.Count > 5)
             _recentMoves.RemoveAt(0);
 
-        _offset += delta;
+        // 向下拖动（delta>0）→ _offset 减小 → 数字变小（内容跟随手指的自然滚动）
+        _offset -= delta;
         InvalidateArrange();
         UpdateVisuals();
         e.Handled = true;
@@ -392,7 +393,8 @@ public class MomentumWheelList : Panel
         if (_isDragging) { _inertiaTimer.Stop(); return; }
 
         _idleTickCount++;
-        _offset += _velocity;
+        // 惯性方向与拖动一致：向下甩 → _offset 减小 → 数字变小
+        _offset -= _velocity;
         _velocity *= Friction;
 
         if (!ShouldLoop && SourceCount > 0)
@@ -491,6 +493,8 @@ public class MomentumWheelList : Panel
         if (!IsEnabled || SourceCount == 0) return;
 
         var currentIdx = (int)Math.Round(_offset / ItemHeight);
+        // Windows 习惯：滚轮向下（Delta.Y<0）→ 列表下滚 → 更大数字进入视野 → idx 增大
+        //               滚轮向上（Delta.Y>0）→ 列表上滚 → 更小数字进入视野 → idx 减小
         var delta = e.Delta.Y > 0 ? -1 : 1;
         var targetIdx = ShouldLoop
             ? currentIdx + delta

@@ -21,6 +21,9 @@ public partial class InAppMessageViewModel : ViewModelBase
     /// <summary>是否有未读消息。</summary>
     [ObservableProperty] private bool _hasUnread;
 
+    /// <summary>是否有已读消息（控制右上角扫把按钮可见性）。</summary>
+    [ObservableProperty] private bool _hasReadMessages;
+
     /// <summary>是否正在加载。</summary>
     [ObservableProperty] private bool _isLoading;
 
@@ -93,29 +96,39 @@ public partial class InAppMessageViewModel : ViewModelBase
     }
 
     /// <summary>清理全部已读消息（保留未读）。</summary>
+    /// <remarks>
+    /// 性能优化：
+    /// - DB 层用单条 DELETE ... WHERE is_read=1 替代逐条 DELETE（1 次往返 vs N 次往返）
+    /// - UI 层用 Clear + 一次性 Add 重建集合（仅 1 次 CollectionChanged，避免 N 次可视化树重建）
+    /// </remarks>
     [RelayCommand]
     private void ClearReadMessages()
     {
-        var readMessages = Messages.Where(m => m.IsRead).ToList();
-        foreach (var m in readMessages)
-        {
-            _msgService.Delete(m.Id);
-            Messages.Remove(m);
-        }
-        if (readMessages.Count > 0)
-        {
-            DisplayToast($"已清理 {readMessages.Count} 条已读消息");
-        }
-        else
+        var readCount = Messages.Count(m => m.IsRead);
+        if (readCount == 0)
         {
             DisplayToast("没有已读消息可清理");
+            return;
         }
+
+        // 单条 SQL 批量删除已读消息
+        var deleted = _msgService.DeleteAllRead();
+
+        // 单次重建集合：保留未读消息（顺序不变）
+        var unread = Messages.Where(m => !m.IsRead).ToList();
+        Messages.Clear();
+        foreach (var m in unread) Messages.Add(m);
+
+        HasReadMessages = false;
+        UpdateUnreadStatus();
+        DisplayToast($"已清理 {deleted} 条已读消息");
     }
 
     private void UpdateUnreadStatus()
     {
         var unread = _msgService.GetUnreadCount();
         HasUnread = unread > 0;
+        HasReadMessages = _msgService.GetReadCount() > 0;
         UnreadCountChanged?.Invoke();
     }
 }

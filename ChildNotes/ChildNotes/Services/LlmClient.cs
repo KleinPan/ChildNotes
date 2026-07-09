@@ -1,8 +1,10 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Services;
@@ -19,13 +21,76 @@ public sealed class LlmClient
         var url = BuildChatCompletionsUrl(config.ApiBaseUrl);
         var body = BuildRequestBody(config.ModelName, config.Temperature, config.MaxTokens, systemPrompt, userContent);
 
-        using var resp = await SendCoreAsync(url, config.ApiKey, body, ct);
-        var json = await resp.Content.ReadAsStringAsync(ct);
+        // LLM 调用埋点：记录请求参数、响应摘要、状态、耗时、错误信息
+        var sw = Stopwatch.StartNew();
+        var requestSummary = BuildRequestSummary(config.ModelName, userContent);
+        HttpResponseMessage? resp = null;
+        string? json = null;
+        try
+        {
+            resp = await SendCoreAsync(url, config.ApiKey, body, ct);
+            json = await resp.Content.ReadAsStringAsync(ct);
+            sw.Stop();
 
-        if (!resp.IsSuccessStatusCode)
-            throw new InvalidOperationException($"大模型请求失败 ({(int)resp.StatusCode}): {json}");
+            if (!resp.IsSuccessStatusCode)
+            {
+                DevLogger.LogLlmCall(
+                    tag: "LlmClient",
+                    requestSummary: requestSummary,
+                    responseSummary: TruncateForLog(json),
+                    success: false,
+                    elapsedMs: sw.ElapsedMilliseconds,
+                    errorMessage: $"HTTP {(int)resp.StatusCode}");
+                throw new InvalidOperationException($"大模型请求失败 ({(int)resp.StatusCode}): {json}");
+            }
 
-        return ExtractContent(json);
+            var content = ExtractContent(json);
+            DevLogger.LogLlmCall(
+                tag: "LlmClient",
+                requestSummary: requestSummary,
+                responseSummary: TruncateForLog(content),
+                success: true,
+                elapsedMs: sw.ElapsedMilliseconds);
+            return content;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            sw.Stop();
+            DevLogger.LogLlmCall("LlmClient", requestSummary, null, false, sw.ElapsedMilliseconds, "用户取消");
+            throw;
+        }
+        catch (InvalidOperationException)
+        {
+            // 已在上面记录日志，直接重新抛出
+            throw;
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            DevLogger.LogLlmCall("LlmClient", requestSummary, json is null ? null : TruncateForLog(json),
+                false, sw.ElapsedMilliseconds, ex.Message);
+            throw;
+        }
+        finally
+        {
+            resp?.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// 构造用于日志的请求摘要：模型名 + 用户输入前若干字（避免日志过长，且脱敏用户输入）。
+    /// </summary>
+    private static string BuildRequestSummary(string modelName, string userContent)
+    {
+        var preview = userContent.Length > 60 ? userContent[..60] + "…" : userContent;
+        return $"model={modelName}, input=\"{preview}\"";
+    }
+
+    /// <summary>截断响应摘要，避免单条日志过长（如完整 JSON 响应可能数千字）。</summary>
+    private static string TruncateForLog(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return "(空)";
+        return s.Length > 200 ? s[..200] + "…" : s;
     }
 
     /// <summary>
@@ -47,8 +112,10 @@ public sealed class LlmClient
             systemPrompt: "You are a connection test. Reply with: OK",
             userContent: "ping");
 
+        var sw = Stopwatch.StartNew();
         using var resp = await SendCoreAsync(url, config.ApiKey, body, ct);
         var json = await resp.Content.ReadAsStringAsync(ct);
+        sw.Stop();
 
         if (!resp.IsSuccessStatusCode)
         {
@@ -61,6 +128,7 @@ public sealed class LlmClient
                     detail = msg.GetString() ?? json;
             }
             catch { }
+            DevLogger.LogLlmCall("LlmClient/Test", $"model={config.ModelName}, ping", null, false, sw.ElapsedMilliseconds, $"HTTP {(int)resp.StatusCode}");
             throw new InvalidOperationException($"HTTP {(int)resp.StatusCode}：{detail}");
         }
 
@@ -68,6 +136,7 @@ public sealed class LlmClient
         try
         {
             var content = ExtractContent(json);
+            DevLogger.LogLlmCall("LlmClient/Test", $"model={config.ModelName}, ping", content, true, sw.ElapsedMilliseconds);
             return $"连接成功，模型响应：{content}";
         }
         catch
@@ -77,7 +146,11 @@ public sealed class LlmClient
             {
                 using var doc = JsonDocument.Parse(json);
                 if (doc.RootElement.TryGetProperty("model", out var modelEl))
-                    return $"连接成功，模型：{modelEl.GetString()}";
+                {
+                    var modelName = modelEl.GetString();
+                    DevLogger.LogLlmCall("LlmClient/Test", $"model={config.ModelName}, ping", $"model={modelName}", true, sw.ElapsedMilliseconds);
+                    return $"连接成功，模型：{modelName}";
+                }
             }
             catch { }
             return "连接成功（响应解析跳过）";

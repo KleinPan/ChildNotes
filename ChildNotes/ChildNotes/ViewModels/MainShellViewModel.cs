@@ -61,6 +61,14 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
 
+    /// <summary>"程序日志"弹层（从开发者选项打开）。</summary>
+    [ObservableProperty] private bool _isAppLogOpen;
+    [ObservableProperty] private AppLogViewModel _appLog;
+
+    /// <summary>"使用帮助"弹层（从"我的"页打开）。</summary>
+    [ObservableProperty] private bool _isHelpOpen;
+    [ObservableProperty] private HelpViewModel _help;
+
     /// <summary>隐私政策弹层（从"我的"页打开查看完整协议）。</summary>
     [ObservableProperty] private bool _isPrivacyPolicyOpen;
     [ObservableProperty] private PrivacyConsentViewModel _privacyPolicy;
@@ -184,6 +192,11 @@ public partial class MainShellViewModel : ViewModelBase
         _family = new FamilyViewModel();
 
         _developerOptions = new DeveloperOptionsViewModel();
+        _developerOptions.OpenAppLogRequested += OpenAppLog;
+
+        _appLog = new AppLogViewModel();
+
+        _help = new HelpViewModel();
 
         // 隐私政策弹层：只读模式，仅展示完整协议 + 关闭按钮
         _privacyPolicy = new PrivacyConsentViewModel { IsReadOnly = true };
@@ -204,6 +217,8 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
         RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
+        RegisterOverlay(AppLog, () => IsAppLogOpen = false, () => IsAppLogOpen);
+        RegisterOverlay(Help, () => IsHelpOpen = false, () => IsHelpOpen);
         RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
         RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
     }
@@ -378,6 +393,19 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenDeveloperOptions()
     {
         IsDeveloperOptionsOpen = true;
+    }
+
+    /// <summary>打开"程序日志"页（开发者选项内入口）。</summary>
+    public void OpenAppLog()
+    {
+        IsAppLogOpen = true;
+        AppLog.Activate();
+    }
+
+    /// <summary>打开"使用帮助"页。</summary>
+    public void OpenHelp()
+    {
+        IsHelpOpen = true;
     }
 
     /// <summary>打开隐私政策查看（只读模式，不展示同意/不同意按钮）。</summary>

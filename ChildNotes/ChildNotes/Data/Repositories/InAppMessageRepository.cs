@@ -97,6 +97,26 @@ WHERE user_id = @uid AND is_read = 0;";
         ExecuteNonQuery(sql, cmd => cmd.Add("id", messageId));
     }
 
+    /// <summary>批量删除指定用户的全部已读消息（单条 SQL，替代逐条 DELETE）。</summary>
+    /// <returns>实际删除的行数。</returns>
+    public int DeleteAllRead(string userId)
+    {
+        const string sql = "DELETE FROM in_app_message WHERE user_id = @uid AND is_read = 1;";
+        using var conn = _factory.Create();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        cmd.Add("uid", userId);
+        return cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>统计指定用户的已读消息数（用于 UI 控制清理按钮可见性）。</summary>
+    public int CountRead(string userId)
+    {
+        const string sql = "SELECT COUNT(*) FROM in_app_message WHERE user_id = @uid AND is_read = 1;";
+        var result = ExecuteScalar(sql, cmd => cmd.Add("uid", userId));
+        return result is long n ? (int)n : 0;
+    }
+
     /// <summary>清理指定用户 N 天前的已读消息。</summary>
     public int CleanupOldReadMessages(string userId, int olderThanDays = 30)
     {

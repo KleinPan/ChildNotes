@@ -15,12 +15,24 @@
 
         <!-- 顶栏 -->
         <Border Grid.Row="0" Classes="nav-bar">
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
                 <TextBlock Grid.Column="1" Classes="nav-title" Text="应用消息"/>
-                <Button Grid.Column="2" Content="全部已读" Classes="weui-btn mini default"
-                        Margin="4,0" IsVisible="{Binding HasUnread}"
-                        Command="{Binding MarkAllReadCommand}"/>
+                <!-- 右上角双勾：全部标记已读（只要存在未读消息即可点击） -->
+                <Button Grid.Column="2" Classes="icon-only"
+                        Margin="0,0,4,0"
+                        IsVisible="{Binding HasUnread}"
+                        Command="{Binding MarkAllReadCommand}"
+                        ToolTip.Tip="全部标记为已读">
+                    <PathIcon Width="20" Height="20" Data="{StaticResource icon-check-all}"/>
+                </Button>
+                <!-- 右上角扫把：清理已读消息 -->
+                <Button Grid.Column="3" Classes="icon-only"
+                        IsVisible="{Binding HasReadMessages}"
+                        Command="{Binding ClearReadMessagesCommand}"
+                        ToolTip.Tip="清理已读消息">
+                    <PathIcon Width="20" Height="20" Data="{StaticResource icon-broom}"/>
+                </Button>
             </Grid>
         </Border>
 
@@ -67,11 +79,6 @@
                     <TextBlock Text="📬" FontSize="48" HorizontalAlignment="Center"/>
                     <TextBlock Text="暂无消息" FontSize="14" Foreground="{StaticResource WeuiFg2Brush}" HorizontalAlignment="Center"/>
                 </StackPanel>
-
-                <!-- 底部清理已读按钮 -->
-                <Button Content="清理已读消息" Classes="weui-btn mini default"
-                        HorizontalAlignment="Center" Margin="0,16,0,24"
-                        Command="{Binding ClearReadMessagesCommand}"/>
             </StackPanel>
         </ScrollViewer>
 

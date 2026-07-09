@@ -55,6 +55,23 @@ public sealed class InAppMessageService
     /// <summary>删除指定消息。</summary>
     public void Delete(string messageId) => _repo.Delete(messageId);
 
+    /// <summary>批量删除当前用户的全部已读消息（单条 SQL）。</summary>
+    /// <returns>实际删除的行数。</returns>
+    public int DeleteAllRead()
+    {
+        var uid = _state.User?.Id;
+        if (string.IsNullOrEmpty(uid)) return 0;
+        return _repo.DeleteAllRead(uid);
+    }
+
+    /// <summary>当前用户已读消息数（用于控制清理按钮可用性）。</summary>
+    public int GetReadCount()
+    {
+        var uid = _state.User?.Id;
+        if (string.IsNullOrEmpty(uid)) return 0;
+        return _repo.CountRead(uid);
+    }
+
     /// <summary>清理 30 天前的已读消息。</summary>
     public int CleanupOldReadMessages()
     {

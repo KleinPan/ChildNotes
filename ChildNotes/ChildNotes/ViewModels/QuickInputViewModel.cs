@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
@@ -91,8 +93,8 @@ public partial class QuickInputViewModel : ViewModelBase
         SendCommand.NotifyCanExecuteChanged();
         try
         {
-            var result = await _parseService.ParseAsync(text);
-            if (result is null || string.IsNullOrEmpty(result.RecordType))
+            var items = await _parseService.ParseAsync(text);
+            if (items is null || items.Count == 0)
             {
                 DisplayToast("解析失败，请稍后重试");
                 return;
@@ -100,10 +102,26 @@ public partial class QuickInputViewModel : ViewModelBase
 
             // 后端只解析不落库，前端统一写本地库。
             // 本地写入后会触发 SyncTrigger.NotifyWrite → 增量推送到后端
-            AiNoteParseService.SaveLocally(result, text, _recordService);
+            int saved = 0;
+            foreach (var item in items)
+            {
+                if (string.IsNullOrEmpty(item.RecordType)) continue;
+                AiNoteParseService.SaveLocally(item, text, _recordService);
+                saved++;
+            }
+            if (saved == 0)
+            {
+                DisplayToast("解析失败，请稍后重试");
+                return;
+            }
 
-            var summary = result.Summary ?? "已记录";
-            DisplayToast("已记录：" + summary);
+            // 多条记录时汇总展示条数与首条摘要，并标注解析来源（AI / 规则降级）
+            var source = items[0].Source == ParseSource.Ai ? "AI" : "规则";
+            var firstSummary = items[0].Summary ?? "已记录";
+            var summary = saved > 1
+                ? $"[{source}] 已记录 {saved} 条（首条：{firstSummary}）"
+                : $"[{source}] 已记录：{firstSummary}";
+            DisplayToast(summary);
             InputText = string.Empty; // 清空后 HasContent=false 自动恢复 + 按钮
             Saved?.Invoke();
         }

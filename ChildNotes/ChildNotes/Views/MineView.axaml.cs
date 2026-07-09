@@ -62,6 +62,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenInAppMessage();
     }
 
+    private void OnHelpTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenHelp();
+    }
+
     private MainShellViewModel? FindShell()
     {
         var shell = this.FindAncestorOfType<UserControl>();

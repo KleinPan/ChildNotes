@@ -45,6 +45,23 @@
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto" PointerPressed="OnAppLogTap">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                       Text="📋"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="程序日志" FontSize="15"/>
+                                <TextBlock Text="查看实时日志、LLM 调用明细，支持搜索与导出" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       Text="›"/>
+                        </Grid>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="导出运行日志" FontSize="15"/>

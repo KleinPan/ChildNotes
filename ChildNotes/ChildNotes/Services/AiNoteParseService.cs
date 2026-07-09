@@ -1,14 +1,20 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Services;
 
 namespace ChildNotes.Services;
 
 /// <summary>
 /// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的降级解析逻辑。
 /// 抽取自原 AiNote 模态的解析逻辑，供首页快捷输入框共用。
+///
+/// v2 协议升级：支持一句话解析出多条记录（如"睡了一觉，喝了奶，换了尿布"）。
 /// 降级顺序（按 LlmConfig.NoteSource 配置）：
 /// - local（默认）：本地 LLM → 规则降级
 /// - server：后端接口 → 规则降级
@@ -19,9 +25,12 @@ public sealed class AiNoteParseService
     private readonly AiAnalysisService _aiService = ServiceProvider.Instance.AiAnalysisService;
     private readonly LlmClient _llmClient = ServiceProvider.Instance.LlmClient;
 
-    /// <summary>本地 LLM 系统提示词：规定输出 JSON 字段。</summary>
+    /// <summary>本地 LLM 系统提示词：规定输出 JSON 数组（多条记录协议 v2）。</summary>
     internal const string LocalSystemPrompt = """
-你是育儿记录解析助手。请将用户输入解析为一条结构化育儿记录，并仅输出 JSON。
+你是育儿记录解析助手。请将用户输入解析为一条或多条结构化育儿记录，并仅输出 JSON 数组。
+
+若输入包含多个独立事件（如"11点半睡到12点40，吃了130奶粉，喝10ml水"），必须拆分为多条。
+若只是一个事件的描述（如"喝了120ml奶"），输出只含一个元素的数组。
 
 支持的 recordType: feed / diaper / sleep / temperature / growth / supplement / pump / complementary / abnormal / activity
 - feed 子类型: bottle/breast/expressed
@@ -33,44 +42,50 @@ public sealed class AiNoteParseService
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
 note, summary(<=30字一句话), confidence(0~1)。
 
-只输出 JSON，不要任何额外文字或 Markdown 代码块。缺失字段用 null。
+示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
+示例输出：[{"recordType":"sleep","time":"11:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
+{"recordType":"feed","recordSubType":"bottle","time":"11:30","amount":130,"summary":"瓶喂130ml","confidence":0.9},
+{"recordType":"supplement","recordSubType":"nutrition","time":"11:30","amount":10,"note":"水","summary":"喝水10ml","confidence":0.8}]
+
+只输出 JSON 数组，不要任何额外文字或 Markdown 代码块。缺失字段用 null。
 """;
 
     /// <summary>
-    /// 根据 NoteSource 配置选择解析路径并执行三级降级。
-    /// 返回结果中 Saved 字段表示后端是否已落库；为 false 时调用方需自行保存。
+    /// 按 NoteSource 配置选择解析路径并执行三级降级。
+    /// 返回多条解析结果列表（至少 1 条；解析完全失败时返回空列表）。
     /// </summary>
-    public async Task<AiNoteParseResult?> ParseAsync(string text)
+    public async Task<List<AiNoteParseItem>> ParseAsync(string text)
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
 
         // 1) 按用户选择的路径调用 AI
+        List<AiNoteParseItem>? aiItems = null;
         if (preferServer)
         {
-            var remote = await TryServerAsync(text);
-            if (remote is not null && !string.IsNullOrEmpty(remote.RecordType))
-                return remote;
+            aiItems = await TryServerAsync(text);
         }
         else
         {
-            var local = await TryLocalLlmAsync(text, config);
-            if (local is not null && !string.IsNullOrEmpty(local.RecordType))
-                return local;
+            aiItems = await TryLocalLlmAsync(text, config);
         }
 
+        if (aiItems is { Count: > 0 })
+            return aiItems;
+
         // 2) AI 失败则规则降级
-        return LocalRuleParse(text);
+        return LocalRuleParseMulti(text);
     }
 
     /// <summary>尝试调用后端解析接口；未配置或失败时返回 null。</summary>
-    private async Task<AiNoteParseResult?> TryServerAsync(string text)
+    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text)
     {
         if (string.IsNullOrEmpty(ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl))
             return null;
         try
         {
-            return await _apiClient.ParseAsync(text);
+            var batch = await _apiClient.ParseAsync(text);
+            return batch?.Items;
         }
         catch (Exception ex)
         {
@@ -80,14 +95,14 @@ note, summary(<=30字一句话), confidence(0~1)。
     }
 
     /// <summary>尝试调用用户配置的本地 LLM；未配置/未启用/失败时返回 null。</summary>
-    private async Task<AiNoteParseResult?> TryLocalLlmAsync(string text, LlmConfig config)
+    private async Task<List<AiNoteParseItem>?> TryLocalLlmAsync(string text, LlmConfig config)
     {
         if (config is null || !config.Enabled)
             return null;
         try
         {
             var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt, text);
-            var parsed = ParseLlmJson(raw);
+            var parsed = ParseLlmJsonArray(raw);
             return parsed;
         }
         catch (Exception ex)
@@ -97,11 +112,12 @@ note, summary(<=30字一句话), confidence(0~1)。
         }
     }
 
-    /// <summary>从 LLM 返回内容中提取 JSON 并反序列化。</summary>
-    private static AiNoteParseResult? ParseLlmJson(string raw)
+    /// <summary>从 LLM 返回内容中提取 JSON 数组并反序列化为多条记录。</summary>
+    private static List<AiNoteParseItem>? ParseLlmJsonArray(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
         var s = raw.Trim();
+        // 剥离 ```json ... ``` 包裹
         if (s.StartsWith("```"))
         {
             var nl = s.IndexOf('\n');
@@ -110,70 +126,122 @@ note, summary(<=30字一句话), confidence(0~1)。
             if (last >= 0) s = s[..last];
             s = s.Trim();
         }
-        var start = s.IndexOf('{');
-        var end = s.LastIndexOf('}');
-        if (start < 0 || end <= start) return null;
-        s = s[start..(end + 1)];
-        try
+
+        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        // 优先尝试数组解析
+        var arrStart = s.IndexOf('[');
+        var arrEnd = s.LastIndexOf(']');
+        if (arrStart >= 0 && arrEnd > arrStart)
         {
-            return JsonSerializer.Deserialize<AiNoteParseResult>(s, new JsonSerializerOptions
+            s = s[arrStart..(arrEnd + 1)];
+            try
             {
-                PropertyNameCaseInsensitive = true,
-            });
+                var items = JsonSerializer.Deserialize<List<AiNoteParseItem>>(s, opts);
+                return items;
+            }
+            catch { /* 落到单对象分支 */ }
         }
-        catch { return null; }
+
+        // 兼容旧版单对象响应：包装成单元素列表
+        var objStart = s.IndexOf('{');
+        var objEnd = s.LastIndexOf('}');
+        if (objStart >= 0 && objEnd > objStart)
+        {
+            s = s[objStart..(objEnd + 1)];
+            try
+            {
+                var item = JsonSerializer.Deserialize<AiNoteParseItem>(s, opts);
+                if (item is not null) return new List<AiNoteParseItem> { item };
+            }
+            catch { /* 忽略 */ }
+        }
+        return null;
+    }
+
+    // ===== 本地规则降级（多条）=====
+
+    /// <summary>本地规则降级多条解析：先用 NoteSplitter 切分，再逐段解析。</summary>
+    public static List<AiNoteParseItem> LocalRuleParseMulti(string text)
+    {
+        var segments = NoteSplitter.Split(text);
+        if (segments.Count == 0)
+            return new List<AiNoteParseItem> { LocalRuleParse(text) };
+
+        var results = new List<AiNoteParseItem>(segments.Count);
+        foreach (var seg in segments)
+        {
+            var item = LocalRuleParse(seg);
+            // 兜底未识别（activity + 原文）的段不加入结果，避免噪声
+            // 但如果整句只有一段且未识别，仍需返回兜底
+            if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
+                continue;
+            results.Add(item);
+        }
+        if (results.Count == 0)
+            results.Add(LocalRuleParse(text));
+        return results;
     }
 
     /// <summary>本地规则降级解析：覆盖最常见的育儿记录表述。</summary>
-    public static AiNoteParseResult LocalRuleParse(string text)
+    public static AiNoteParseItem LocalRuleParse(string text)
     {
-        // 喂奶：奶量
+        // 0) supplement（用药/营养）：必须在 feed 之前判定
+        if (IsSupplementLike(text))
+        {
+            return ParseSupplement(text);
+        }
+
+        // 1) 喂奶：奶量
         var m = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL)");
         if (m.Success && (text.Contains("奶") || text.Contains("喂") || text.Contains("吃")))
         {
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Feed,
-                RecordSubType = "bottle",
+                RecordSubType = FeedType.Bottle,
                 Amount = int.TryParse(m.Groups[1].Value, out var a) ? a : null,
                 Time = ExtractTime(text),
                 Summary = "瓶喂 " + m.Groups[1].Value + "ml",
                 Confidence = 0.4,
+                Source = ParseSource.Rule,
             };
         }
 
-        // 亲喂
-        var bm = Regex.Match(text, @"(?:左|left)\s*(\d+)\s*(?:分|min|分钟).*(?:右|right)\s*(\d+)\s*(?:分|min|分钟)");
+        // 亲喂（右单位可选，兼容"左10右15分"省略中间单位的写法）
+        var bm = Regex.Match(text, @"(?:左|left)\s*(\d+)\s*(?:分|min|分钟)?.*?(?:右|right)\s*(\d+)\s*(?:分|min|分钟)?");
         if (bm.Success)
         {
             var l = int.TryParse(bm.Groups[1].Value, out var lv) ? lv : 0;
             var r = int.TryParse(bm.Groups[2].Value, out var rv) ? rv : 0;
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Feed,
-                RecordSubType = "breast",
+                RecordSubType = FeedType.Breast,
                 LeftDuration = l,
                 RightDuration = r,
                 Time = ExtractTime(text),
                 Summary = $"亲喂 左{l} 右{r}分钟",
                 Confidence = 0.4,
+                Source = ParseSource.Rule,
             };
         }
 
-        // 尿布
+        // 2) 换尿布
         if (text.Contains("尿布") || text.Contains("换尿") || text.Contains("嘘嘘") || text.Contains("便便") || text.Contains("拉屎") || text.Contains("拉尿")
             || text.Contains("又尿又拉") || Regex.IsMatch(text, @"(^|[^布])尿了") || Regex.IsMatch(text, @"(^|[^布])便了"))
         {
             if (text.Contains("干爽") || text.Contains("干燥"))
             {
-                return new AiNoteParseResult
+                return new AiNoteParseItem
                 {
                     RecordType = RecordType.Diaper,
-                    DiaperType = "dry",
-                    RecordSubType = "dry",
+                    DiaperType = DiaperType.Dry,
+                    RecordSubType = DiaperType.Dry,
                     Time = ExtractTime(text),
                     Summary = "换尿布 干爽",
                     Confidence = 0.4,
+                    Source = ParseSource.Rule,
                 };
             }
             var content = text.Replace("尿布", "").Replace("换尿", "");
@@ -181,12 +249,12 @@ note, summary(<=30字一句话), confidence(0~1)。
             bool hasWet = content.Contains("尿") || content.Contains("嘘");
             string sub = (hasDirty, hasWet) switch
             {
-                (true, true) => "both",
-                (true, false) => "dirty",
-                (false, true) => "wet",
-                _ => "dry",
+                (true, true) => DiaperType.Both,
+                (true, false) => DiaperType.Dirty,
+                (false, true) => DiaperType.Wet,
+                _ => DiaperType.Dry,
             };
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Diaper,
                 DiaperType = sub,
@@ -194,42 +262,74 @@ note, summary(<=30字一句话), confidence(0~1)。
                 Time = ExtractTime(text),
                 Summary = "换尿布 " + sub,
                 Confidence = 0.4,
+                Source = ParseSource.Rule,
             };
         }
 
-        // 睡眠
+        // 3) 睡眠
         var sm = Regex.Match(text, @"(\d+)\s*(?:分|min|分钟)");
-        if (sm.Success && (text.Contains("睡") || text.Contains("小睡") || text.Contains("入睡")))
+        var hasSleepKw = text.Contains("睡") || text.Contains("入睡") || text.Contains("小睡") || text.Contains("睡到");
+        if (sm.Success && hasSleepKw)
         {
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
                 Duration = int.TryParse(sm.Groups[1].Value, out var d) ? d : null,
                 Time = ExtractTime(text),
                 Summary = sm.Groups[1].Value + "分钟睡眠",
                 Confidence = 0.4,
+                Source = ParseSource.Rule,
+            };
+        }
+        // "X点Y睡到A点B" 格式：计算时长
+        if (!sm.Success && text.Contains("睡到"))
+        {
+            var dur = TryCalcSleepDuration(text);
+            if (dur.HasValue)
+            {
+                return new AiNoteParseItem
+                {
+                    RecordType = RecordType.Sleep,
+                    Duration = dur,
+                    Time = ExtractTime(text),
+                    Summary = dur + "分钟睡眠",
+                    Confidence = 0.5,
+                    Source = ParseSource.Rule,
+                };
+            }
+        }
+        if (hasSleepKw)
+        {
+            return new AiNoteParseItem
+            {
+                RecordType = RecordType.Sleep,
+                Time = ExtractTime(text),
+                Summary = "睡眠",
+                Confidence = 0.35,
+                Source = ParseSource.Rule,
             };
         }
 
-        // 体温
+        // 4) 体温
         var tm = Regex.Match(text, @"(\d+(?:\.\d+)?)\s*(?:℃|度)");
         if (tm.Success && (text.Contains("体温") || text.Contains("烧")))
         {
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Temperature,
                 Temperature = decimal.TryParse(tm.Groups[1].Value, out var t) ? t : null,
                 Time = ExtractTime(text),
                 Summary = "体温 " + tm.Groups[1].Value + "℃",
                 Confidence = 0.4,
+                Source = ParseSource.Rule,
             };
         }
 
-        // 身高体重
+        // 5) 身高体重
         var gm = Regex.Match(text, @"(?:身高|高)\s*(\d+(?:\.\d+)?)\s*(?:cm|厘米)?.*(?:体重|重)\s*(\d+(?:\.\d+)?)\s*(?:kg|公斤|斤)?");
         if (gm.Success)
         {
-            return new AiNoteParseResult
+            return new AiNoteParseItem
             {
                 RecordType = RecordType.Growth,
                 Height = decimal.TryParse(gm.Groups[1].Value, out var h) ? h : null,
@@ -237,27 +337,135 @@ note, summary(<=30字一句话), confidence(0~1)。
                 Time = ExtractTime(text),
                 Summary = "身高 " + gm.Groups[1].Value + "cm 体重 " + gm.Groups[2].Value + "kg",
                 Confidence = 0.35,
+                Source = ParseSource.Rule,
             };
         }
 
         // 兜底
-        return new AiNoteParseResult
+        return new AiNoteParseItem
         {
             RecordType = RecordType.Activity,
             Note = text,
             Time = ExtractTime(text),
             Summary = "未识别记录",
             Confidence = 0.2,
+            Source = ParseSource.Rule,
         };
     }
 
+    // ===== Supplement（用药/营养）分支 =====
+
+    private static bool IsSupplementLike(string text)
+    {
+        // 剂型关键词
+        if (text.Contains("颗粒") || text.Contains("冲剂") || text.Contains("糖浆")
+            || text.Contains("滴剂") || text.Contains("药片") || text.Contains("胶囊")
+            || text.Contains("药丸") || text.Contains("吃药") || text.Contains("服药"))
+            return true;
+
+        // 营养补充关键词
+        if (text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
+            || text.Contains("益生菌") || text.Contains("鱼肝油") || text.Contains("钙剂")
+            || text.Contains("补钙") || text.Contains("补铁") || text.Contains("补锌"))
+            return true;
+
+        // 含"包/粒/滴"单位 + 药品/营养品语义词（排除"奶包"等干扰）
+        if ((text.Contains("包") || text.Contains("粒") || text.Contains("滴"))
+            && (text.Contains("喝") || text.Contains("吃") || text.Contains("服"))
+            && !text.Contains("奶"))
+            return true;
+
+        return false;
+    }
+
+    private static AiNoteParseItem ParseSupplement(string text)
+    {
+        // 子类型：medicine / nutrition
+        bool isMedicine = text.Contains("颗粒") || text.Contains("冲剂") || text.Contains("糖浆")
+            || text.Contains("滴剂") || text.Contains("药片") || text.Contains("胶囊")
+            || text.Contains("药丸") || text.Contains("吃药") || text.Contains("服药")
+            || text.Contains("保泰康") || text.Contains("泰诺") || text.Contains("美林")
+            || text.Contains("药");
+        string subType = isMedicine ? "medicine" : "nutrition";
+
+        // 剂量：包/粒/滴/ml
+        int? amount = null;
+        var doseMatch = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL|包|粒|滴|片|丸)");
+        if (doseMatch.Success)
+            amount = int.TryParse(doseMatch.Groups[1].Value, out var a) ? a : null;
+        // "半包" → 0.5 包（amount 用整数近似为 1，note 保留原文）
+        if (!amount.HasValue && text.Contains("半"))
+            amount = 1;
+
+        // 名称提取
+        var name = ExtractSupplementName(text);
+
+        return new AiNoteParseItem
+        {
+            RecordType = RecordType.Supplement,
+            RecordSubType = subType,
+            Amount = amount,
+            Note = name ?? text,
+            Time = ExtractTime(text),
+            Summary = (isMedicine ? "用药 " : "营养 ") + (name ?? text),
+            Confidence = 0.5,
+            Source = ParseSource.Rule,
+        };
+    }
+
+    /// <summary>从文本中提取药品/营养品名称（去掉剂量/动词等噪声词）。</summary>
+    private static string? ExtractSupplementName(string text)
+    {
+        var s = text;
+        // 去掉时间前缀
+        s = Regex.Replace(s, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{1,2})?\s*", "");
+        // 去掉动词
+        s = Regex.Replace(s, @"(?:喝了|喝了|喝|吃了|吃|服用|服)", "");
+        // 去掉剂量
+        s = Regex.Replace(s, @"(\d+)?\s*(?:ml|毫升|mL|包|粒|滴|片|丸)", "");
+        // "半包"等
+        s = Regex.Replace(s, @"半\s*(?:包|粒|滴|片|丸)", "");
+        s = s.Trim();
+        return string.IsNullOrWhiteSpace(s) ? null : s;
+    }
+
+    /// <summary>计算"X点Y睡到A点B"格式睡眠时长（分钟）。支持 12 小时制跨午/跨日。</summary>
+    private static int? TryCalcSleepDuration(string text)
+    {
+        var m = Regex.Match(text, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})\s*睡到\s*(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})");
+        if (!m.Success) return null;
+
+        int startH = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+        int startM = ParseMinuteGroup(m.Groups[2]);
+        int endH = int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+        int endM = ParseMinuteGroup(m.Groups[4]);
+
+        int start = startH * 60 + startM;
+        int end = endH * 60 + endM;
+        // 跨日处理：若结束早于开始，加 24 小时
+        if (end < start) end += 24 * 60;
+
+        return end - start;
+    }
+
+    /// <summary>解析分钟分组："半"=30, 空=0, 数字=本身。</summary>
+    private static int ParseMinuteGroup(System.Text.RegularExpressions.Group g)
+    {
+        var v = g.Value;
+        if (string.IsNullOrEmpty(v)) return 0;
+        if (v == "半") return 30;
+        return int.TryParse(v, out var n) ? n : 0;
+    }
+
+    // ===== 时间解析 =====
+
     private static string? ExtractTime(string text)
     {
-        var m = Regex.Match(text, @"(\d{1,2})\s*(?:点|:|：)\s*(\d{0,2})");
+        var m = Regex.Match(text, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{1,2})?");
         if (m.Success)
         {
             var hh = int.TryParse(m.Groups[1].Value, out var h) ? h : -1;
-            var mm = m.Groups[2].Success && int.TryParse(m.Groups[2].Value, out var mn) ? mn : 0;
+            var mm = ParseMinuteGroup(m.Groups[2]);
             if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
             if (hh < 12 && (text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里")))
                 hh += 12;
@@ -266,18 +474,20 @@ note, summary(<=30字一句话), confidence(0~1)。
         return null;
     }
 
+    // ===== 保存到本地数据库 =====
+
     /// <summary>将解析结果按现有数据分类标准存储到本地数据库。</summary>
-    public static void SaveLocally(AiNoteParseResult r, string originalText, RecordService recordService)
+    public static void SaveLocally(AiNoteParseItem r, string originalText, RecordService recordService)
     {
         var time = string.IsNullOrEmpty(r.Time) ? DateTime.Now.ToString("O") : NormalizeTime(r.Time);
         switch (r.RecordType)
         {
             case RecordType.Feed:
-                if (r.RecordSubType == "breast")
+                if (r.RecordSubType == FeedType.Breast)
                 {
                     recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
-                        Type = "breast",
+                        Type = FeedType.Breast,
                         Time = time,
                         LeftDuration = r.LeftDuration,
                         RightDuration = r.RightDuration,
@@ -290,7 +500,7 @@ note, summary(<=30字一句话), confidence(0~1)。
                 {
                     recordService.AddFeed(new ChildNotes.Shared.Dtos.FeedRecordDto
                     {
-                        Type = string.IsNullOrEmpty(r.RecordSubType) ? "bottle" : r.RecordSubType,
+                        Type = string.IsNullOrEmpty(r.RecordSubType) ? FeedType.Bottle : r.RecordSubType,
                         Time = time,
                         Amount = r.Amount,
                         Note = r.Note,
@@ -300,7 +510,7 @@ note, summary(<=30字一句话), confidence(0~1)。
             case RecordType.Diaper:
                 recordService.AddDiaper(new ChildNotes.Shared.Dtos.DiaperRecordDto
                 {
-                    Type = string.IsNullOrEmpty(r.DiaperType) ? (r.RecordSubType ?? "dry") : r.DiaperType,
+                    Type = string.IsNullOrEmpty(r.DiaperType) ? (r.RecordSubType ?? DiaperType.Dry) : r.DiaperType,
                     Time = time,
                 });
                 break;
@@ -385,7 +595,7 @@ note, summary(<=30字一句话), confidence(0~1)。
     {
         if (DateTime.TryParse(time, out var dt)) return dt.ToString("O");
         // HH:mm -> 补全日期
-        if (System.Text.RegularExpressions.Regex.IsMatch(time, @"^\d{1,2}:\d{2}$"))
+        if (Regex.IsMatch(time, @"^\d{1,2}:\d{2}$"))
         {
             return DateTime.Today.Add(TimeSpan.Parse(time)).ToString("O");
         }

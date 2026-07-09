@@ -88,9 +88,9 @@ public static class LogExportService
     }
 
     /// <summary>
-    /// 按平台写入文件。
+    /// 按平台写入文件。供 AppLogExportService 复用。
     /// </summary>
-    private static async Task<string> WriteFileAsync(string fileName, string content)
+    internal static async Task<string> WriteFileAsync(string fileName, string content)
     {
         if (OperatingSystem.IsAndroid())
         {

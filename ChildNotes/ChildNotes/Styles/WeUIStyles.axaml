@@ -181,4 +181,23 @@
     <Style Selector="Button.nav-back:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
     </Style>
+
+    <!-- 纯图标按钮（顶栏操作图标，如扫把/设置） -->
+    <Style Selector="Button.icon-only">
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+        <Setter Property="MinWidth" Value="36"/>
+        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+    </Style>
+    <Style Selector="Button.icon-only:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource WeuiBgColorActiveBrush}"/>
+    </Style>
+    <Style Selector="Button.icon-only:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
+    </Style>
 </Styles>

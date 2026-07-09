@@ -45,6 +45,8 @@ public class ViewLocator : IDataTemplate
                 RecordSheetViewModel => new RecordSheetView(),
                 QuickMenuViewModel => new QuickMenuView(),
                 DeveloperOptionsViewModel => new DeveloperOptionsView(),
+                AppLogViewModel => new AppLogView(),
+                HelpViewModel => new HelpView(),
                 PrivacyConsentViewModel => new PrivacyConsentView(),
                 InAppMessageViewModel => new InAppMessageView(),
                 // MilestoneEditViewModel 是 GrowthView 内嵌表单，不独立导航

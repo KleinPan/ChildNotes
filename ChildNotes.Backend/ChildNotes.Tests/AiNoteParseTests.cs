@@ -1,19 +1,17 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.Infrastructure.Services;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ChildNotes.Tests;
 
 /// <summary>
 /// AI 智能记解析测试：
-/// - 规则降级解析：覆盖 50+ 条不同类型的事件记录（喂奶/亲喂/尿布/睡眠/体温/生长）
+/// - 规则降级解析：覆盖 50+ 条不同类型的事件记录（喂奶/亲喂/尿布/睡眠/体温/生长/用药）
+/// - 多条切分：复合语句正确切分为多条记录
 /// - 边界情况：特殊时间格式、模糊表述、空文本、过长文本
 /// - 通过 DI 注入一个抛异常的 DeepSeekClient，强制走规则降级路径，保证测试稳定。
 /// </summary>
@@ -67,7 +65,8 @@ public class AiNoteParseTests
     public void RuleParse_FeedBottle_DetectsAmount(string text, string expectedType, string expectedSub, int expectedAmount)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(expectedType, parsed.RecordType);
         Assert.Equal(expectedSub, parsed.RecordSubType);
         Assert.Equal(expectedAmount, parsed.Amount);
@@ -79,7 +78,8 @@ public class AiNoteParseTests
     public void RuleParse_BreastFeed_DetectsDurations(string text, int left, int right)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(RecordType.Feed, parsed.RecordType);
         Assert.Equal(FeedType.Breast, parsed.RecordSubType);
         Assert.Equal(left, parsed.LeftDuration);
@@ -96,7 +96,8 @@ public class AiNoteParseTests
     public void RuleParse_Diaper_DetectsSubType(string text, string expectedSub)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(RecordType.Diaper, parsed.RecordType);
         Assert.Equal(expectedSub, parsed.RecordSubType);
     }
@@ -107,7 +108,8 @@ public class AiNoteParseTests
     public void RuleParse_Sleep_DetectsDuration(string text, int duration)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(RecordType.Sleep, parsed.RecordType);
         Assert.Equal(duration, parsed.Duration);
     }
@@ -118,7 +120,8 @@ public class AiNoteParseTests
     public void RuleParse_Temperature_DetectsValue(string text, decimal temp)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(RecordType.Temperature, parsed.RecordType);
         Assert.Equal(temp, parsed.Temperature);
     }
@@ -127,10 +130,122 @@ public class AiNoteParseTests
     public void RuleParse_Growth_DetectsHeightWeight()
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules("身高70cm 体重8.5kg");
+        var items = svc.ParseByRulesMulti("身高70cm 体重8.5kg");
+        var parsed = items[0];
         Assert.Equal(RecordType.Growth, parsed.RecordType);
         Assert.Equal(70m, parsed.Height);
         Assert.Equal(8.5m, parsed.Weight);
+    }
+
+    // ===== supplement（用药/营养）规则降级测试 =====
+
+    [Theory]
+    [InlineData("8:17喝了半包保泰康颗粒", "medicine")]
+    [InlineData("吃了1粒维D", "nutrition")]
+    [InlineData("喝了5滴伊可新", "medicine")]
+    [InlineData("吃了半包小儿氨酚黄那敏颗粒", "medicine")]
+    [InlineData("服了10滴维D3", "nutrition")]
+    [InlineData("吃了一勺益生菌", "nutrition")]
+    public void RuleParse_Supplement_DetectsMedicineOrNutrition(string text, string expectedSub)
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
+        Assert.Equal(RecordType.Supplement, parsed.RecordType);
+        Assert.Equal(expectedSub, parsed.RecordSubType);
+        Assert.True(parsed.Confidence > 0, "supplement 置信度应为正数");
+    }
+
+    [Fact]
+    public void RuleParse_Supplement_PreservesName()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("8:17喝了半包保泰康颗粒");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Supplement, parsed.RecordType);
+        // 药品名称应被提取到 Note 字段
+        Assert.Contains("保泰康", parsed.Note ?? "");
+    }
+
+    [Fact]
+    public void RuleParse_Supplement_NotMistakenAsFeed()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "喝了半包保泰康颗粒" 含"喝"字但不应被误判为喂奶
+        var items = svc.ParseByRulesMulti("喝了半包保泰康颗粒");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Supplement, parsed.RecordType);
+        Assert.NotEqual(RecordType.Feed, parsed.RecordType);
+    }
+
+    // ===== 多条切分测试 =====
+
+    [Fact]
+    public void RuleParseMulti_CompositeSentence_SplitsIntoMultipleRecords()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "11点半睡到12点40，吃了130奶粉，喝10ml水" 应切分为 3 条
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，吃了130奶粉，喝10ml水");
+        Assert.True(items.Count >= 3, $"应切分为至少 3 条，实际 {items.Count}");
+
+        // 第一条应为 sleep
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        // "11点半睡到12点40" 时长应为 70 分钟
+        Assert.Equal(70, items[0].Duration);
+
+        // 后续应有 feed 类型（130ml 奶粉 和 10ml 水）
+        var feeds = items.Where(i => i.RecordType == RecordType.Feed).ToList();
+        Assert.True(feeds.Count >= 1, "应至少识别出 1 条喂奶记录");
+    }
+
+    [Fact]
+    public void RuleParseMulti_DiaperThenSleep_SplitsInto2Records()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("换了尿布便便，然后睡了30分钟");
+        Assert.Equal(2, items.Count);
+        Assert.Equal(RecordType.Diaper, items[0].RecordType);
+        Assert.Equal(DiaperType.Dirty, items[0].RecordSubType);
+        Assert.Equal(RecordType.Sleep, items[1].RecordType);
+        Assert.Equal(30, items[1].Duration);
+    }
+
+    [Fact]
+    public void RuleParseMulti_BreastThenBottle_SplitsInto2Records()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("亲喂左10右15分，又喝了50ml奶粉");
+        Assert.Equal(2, items.Count);
+        Assert.Equal(RecordType.Feed, items[0].RecordType);
+        Assert.Equal(FeedType.Breast, items[0].RecordSubType);
+        Assert.Equal(10, items[0].LeftDuration);
+        Assert.Equal(15, items[0].RightDuration);
+        Assert.Equal(RecordType.Feed, items[1].RecordType);
+        Assert.Equal(FeedType.Bottle, items[1].RecordSubType);
+        Assert.Equal(50, items[1].Amount);
+    }
+
+    [Fact]
+    public void RuleParseMulti_SingleEventNotSplit()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "11点半睡到12点40" 是单个睡眠事件，"到"不应触发切分
+        var items = svc.ParseByRulesMulti("11点半睡到12点40");
+        Assert.Single(items);
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal(70, items[0].Duration);
+    }
+
+    [Fact]
+    public void RuleParseMulti_SleepRange_CalculatesDuration()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "11点半睡到12点40" 应计算出 70 分钟时长
+        var items = svc.ParseByRulesMulti("11点半睡到12点40");
+        Assert.Single(items);
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal(70, items[0].Duration);
+        Assert.Equal("11:30", items[0].Time);
     }
 
     [Theory]
@@ -141,7 +256,8 @@ public class AiNoteParseTests
     public void RuleParse_Time_IsExtracted(string text, string expectedTime)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.Equal(expectedTime, parsed.Time);
     }
 
@@ -176,6 +292,21 @@ public class AiNoteParseTests
         var resp = await client.PostAsJsonAsync("/api/smart-analysis/parse-note",
             new AiNoteParseRequest { Text = "测试" });
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    [Fact]
+    public async Task Integration_ValidText_ReturnsBatchResponse()
+    {
+        using var factory = NewFactory();
+        var client = await NewAuthClientAsync(factory, "user_ai_ok_" + Guid.NewGuid().ToString("N")[..6]);
+        var resp = await client.PostAsJsonAsync("/api/smart-analysis/parse-note",
+            new AiNoteParseRequest { Text = "喝了120ml奶" });
+        resp.EnsureSuccessStatusCode();
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        // 新协议返回 { state, data: { items: [...] }, msg }
+        var data = body.GetProperty("data");
+        Assert.True(data.TryGetProperty("items", out var items), "响应应包含 data.items 字段");
+        Assert.True(items.GetArrayLength() >= 1, "应至少解析出 1 条记录");
     }
 
     /// <summary>
@@ -233,10 +364,14 @@ public class AiNoteParseTests
     [InlineData("上午9点亲喂 左10分 右15分")]
     [InlineData("下午3点小睡40分钟")]
     [InlineData("晚上10点喝了180ml奶")]
+    [InlineData("吃了半包保泰康颗粒")]
+    [InlineData("吃了1粒维D")]
+    [InlineData("喝了5滴伊可新")]
     public void RuleParse_BulkCases_ProducesValidRecordType(string text)
     {
         var svc = NewServiceWithFailingAi();
-        var parsed = svc.ParseByRules(text);
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
         Assert.True(RecordType.All.Contains(parsed.RecordType),
             $"未识别出有效记录类型，输入：{text}，实际：{parsed.RecordType}");
         Assert.True(parsed.Confidence > 0, $"置信度应为正数，输入：{text}");
@@ -247,7 +382,8 @@ public class AiNoteParseTests
     {
         var svc = NewServiceWithFailingAi();
         // 极度模糊的输入应降级到 activity 兜底
-        var parsed = svc.ParseByRules("今天发生了一些事情");
+        var items = svc.ParseByRulesMulti("今天发生了一些事情");
+        var parsed = items[0];
         Assert.Equal(RecordType.Activity, parsed.RecordType);
         Assert.True(parsed.Confidence < 0.5);
     }
@@ -257,15 +393,15 @@ public class AiNoteParseTests
     {
         var svc = NewServiceWithFailingAi();
         // 12 小时制模糊表述仍应被识别为时间
-        var parsed1 = svc.ParseByRules("14点30分喝了120ml奶");
-        Assert.Equal("14:30", parsed1.Time);
+        var items1 = svc.ParseByRulesMulti("14点30分喝了120ml奶");
+        Assert.Equal("14:30", items1[0].Time);
 
-        var parsed2 = svc.ParseByRules("3:00吃了奶");
-        Assert.Equal("03:00", parsed2.Time);
+        var items2 = svc.ParseByRulesMulti("3:00吃了奶");
+        Assert.Equal("03:00", items2[0].Time);
 
         // 没有时间表述时应返回 null（后端取当前时间）
-        var parsed3 = svc.ParseByRules("喝了120ml奶");
-        Assert.Null(parsed3.Time);
+        var items3 = svc.ParseByRulesMulti("喝了120ml奶");
+        Assert.Null(items3[0].Time);
     }
 
     /// <summary>Stub：所有调用均抛异常，模拟 AI 服务不可用。</summary>
@@ -273,7 +409,8 @@ public class AiNoteParseTests
     {
         public FailingDeepSeekClient() : base(
             new HttpClient(),
-            Microsoft.Extensions.Options.Options.Create(new ChildNotes.Core.Config.DeepSeekOptions { ApiKey = "stub" }))
+            Microsoft.Extensions.Options.Options.Create(new ChildNotes.Core.Config.DeepSeekOptions { ApiKey = "stub" }),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ChildNotes.Infrastructure.External.DeepSeekClient>.Instance)
         { }
 
         public override Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)

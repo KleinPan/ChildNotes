@@ -60,6 +60,12 @@
         <ContentControl Grid.Row="0" Content="{Binding DeveloperOptions}" IsTabStop="False"
                         IsVisible="{Binding IsDeveloperOptionsOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding AppLog}" IsTabStop="False"
+                        IsVisible="{Binding IsAppLogOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding Help}" IsTabStop="False"
+                        IsVisible="{Binding IsHelpOpen}"/>
+
         <ContentControl Grid.Row="0" Content="{Binding PrivacyPolicy}" IsTabStop="False"
                         IsVisible="{Binding IsPrivacyPolicyOpen}"/>
 

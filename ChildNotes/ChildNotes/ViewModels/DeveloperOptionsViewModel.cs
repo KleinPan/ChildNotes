@@ -15,6 +15,13 @@ public partial class DeveloperOptionsViewModel : ViewModelBase
     /// <summary>是否启用动画效果。</summary>
     [ObservableProperty] private bool _enableAnimations = true;
 
+    /// <summary>请求打开"程序日志"页（由 MainShellViewModel 订阅）。</summary>
+    public event Action? OpenAppLogRequested;
+
+    /// <summary>打开"程序日志"页面。</summary>
+    [RelayCommand]
+    private void OpenAppLog() => OpenAppLogRequested?.Invoke();
+
     public DeveloperOptionsViewModel()
     {
         Title = "开发者选项";

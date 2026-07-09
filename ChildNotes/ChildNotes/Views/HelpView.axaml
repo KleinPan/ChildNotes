@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.HelpView"
+             x:DataType="vm:HelpViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="使用帮助"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <!-- 内容区：自适应滚动 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,4,0,24">
+
+                <!-- 顶部 banner -->
+                <Border Margin="12,8" Padding="20,24"
+                        Background="{StaticResource WeuiBlueBrush}"
+                        CornerRadius="{StaticResource WeuiCardRadius}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="8">
+                        <TextBlock Text="Ai记" FontSize="28" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center"/>
+                        <TextBlock Text="一句话，记录宝宝的一天" FontSize="13" Foreground="#E6FFFFFF"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 章节列表（数据绑定） -->
+                <ItemsControl ItemsSource="{Binding Sections}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HelpSection">
+                            <StackPanel Margin="12,6">
+                                <!-- 章节标题 -->
+                                <Border Classes="section-title" Margin="0,8,0,4">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="{Binding Icon}" FontSize="14"/>
+                                        <TextBlock Text="{Binding Title}" FontSize="13"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- 章节卡片 -->
+                                <Border Background="{StaticResource WeuiBg2Brush}"
+                                        CornerRadius="{StaticResource WeuiCardRadius}"
+                                        Padding="14,12">
+                                    <ItemsControl ItemsSource="{Binding Paragraphs}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <TextBlock Text="{Binding}"
+                                                           FontSize="14"
+                                                           Foreground="{StaticResource WeuiFg0Brush}"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,4"/>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </Border>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

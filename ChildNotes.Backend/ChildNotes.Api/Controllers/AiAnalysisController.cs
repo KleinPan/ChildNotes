@@ -1,5 +1,6 @@
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Services;
+using ChildNotes.Shared.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChildNotes.Api.Controllers;
@@ -29,11 +30,11 @@ public class AiAnalysisController : AppBaseController
         => await _ai.GetByIdAsync(id, ct);
 
     /// <summary>
-    /// AI 智能记：将自然语言文本解析为结构化育儿记录 DTO。
+    /// AI 智能记：将自然语言文本解析为一条或多条结构化育儿记录 DTO。
     /// 仅做解析，不落库；调用方需自行持久化。
     /// 优先调用 AI，失败时降级到规则解析。
     /// </summary>
     [HttpPost("parse-note")]
-    public async Task<AiNoteParseResponse> ParseNote([FromBody] AiNoteParseRequest req, CancellationToken ct)
+    public async Task<AiNoteParseBatchResponse> ParseNote([FromBody] AiNoteParseRequest req, CancellationToken ct)
         => await _aiNote.ParseAsync(req, ResolveBabyIdFromRequest(), ct);
 }
