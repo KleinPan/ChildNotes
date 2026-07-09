@@ -194,9 +194,10 @@ public class AiNoteParseTests
         var items = svc.ParseByRulesMulti("8:17喝了半包保泰康颗粒");
         var parsed = items[0];
         Assert.Equal(RecordType.Supplement, parsed.RecordType);
-        // 药品名称应被提取到 Name 字段（结构化），剂量进 Dose
+        // 药品名称应被提取到 Name 字段（结构化），剂量拆分为 Dose + DoseUnit
         Assert.Contains("保泰康", parsed.Name ?? "");
-        Assert.Equal("半包", parsed.Dose);
+        Assert.Equal("0.5", parsed.Dose);
+        Assert.Equal("包", parsed.DoseUnit);
     }
 
     [Fact]
@@ -208,7 +209,8 @@ public class AiNoteParseTests
         var parsed = items[0];
         Assert.Equal(RecordType.Supplement, parsed.RecordType);
         Assert.Contains("宝泰康", parsed.Name ?? "");
-        Assert.Equal("半包", parsed.Dose);
+        Assert.Equal("0.5", parsed.Dose);
+        Assert.Equal("包", parsed.DoseUnit);
         // 不应残留"早上"
         Assert.DoesNotContain("早上", parsed.Name ?? "");
         Assert.DoesNotContain("早上", parsed.Summary ?? "");

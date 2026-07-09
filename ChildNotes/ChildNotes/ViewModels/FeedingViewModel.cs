@@ -249,10 +249,24 @@ public sealed partial class RecordDisplayItem : ObservableObject
         var title = !string.IsNullOrWhiteSpace(name)
             ? name
             : (isMedicine ? "用药记录" : "补充剂记录");
-        var sub = !string.IsNullOrWhiteSpace(dto?.Dose) ? dto!.Dose! : "";
+        // 剂量展示：Dose + DoseUnit 拼接；兼容旧数据（Dose 含单位文本、DoseUnit 为 null）
+        var sub = FormatDoseDisplay(dto?.Dose, dto?.DoseUnit);
         var extra = isMedicine ? "用药" : "补充剂";
         var note = !string.IsNullOrWhiteSpace(dto?.Note) ? dto!.Note! : "";
         return (title, sub, extra, note);
+    }
+
+    /// <summary>
+    /// 格式化剂量展示：0.5+包→半包，1+粒→1粒，5+ml→5ml。
+    /// 兼容旧数据：DoseUnit 为 null 时直接显示 Dose 原文。
+    /// </summary>
+    private static string FormatDoseDisplay(string? dose, string? doseUnit)
+    {
+        if (string.IsNullOrWhiteSpace(dose)) return "";
+        if (string.IsNullOrEmpty(doseUnit)) return dose!;
+        // "0.5"+"包"→"半包"（更符合中文习惯）
+        if (dose == "0.5") return "半" + doseUnit;
+        return dose + doseUnit;
     }
 
     /// <summary>

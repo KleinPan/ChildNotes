@@ -58,7 +58,10 @@ public sealed class SupplementRecordDto : BaseRecordDto
 {
     public string Type { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    /// <summary>剂量数值文本（如 "0.5"、"1"、"5"），与 DoseUnit 分开存储。</summary>
     public string? Dose { get; set; }
+    /// <summary>剂量单位（如 "包"、"粒"、"ml"、"滴"）。旧数据可能为 null（Dose 含单位文本）。</summary>
+    public string? DoseUnit { get; set; }
     public string? Note { get; set; }
 }
 

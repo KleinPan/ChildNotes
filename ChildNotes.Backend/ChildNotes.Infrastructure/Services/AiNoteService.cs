@@ -53,7 +53,8 @@ public partial class AiNoteService : IAiNoteService
 - weight: 数值型，kg
 - diaperType: wet/dirty/both/dry（仅 diaper 类型使用，与 recordSubType 同义，二者任填其一）
 - name: supplement 专用，药品/营养品名称（如"宝泰康颗粒"、"伊可新"、"维D"），不含剂量
-- dose: supplement 专用，剂量文本（如"半包"、"5ml"、"1粒"、"2滴"），与 name 分开
+- dose: supplement 专用，剂量数值文本（如"0.5"、"1"、"5"），不含单位
+- doseUnit: supplement 专用，剂量单位（如"包"、"粒"、"ml"、"滴"），与 dose 分开
 - note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note）
 - summary: 一句话人类可读的总结（<=30 字）
 - confidence: 解析置信度 0~1
@@ -81,11 +82,11 @@ public partial class AiNoteService : IAiNoteService
 [{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","summary":"换尿布 便便","confidence":0.9}]
 
 输入"吃了半包宝泰康颗粒"应输出：
-[{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"半包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
+[{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"0.5","doseUnit":"包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
 
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
-- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=剂量如"半包"）；"维D/益生菌" → supplement/nutrition
+- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=数值如"0.5"，doseUnit=单位如"包"）；"维D/益生菌" → supplement/nutrition
 - "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 """;
@@ -450,21 +451,42 @@ public partial class AiNoteService : IAiNoteService
             || text.Contains("补钙") || text.Contains("补铁") || text.Contains("补锌");
         string sub = isNutrition ? "nutrition" : "medicine";
 
-        // 提取剂量（如"半包"、"1粒"、"5滴"、"10ml"）
-        string? dosage = null;
+        // 提取剂量（如"半包"、"1粒"、"5滴"、"10ml"）→ 拆分为 dose(数值) + doseUnit(单位)
+        string? dose = null;
+        string? doseUnit = null;
         int? amountMl = null;
         var dosageMatch = Regex.Match(text, @"(半包|半粒|半滴|\d+(?:\.\d+)?\s*(?:ml|毫升|包|粒|滴|片|丸))");
         if (dosageMatch.Success)
         {
-            dosage = dosageMatch.Groups[1].Value;
-            // 若剂量是 ml/毫升，同步填充 Amount 字段（便于统计）
-            var mlMatch = Regex.Match(dosage, @"(\d+(?:\.\d+)?)\s*(?:ml|毫升)");
-            if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
-                amountMl = ml;
+            var dosage = dosageMatch.Groups[1].Value;
+            // 拆分数值与单位
+            var splitMatch = Regex.Match(dosage, @"^(\d+(?:\.\d+)?)\s*(ml|毫升|包|粒|滴|片|丸)$");
+            if (splitMatch.Success)
+            {
+                dose = splitMatch.Groups[1].Value;
+                doseUnit = splitMatch.Groups[2].Value == "毫升" ? "ml" : splitMatch.Groups[2].Value;
+                if (doseUnit == "ml" && int.TryParse(dose, out var ml))
+                    amountMl = ml;
+            }
+            else if (dosage == "半包") { dose = "0.5"; doseUnit = "包"; }
+            else if (dosage == "半粒") { dose = "0.5"; doseUnit = "粒"; }
+            else if (dosage == "半滴") { dose = "0.5"; doseUnit = "滴"; }
+            else { dose = dosage; } // 兜底：整体作为 dose 文本
         }
 
         // 提取药品/营养品名称：去掉时间、剂量、动作词后的剩余内容
         var name = ExtractSupplementName(text);
+
+        // Summary 用人类可读的"剂量+单位"拼接（如"半包 宝泰康颗粒"）
+        var doseDisplay = (dose, doseUnit) switch
+        {
+            ("0.5", "包") => "半包",
+            ("0.5", "粒") => "半粒",
+            ("0.5", "滴") => "半滴",
+            (string d, string u) => d + u,
+            (string d, null) => d,
+            _ => "",
+        };
 
         return new AiNoteParseItem
         {
@@ -472,10 +494,11 @@ public partial class AiNoteService : IAiNoteService
             RecordSubType = sub,
             Amount = amountMl,
             Name = name,
-            Dose = dosage,
+            Dose = dose,
+            DoseUnit = doseUnit,
             Note = string.IsNullOrEmpty(name) ? text : null,
             Time = ExtractTime(text),
-            Summary = (dosage is null ? "" : dosage + " ") + (name ?? (isNutrition ? "补充剂记录" : "用药记录")),
+            Summary = (string.IsNullOrEmpty(doseDisplay) ? "" : doseDisplay + " ") + (name ?? (isNutrition ? "补充剂记录" : "用药记录")),
             Confidence = 0.5,
         };
     }

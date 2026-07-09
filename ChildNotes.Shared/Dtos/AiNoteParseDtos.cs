@@ -30,8 +30,10 @@ public record AiNoteParseItem
     public string? Summary { get; set; }
     /// <summary>supplement 专用：药品/营养品名称（如"宝泰康颗粒"、"维D"）。</summary>
     public string? Name { get; set; }
-    /// <summary>supplement 专用：剂量文本（如"半包"、"5ml"、"1粒"）。</summary>
+    /// <summary>supplement 专用：剂量数值文本（如"0.5"、"1"、"5"）。</summary>
     public string? Dose { get; set; }
+    /// <summary>supplement 专用：剂量单位（如"包"、"粒"、"ml"、"滴"）。</summary>
+    public string? DoseUnit { get; set; }
     public double Confidence { get; set; }
 
     /// <summary>
