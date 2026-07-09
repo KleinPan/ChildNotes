@@ -157,6 +157,27 @@ public class AiNoteParseTests
     }
 
     [Fact]
+    public void RuleParse_Water_ExtractsAmount()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("喝了10ml水");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Water, parsed.RecordType);
+        Assert.Equal(10, parsed.Amount);
+        Assert.Contains("喝水", parsed.Summary ?? "");
+    }
+
+    [Fact]
+    public void RuleParse_Water_SupportsChineseUnit()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("喝了5毫升水");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Water, parsed.RecordType);
+        Assert.Equal(5, parsed.Amount);
+    }
+
+    [Fact]
     public void RuleParse_Supplement_PreservesName()
     {
         var svc = NewServiceWithFailingAi();
@@ -193,9 +214,14 @@ public class AiNoteParseTests
         // "11点半睡到12点40" 时长应为 70 分钟
         Assert.Equal(70, items[0].Duration);
 
-        // 后续应有 feed 类型（130ml 奶粉 和 10ml 水）
+        // 第二条应为 feed（130ml 奶粉）
         var feeds = items.Where(i => i.RecordType == RecordType.Feed).ToList();
         Assert.True(feeds.Count >= 1, "应至少识别出 1 条喂奶记录");
+
+        // 应有 water 类型（10ml 水）
+        var waters = items.Where(i => i.RecordType == RecordType.Water).ToList();
+        Assert.True(waters.Count >= 1, "应识别出 1 条喝水记录");
+        Assert.Equal(10, waters[0].Amount);
     }
 
     [Fact]

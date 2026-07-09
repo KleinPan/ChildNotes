@@ -62,6 +62,17 @@ public sealed class SupplementRecordDto : BaseRecordDto
     public string? Note { get; set; }
 }
 
+/// <summary>
+/// 喝水记录 DTO。独立于 supplement，便于统计每日饮水量。
+/// AmountMl 为毫升数值；Temperature 可选（水温描述，如"温/凉"）。
+/// </summary>
+public sealed class WaterRecordDto : BaseRecordDto
+{
+    public int? AmountMl { get; set; }
+    public string? Temperature { get; set; }
+    public string? Note { get; set; }
+}
+
 public sealed class GrowthRecordDto : BaseRecordDto
 {
     public decimal? Height { get; set; }

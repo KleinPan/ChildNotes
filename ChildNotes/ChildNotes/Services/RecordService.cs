@@ -114,6 +114,16 @@ public sealed class RecordService
         return rec.Id;
     }
 
+    public string AddWater(WaterRecordDto dto)
+    {
+        var rec = NewRecord(RecordType.Water, dto.Time);
+        rec.AmountMl = dto.AmountMl;
+        rec.PayloadJson = JsonSerializer.Serialize(dto);
+        rec.Id = _repo.Insert(rec);
+        NotifyWrite();
+        return rec.Id;
+    }
+
     public string AddPump(PumpRecordDto dto)
     {
         var rec = NewRecord(RecordType.Pump, dto.Time);

@@ -14,6 +14,7 @@ public static class RecordType
     public const string Vaccine = "vaccine";
     public const string Milestone = "milestone";
     public const string Supplement = "supplement";
+    public const string Water = "water";
     public const string Pump = "pump";
     public const string Complementary = "complementary";
     public const string Abnormal = "abnormal";
@@ -29,7 +30,7 @@ public static class RecordType
     public static readonly IReadOnlySet<string> All = new HashSet<string>
     {
         Feed, Sleep, Diaper, Growth, Temperature, Vaccine, Milestone,
-        Supplement, Pump, Complementary, Abnormal, Activity,
+        Supplement, Water, Pump, Complementary, Abnormal, Activity,
         FeverResolved, DiarrheaResolved, AbnormalResolved,
     };
 }

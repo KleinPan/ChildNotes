@@ -29,12 +29,13 @@ public partial class AiNoteService : IAiNoteService
 你是一名育儿记录解析助手。请将用户输入的自然语言文本解析为一条或多条结构化的育儿记录，并仅输出 JSON 数组。
 
 支持的记录类型（recordType）：
-- feed：喂养（瓶喂奶粉/母乳、亲喂）
+- feed：喂奶（仅限奶类：瓶喂奶粉/母乳、亲喂；喝水不属于 feed）
 - diaper：换尿布
 - sleep：睡眠
 - temperature：体温
 - growth：身高体重
-- supplement：补给用药/营养
+- supplement：补给（用药/营养补充，如维D、益生菌、药品等；不含喝水）
+- water：喝水（独立类型，便于统计每日饮水量；amount=水量ml）
 - pump：吸奶
 - complementary：辅食
 - abnormal：异常症状
@@ -68,8 +69,13 @@ public partial class AiNoteService : IAiNoteService
 [
   {"recordType":"sleep","time":"23:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
   {"recordType":"feed","recordSubType":"bottle","amount":130,"time":null,"summary":"瓶喂130ml","confidence":0.9},
-  {"recordType":"feed","recordSubType":"bottle","amount":10,"time":null,"note":"水","summary":"喝水10ml","confidence":0.8}
+  {"recordType":"water","amount":10,"time":null,"summary":"喝水10ml","confidence":0.8}
 ]
+
+关键规则：
+- "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
+- "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- 时间"11点半"=11:30，"半"在分钟位表示30分
 """;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -211,7 +217,13 @@ public partial class AiNoteService : IAiNoteService
     /// <summary>基于正则的降级解析：覆盖最常见的表述。公开以便单元测试访问。</summary>
     public AiNoteParseItem ParseByRules(string text)
     {
-        // 0) supplement（用药/营养）：必须在 feed 之前判定，避免"喝了半包药"被误判为喂奶
+        // 0) water（喝水）：必须在 feed/supplement 之前判定，避免"喝10ml水"被误判为喂奶或补给
+        if (IsWaterLike(text))
+        {
+            return ParseWater(text);
+        }
+
+        // 0b) supplement（用药/营养）：必须在 feed 之前判定，避免"喝了半包药"被误判为喂奶
         // 判定条件：含剂型关键词（颗粒/冲剂/糖浆/滴剂/药片/胶囊/丸），
         // 或含"包/粒/滴"单位且无显式容量单位（ml/毫升）
         if (IsSupplementLike(text))
@@ -355,6 +367,33 @@ public partial class AiNoteService : IAiNoteService
         };
     }
 
+    /// <summary>判断文本是否为喝水（water）。</summary>
+    private static bool IsWaterLike(string text)
+    {
+        // 含"水"且含"喝"即为喝水（排除"奶水/糖浆"等干扰——糖浆已被 supplement 前置判定）
+        // 注意：本方法在 ParseByRules 中先于 supplement/feed 调用
+        return text.Contains("水") && text.Contains("喝");
+    }
+
+    /// <summary>解析喝水记录。</summary>
+    private static AiNoteParseItem ParseWater(string text)
+    {
+        // 提取水量（ml/毫升）
+        int? amountMl = null;
+        var mlMatch = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL)");
+        if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
+            amountMl = ml;
+
+        return new AiNoteParseItem
+        {
+            RecordType = RecordType.Water,
+            Amount = amountMl,
+            Time = ExtractTime(text),
+            Summary = amountMl.HasValue ? $"喝水{amountMl}ml" : "喝水",
+            Confidence = 0.6,
+        };
+    }
+
     /// <summary>判断文本是否为用药/营养补充（supplement）。</summary>
     private static bool IsSupplementLike(string text)
     {
@@ -383,6 +422,7 @@ public partial class AiNoteService : IAiNoteService
     private static AiNoteParseItem ParseSupplement(string text)
     {
         // 区分 medicine / nutrition
+        // nutrition：营养补充剂（维D/益生菌等；喝水已由 ParseWater 提前处理）
         bool isNutrition = text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
             || text.Contains("益生菌") || text.Contains("鱼肝油") || text.Contains("钙剂")
             || text.Contains("补钙") || text.Contains("补铁") || text.Contains("补锌");
@@ -390,9 +430,16 @@ public partial class AiNoteService : IAiNoteService
 
         // 提取剂量（如"半包"、"1粒"、"5滴"、"10ml"）
         string? dosage = null;
+        int? amountMl = null;
         var dosageMatch = Regex.Match(text, @"(半包|半粒|半滴|\d+(?:\.\d+)?\s*(?:ml|毫升|包|粒|滴|片|丸))");
         if (dosageMatch.Success)
+        {
             dosage = dosageMatch.Groups[1].Value;
+            // 若剂量是 ml/毫升，同步填充 Amount 字段（便于统计）
+            var mlMatch = Regex.Match(dosage, @"(\d+(?:\.\d+)?)\s*(?:ml|毫升)");
+            if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
+                amountMl = ml;
+        }
 
         // 提取药品/营养品名称：去掉时间、剂量、动作词后的剩余内容
         var name = ExtractSupplementName(text);
@@ -401,9 +448,10 @@ public partial class AiNoteService : IAiNoteService
         {
             RecordType = RecordType.Supplement,
             RecordSubType = sub,
+            Amount = amountMl,
             Note = string.IsNullOrEmpty(name) ? text : name,
             Time = ExtractTime(text),
-            Summary = (dosage is null ? "" : dosage + " ") + (name ?? "用药记录"),
+            Summary = (dosage is null ? "" : dosage + " ") + (name ?? (isNutrition ? "补充剂记录" : "用药记录")),
             Confidence = 0.5,
         };
     }

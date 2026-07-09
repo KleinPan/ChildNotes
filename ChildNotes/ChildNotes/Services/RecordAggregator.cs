@@ -24,6 +24,8 @@ public sealed class RecordAggregate
     public bool HasDiarrhea { get; set; }
     public bool HasOtherAbnormal { get; set; }
     public int SupplementCount { get; set; }
+    public int WaterCount { get; set; }
+    public int WaterTotalMl { get; set; }
     public int GrowthCount { get; set; }
     public decimal? LatestHeightCm { get; set; }
     public decimal? LatestWeightKg { get; set; }
@@ -72,6 +74,10 @@ public static class RecordAggregator
                     break;
                 case RecordType.Supplement:
                     agg.SupplementCount++;
+                    break;
+                case RecordType.Water:
+                    agg.WaterCount++;
+                    agg.WaterTotalMl += r.AmountMl ?? 0;
                     break;
                 case RecordType.Pump:
                     agg.PumpCount++;

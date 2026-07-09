@@ -51,6 +51,7 @@ public class RecordController : AppBaseController
             RecordType.Sleep => payload.Deserialize<SleepRecordDto>()!,
             RecordType.Temperature => payload.Deserialize<TemperatureRecordDto>()!,
             RecordType.Supplement => payload.Deserialize<SupplementRecordDto>()!,
+            RecordType.Water => payload.Deserialize<WaterRecordDto>()!,
             RecordType.Growth => payload.Deserialize<GrowthRecordDto>()!,
             RecordType.Abnormal => payload.Deserialize<AbnormalRecordDto>()!,
             RecordType.Pump => payload.Deserialize<PumpRecordDto>()!,

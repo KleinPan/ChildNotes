@@ -43,6 +43,7 @@ public static class AppConverters
     public static readonly IValueConverter IsTemp = new EqualsConverter(RecordType.Temperature);
     public static readonly IValueConverter IsGrowth = new EqualsConverter(RecordType.Growth);
     public static readonly IValueConverter IsSupplement = new EqualsConverter(RecordType.Supplement);
+    public static readonly IValueConverter IsWater = new EqualsConverter(RecordType.Water);
     public static readonly IValueConverter IsPump = new EqualsConverter(RecordType.Pump);
     public static readonly IValueConverter IsComplementary = new EqualsConverter(RecordType.Complementary);
     public static readonly IValueConverter IsAbnormal = new EqualsConverter(RecordType.Abnormal);

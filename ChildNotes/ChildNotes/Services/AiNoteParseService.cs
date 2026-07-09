@@ -32,10 +32,12 @@ public sealed class AiNoteParseService
 若输入包含多个独立事件（如"11点半睡到12点40，吃了130奶粉，喝10ml水"），必须拆分为多条。
 若只是一个事件的描述（如"喝了120ml奶"），输出只含一个元素的数组。
 
-支持的 recordType: feed / diaper / sleep / temperature / growth / supplement / pump / complementary / abnormal / activity
+支持的 recordType: feed / diaper / sleep / temperature / growth / supplement / water / pump / complementary / abnormal / activity
+- feed: 仅限奶类（瓶喂奶粉/母乳、亲喂）；喝水不属于 feed
 - feed 子类型: bottle/breast/expressed
 - diaper 子类型(diaperType): wet/dirty/both/dry
-- supplement 子类型: medicine/nutrition
+- supplement: 用药/营养补充（维D、益生菌、药品等；不含喝水）；子类型: medicine/nutrition
+- water: 喝水（独立类型，amount=水量ml）
 - activity 子类型: play/outdoor/exercise
 
 字段：recordType, recordSubType, time(HH:mm), amount(ml数值), duration(分钟),
@@ -45,7 +47,12 @@ note, summary(<=30字一句话), confidence(0~1)。
 示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
 示例输出：[{"recordType":"sleep","time":"11:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
 {"recordType":"feed","recordSubType":"bottle","time":"11:30","amount":130,"summary":"瓶喂130ml","confidence":0.9},
-{"recordType":"supplement","recordSubType":"nutrition","time":"11:30","amount":10,"note":"水","summary":"喝水10ml","confidence":0.8}]
+{"recordType":"water","time":"11:30","amount":10,"summary":"喝水10ml","confidence":0.8}]
+
+关键规则：
+- "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
+- "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- 时间"11点半"=11:30，"半"在分钟位表示30分
 
 只输出 JSON 数组，不要任何额外文字或 Markdown 代码块。缺失字段用 null。
 """;
@@ -58,6 +65,7 @@ note, summary(<=30字一句话), confidence(0~1)。
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
+        DevLogger.Log("AiNote", $"解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, Enabled={config.Enabled}, preferServer={preferServer}");
 
         // 1) 按用户选择的路径调用 AI
         List<AiNoteParseItem>? aiItems = null;
@@ -74,22 +82,29 @@ note, summary(<=30字一句话), confidence(0~1)。
             return aiItems;
 
         // 2) AI 失败则规则降级
+        DevLogger.Log("AiNote", "AI 解析未返回结果，降级到规则解析", DevLogger.Level.Warn);
         return LocalRuleParseMulti(text);
     }
 
     /// <summary>尝试调用后端解析接口；未配置或失败时返回 null。</summary>
     private async Task<List<AiNoteParseItem>?> TryServerAsync(string text)
     {
-        if (string.IsNullOrEmpty(ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl))
+        var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
+        if (string.IsNullOrEmpty(serverUrl))
+        {
+            DevLogger.Log("AiNote", "后端解析跳过：ServerUrl 未配置", DevLogger.Level.Warn);
             return null;
+        }
+        DevLogger.Log("AiNote", $"调用后端解析：{serverUrl}/api/smart-analysis/parse-note");
         try
         {
             var batch = await _apiClient.ParseAsync(text);
+            DevLogger.Log("AiNote", $"后端解析返回：{(batch is null ? "null" : $"{batch.Items.Count} 条")}");
             return batch?.Items;
         }
         catch (Exception ex)
         {
-            DevLogger.Log("AiNote", "后端解析失败：" + ex.Message);
+            DevLogger.Log("AiNote", "后端解析失败：" + ex.Message, DevLogger.Level.Error);
             return null;
         }
     }
@@ -543,6 +558,16 @@ note, summary(<=30字一句话), confidence(0~1)。
                 {
                     Type = string.IsNullOrEmpty(r.RecordSubType) ? "medicine" : r.RecordSubType,
                     Name = r.Note ?? "AI 识别",
+                    // 剂量：优先用 Amount（ml 数值）构造，便于卡片展示"10ml"
+                    Dose = r.Amount.HasValue ? $"{r.Amount}ml" : null,
+                    Time = time,
+                });
+                break;
+            case RecordType.Water:
+                recordService.AddWater(new ChildNotes.Shared.Dtos.WaterRecordDto
+                {
+                    AmountMl = r.Amount,
+                    Note = r.Note,
                     Time = time,
                 });
                 break;

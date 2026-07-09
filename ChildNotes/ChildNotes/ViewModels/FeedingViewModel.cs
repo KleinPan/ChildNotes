@@ -153,6 +153,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
         RecordType.Temperature => "🌡️",
         RecordType.Growth => "📏",
         RecordType.Supplement => "💊",
+        RecordType.Water => "💧",
         RecordType.Pump => "🥛",
         RecordType.Complementary => "🥣",
         // 疫苗记录不在喂养页面显示，已移除 Vaccine 图标分支
@@ -192,6 +193,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
             RecordType.Temperature => ("体温", $"{r.TemperatureValue:F1}℃", "", ""),
             RecordType.Growth => ("成长记录", $"{(r.HeightCm.HasValue ? $"身高{r.HeightCm}cm " : "")}{(r.WeightKg.HasValue ? $"体重{r.WeightKg}kg" : "")}", "", ""),
             RecordType.Supplement => BuildSupplementText(r),
+            RecordType.Water => ("喝水", r.AmountMl.HasValue ? $"{r.AmountMl}ml" : "", "饮水", ""),
             RecordType.Pump => ("吸奶", $"{r.AmountMl ?? 0}ml", "", ""),
             RecordType.Complementary => BuildComplementaryText(r),
             // 疫苗记录仅在首页"疫苗追踪"模块展示，移除 BuildText 中的 Vaccine 分支
