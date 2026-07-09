@@ -71,13 +71,27 @@ public class DeepSeekClient
                 throw new InvalidOperationException($"DeepSeek API failed ({resp.StatusCode}): {errBody}");
             }
 
-            using var doc = await JsonDocument.ParseAsync(await resp.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
-            var root = doc.RootElement;
-            var text = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString()
-                ?? throw new InvalidOperationException("DeepSeek response content is empty");
-            var model = root.TryGetProperty("model", out var m) ? m.GetString() ?? _opt.Model : _opt.Model;
+            // 先读响应为字符串再解析：解析失败时可打印原文便于诊断（如网关返回 HTML 首页）
+            var rawBody = await resp.Content.ReadAsStringAsync(ct);
+            string text;
+            string model;
+            try
+            {
+                using var doc = JsonDocument.Parse(rawBody);
+                var root = doc.RootElement;
+                text = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString()
+                    ?? throw new InvalidOperationException("DeepSeek response content is empty");
+                model = root.TryGetProperty("model", out var m) ? m.GetString() ?? _opt.Model : _opt.Model;
+            }
+            catch (JsonException jex)
+            {
+                sw.Stop();
+                _logger.LogError("[AI-LOG] DeepSeek 响应非合法 JSON {Ms}ms status={Status} req={Req} parseErr={ParseErr} bodyPreview={Body}",
+                    sw.ElapsedMilliseconds, (int)resp.StatusCode, reqSummary, jex.Message, TruncateForLog(rawBody, 300));
+                throw new InvalidOperationException($"DeepSeek response is not valid JSON (status={resp.StatusCode}, bodyPrefix={TruncateForLog(rawBody, 100)}): {jex.Message}");
+            }
             sw.Stop();
-            _logger.LogInformation("DeepSeek 调用成功 {Ms}ms req={Req} respLen={Len} respPreview={Preview}",
+            _logger.LogInformation("[AI-LOG] DeepSeek 调用成功 {Ms}ms req={Req} respLen={Len} respPreview={Preview}",
                 sw.ElapsedMilliseconds, reqSummary, text.Length, TruncateForLog(text, 200));
             return (text.Trim(), model);
         }
