@@ -28,6 +28,10 @@ public record AiNoteParseItem
     public string? DiaperType { get; set; }
     public string? Note { get; set; }
     public string? Summary { get; set; }
+    /// <summary>supplement 专用：药品/营养品名称（如"宝泰康颗粒"、"维D"）。</summary>
+    public string? Name { get; set; }
+    /// <summary>supplement 专用：剂量文本（如"半包"、"5ml"、"1粒"）。</summary>
+    public string? Dose { get; set; }
     public double Confidence { get; set; }
 
     /// <summary>

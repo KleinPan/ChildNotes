@@ -43,7 +43,8 @@ public sealed class AiNoteParseService
 
 字段：recordType, recordSubType, time(HH:mm), amount(ml数值), duration(分钟),
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
-note, summary(<=30字一句话), confidence(0~1)。
+name(supplement专用，药品/营养品名称，不含剂量), dose(supplement专用，剂量文本如"半包"/"5ml"/"1粒"),
+note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句话), confidence(0~1)。
 
 示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
 示例输出：[{"recordType":"sleep","time":"11:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
@@ -53,9 +54,12 @@ note, summary(<=30字一句话), confidence(0~1)。
 示例输入："拉了大便"
 示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
 
+示例输入："吃了半包宝泰康颗粒"
+示例输出：[{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"半包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
+
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
-- "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=剂量如"半包"）；"维D/益生菌" → supplement/nutrition
 - "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 
@@ -584,9 +588,10 @@ note, summary(<=30字一句话), confidence(0~1)。
                 recordService.AddSupplement(new ChildNotes.Shared.Dtos.SupplementRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.RecordSubType) ? "medicine" : r.RecordSubType,
-                    Name = r.Note ?? "AI 识别",
-                    // 剂量：优先用 Amount（ml 数值）构造，便于卡片展示"10ml"
-                    Dose = r.Amount.HasValue ? $"{r.Amount}ml" : null,
+                    // 名称：优先用 AI/规则返回的 Name，缺失时回退到 Note，最后回退到"AI 识别"
+                    Name = r.Name ?? r.Note ?? "AI 识别",
+                    // 剂量：优先用结构化 Dose，其次用 Amount(ml) 构造
+                    Dose = r.Dose ?? (r.Amount.HasValue ? $"{r.Amount}ml" : null),
                     Time = time,
                 });
                 break;

@@ -194,21 +194,23 @@ public class AiNoteParseTests
         var items = svc.ParseByRulesMulti("8:17喝了半包保泰康颗粒");
         var parsed = items[0];
         Assert.Equal(RecordType.Supplement, parsed.RecordType);
-        // 药品名称应被提取到 Note 字段
-        Assert.Contains("保泰康", parsed.Note ?? "");
+        // 药品名称应被提取到 Name 字段（结构化），剂量进 Dose
+        Assert.Contains("保泰康", parsed.Name ?? "");
+        Assert.Equal("半包", parsed.Dose);
     }
 
     [Fact]
     public void RuleParse_Supplement_StripsTimePeriodWord()
     {
         var svc = NewServiceWithFailingAi();
-        // "早上8:17吃了半包宝泰康颗粒" - "早上"时段词应被去除，不应残留到 Note/Summary
+        // "早上8:17吃了半包宝泰康颗粒" - "早上"时段词应被去除，不应残留到 Name/Dose/Summary
         var items = svc.ParseByRulesMulti("早上8:17吃了半包宝泰康颗粒");
         var parsed = items[0];
         Assert.Equal(RecordType.Supplement, parsed.RecordType);
-        Assert.Contains("宝泰康", parsed.Note ?? "");
+        Assert.Contains("宝泰康", parsed.Name ?? "");
+        Assert.Equal("半包", parsed.Dose);
         // 不应残留"早上"
-        Assert.DoesNotContain("早上", parsed.Note ?? "");
+        Assert.DoesNotContain("早上", parsed.Name ?? "");
         Assert.DoesNotContain("早上", parsed.Summary ?? "");
     }
 

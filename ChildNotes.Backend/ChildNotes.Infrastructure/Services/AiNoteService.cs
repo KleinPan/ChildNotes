@@ -52,7 +52,9 @@ public partial class AiNoteService : IAiNoteService
 - height: 数值型，cm
 - weight: 数值型，kg
 - diaperType: wet/dirty/both/dry（仅 diaper 类型使用，与 recordSubType 同义，二者任填其一）
-- note: 备注信息（如性状、颜色、补充说明）
+- name: supplement 专用，药品/营养品名称（如"宝泰康颗粒"、"伊可新"、"维D"），不含剂量
+- dose: supplement 专用，剂量文本（如"半包"、"5ml"、"1粒"、"2滴"），与 name 分开
+- note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note）
 - summary: 一句话人类可读的总结（<=30 字）
 - confidence: 解析置信度 0~1
 
@@ -78,9 +80,12 @@ public partial class AiNoteService : IAiNoteService
 输入"换尿布 便便"应输出：
 [{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","summary":"换尿布 便便","confidence":0.9}]
 
+输入"吃了半包宝泰康颗粒"应输出：
+[{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"半包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
+
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
-- "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=剂量如"半包"）；"维D/益生菌" → supplement/nutrition
 - "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 """;
@@ -466,7 +471,9 @@ public partial class AiNoteService : IAiNoteService
             RecordType = RecordType.Supplement,
             RecordSubType = sub,
             Amount = amountMl,
-            Note = string.IsNullOrEmpty(name) ? text : name,
+            Name = name,
+            Dose = dosage,
+            Note = string.IsNullOrEmpty(name) ? text : null,
             Time = ExtractTime(text),
             Summary = (dosage is null ? "" : dosage + " ") + (name ?? (isNutrition ? "补充剂记录" : "用药记录")),
             Confidence = 0.5,
