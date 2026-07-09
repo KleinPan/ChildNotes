@@ -10,6 +10,9 @@ namespace ChildNotes.ViewModels;
 
 public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    // 辅食食量单位（对齐小程序 AMOUNT_UNITS = ['克', '个', '勺', '碗']，固定不可自定义）
+    private static readonly string[] DefaultAmountUnits = { "克", "个", "勺", "碗" };
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _foodName = string.Empty;
     [ObservableProperty] private string _selectedTexture = "puree";
@@ -18,6 +21,12 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
     [ObservableProperty] private string _note = string.Empty;
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
     [ObservableProperty] private string _customFood = string.Empty;
+
+    /// <summary>当前选中的食量单位（默认"克"）</summary>
+    [ObservableProperty] private string _amountUnit = "克";
+
+    /// <summary>可选食量单位列表（固定 4 项，对齐小程序）</summary>
+    public ObservableCollection<CommonItemViewModel> AmountUnitItems { get; } = new(DefaultAmountUnits.Select(u => new CommonItemViewModel(u)));
 
     /// <summary>
     /// 常用辅食选项（精选最常用，适合两行显示）
@@ -76,6 +85,30 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
             StapleFoodItems.Concat(VegetableItems).Concat(FruitItems).Concat(MeatEggItems));
 
         AddCustomCommand = new RelayCommand(AddCustomFood);
+
+        // 订阅单位项选中变化，默认选中第一个
+        foreach (var item in AmountUnitItems) item.PropertyChanged += OnAmountUnitChanged;
+        if (AmountUnitItems.Count > 0) AmountUnitItems[0].IsSelected = true;
+    }
+
+    /// <summary>单位 Chip 选中变化时同步到 AmountUnit 字段（单选清空由 code-behind 处理）。</summary>
+    private void OnAmountUnitChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CommonItemViewModel.IsSelected)) return;
+        if (sender is CommonItemViewModel item && item.IsSelected)
+        {
+            AmountUnit = item.Name;
+        }
+    }
+
+    /// <summary>编辑回填时按单位名称设置选中（用于外部设置 AmountUnit 后同步 UI）。</summary>
+    public void SelectAmountUnitByName(string? unit)
+    {
+        foreach (var item in AmountUnitItems) item.IsSelected = false;
+        if (string.IsNullOrEmpty(unit)) return;
+        var match = AmountUnitItems.FirstOrDefault(x => x.Name == unit);
+        if (match is not null) match.IsSelected = true;
+        AmountUnit = unit;
     }
 
     public void SelectTexture(string t) => SelectedTexture = t;
@@ -123,6 +156,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         FoodName = FoodName,
         Texture = SelectedTexture,
         Amount = AmountText,
+        AmountUnit = AmountUnit,
         Reaction = SelectedReaction,
         Abnormal = SelectedReaction is "allergy" or "vomit" or "diarrhea",
         Note = Note,

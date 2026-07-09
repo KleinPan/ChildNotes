@@ -31,6 +31,9 @@ public partial class CommonItemViewModel : ObservableObject
 
 public partial class SupplementFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    // 系统默认剂量单位（对齐小程序 DEFAULT_DOSE_UNITS = ['ml', '粒', '包']）
+    private static readonly string[] DefaultDoseUnits = { "ml", "粒", "包" };
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _suppType = "supplement";
     [ObservableProperty] private string _name = string.Empty;
@@ -39,6 +42,20 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
     [ObservableProperty] private string _customItem = string.Empty;
     [ObservableProperty] private string _errorMessage = string.Empty;
+
+    // 剂量单位相关
+    [ObservableProperty] private string _doseUnit = "ml";
+    [ObservableProperty] private string _customUnit = string.Empty;
+    [ObservableProperty] private bool _showCustomUnitInput;
+
+    /// <summary>系统默认剂量单位（不可删除）</summary>
+    public ObservableCollection<CommonItemViewModel> DefaultDoseUnitItems { get; } = new(DefaultDoseUnits.Select(u => new CommonItemViewModel(u, isCustom: false)));
+
+    /// <summary>用户自定义剂量单位（从DB加载，IsCustom=true，可删除）</summary>
+    public ObservableCollection<CommonItemViewModel> CustomDoseUnitItems { get; } = new();
+
+    /// <summary>当前可选单位列表（默认 + 自定义），供 UI 绑定</summary>
+    public ObservableCollection<CommonItemViewModel> AllDoseUnitItems { get; } = new();
 
     /// <summary>系统默认补充剂项（5项，对齐小程序 DEFAULT_SUPPLEMENTS）</summary>
     public ObservableCollection<CommonItemViewModel> SupplementCommonItems { get; } = new(new[]
@@ -78,15 +95,33 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     /// <summary>删除自定义项命令（参数为 CommonItemViewModel）</summary>
     public ICommand DeleteCustomCommand { get; }
 
+    /// <summary>添加自定义单位命令</summary>
+    public ICommand AddCustomUnitCommand { get; }
+
+    /// <summary>删除自定义单位命令（参数为 CommonItemViewModel）</summary>
+    public ICommand DeleteCustomUnitCommand { get; }
+
+    /// <summary>切换自定义单位输入区显示/隐藏</summary>
+    public ICommand ToggleCustomUnitInputCommand { get; }
+
     public SupplementFormViewModel()
     {
         AddCustomCommand = new RelayCommand(AddCustomItem);
         DeleteCustomCommand = new RelayCommand<CommonItemViewModel>(DeleteCustomItem);
+        AddCustomUnitCommand = new RelayCommand(AddCustomUnit);
+        DeleteCustomUnitCommand = new RelayCommand<CommonItemViewModel>(DeleteCustomUnit);
+        ToggleCustomUnitInputCommand = new RelayCommand(() => ShowCustomUnitInput = !ShowCustomUnitInput);
         // 订阅所有默认项的属性变化
         SubscribeItems(SupplementCommonItems);
         SubscribeItems(MedicineCommonItems);
+        // 订阅默认单位选中变化
+        SubscribeItems(DefaultDoseUnitItems);
         // 初始加载自定义项并合并到 CurrentAllItems
         ReloadCustomItems();
+        // 加载自定义单位
+        ReloadCustomUnits();
+        // 默认选中第一个单位
+        if (DefaultDoseUnitItems.Count > 0) DefaultDoseUnitItems[0].IsSelected = true;
     }
 
     private void SubscribeItems(ObservableCollection<CommonItemViewModel> items)
@@ -96,8 +131,15 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
 
     private void OnItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(CommonItemViewModel.IsSelected))
-            RebuildName();
+        if (e.PropertyName != nameof(CommonItemViewModel.IsSelected)) return;
+        // 判断 sender 属于哪个集合：单位项变化 → 更新 DoseUnit；名称项变化 → 重建 Name
+        if (sender is CommonItemViewModel item)
+        {
+            if (DefaultDoseUnitItems.Contains(item) || CustomDoseUnitItems.Contains(item))
+                RebuildDoseUnit();
+            else
+                RebuildName();
+        }
     }
 
     public void SwitchType(string type) => SuppType = type;
@@ -212,6 +254,120 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         Name = string.Join("、", selected);
     }
 
+    #region 剂量单位管理
+
+    /// <summary>
+    /// 从DB重新加载用户自定义剂量单位（type="dose_unit"），并重建 AllDoseUnitItems。
+    /// </summary>
+    private void ReloadCustomUnits()
+    {
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        var customUnits = string.IsNullOrEmpty(userId)
+            ? new List<CommonItemViewModel>()
+            : ServiceProvider.Instance.SupplementItemRepository
+                  .GetByUser(userId, "dose_unit")
+                  .Select(x => new CommonItemViewModel(x.Name, isCustom: true)).ToList();
+
+        // 解绑旧项事件
+        foreach (var item in CustomDoseUnitItems) item.PropertyChanged -= OnItemPropertyChanged;
+        CustomDoseUnitItems.Clear();
+        foreach (var u in customUnits)
+        {
+            u.PropertyChanged += OnItemPropertyChanged;
+            CustomDoseUnitItems.Add(u);
+        }
+        RebuildAllDoseUnitItems();
+    }
+
+    /// <summary>合并默认单位 + 自定义单位到 AllDoseUnitItems。</summary>
+    private void RebuildAllDoseUnitItems()
+    {
+        AllDoseUnitItems.Clear();
+        foreach (var item in DefaultDoseUnitItems) AllDoseUnitItems.Add(item);
+        foreach (var item in CustomDoseUnitItems) AllDoseUnitItems.Add(item);
+    }
+
+    /// <summary>单位选中变化时更新 DoseUnit 字段（单选）。</summary>
+    private void RebuildDoseUnit()
+    {
+        var selected = AllDoseUnitItems.FirstOrDefault(x => x.IsSelected);
+        if (selected is not null) DoseUnit = selected.Name;
+    }
+
+    /// <summary>
+    /// 编辑回填时按单位名称设置选中（用于外部设置 DoseUnit 后同步 UI）。
+    /// </summary>
+    public void SelectDoseUnitByName(string? unit)
+    {
+        // 清空所有选中
+        foreach (var item in AllDoseUnitItems) item.IsSelected = false;
+        if (string.IsNullOrEmpty(unit)) return;
+        var match = AllDoseUnitItems.FirstOrDefault(x => x.Name == unit);
+        if (match is not null) match.IsSelected = true;
+        DoseUnit = unit;
+    }
+
+    /// <summary>添加自定义剂量单位：校验去重 → 写入DB → 加入集合 → 自动选中。</summary>
+    public void AddCustomUnit()
+    {
+        ErrorMessage = string.Empty;
+        var value = CustomUnit?.Trim();
+        if (string.IsNullOrEmpty(value))
+        {
+            ErrorMessage = "请输入单位";
+            return;
+        }
+        // 去重：默认单位和自定义单位都不能重复
+        if (DefaultDoseUnitItems.Any(x => x.Name == value) || CustomDoseUnitItems.Any(x => x.Name == value))
+        {
+            ErrorMessage = "该单位已存在";
+            return;
+        }
+
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            ServiceProvider.Instance.SupplementItemRepository.Insert(userId, "dose_unit", value);
+        }
+
+        var newItem = new CommonItemViewModel(value, isCustom: true);
+        newItem.PropertyChanged += OnItemPropertyChanged;
+        CustomDoseUnitItems.Add(newItem);
+        AllDoseUnitItems.Add(newItem);
+        // 自动选中
+        foreach (var item in AllDoseUnitItems) item.IsSelected = false;
+        newItem.IsSelected = true;
+
+        CustomUnit = string.Empty;
+        ShowCustomUnitInput = false;
+    }
+
+    /// <summary>删除自定义剂量单位（长按触发）。</summary>
+    private void DeleteCustomUnit(CommonItemViewModel? item)
+    {
+        if (item is null || !item.IsCustom) return;
+        ErrorMessage = string.Empty;
+
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            ServiceProvider.Instance.SupplementItemRepository.Delete(userId, "dose_unit", item.Name);
+        }
+
+        var wasSelected = item.IsSelected;
+        CustomDoseUnitItems.Remove(item);
+        AllDoseUnitItems.Remove(item);
+        item.PropertyChanged -= OnItemPropertyChanged;
+        // 删除的是当前选中项 → 回退到第一个默认单位
+        if (wasSelected && DefaultDoseUnitItems.Count > 0)
+        {
+            foreach (var it in AllDoseUnitItems) it.IsSelected = false;
+            DefaultDoseUnitItems[0].IsSelected = true;
+        }
+    }
+
+    #endregion
+
     /// <summary>
     /// 类型切换时：清空选中状态、重新加载对应类型的自定义项、通知 UI 刷新。
     /// </summary>
@@ -248,6 +404,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         Type = SuppType,
         Name = Name,
         Dose = Dose,
+        DoseUnit = DoseUnit,
         Note = Note,
         Time = $"{DateText} {TimeText}",
     };

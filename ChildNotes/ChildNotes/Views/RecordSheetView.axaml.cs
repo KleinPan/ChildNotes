@@ -460,6 +460,49 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    /// <summary>点击单位 Chip 单选：先清空其他单位选中，再切换当前项（允许取消选中）。</summary>
+    private void OnUnitChipTap(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { Tag: CommonItemViewModel item } && DataContext is RecordSheetViewModel vm)
+        {
+            foreach (var other in vm.SupplementForm.AllDoseUnitItems)
+            {
+                if (!ReferenceEquals(other, item)) other.IsSelected = false;
+            }
+            item.IsSelected = !item.IsSelected;
+        }
+    }
+
+    /// <summary>辅食单位 Chip 单选：清空其他单位选中，切换当前项。</summary>
+    private void OnCompUnitChipTap(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { Tag: CommonItemViewModel item } && DataContext is RecordSheetViewModel vm)
+        {
+            foreach (var other in vm.ComplementaryForm.AmountUnitItems)
+            {
+                if (!ReferenceEquals(other, item)) other.IsSelected = false;
+            }
+            item.IsSelected = !item.IsSelected;
+        }
+    }
+
+    /// <summary>右键点击自定义单位 Chip 弹出删除确认对话框。</summary>
+    private async void OnUnitChipPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (sender is not Border { Tag: CommonItemViewModel item }) return;
+        if (!item.IsCustom) return;
+        var point = e.GetCurrentPoint((Visual)sender);
+        if (!point.Properties.IsRightButtonPressed) return;
+        if (DataContext is not RecordSheetViewModel vm) return;
+
+        e.Handled = true;
+        var confirmed = await ShowConfirmDialog("删除自定义单位", $"确定删除单位「{item.Name}」吗？");
+        if (confirmed)
+        {
+            vm.SupplementForm.DeleteCustomUnitCommand.Execute(item);
+        }
+    }
+
     /// <summary>简单的确认对话框（用独立 Window 实现模态弹窗）。</summary>
     private Task<bool> ShowConfirmDialog(string title, string message)
     {

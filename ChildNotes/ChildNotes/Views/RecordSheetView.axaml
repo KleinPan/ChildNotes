@@ -556,7 +556,50 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="剂量（选填）" />
-                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" PlaceholderText="如：1滴、5ml..." Text="{Binding SupplementForm.Dose}" />
+                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" PlaceholderText="请输入数量..." Text="{Binding SupplementForm.Dose}" />
+                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="单位" />
+                                    <ItemsControl ItemsSource="{Binding SupplementForm.AllDoseUnitItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:CommonItemViewModel">
+                                                <Border Classes="supp-chip"
+                                                        Classes.active="{Binding IsSelected, Mode=OneWay}"
+                                                        Classes.custom="{Binding IsCustom}"
+                                                        PointerReleased="OnUnitChipPointerReleased"
+                                                        Tag="{Binding .}"
+                                                        Tapped="OnUnitChipTap">
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <!--  自定义单位输入区（点击 + 自定义 切换显示）  -->
+                                    <Grid Margin="0,6,0,0" ColumnDefinitions="*,Auto">
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入单位（如：滴、片、丸）..."
+                                                 IsVisible="{Binding SupplementForm.ShowCustomUnitInput}"
+                                                 Text="{Binding SupplementForm.CustomUnit}" />
+                                        <Button Grid.Column="1" Margin="8,0,0,0"
+                                                Background="{StaticResource WeuiGreenBrush}"
+                                                BorderThickness="0"
+                                                Command="{Binding SupplementForm.AddCustomUnitCommand}"
+                                                Content="添加" CornerRadius="8" Foreground="White"
+                                                IsVisible="{Binding SupplementForm.ShowCustomUnitInput}" />
+                                    </Grid>
+                                    <Button Margin="0,6,0,0"
+                                            HorizontalAlignment="Left"
+                                            Background="Transparent"
+                                            BorderBrush="#07C160"
+                                            BorderThickness="1"
+                                            Command="{Binding SupplementForm.ToggleCustomUnitInputCommand}"
+                                            Content="+ 自定义"
+                                            CornerRadius="8"
+                                            FontSize="12"
+                                            Foreground="#07C160"
+                                            Padding="10,4" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
@@ -694,7 +737,25 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="食量（选填）" />
-                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" PlaceholderText="如：2勺、半碗..." Text="{Binding ComplementaryForm.AmountText}" />
+                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" PlaceholderText="请输入数量..." Text="{Binding ComplementaryForm.AmountText}" />
+                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="单位" />
+                                    <ItemsControl ItemsSource="{Binding ComplementaryForm.AmountUnitItems}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="vm:CommonItemViewModel">
+                                                <Border Classes="supp-chip"
+                                                        Classes.active="{Binding IsSelected, Mode=OneWay}"
+                                                        Tag="{Binding .}"
+                                                        Tapped="OnCompUnitChipTap">
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">

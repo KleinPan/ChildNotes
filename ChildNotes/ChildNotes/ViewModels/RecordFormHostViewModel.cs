@@ -126,12 +126,14 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 SupplementForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 SupplementForm.SwitchType(r.RecordSubType ?? "supplement");
                 SupplementForm.TimeText = time;
-                // 回填名称/剂量/备注（从 PayloadJson 反序列化），否则编辑时表单为空无法修改
+                // 回填名称/剂量/单位/备注（从 PayloadJson 反序列化），否则编辑时表单为空无法修改
                 var suppDto = r.GetPayload<SupplementRecordDto>();
                 if (suppDto is not null)
                 {
                     SupplementForm.Name = suppDto.Name ?? string.Empty;
                     SupplementForm.Dose = suppDto.Dose ?? string.Empty;
+                    // 回填单位选中（旧数据 DoseUnit 可能为 null，保持默认选中）
+                    SupplementForm.SelectDoseUnitByName(suppDto.DoseUnit);
                     SupplementForm.Note = suppDto.Note ?? string.Empty;
                 }
                 break;
@@ -145,6 +147,14 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
             case RecordType.Complementary:
                 ComplementaryForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 ComplementaryForm.TimeText = time;
+                var compDto = r.GetPayload<ComplementaryRecordDto>();
+                if (compDto is not null)
+                {
+                    ComplementaryForm.FoodName = compDto.FoodName ?? string.Empty;
+                    ComplementaryForm.AmountText = compDto.Amount ?? string.Empty;
+                    ComplementaryForm.SelectAmountUnitByName(compDto.AmountUnit);
+                    ComplementaryForm.Note = compDto.Note ?? string.Empty;
+                }
                 break;
             case RecordType.Abnormal:
                 AbnormalForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
