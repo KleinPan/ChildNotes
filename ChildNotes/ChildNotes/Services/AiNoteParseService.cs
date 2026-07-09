@@ -35,6 +35,7 @@ public sealed class AiNoteParseService
 支持的 recordType: feed / diaper / sleep / temperature / growth / supplement / water / pump / complementary / abnormal / activity
 - feed: 仅限奶类（瓶喂奶粉/母乳、亲喂）；喝水不属于 feed
 - feed 子类型: bottle/breast/expressed
+- diaper: 换尿布（含大小便相关表述，如"大便/便便/拉屎/拉了/臭臭/粑粑/拉臭/尿尿/嘘嘘"均归此类型）
 - diaper 子类型(diaperType): wet/dirty/both/dry
 - supplement: 用药/营养补充（维D、益生菌、药品等；不含喝水）；子类型: medicine/nutrition
 - water: 喝水（独立类型，amount=水量ml）
@@ -49,9 +50,13 @@ note, summary(<=30字一句话), confidence(0~1)。
 {"recordType":"feed","recordSubType":"bottle","time":"11:30","amount":130,"summary":"瓶喂130ml","confidence":0.9},
 {"recordType":"water","time":"11:30","amount":10,"summary":"喝水10ml","confidence":0.8}]
 
+示例输入："拉了大便"
+示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
+
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
 - "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 
 只输出 JSON 数组，不要任何额外文字或 Markdown 代码块。缺失字段用 null。
@@ -65,7 +70,11 @@ note, summary(<=30字一句话), confidence(0~1)。
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
-        DevLogger.Log("AiNote", $"解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, Enabled={config.Enabled}, preferServer={preferServer}");
+
+        // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
+        DevLogger.Log("AiNote", $"[AI-LOG] 用户输入 | 时间={DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} 类型=NoteParse 路径={(preferServer ? "server" : "local")} 文本={text}");
+
+        DevLogger.Log("AiNote", $"[AI-LOG] 解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, Enabled={config.Enabled}, preferServer={preferServer}");
 
         // 1) 按用户选择的路径调用 AI
         List<AiNoteParseItem>? aiItems = null;
@@ -79,11 +88,19 @@ note, summary(<=30字一句话), confidence(0~1)。
         }
 
         if (aiItems is { Count: > 0 })
+        {
+            // [AI-LOG] 解析结果摘要：记录每条记录的类型/子类型/摘要/来源，便于后续核对
+            var summary = string.Join(" | ", aiItems.Select(i => $"{i.RecordType}/{i.RecordSubType ?? "-"}:{i.Summary ?? "(空)"}[src={i.Source}]"));
+            DevLogger.Log("AiNote", $"[AI-LOG] 解析成功 {aiItems.Count} 条 | {summary}");
             return aiItems;
+        }
 
         // 2) AI 失败则规则降级
-        DevLogger.Log("AiNote", "AI 解析未返回结果，降级到规则解析", DevLogger.Level.Warn);
-        return LocalRuleParseMulti(text);
+        DevLogger.Log("AiNote", "[AI-LOG] AI 解析未返回结果，降级到规则解析", DevLogger.Level.Warn);
+        var ruleItems = LocalRuleParseMulti(text);
+        var ruleSummary = string.Join(" | ", ruleItems.Select(i => $"{i.RecordType}/{i.RecordSubType ?? "-"}:{i.Summary ?? "(空)"}[src={i.Source}]"));
+        DevLogger.Log("AiNote", $"[AI-LOG] 规则降级解析 {ruleItems.Count} 条 | {ruleSummary}");
+        return ruleItems;
     }
 
     /// <summary>尝试调用后端解析接口；未配置或失败时返回 null。</summary>
@@ -92,19 +109,19 @@ note, summary(<=30字一句话), confidence(0~1)。
         var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
         if (string.IsNullOrEmpty(serverUrl))
         {
-            DevLogger.Log("AiNote", "后端解析跳过：ServerUrl 未配置", DevLogger.Level.Warn);
+            DevLogger.Log("AiNote", "[AI-LOG] 后端解析跳过：ServerUrl 未配置", DevLogger.Level.Warn);
             return null;
         }
-        DevLogger.Log("AiNote", $"调用后端解析：{serverUrl}/api/smart-analysis/parse-note");
+        DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note");
         try
         {
             var batch = await _apiClient.ParseAsync(text);
-            DevLogger.Log("AiNote", $"后端解析返回：{(batch is null ? "null" : $"{batch.Items.Count} 条")}");
+            DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{(batch is null ? "null" : $"{batch.Items.Count} 条")}");
             return batch?.Items;
         }
         catch (Exception ex)
         {
-            DevLogger.Log("AiNote", "后端解析失败：" + ex.Message, DevLogger.Level.Error);
+            DevLogger.Log("AiNote", "[AI-LOG] 后端解析失败：" + ex.Message, DevLogger.Level.Error);
             return null;
         }
     }
@@ -118,11 +135,12 @@ note, summary(<=30字一句话), confidence(0~1)。
         {
             var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt, text);
             var parsed = ParseLlmJsonArray(raw);
+            DevLogger.Log("AiNote", $"[AI-LOG] 本地 LLM 解析返回：{(parsed is null ? "null" : $"{parsed.Count} 条")}");
             return parsed;
         }
         catch (Exception ex)
         {
-            DevLogger.Log("AiNote", "本地 LLM 解析失败：" + ex.Message);
+            DevLogger.Log("AiNote", "[AI-LOG] 本地 LLM 解析失败：" + ex.Message, DevLogger.Level.Error);
             return null;
         }
     }
@@ -242,9 +260,12 @@ note, summary(<=30字一句话), confidence(0~1)。
             };
         }
 
-        // 2) 换尿布
+        // 2) 换尿布（含大便/小便相关各种口语表述）
         if (text.Contains("尿布") || text.Contains("换尿") || text.Contains("嘘嘘") || text.Contains("便便") || text.Contains("拉屎") || text.Contains("拉尿")
-            || text.Contains("又尿又拉") || Regex.IsMatch(text, @"(^|[^布])尿了") || Regex.IsMatch(text, @"(^|[^布])便了"))
+            || text.Contains("又尿又拉")
+            || text.Contains("大便") || text.Contains("小便") || text.Contains("拉了") || text.Contains("臭臭")
+            || text.Contains("粑粑") || text.Contains("拉臭") || text.Contains("尿尿")
+            || Regex.IsMatch(text, @"(^|[^布])尿了") || Regex.IsMatch(text, @"(^|[^布])便了"))
         {
             if (text.Contains("干爽") || text.Contains("干燥"))
             {
@@ -259,9 +280,13 @@ note, summary(<=30字一句话), confidence(0~1)。
                     Source = ParseSource.Rule,
                 };
             }
-            var content = text.Replace("尿布", "").Replace("换尿", "");
-            bool hasDirty = content.Contains("便") || content.Contains("屎") || content.Contains("拉");
-            bool hasWet = content.Contains("尿") || content.Contains("嘘");
+            var content = text.Replace("尿布", "").Replace("换尿", "").Replace("小便", "");
+            // 大便判定：含"便/屎/粑/臭"或单独"拉"字（"拉"在育儿语境默认指大便）
+            // 注意：content 已 Replace 掉"尿布/换尿/小便"，避免"小便"含"便"字被误判为 dirty
+            bool hasDirty = content.Contains("便") || content.Contains("屎") || content.Contains("粑")
+                || content.Contains("臭") || content.Contains("拉");
+            // 小便判定：content 中"尿"字（"尿布/换尿"已 Replace），或显式"嘘嘘/小便"
+            bool hasWet = content.Contains("尿") || text.Contains("嘘") || text.Contains("小便");
             string sub = (hasDirty, hasWet) switch
             {
                 (true, true) => DiaperType.Both,

@@ -89,6 +89,9 @@ public partial class QuickInputViewModel : ViewModelBase
             return;
         }
 
+        // [AI-LOG] 用户输入入口记录：时间戳 + 输入类型 + 具体内容（与 AiNoteParseService 内部日志互补，便于行为追踪）
+        DevLogger.Log("QuickInput", $"[AI-LOG] 用户提交 | 时间={DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} 类型=QuickInput 长度={text.Length} 文本={text}");
+
         IsParsing = true;
         SendCommand.NotifyCanExecuteChanged();
         try
@@ -127,7 +130,7 @@ public partial class QuickInputViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            DevLogger.Log("QuickInput", "保存失败：" + ex.Message);
+            DevLogger.Log("QuickInput", "[AI-LOG] 保存失败：" + ex.Message, DevLogger.Level.Error);
             DisplayToast("保存失败");
         }
         finally

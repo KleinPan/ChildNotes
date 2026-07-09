@@ -30,7 +30,7 @@ public partial class AiNoteService : IAiNoteService
 
 支持的记录类型（recordType）：
 - feed：喂奶（仅限奶类：瓶喂奶粉/母乳、亲喂；喝水不属于 feed）
-- diaper：换尿布
+- diaper：换尿布（含大小便相关表述，如"大便/便便/拉屎/拉了/臭臭/粑粑/拉臭/尿尿/嘘嘘"均归此类型）
 - sleep：睡眠
 - temperature：体温
 - growth：身高体重
@@ -72,9 +72,16 @@ public partial class AiNoteService : IAiNoteService
   {"recordType":"water","amount":10,"time":null,"summary":"喝水10ml","confidence":0.8}
 ]
 
+输入"拉了大便"应输出：
+[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
+
+输入"换尿布 便便"应输出：
+[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","summary":"换尿布 便便","confidence":0.9}]
+
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
 - "吃药/吃半包XX颗粒" → supplement/medicine；"维D/益生菌" → supplement/nutrition
+- "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 """;
 
@@ -98,6 +105,10 @@ public partial class AiNoteService : IAiNoteService
         if (text.Length > 500)
             throw new BusinessException("记录文本过长（最多 500 字）", 400);
 
+        // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
+        _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse 文本={Text}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), text);
+
         List<AiNoteParseItem> items;
         try
         {
@@ -106,7 +117,7 @@ public partial class AiNoteService : IAiNoteService
         catch (Exception ex)
         {
             // 降级到规则解析：保证可用性，置信度下调
-            _logger.LogWarning(ex, "AI 解析失败，降级到规则兜底。Text={Text}", text);
+            _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底。Text={Text}", text);
             items = ParseByRulesMulti(text);
             foreach (var it in items)
             {
@@ -122,7 +133,7 @@ public partial class AiNoteService : IAiNoteService
             it.Time = string.IsNullOrEmpty(it.Time) ? now : NormalizeTime(it.Time);
         }
 
-        _logger.LogInformation("智能记解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Text={Text}",
+        _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Text={Text}",
             items.Count,
             items.FirstOrDefault()?.RecordType ?? "-",
             items.FirstOrDefault()?.RecordSubType ?? "-",
@@ -135,7 +146,7 @@ public partial class AiNoteService : IAiNoteService
         var sw = Stopwatch.StartNew();
         var (raw, _) = await _ai.ChatAsync(SystemPrompt, text, ct);
         sw.Stop();
-        _logger.LogInformation("DeepSeek 调用成功 {Ms}ms respLen={Len}", sw.ElapsedMilliseconds, raw?.Length ?? 0);
+        _logger.LogInformation("[AI-LOG] DeepSeek 调用成功 {Ms}ms respLen={Len}", sw.ElapsedMilliseconds, raw?.Length ?? 0);
 
         var json = ExtractJsonArray(raw ?? "");
         var items = JsonSerializer.Deserialize<List<AiNoteParseItem>>(json, JsonOpts)
@@ -147,7 +158,7 @@ public partial class AiNoteService : IAiNoteService
         {
             if (string.IsNullOrEmpty(it.RecordType) || !RecordType.All.Contains(it.RecordType))
             {
-                _logger.LogWarning("AI 返回的记录类型无效，已剔除：{RecordType}", it.RecordType);
+                _logger.LogWarning("[AI-LOG] AI 返回的记录类型无效，已剔除：{RecordType}", it.RecordType);
                 continue;
             }
             if (it.Confidence <= 0) it.Confidence = 0.8;
@@ -266,9 +277,11 @@ public partial class AiNoteService : IAiNoteService
             };
         }
 
-        // 2) 换尿布
+        // 2) 换尿布（含大便/小便相关各种口语表述）
         if (text.Contains("尿布") || text.Contains("换尿") || text.Contains("嘘嘘") || text.Contains("便便") || text.Contains("拉屎") || text.Contains("拉尿")
             || text.Contains("又尿又拉") || text.Contains("又拉又尿")
+            || text.Contains("大便") || text.Contains("小便") || text.Contains("拉了") || text.Contains("臭臭")
+            || text.Contains("粑粑") || text.Contains("拉臭") || text.Contains("尿尿")
             || Regex.IsMatch(text, @"(^|[^布])尿了") || Regex.IsMatch(text, @"(^|[^布])便了"))
         {
             if (text.Contains("干爽") || text.Contains("干燥"))
@@ -283,9 +296,13 @@ public partial class AiNoteService : IAiNoteService
                     Confidence = 0.6,
                 };
             }
-            var content = text.Replace("尿布", "").Replace("换尿", "");
-            bool hasDirty = content.Contains("便") || content.Contains("屎") || content.Contains("拉");
-            bool hasWet = content.Contains("尿") || content.Contains("嘘");
+            var content = text.Replace("尿布", "").Replace("换尿", "").Replace("小便", "");
+            // 大便判定：含"便/屎/粑/臭"或单独"拉"字（"拉"在育儿语境默认指大便）
+            // 注意：content 已 Replace 掉"尿布/换尿/小便"，避免"小便"含"便"字被误判为 dirty
+            bool hasDirty = content.Contains("便") || content.Contains("屎") || content.Contains("粑")
+                || content.Contains("臭") || content.Contains("拉");
+            // 小便判定：content 中"尿"字（"尿布/换尿"已 Replace），或显式"嘘嘘/小便"
+            bool hasWet = content.Contains("尿") || text.Contains("嘘") || text.Contains("小便");
             string sub = (hasDirty, hasWet) switch
             {
                 (true, true) => DiaperType.Both,

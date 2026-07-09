@@ -93,6 +93,16 @@ public class AiNoteParseTests
     [InlineData("换尿布 干爽", DiaperType.Dry)]
     [InlineData("拉屎了", DiaperType.Dirty)]
     [InlineData("尿了", DiaperType.Wet)]
+    // 大便扩展表述（原 bug：曾误识别为 supplement）
+    [InlineData("拉了大便", DiaperType.Dirty)]
+    [InlineData("大便了", DiaperType.Dirty)]
+    [InlineData("拉了", DiaperType.Dirty)]
+    [InlineData("臭臭", DiaperType.Dirty)]
+    [InlineData("拉臭臭了", DiaperType.Dirty)]
+    [InlineData("粑粑", DiaperType.Dirty)]
+    [InlineData("拉臭", DiaperType.Dirty)]
+    [InlineData("尿尿了", DiaperType.Wet)]
+    [InlineData("小便了", DiaperType.Wet)]
     public void RuleParse_Diaper_DetectsSubType(string text, string expectedSub)
     {
         var svc = NewServiceWithFailingAi();
