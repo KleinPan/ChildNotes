@@ -9,8 +9,8 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// 后端同步服务：增量拉取 + 批量上行。
-/// 同步范围：baby + child_record + milestone（不含 app_user.password_hash / baby_member.role_code）。
-/// 权限：只同步当前用户有访问权的宝宝及其记录。
+/// 同步范围：baby + child_record + milestone + sign_in_record（Pull 积分余额）。
+/// 权限：只同步当前用户有访问权的宝宝及其记录；签到/积分仅同步当前用户自己的。
 /// </summary>
 public class SyncService : ISyncService
 {
@@ -56,9 +56,21 @@ public class SyncService : ISyncService
             .Take(pageLimit)
             .ToListAsync(ct);
 
+        // 签到记录：仅同步当前用户自己的。SignInRecord 只有 CreatedAt（无 UpdatedAt），
+        // 增量基准用 CreatedAt。首签记录 CreatedAt 最早，分页时按 CreatedAt 升序。
+        var signIns = await _db.SignInRecords.AsNoTracking()
+            .Where(s => s.UserId == uid && s.CreatedAt > sinceUtc)
+            .OrderBy(s => s.CreatedAt)
+            .Take(pageLimit)
+            .ToListAsync(ct);
+
+        // 当前用户积分余额（每页都返回，客户端以最后一页为准）。积分是 Pull-only 数据。
+        var userPoints = await _db.UserPoints.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == uid, ct);
+
         // 分页判定：任一类型达到上限即认为可能有更多数据
-        var hasMore = babies.Count == pageLimit || records.Count == pageLimit || milestones.Count == pageLimit;
-        // 游标取已拉取数据中最大的 updated_at（三类取较新者）
+        var hasMore = babies.Count == pageLimit || records.Count == pageLimit
+            || milestones.Count == pageLimit || signIns.Count == pageLimit;
+        // 游标取已拉取数据中最大的时间戳（四类取较新者；签到用 CreatedAt）
         DateTime? nextCursor = null;
         if (records.Count > 0) nextCursor = records.Max(r => r.UpdatedAt);
         if (babies.Count > 0)
@@ -71,12 +83,19 @@ public class SyncService : ISyncService
             var msMax = milestones.Max(m => m.UpdatedAt);
             nextCursor = nextCursor.HasValue ? (msMax > nextCursor ? msMax : nextCursor) : msMax;
         }
+        if (signIns.Count > 0)
+        {
+            var siMax = signIns.Max(s => s.CreatedAt);
+            nextCursor = nextCursor.HasValue ? (siMax > nextCursor ? siMax : nextCursor) : siMax;
+        }
 
         return new SyncPullResponse
         {
             Babies = babies.Select(ToBabyItem).ToList(),
             Records = records.Select(ToRecordItem).ToList(),
             Milestones = milestones.Select(ToMilestoneItem).ToList(),
+            SignIns = signIns.Select(ToSignInItem).ToList(),
+            UserPoints = userPoints is null ? null : ToUserPointsItem(userPoints),
             ServerTime = DateTime.UtcNow,
             HasMore = hasMore,
             NextCursor = nextCursor,
@@ -154,12 +173,37 @@ public class SyncService : ISyncService
             }
         }
 
+        // 签到记录：客户端上送本地签到（离线签到场景）。以 Id 做幂等 upsert，
+        // 不重复发积分——积分发放以服务端签到 API 为准，这里只同步记录本身。
+        var signInsUpserted = 0;
+        foreach (var item in req.SignIns ?? new())
+        {
+            if (item.UserId != uid) continue;
+
+            var existing = await _db.SignInRecords.FirstOrDefaultAsync(s => s.Id == item.Id, ct);
+            if (existing is null)
+            {
+                _db.SignInRecords.Add(new SignInRecord
+                {
+                    Id = item.Id,
+                    UserId = item.UserId,
+                    SignDate = DateTime.SpecifyKind(item.SignDate, DateTimeKind.Utc),
+                    ContinuousDays = item.ContinuousDays,
+                    RewardPoints = item.Reward,
+                    CreatedAt = DateTime.SpecifyKind(item.CreatedAt, DateTimeKind.Utc),
+                });
+                signInsUpserted++;
+            }
+            // 签到记录不可变（无 UpdatedAt），已存在则跳过
+        }
+
         await _db.SaveChangesAsync(ct);
         return new SyncBatchResponse
         {
             RecordsUpserted = recordsUpserted,
             BabiesUpserted = babiesUpserted,
             MilestonesUpserted = milestonesUpserted,
+            SignInsUpserted = signInsUpserted,
             ServerTime = DateTime.UtcNow,
         };
     }
@@ -293,4 +337,24 @@ public class SyncService : ISyncService
         existing.Deleted = src.Deleted;
         existing.UpdatedAt = DateTime.SpecifyKind(src.UpdatedAt, DateTimeKind.Utc);
     }
+
+    private static SyncSignInItem ToSignInItem(SignInRecord s) => new()
+    {
+        Id = s.Id,
+        UserId = s.UserId,
+        SignDate = s.SignDate,
+        ContinuousDays = s.ContinuousDays,
+        Reward = s.RewardPoints,
+        CreatedAt = s.CreatedAt,
+    };
+
+    private static SyncUserPointsItem ToUserPointsItem(UserPoints p) => new()
+    {
+        Id = p.Id,
+        UserId = p.UserId,
+        Points = p.Points,
+        TotalEarned = p.TotalEarned,
+        TotalSpent = p.TotalSpent,
+        UpdatedAt = p.UpdatedAt,
+    };
 }

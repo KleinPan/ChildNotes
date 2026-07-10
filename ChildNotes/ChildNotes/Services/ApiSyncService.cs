@@ -24,24 +24,26 @@ public sealed class ApiSyncService : BaseApiClient
     private readonly BabyRepository _babyRepo;
     private readonly RecordRepository _recordRepo;
     private readonly MilestoneRepository _milestoneRepo;
+    private readonly PointsRepository _pointsRepo;
     private readonly Data.DbConnectionFactory? _dbFactory;
 
     /// <summary>同步过程依赖的网络监测器（可选，由 ServiceProvider 注入）。</summary>
     public NetworkMonitor? NetworkMonitor { get; set; }
 
     public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo,
-        MilestoneRepository milestoneRepo)
+        MilestoneRepository milestoneRepo, PointsRepository pointsRepo)
     {
         _cfgRepo = cfgRepo;
         _babyRepo = babyRepo;
         _recordRepo = recordRepo;
         _milestoneRepo = milestoneRepo;
+        _pointsRepo = pointsRepo;
     }
 
     /// <summary>带 DbConnectionFactory 的构造函数，启用同步前备份能力。</summary>
     public ApiSyncService(SyncConfigRepository cfgRepo, BabyRepository babyRepo, RecordRepository recordRepo,
-        MilestoneRepository milestoneRepo, Data.DbConnectionFactory dbFactory)
-        : this(cfgRepo, babyRepo, recordRepo, milestoneRepo)
+        MilestoneRepository milestoneRepo, PointsRepository pointsRepo, Data.DbConnectionFactory dbFactory)
+        : this(cfgRepo, babyRepo, recordRepo, milestoneRepo, pointsRepo)
     {
         _dbFactory = dbFactory;
     }
@@ -57,9 +59,11 @@ public sealed class ApiSyncService : BaseApiClient
         public int PulledBabies { get; init; }
         public int PulledRecords { get; init; }
         public int PulledMilestones { get; init; }
+        public int PulledSignIns { get; init; }
         public int PushedBabies { get; init; }
         public int PushedRecords { get; init; }
         public int PushedMilestones { get; init; }
+        public int PushedSignIns { get; init; }
         public DateTime DoneAt { get; init; }
         /// <summary>错误分类（失败时填充），供 UI 决定是否显示重试按钮。</summary>
         public SyncErrorKind? ErrorKind { get; init; }
@@ -111,7 +115,7 @@ public sealed class ApiSyncService : BaseApiClient
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
             //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
-            int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pullPages = 0;
+            int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pulledSignIns = 0, pullPages = 0;
             DateTime? cursor = since;
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
@@ -133,13 +137,19 @@ public sealed class ApiSyncService : BaseApiClient
                         if (_recordRepo.UpsertFromSync(MapToRecord(r), pullConn, pullTx)) pulledRecords++;
                     foreach (var m in pageResp.Milestones)
                         if (_milestoneRepo.UpsertFromSync(MapToMilestone(m), pullConn, pullTx)) pulledMilestones++;
+                    foreach (var s in pageResp.SignIns)
+                        if (_pointsRepo.UpsertSignInFromSync(MapToSignIn(s), pullConn, pullTx)) pulledSignIns++;
+
+                    // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
+                    if (pageResp.UserPoints is not null)
+                        _pointsRepo.UpsertUserPointsFromSync(MapToUserPoints(pageResp.UserPoints), pullConn, pullTx);
 
                     pullPages++;
                     DevLogger.Log("Sync",
-                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, hasMore={pageResp.HasMore}");
+                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, hasMore={pageResp.HasMore}");
 
-                    // HasMore 为 false 或三类都无数据时终止；游标推进到 NextCursor
-                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0))
+                    // HasMore 为 false 或四类都无数据时终止；游标推进到 NextCursor
+                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0))
                         break;
                     cursor = pageResp.NextCursor ?? cursor.Value;
                 }
@@ -149,16 +159,19 @@ public sealed class ApiSyncService : BaseApiClient
             // 3. Push：把本地 updated_at > since 的数据上送（带重试与切备用地址）
             //     注：使用 pushResp.ServerTime 作为新的 last_sync_at 基准，
             //     避免本地时钟与服务器不一致导致漏推/重推。
+            //     积分余额不上送（Pull-only，服务端为准）；签到记录按 CreatedAt 增量上送。
             var pushSince = since;
             var localBabies = _babyRepo.GetByUpdatedAt(pushSince);
             var localRecords = _recordRepo.GetByUpdatedAt(pushSince);
             var localMilestones = _milestoneRepo.GetByUpdatedAt(pushSince);
+            var localSignIns = _pointsRepo.GetSignInsByCreatedAt(pushSince);
 
             var pushReq = new SyncBatchRequest
             {
                 Babies = localBabies.Select(MapToBabyItem).ToList(),
                 Records = localRecords.Select(MapToRecordItem).ToList(),
                 Milestones = localMilestones.Select(MapToMilestoneItem).ToList(),
+                SignIns = localSignIns.Select(MapToSignInItem).ToList(),
             };
             var pushResp = await PushWithRetryAsync(serverUrl, token, pushReq, ct);
             if (pushResp is null)
@@ -180,7 +193,7 @@ public sealed class ApiSyncService : BaseApiClient
             // 5. 更新本地同步时间戳
             cfg.LastSyncAt = pushResp.ServerTime;
             cfg.LastSyncStatus = "ok";
-            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑";
+            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑/{pushResp.SignInsUpserted}签到";
             _cfgRepo.Save(cfg);
 
             // 6. 通知网络监测器本次成功，加速从 OfflineServer 恢复
@@ -193,9 +206,11 @@ public sealed class ApiSyncService : BaseApiClient
                 PulledBabies = pulledBabies,
                 PulledRecords = pulledRecords,
                 PulledMilestones = pulledMilestones,
+                PulledSignIns = pulledSignIns,
                 PushedBabies = pushResp.BabiesUpserted,
                 PushedRecords = pushResp.RecordsUpserted,
                 PushedMilestones = pushResp.MilestonesUpserted,
+                PushedSignIns = pushResp.SignInsUpserted,
                 DoneAt = DateTime.Now,
                 PullPages = pullPages,
             };
@@ -472,5 +487,31 @@ public sealed class ApiSyncService : BaseApiClient
         Deleted = m.Deleted,
         // 应用层 Local 时间上送服务器转 UTC
         CreatedAt = ToUtc(m.CreatedAt), UpdatedAt = ToUtc(m.UpdatedAt),
+    };
+
+    private static SignInRecord MapToSignIn(SyncSignInItem i) => new()
+    {
+        Id = i.Id, UserId = i.UserId,
+        SignDate = i.SignDate,
+        ContinuousDays = i.ContinuousDays,
+        Reward = i.Reward,
+        CreatedAt = ToLocal(i.CreatedAt),
+    };
+
+    private static SyncSignInItem MapToSignInItem(SignInRecord s) => new()
+    {
+        Id = s.Id, UserId = s.UserId,
+        SignDate = s.SignDate,
+        ContinuousDays = s.ContinuousDays,
+        Reward = s.Reward,
+        CreatedAt = ToUtc(s.CreatedAt),
+    };
+
+    private static UserPoints MapToUserPoints(SyncUserPointsItem i) => new()
+    {
+        Id = i.Id, UserId = i.UserId,
+        Points = i.Points, TotalEarned = i.TotalEarned, TotalSpent = i.TotalSpent,
+        // user_points 本地无独立 CreatedAt 同步，用 UpdatedAt 近似（仅 LWW 判定用）
+        CreatedAt = ToLocal(i.UpdatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
 }

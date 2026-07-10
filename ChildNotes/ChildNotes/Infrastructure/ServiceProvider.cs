@@ -94,7 +94,7 @@ public sealed class ServiceProvider
         AiAnalysisService = new AiAnalysisService(AiAnalysisRepository, RecordService, BabyService, AppState, LlmClient, AiAnalysisApiClient);
 
         NetworkMonitor = new NetworkMonitor();
-        ApiSyncService = new ApiSyncService(SyncConfigRepository, babyRepo, recordRepo, MilestoneRepository, DbFactory);
+        ApiSyncService = new ApiSyncService(SyncConfigRepository, babyRepo, recordRepo, MilestoneRepository, PointsRepository, DbFactory);
         ApiSyncService.NetworkMonitor = NetworkMonitor;
         SyncTrigger = new SyncTrigger(ApiSyncService, SyncLogRepository);
         SyncTrigger.NetworkMonitor = NetworkMonitor;

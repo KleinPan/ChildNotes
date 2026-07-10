@@ -32,6 +32,9 @@ public class SyncPullResponse
     public List<SyncRecordItem> Records { get; set; } = new();
     public List<SyncBabyItem> Babies { get; set; } = new();
     public List<SyncMilestoneItem> Milestones { get; set; } = new();
+    public List<SyncSignInItem> SignIns { get; set; } = new();
+    /// <summary>当前用户积分余额（每页都带，客户端以最后一页为准；Pull-only）。</summary>
+    public SyncUserPointsItem? UserPoints { get; set; }
     public DateTime ServerTime { get; set; }
     /// <summary>是否还有更多数据可拉取（分页用）。true 时客户端应继续请求下一页。</summary>
     public bool HasMore { get; set; }
@@ -71,11 +74,40 @@ public class SyncBabyItem
     public DateTime UpdatedAt { get; set; }
 }
 
+/// <summary>
+/// 签到记录同步项。SignInRecord 只有 CreatedAt（无 UpdatedAt），
+/// 同步时以 Id 为主键做 upsert，幂等不重复发积分。
+/// </summary>
+public class SyncSignInItem
+{
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public DateTime SignDate { get; set; }
+    public int ContinuousDays { get; set; }
+    public int Reward { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+/// <summary>
+/// 用户积分同步项。积分余额以服务端为准（服务端是积分发放的权威源），
+/// 同步方向为 Pull-only（服务端 → 客户端），Push 时忽略客户端上送。
+/// </summary>
+public class SyncUserPointsItem
+{
+    public string Id { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public int Points { get; set; }
+    public int TotalEarned { get; set; }
+    public int TotalSpent { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
 public class SyncBatchRequest
 {
     public List<SyncRecordItem> Records { get; set; } = new();
     public List<SyncBabyItem> Babies { get; set; } = new();
     public List<SyncMilestoneItem> Milestones { get; set; } = new();
+    public List<SyncSignInItem> SignIns { get; set; } = new();
 }
 
 public class SyncBatchResponse
@@ -83,5 +115,6 @@ public class SyncBatchResponse
     public int RecordsUpserted { get; set; }
     public int BabiesUpserted { get; set; }
     public int MilestonesUpserted { get; set; }
+    public int SignInsUpserted { get; set; }
     public DateTime ServerTime { get; set; }
 }
