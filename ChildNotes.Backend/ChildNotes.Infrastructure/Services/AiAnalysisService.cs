@@ -129,7 +129,10 @@ public class AiAnalysisService : IAiAnalysisService
 
     private (DateTime start, DateTime end) ResolveAnalysisRange(GenerateAiAnalysisRequest req)
     {
-        var today = DateTime.Today;
+        // 用 UTC 日期避免 Npgsql 写 timestamptz 时报
+        // "Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone'"
+        // 与 RecordService/SyncService 中 SpecifyKind(UTC) 保持一致。
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc);
         if (string.IsNullOrEmpty(req.StartDate) && string.IsNullOrEmpty(req.EndDate))
         {
             var end = today;
@@ -146,7 +149,8 @@ public class AiAnalysisService : IAiAnalysisService
         var days = (e - s).Days + 1;
         if (days != AnalysisRangeDays)
             throw new BusinessException($"宝宝喂养分析仅支持连续{AnalysisRangeDays}天数据");
-        return (s, e);
+        // 解析得到的 DateTime.Kind 为 Unspecified，需指定为 UTC 后才能写 timestamptz 列
+        return (DateTime.SpecifyKind(s.Date, DateTimeKind.Utc), DateTime.SpecifyKind(e.Date, DateTimeKind.Utc));
     }
 
     private async Task<Baby> ResolveBabyAsync(string userId, string? babyId, CancellationToken ct)
