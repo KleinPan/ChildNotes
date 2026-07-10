@@ -47,6 +47,8 @@ public partial class AiNoteService : IAiNoteService
 - time: HH:mm 格式，未提及时间则使用 null（后端将取当前时间）
 - amount: 数值型，单位 ml（用于 feed 瓶喂、pump 总量等）
 - duration: 数值型，单位分钟（用于 sleep、activity）
+- startTime: sleep 专用，开始时间 "HH:mm"（如"23:30"）；若只提到一个时间点则同时填 startTime 和 time
+- endTime: sleep 专用，结束时间 "HH:mm"（如"00:40"）；有明确结束时间时填写
 - leftDuration / rightDuration: 数值型，分钟（用于 feed 亲喂、pump）
 - temperature: 数值型，℃
 - height: 数值型，cm
@@ -70,7 +72,7 @@ public partial class AiNoteService : IAiNoteService
 示例：
 输入"11点半睡到12点40，吃了130奶粉，喝10ml水"应输出：
 [
-  {"recordType":"sleep","time":"23:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
+  {"recordType":"sleep","time":"23:30","startTime":"23:30","endTime":"00:40","duration":70,"summary":"睡眠70分钟","confidence":0.9},
   {"recordType":"feed","recordSubType":"bottle","amount":130,"time":null,"summary":"瓶喂130ml","confidence":0.9},
   {"recordType":"water","amount":10,"time":null,"summary":"喝水10ml","confidence":0.8}
 ]
@@ -332,16 +334,23 @@ public partial class AiNoteService : IAiNoteService
         if (sleepMatch.Success || text.Contains("睡觉") || text.Contains("入睡") || text.Contains("小睡") || text.Contains("睡到"))
         {
             int? dur = sleepMatch.Success && int.TryParse(sleepMatch.Groups[1].Value, out var d) ? d : null;
-            // "11点半睡到12点40"这种带"睡到"的，尝试计算时长
-            if (!dur.HasValue && text.Contains("睡到"))
+            // 提取起止时间（"X睡到Y"格式）
+            string? startTime = null, endTime = null;
+            if (text.Contains("睡到"))
             {
-                dur = TryCalcSleepDuration(text);
+                (startTime, endTime) = ExtractSleepRange(text);
+                if (dur is null && startTime is not null && endTime is not null)
+                    dur = TryCalcSleepDuration(text);
             }
+            if (startTime is null)
+                startTime = ExtractTime(text);
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
                 Duration = dur,
-                Time = ExtractTime(text),
+                Time = startTime,
+                StartTime = startTime,
+                EndTime = endTime,
                 Summary = dur.HasValue ? $"睡眠 {dur}分钟" : "睡眠",
                 Confidence = 0.6,
             };
@@ -551,6 +560,21 @@ public partial class AiNoteService : IAiNoteService
         return dur > 0 ? dur : null;
     }
 
+    /// <summary>从"X睡到Y"格式提取睡眠起止时间，返回 ("HH:mm", "HH:mm")；无法提取则返回 (null, null)。</summary>
+    private static (string? Start, string? End) ExtractSleepRange(string text)
+    {
+        var m = Regex.Match(text, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})\s*睡到\s*(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})");
+        if (!m.Success) return (null, null);
+        if (!int.TryParse(m.Groups[1].Value, out var sh)) return (null, null);
+        var sm = ParseMinuteGroup(m.Groups[2]);
+        if (!int.TryParse(m.Groups[3].Value, out var eh)) return (null, null);
+        var em = ParseMinuteGroup(m.Groups[4]);
+
+        if (sh < 0 || sh > 23 || sm < 0 || sm > 59) return (null, null);
+        if (eh < 0 || eh > 23 || em < 0 || em > 59) return (null, null);
+        return ($"{sh:D2}:{sm:D2}", $"{eh:D2}:{em:D2}");
+    }
+
     /// <summary>解析分钟组：支持"半"=30、空=0、数字=数字。</summary>
     private static int ParseMinuteGroup(System.Text.RegularExpressions.Group g)
     {
@@ -594,6 +618,17 @@ public partial class AiNoteService : IAiNoteService
         return DateTime.Now.ToString("yyyy-MM-dd HH:mm");
     }
 
+    /// <summary>将完整时间 "yyyy-MM-dd HH:mm" 的日期部分与 "HH:mm" 时间部分拼接，支持跨日（endTime &lt; startTime 时日期 +1）。</summary>
+    private static string CombineDateAndTime(string fullTime, string hhMm)
+    {
+        if (!DateTime.TryParse(fullTime, out var baseDt)) return fullTime;
+        if (!TimeSpan.TryParse(hhMm, out var t)) return fullTime;
+        var result = baseDt.Date.Add(t);
+        // 若结束时间小于开始时间，说明跨午夜，日期 +1
+        if (t < baseDt.TimeOfDay) result = result.AddDays(1);
+        return result.ToString("yyyy-MM-dd HH:mm");
+    }
+
     /// <summary>根据解析结果构造对应类型的 DTO（后端不落库，保留供测试使用）。</summary>
     private static object BuildDto(AiNoteParseItem p, string time)
     {
@@ -623,6 +658,8 @@ public partial class AiNoteService : IAiNoteService
             RecordType.Sleep => new SleepRecordDto
             {
                 Time = time,
+                StartTime = string.IsNullOrEmpty(p.StartTime) ? time : CombineDateAndTime(time, p.StartTime),
+                EndTime = string.IsNullOrEmpty(p.EndTime) ? null : CombineDateAndTime(time, p.EndTime),
                 Duration = p.Duration,
             },
             RecordType.Temperature => new TemperatureRecordDto

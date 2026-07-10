@@ -42,13 +42,14 @@ public sealed class AiNoteParseService
 - activity 子类型: play/outdoor/exercise
 
 字段：recordType, recordSubType, time(HH:mm), amount(ml数值), duration(分钟),
+startTime(sleep专用，开始时间HH:mm), endTime(sleep专用，结束时间HH:mm),
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
 name(supplement专用，药品/营养品名称，不含剂量), dose(supplement专用，剂量数值文本如"0.5"/"1"/"5"),
 doseUnit(supplement专用，剂量单位如"包"/"粒"/"ml"/"滴"),
 note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句话), confidence(0~1)。
 
 示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
-示例输出：[{"recordType":"sleep","time":"11:30","duration":70,"summary":"睡眠70分钟","confidence":0.9},
+示例输出：[{"recordType":"sleep","time":"11:30","startTime":"11:30","endTime":"12:40","duration":70,"summary":"睡眠70分钟","confidence":0.9},
 {"recordType":"feed","recordSubType":"bottle","time":"11:30","amount":130,"summary":"瓶喂130ml","confidence":0.9},
 {"recordType":"water","time":"11:30","amount":10,"summary":"喝水10ml","confidence":0.8}]
 
@@ -314,13 +315,19 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
         // 3) 睡眠
         var sm = Regex.Match(text, @"(\d+)\s*(?:分|min|分钟)");
         var hasSleepKw = text.Contains("睡") || text.Contains("入睡") || text.Contains("小睡") || text.Contains("睡到");
+        // 提取"X睡到Y"格式的起止时间
+        var (sleepStart, sleepEnd) = ExtractSleepRange(text);
+
         if (sm.Success && hasSleepKw)
         {
+            var st = sleepStart ?? ExtractTime(text);
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
                 Duration = int.TryParse(sm.Groups[1].Value, out var d) ? d : null,
-                Time = ExtractTime(text),
+                Time = st,
+                StartTime = st,
+                EndTime = sleepEnd,
                 Summary = sm.Groups[1].Value + "分钟睡眠",
                 Confidence = 0.4,
                 Source = ParseSource.Rule,
@@ -332,11 +339,14 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             var dur = TryCalcSleepDuration(text);
             if (dur.HasValue)
             {
+                var st = sleepStart ?? ExtractTime(text);
                 return new AiNoteParseItem
                 {
                     RecordType = RecordType.Sleep,
                     Duration = dur,
-                    Time = ExtractTime(text),
+                    Time = st,
+                    StartTime = st,
+                    EndTime = sleepEnd,
                     Summary = dur + "分钟睡眠",
                     Confidence = 0.5,
                     Source = ParseSource.Rule,
@@ -345,10 +355,13 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
         }
         if (hasSleepKw)
         {
+            var st = sleepStart ?? ExtractTime(text);
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
-                Time = ExtractTime(text),
+                Time = st,
+                StartTime = st,
+                EndTime = sleepEnd,
                 Summary = "睡眠",
                 Confidence = 0.35,
                 Source = ParseSource.Rule,
@@ -495,6 +508,20 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
         return end - start;
     }
 
+    /// <summary>从"X睡到Y"格式提取睡眠起止时间，返回 ("HH:mm", "HH:mm")；无法提取则返回 (null, null)。</summary>
+    private static (string? Start, string? End) ExtractSleepRange(string text)
+    {
+        var m = Regex.Match(text, @"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})\s*睡到\s*(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})");
+        if (!m.Success) return (null, null);
+        if (!int.TryParse(m.Groups[1].Value, out var sh)) return (null, null);
+        var sm = ParseMinuteGroup(m.Groups[2]);
+        if (!int.TryParse(m.Groups[3].Value, out var eh)) return (null, null);
+        var em = ParseMinuteGroup(m.Groups[4]);
+        if (sh < 0 || sh > 23 || sm < 0 || sm > 59) return (null, null);
+        if (eh < 0 || eh > 23 || em < 0 || em > 59) return (null, null);
+        return ($"{sh:D2}:{sm:D2}", $"{eh:D2}:{em:D2}");
+    }
+
     /// <summary>解析分钟分组："半"=30, 空=0, 数字=本身。</summary>
     private static int ParseMinuteGroup(System.Text.RegularExpressions.Group g)
     {
@@ -565,6 +592,8 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
                 recordService.AddSleep(new ChildNotes.Shared.Dtos.SleepRecordDto
                 {
                     Time = time,
+                    StartTime = string.IsNullOrEmpty(r.StartTime) ? time : CombineDateAndTime(time, r.StartTime),
+                    EndTime = string.IsNullOrEmpty(r.EndTime) ? null : CombineDateAndTime(time, r.EndTime),
                     Duration = r.Duration,
                 });
                 break;
@@ -660,6 +689,17 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             return DateTime.Today.Add(TimeSpan.Parse(time)).ToString("O");
         }
         return DateTime.Now.ToString("O");
+    }
+
+    /// <summary>将完整时间（ISO "O" 格式）的日期部分与 "HH:mm" 拼接，支持跨日（endTime &lt; startTime 时日期 +1）。</summary>
+    private static string CombineDateAndTime(string fullTimeIso, string hhMm)
+    {
+        if (!DateTime.TryParse(fullTimeIso, out var baseDt)) return fullTimeIso;
+        if (!TimeSpan.TryParse(hhMm, out var t)) return fullTimeIso;
+        var result = baseDt.Date.Add(t);
+        // 若结束时间小于开始时间，说明跨午夜，日期 +1
+        if (t < baseDt.TimeOfDay) result = result.AddDays(1);
+        return result.ToString("O");
     }
 
     // ===== Toast 显示格式化 =====

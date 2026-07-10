@@ -20,6 +20,10 @@ public record AiNoteParseItem
     public string? Time { get; set; }
     public int? Amount { get; set; }
     public int? Duration { get; set; }
+    /// <summary>sleep 专用：开始时间 "HH:mm"（如"11:30"）。</summary>
+    public string? StartTime { get; set; }
+    /// <summary>sleep 专用：结束时间 "HH:mm"（如"12:40"）。</summary>
+    public string? EndTime { get; set; }
     public int? LeftDuration { get; set; }
     public int? RightDuration { get; set; }
     public decimal? Temperature { get; set; }
