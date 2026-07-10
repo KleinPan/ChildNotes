@@ -51,14 +51,47 @@ public class MainActivity : AvaloniaMainActivity
         // 注册预测式返回回调（Android 13+ / API 33+）。
         // OnBackPressed 在 API 33+ 已废弃，当前 .NET 10 Android SDK 默认 targetSdk 为 36，
         // 系统不再调用 OnBackPressed，必须用 OnBackInvokedCallback。
-        // 注册后，侧滑返回手势会先经 HandleSystemBack() 判断是否拦截：
-        //   - 有弹层打开 → 吞掉事件，关闭弹层，不退出应用
-        //   - 无弹层 → 不拦截，系统执行默认返回（finish Activity 回桌面）
+        //
+        // ★ 关键：OnBackInvokedCallback 必须**动态注册/注销**，不能全程注册。
+        // 全程注册会导致预测式返回动画（predictive back animation）失效——
+        // 用户从屏幕边缘滑动时看不到任何返回预览，感知为"边缘返回不可用"。
+        // 正确做法：有弹层/非首页 Tab 时注册拦截，无弹层时注销恢复系统默认返回。
+        //
+        // 注：登录页无弹层，不注册回调，系统默认返回（Finish Activity）正常工作。
         if ((int)Build.VERSION.SdkInt >= 33)
         {
             _backCallback = new BackInvokedCallback(this);
-            OnBackInvokedDispatcher.RegisterOnBackInvokedCallback(
-                IOnBackInvokedDispatcher.PriorityDefault, _backCallback);
+            // 订阅 App 的拦截状态变化，动态注册/注销回调
+            if (Avalonia.Application.Current is ChildNotes.App app)
+            {
+                app.InterceptBackChanged += OnInterceptBackChanged;
+                // 登录页无弹层，不注册；进入主界面后由事件驱动注册
+            }
+        }
+    }
+
+    /// <summary>
+    /// App 层拦截状态变化：true 时注册 OnBackInvokedCallback 拦截返回手势，
+    /// false 时注销回调，恢复系统预测式返回动画。
+    /// </summary>
+    private void OnInterceptBackChanged(bool shouldIntercept)
+    {
+        if ((int)Build.VERSION.SdkInt < 33 || _backCallback is null) return;
+        try
+        {
+            if (shouldIntercept)
+            {
+                OnBackInvokedDispatcher.RegisterOnBackInvokedCallback(
+                    IOnBackInvokedDispatcher.PriorityDefault, _backCallback);
+            }
+            else
+            {
+                OnBackInvokedDispatcher.UnregisterOnBackInvokedCallback(_backCallback);
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Log.Warn("ChildNotes", $"[BackGesture] 注册/注销回调失败: {ex.Message}");
         }
     }
 
@@ -112,6 +145,11 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnDestroy()
     {
         KeyboardHeightService.StopObserving();
+        // 取消订阅拦截状态变化事件，避免 Activity 销毁后回调悬空
+        if (Avalonia.Application.Current is ChildNotes.App app)
+        {
+            app.InterceptBackChanged -= OnInterceptBackChanged;
+        }
         base.OnDestroy();
     }
 
@@ -170,8 +208,9 @@ public class MainActivity : AvaloniaMainActivity
 
     /// <summary>
     /// OnBackInvokedCallback 实现：转发到跨平台 HandleSystemBack。
-    /// 返回 true 表示应用已处理（吞掉返回事件，不退出 Activity），
-    /// 返回 false 表示应用未处理（系统执行默认返回行为）。
+    /// 此回调仅在 ShouldInterceptBack=true 时注册（有弹层/非首页 Tab），
+    /// 正常情况下 HandleSystemBack 会返回 true（关闭弹层/切回首页）。
+    /// 若返回 false（状态已变化但回调尚未注销），则调用 Finish() 兜底退出。
     /// </summary>
     private sealed class BackInvokedCallback : Java.Lang.Object, IOnBackInvokedCallback
     {
@@ -182,11 +221,9 @@ public class MainActivity : AvaloniaMainActivity
         {
             if (Avalonia.Application.Current is ChildNotes.App app && app.HandleSystemBack())
             {
-                return; // 弹层已关闭，吞掉返回事件
+                return; // 弹层已关闭/已切回首页，吞掉返回事件
             }
-            // 无弹层可关：显式调用 Finish() 结束 Activity。
-            // 注意：OnBackInvokedCallback 没有"放行"API，不调用任何方法即视为已消费回调，
-            // 因此必须主动调用 Finish() 才能让系统销毁 Activity。
+            // 兜底：回调已注册但无弹层可关（状态变化事件尚未触发注销），主动退出
             _owner.Finish();
         }
     }

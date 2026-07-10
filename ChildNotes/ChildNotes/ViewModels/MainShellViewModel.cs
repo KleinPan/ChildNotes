@@ -1,3 +1,4 @@
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -21,7 +22,11 @@ public partial class MainShellViewModel : ViewModelBase
     /// </summary>
     public bool IsQuickInputVisible => IsHomeSelected && !IsRecordSheetOpen;
 
-    partial void OnIsHomeSelectedChanged(bool value) => OnPropertyChanged(nameof(IsQuickInputVisible));
+    partial void OnIsHomeSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsQuickInputVisible));
+        RaiseInterceptBackChanged();
+    }
     partial void OnIsRecordSheetOpenChanged(bool value)
     {
         if (QuickMenu is not null)
@@ -29,6 +34,7 @@ public partial class MainShellViewModel : ViewModelBase
             QuickMenu.IsRecordSheetOpen = value;
         }
         OnPropertyChanged(nameof(IsQuickInputVisible));
+        RaiseInterceptBackChanged();
     }
 
     [ObservableProperty] private bool _isRecordSheetOpen;
@@ -83,6 +89,18 @@ public partial class MainShellViewModel : ViewModelBase
     public MineViewModel Mine { get; }
 
     public event Action? LogoutRequested;
+
+    /// <summary>
+    /// 当"是否需要拦截系统返回"状态变化时触发。
+    /// Android 端据此动态注册/注销 OnBackInvokedCallback：
+    /// 需要拦截时注册（吞掉返回手势关闭弹层/切 Tab），
+    /// 不需要时注销（恢复预测式返回动画，用户从边缘滑动可见返回预览）。
+    /// </summary>
+    public event Action<bool>? InterceptBackChanged;
+
+    /// <summary>构造完成后开启返回拦截状态通知（避免构造期间属性初始化误触发）。</summary>
+    private bool _isNotifyingBack;
+    private bool _lastInterceptBack;
 
     /// <summary>
     /// 弹层注册表：每个弹层项记录 VM、打开/关闭动作与 IsOpen 探测器。
@@ -153,6 +171,44 @@ public partial class MainShellViewModel : ViewModelBase
         }
         return false;
     }
+
+    /// <summary>
+    /// 是否需要拦截系统返回：有任何弹层打开、记录抽屉打开、功能菜单展开、或非首页 Tab。
+    /// Android 端据此动态注册/注销 OnBackInvokedCallback，避免全程注册导致预测式返回动画失效。
+    /// </summary>
+    public bool ShouldInterceptBack =>
+        _overlays.Any(e => e.IsOpen())
+        || IsRecordSheetOpen
+        || QuickMenu.IsMenuOpen
+        || !IsHomeSelected;
+
+    /// <summary>
+    /// 弹层/Tab 状态变化时触发，通知 Android 端动态注册/注销 OnBackInvokedCallback。
+    /// 仅当 ShouldInterceptBack 的值真正变化时才触发事件，避免重复注册/注销。
+    /// </summary>
+    private void RaiseInterceptBackChanged()
+    {
+        if (!_isNotifyingBack) return;
+        var now = ShouldInterceptBack;
+        if (now == _lastInterceptBack) return;
+        _lastInterceptBack = now;
+        InterceptBackChanged?.Invoke(now);
+    }
+
+    // 各弹层 IsXxxOpen 变化时触发拦截状态检查
+    partial void OnIsBabySetupOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsBabyManagerOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsStatisticsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsPointsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsAiAnalysisOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsAiSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsSyncSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsFamilyOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsDeveloperOptionsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsAppLogOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsHelpOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsPrivacyPolicyOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsInAppMessageOpenChanged(bool value) => RaiseInterceptBackChanged();
 
     public MainShellViewModel()
     {
@@ -232,6 +288,17 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(Help, () => IsHelpOpen = false, () => IsHelpOpen);
         RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
         RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
+
+        // 订阅 QuickMenu.IsMenuOpen 变化，触发返回拦截状态检查
+        QuickMenu.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(QuickMenuViewModel.IsMenuOpen))
+                RaiseInterceptBackChanged();
+        };
+
+        // 构造完成，开启返回拦截状态通知并初始化基线
+        _lastInterceptBack = ShouldInterceptBack;
+        _isNotifyingBack = true;
     }
 
     [RelayCommand]

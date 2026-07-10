@@ -215,6 +215,7 @@ public partial class App : Application
         {
             _shellVm = new MainShellViewModel();
             _shellVm.LogoutRequested += OnLogout;
+            _shellVm.InterceptBackChanged += OnInterceptBackChanged;
             _shellVm.ActivateHomeAfterLogin();
             _shellView = new MainShellView { DataContext = _shellVm };
 
@@ -295,6 +296,7 @@ public partial class App : Application
             _shellVm = new MainShellViewModel();
             DevLogger.Log("App", "MainShellViewModel created");
             _shellVm.LogoutRequested += OnLogout;
+            _shellVm.InterceptBackChanged += OnInterceptBackChanged;
             _shellVm.ActivateHomeAfterLogin();
             DevLogger.Log("App", "ActivateHomeAfterLogin done");
             _shellView = new MainShellView { DataContext = _shellVm };
@@ -357,6 +359,7 @@ public partial class App : Application
         if (_shellVm is not null)
         {
             _shellVm.LogoutRequested -= OnLogout;
+            _shellVm.InterceptBackChanged -= OnInterceptBackChanged;
             _shellVm = null;
         }
         _shellView = null;
@@ -376,6 +379,24 @@ public partial class App : Application
     public bool HandleSystemBack()
     {
         return _shellVm?.HandleSystemBack() ?? false;
+    }
+
+    /// <summary>
+    /// 当前是否需要拦截系统返回（有弹层打开/非首页 Tab）。
+    /// Android 端据此动态注册/注销 OnBackInvokedCallback，避免全程注册导致预测式返回动画失效。
+    /// </summary>
+    public bool ShouldInterceptBack => _shellVm?.ShouldInterceptBack ?? false;
+
+    /// <summary>
+    /// 拦截状态变化事件（仅在 shell 创建后可用）。
+    /// Android 端订阅此事件，在 true 时注册 OnBackInvokedCallback，false 时注销。
+    /// </summary>
+    public event Action<bool>? InterceptBackChanged;
+
+    /// <summary>转发 shell VM 的拦截状态变化到 App 级事件，供 Android 端订阅。</summary>
+    private void OnInterceptBackChanged(bool shouldIntercept)
+    {
+        InterceptBackChanged?.Invoke(shouldIntercept);
     }
 
     /// <summary>
