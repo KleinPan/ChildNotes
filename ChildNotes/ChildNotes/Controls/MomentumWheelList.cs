@@ -9,6 +9,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 
 namespace ChildNotes.Controls;
 
@@ -90,6 +91,38 @@ public class MomentumWheelList : Panel
 
         _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _animTimer.Tick += OnAnimTick;
+
+        // 监听可视树分离：Popup 关闭（LightDismiss/选择完成）时清理所有拖动/动画状态
+        // 避免下次打开时滚轮处于"拖动中"状态导致滚动位置错乱
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    /// <summary>
+    /// 从可视树分离时（如 Popup 关闭），重置所有手势/动画状态。
+    /// 解决：Popup 关闭后 _isDragging/_isAnimating 残留导致下次打开滚动错乱。
+    /// </summary>
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        StopAnimation();
+        _isDragging = false;
+        _velocity = 0;
+        _recentMoves.Clear();
+        _idleTickCount = 0;
+    }
+
+    /// <summary>
+    /// 重新附加到可视树时（如 Popup 打开），将 _offset 同步到当前选中项。
+    /// 防止上次关闭时残留的非整数 offset 导致滚轮位置不在正中央。
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        if (SourceCount > 0 && SelectedIndex >= 0 && SelectedIndex < SourceCount)
+        {
+            _offset = SelectedIndex * ItemHeight;
+            InvalidateArrange();
+            UpdateVisuals();
+        }
     }
 
     // ===== 公共属性 =====
@@ -330,6 +363,11 @@ public class MomentumWheelList : Panel
 
         e.Pointer.Capture(this);
         e.Handled = true;
+        // ★ 阻止 ScrollViewer 的 ScrollGestureRecognizer 捕获此指针
+        // 与 Avalonia Thumb/TextBox 同款做法：设置 IsGestureRecognitionSkipped=true
+        // 阻止事件路由路径上的 GestureRecognizers 处理本次 PointerPressed/PointerMoved
+        // 解决：拖动滚轮时外层 ScrollViewer 也跟着滚动的问题
+        e.PreventGestureRecognition();
     }
 
     protected override void OnPointerMoved(PointerEventArgs e)
