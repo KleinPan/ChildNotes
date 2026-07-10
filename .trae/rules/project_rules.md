@@ -172,3 +172,4 @@ dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
 ## 第三方库参考
 
 - **Ursa.Avalonia**：作为开发参考项目（未引入 NuGet 包），新需求或优化时可借鉴其控件实现思路，详见 [ursa-avalonia-reference.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/ursa-avalonia-reference.md)。
+- **Everywhere**（[https://github.com/Sylinko/Everywhere](https://github.com/Sylinko/Everywhere)）：上下文感知的桌面 AI 助手开源项目，技术栈与本项目完全一致（.NET 10 + Avalonia 12.0.5），6.1K+ Stars。作为 Avalonia 跨平台桌面应用的工程架构参考（三平台构建 / 多 LLM 集成 / i18n 源生成器 / 终端 PTY / 运行时补丁等），详见 [everywhere-reference.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/everywhere-reference.md)。
