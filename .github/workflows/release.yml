@@ -386,6 +386,95 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Checkout (for changelog generation)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 完整历史，用于生成版本变更说明
+
+      - name: Generate release body
+        id: body
+        shell: bash
+        run: |
+          CURRENT_TAG="${{ github.ref_name }}"
+          # 获取上一个 tag（按创建时间倒序，排除当前 tag）
+          PREVIOUS_TAG=$(git tag --sort=-creatordate | grep -v "^${CURRENT_TAG}$" | head -1)
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            COMMITS=$(git log --no-merges --pretty=format:"%s" "$CURRENT_TAG" 2>/dev/null || echo "")
+            RANGE_DESC="初始版本至 ${CURRENT_TAG}"
+            COMPARE_URL=""
+          else
+            COMMITS=$(git log --no-merges --pretty=format:"%s" "${PREVIOUS_TAG}..${CURRENT_TAG}" 2>/dev/null || echo "")
+            RANGE_DESC="${PREVIOUS_TAG} → ${CURRENT_TAG}"
+            COMPARE_URL="https://github.com/${{ github.repository }}/compare/${PREVIOUS_TAG}...${CURRENT_TAG}"
+          fi
+
+          # 按 Conventional Commits 分类
+          FEAT=""; FIX=""; PERF=""; API=""; COMPAT=""; OTHER=""
+
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            if [[ "$line" =~ ^feat(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              FEAT="${FEAT}- ${BASH_REMATCH[2]}"$'\n'
+            elif [[ "$line" =~ ^fix(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              FIX="${FIX}- ${BASH_REMATCH[2]}"$'\n'
+            elif [[ "$line" =~ ^perf(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              PERF="${PERF}- ${BASH_REMATCH[2]}"$'\n'
+            elif [[ "$line" =~ ^(api|refactor\(api\))(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              API="${API}- ${BASH_REMATCH[3]}"$'\n'
+            elif [[ "$line" =~ ^breaking(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              COMPAT="${COMPAT}- ${BASH_REMATCH[2]}"$'\n'
+            elif [[ "$line" =~ ^refactor(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              OTHER="${OTHER}- ${BASH_REMATCH[2]}"$'\n'
+            elif [[ "$line" =~ ^(docs|style|chore|test|ci|build)(\([a-zA-Z0-9_-]+\))?:[[:space:]]*(.+)$ ]]; then
+              OTHER="${OTHER}- ${BASH_REMATCH[3]}"$'\n'
+            else
+              OTHER="${OTHER}- ${line}"$'\n'
+            fi
+          done <<< "$COMMITS"
+
+          # 组装完整 Release body
+          {
+            echo "## 构建产物"
+            echo ""
+            echo "本次发布包含以下平台的编译产物："
+            echo ""
+            echo "| 平台 | 文件 | 说明 |"
+            echo "| ---- | ---- | ---- |"
+            echo "| Windows 桌面 | \`ChildNotes-windows-*.zip\` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |"
+            echo "| Android | \`ChildNotes-android-*.apk\` | APK 安装包（固定 keystore 签名，可覆盖安装旧版本） |"
+            echo "| 服务端 | \`ChildNotes-backend-*.tar.gz\` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |"
+            echo ""
+            echo "## 版本变更说明"
+            echo ""
+            echo -n "**版本范围：** \`${RANGE_DESC}\`"
+            if [ -n "$COMPARE_URL" ]; then
+              echo " | [查看完整代码对比](${COMPARE_URL})"
+            else
+              echo ""
+            fi
+            echo ""
+
+            [ -n "$FEAT" ]   && { echo "### 功能新增";   echo "$FEAT"; }
+            [ -n "$FIX" ]    && { echo "### 问题修复";   echo "$FIX"; }
+            [ -n "$PERF" ]   && { echo "### 性能优化";   echo "$PERF"; }
+            [ -n "$API" ]    && { echo "### 接口变更";   echo "$API"; }
+            [ -n "$COMPAT" ] && { echo "### 兼容性调整"; echo "$COMPAT"; }
+            [ -n "$OTHER" ]  && { echo "### 其他重要更新"; echo "$OTHER"; }
+
+            if [ -z "$FEAT$FIX$PERF$API$COMPAT$OTHER" ]; then
+              echo "本版本无显著代码变更记录。"
+            fi
+
+            echo ""
+            echo "## 构建状态"
+            echo "- 构建矩阵结果：${{ needs.build.result }}"
+            echo "- 对应 commit：${{ github.sha }}"
+          } > body.md
+
+          echo "=== Generated Release Body ==="
+          cat body.md
+
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -416,49 +505,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
-          generate_release_notes: true
+          body_path: body.md
           fail_on_unmatched_files: true
           files: upload/*
-          body: |
-            ## 构建产物
-
-            本次发布包含以下平台的编译产物：
-
-            | 平台 | 文件 | 说明 |
-            | ---- | ---- | ---- |
-            | Windows 桌面 | `ChildNotes-windows-*.zip` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |
-            | Android | `ChildNotes-android-*.apk` | APK 安装包（固定 keystore 签名，可覆盖安装旧版本） |
-            | 服务端 | `ChildNotes-backend-*.tar.gz` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |
-
-            ### 服务端部署
-            - 解压 `ChildNotes-backend-*.tar.gz` 后编辑 `appsettings.json`，填写数据库连接串、JWT Secret、DeepSeek ApiKey 等敏感配置。
-            - 运行：`./ChildNotes.Api`
-            - 目标机器为 Linux Ubuntu，无需额外安装 .NET 运行时。
-
-            ### iOS 构建说明
-            - iOS 产物**不在 CI 中构建**。原因：.NET 10 iOS SDK 强制启用 `PublishTrimmed=true`，
-              ILLink 在 GitHub Actions 的 macOS runner 上分析大量程序集耗时极长（>45min），
-              各种关闭 trimming 的属性组合均无效，导致构建超时。
-            - 如需 iOS 版本，请在 Mac 上本地构建（需 Xcode + `dotnet workload install ios`）：
-              ```bash
-              dotnet publish ChildNotes.iOS/ChildNotes.iOS.csproj \
-                -c Release -f net10.0-ios -r ios-arm64 \
-                -p:RuntimeIdentifier=ios-arm64 \
-                -p:EnableCodeSigning=false -p:CodesignEntitlements= \
-                -p:PublishTrimmed=true -p:MtouchLink=None -p:TrimMode=copy \
-                -o ./artifacts/ios
-              ```
-            - 产物为**未签名**的 `.app` 包，需用开发者证书重签后通过 Xcode / AltStore / Sideloadly 安装。
-
-            ### Android 部署说明
-            - APK 使用固定 keystore 签名（由仓库 Secrets `ANDROID_KEYSTORE_BASE64` 等配置），
-              同一 keystore 签出的新版本可直接 `adb install -r` 覆盖旧版本，无需先卸载。
-            - 若 CI 未配置签名 Secrets，则回退到默认 debug 签名（每次构建签名不同，无法覆盖安装）。
-            - 安装时需在设备上开启"允许安装未知来源应用"。
-
-            ### 构建状态
-            - 构建矩阵结果：${{ needs.build.result }}
-            - 对应 commit：${{ github.sha }}
 
       - name: Release summary
         if: always()
