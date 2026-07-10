@@ -2,6 +2,15 @@ using ChildNotes.Shared.Entities;
 
 namespace ChildNotes.Models;
 
+/// <summary>前端积分相关常量（与后端 PointsConstants 保持一致）。</summary>
+public static class PointsConstants
+{
+    /// <summary>新用户注册自动赠送积分。</summary>
+    public const int NewUserBonusPoints = 100;
+    /// <summary>AI 喂养分析默认消耗积分（后端 /cost 接口不可用时回退到此值）。</summary>
+    public const int AiAnalysisDefaultCost = 10;
+}
+
 public sealed class UserPoints : UserPointsBase
 {
 }

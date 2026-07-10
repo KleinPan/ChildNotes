@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
+using ChildNotes.Models;
 using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
@@ -70,6 +71,25 @@ public partial class LoginViewModel : ViewModelBase
                 ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
                 ServiceProvider.Instance.BabyService.LoadBabyList();
                 DevLogger.Log("Login", "LoadBabyList done");
+                // 新用户注册成功：注入"赠送 100 积分"欢迎消息（首次登录明确提示）
+                if (IsRegisterMode)
+                {
+                    try
+                    {
+                        ServiceProvider.Instance.InAppMessageService.Insert(new InAppMessage
+                        {
+                            Id = $"bonus-{result.User!.Id}",
+                            UserId = result.User.Id,
+                            Title = "🎉 欢迎注册！已赠送 100 积分",
+                            Body = $"感谢注册 ChildNotes！系统已自动为您赠送 {PointsConstants.NewUserBonusPoints} 积分，可用于 AI 喂养分析等高级功能。去「积分任务」签到还能每日领取积分哦。",
+                            Category = "general",
+                            DataJson = "{}",
+                            IsRead = false,
+                            CreatedAt = DateTime.UtcNow.ToString("O"),
+                        });
+                    }
+                    catch (Exception msgEx) { DevLogger.Log("Login", "Insert bonus message failed: " + msgEx.Message); }
+                }
                 var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
                 DevLogger.Log("Login", $"LoginSucceeded subscribers={subscribers}");
                 // 直接调用 App 静态方法，绕过事件订阅可能丢失的问题（安卓 Activity 重建）

@@ -42,6 +42,10 @@ public static class PointsConstants
     public const int BaseSignInReward = 1;
     public const int SignInCycleDays = 30;
     public const int InviteRewardPoints = 100;
+    /// <summary>新用户注册自动赠送积分。</summary>
+    public const int NewUserBonusPoints = 100;
+    /// <summary>AI 喂养分析默认消耗积分（可被 AiCostOptions 覆盖）。</summary>
+    public const int AiAnalysisDefaultCost = 10;
 
     public static readonly IReadOnlyDictionary<int, int> SignInBonusRewards = new Dictionary<int, int>
     {
@@ -52,4 +56,13 @@ public static class PointsConstants
     {
         return SignInBonusRewards.TryGetValue(cycleDay, out var bonus) ? bonus : BaseSignInReward;
     }
+}
+
+/// <summary>
+/// AI 功能积分消耗配置：支持从配置文件/环境变量动态调整，前端通过 API 实时获取。
+/// </summary>
+public class AiCostOptions
+{
+    /// <summary>喂养分析单次消耗积分。</summary>
+    public int AnalysisCost { get; set; } = PointsConstants.AiAnalysisDefaultCost;
 }

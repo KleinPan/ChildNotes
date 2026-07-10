@@ -10,6 +10,7 @@ namespace ChildNotes.ViewModels;
 public partial class AiAnalysisViewModel : ViewModelBase
 {
     private readonly AiAnalysisService _aiService = ServiceProvider.Instance.AiAnalysisService;
+    private readonly PointsService _pointsService = ServiceProvider.Instance.PointsService;
     private readonly AppState _state = ServiceProvider.Instance.AppState;
 
     [ObservableProperty] private string _babyName = string.Empty;
@@ -30,6 +31,26 @@ public partial class AiAnalysisViewModel : ViewModelBase
     [ObservableProperty] private string _detailCreatedLabel = string.Empty;
     [ObservableProperty] private string _detailQualityTip = string.Empty;
 
+    /// <summary>当前用户积分余额（进入页面和生成后刷新）。</summary>
+    [ObservableProperty] private int _currentPoints;
+    /// <summary>本次 AI 分析需消耗的积分数量（从后端实时获取）。</summary>
+    [ObservableProperty] private int _analysisCost = PointsConstants.AiAnalysisDefaultCost;
+    /// <summary>积分是否充足：用于控制生成按钮文案和充值入口显示。</summary>
+    [ObservableProperty] private bool _pointsSufficient = true;
+    /// <summary>积分不足提示文案。</summary>
+    [ObservableProperty] private string _insufficientTip = string.Empty;
+    /// <summary>是否已加载更多历史记录（懒加载：首次仅展示最近 5 条）。</summary>
+    [ObservableProperty] private bool _allLoaded;
+    /// <summary>是否还有更多历史记录可加载。</summary>
+    [ObservableProperty] private bool _hasMore;
+
+    /// <summary>懒加载分页大小：首次进入页面仅加载最近 5 条记录。</summary>
+    private const int InitialPageSize = 5;
+    private const int LoadMorePageSize = 10;
+
+    private List<AiAnalysisRecord> _allRecords = new();
+    private int _loadedCount;
+
     public ObservableCollection<AiAnalysisRecord> Records { get; } = new();
 
     // AI 分析取消令牌：用户点击"取消分析"时取消正在进行的 LLM 请求
@@ -40,6 +61,9 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
     /// <summary>请求跳转到 AI 分析设置页（由 MainShellViewModel 订阅）。</summary>
     public event Action? ConfigRequired;
+
+    /// <summary>请求跳转到积分页（充值入口，由 MainShellViewModel 订阅）。</summary>
+    public event Action? PointsRequired;
 
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
@@ -55,13 +79,62 @@ public partial class AiAnalysisViewModel : ViewModelBase
         EndDate = today;
         UpdateRangeTip();
 
+        // 并行加载积分余额、分析成本、历史记录
+        var pointsTask = Task.Run(() => _pointsService.GetDashboard());
+        var costTask = _aiService.GetAnalysisCostAsync();
+        var serverRecordsTask = _aiService.ListRecordsFromServerAsync();
+
+        var dashboard = await pointsTask;
+        CurrentPoints = dashboard.Points;
+
+        AnalysisCost = await costTask;
+        RefreshPointsSufficiency();
+
         List<AiAnalysisRecord> records;
-        var serverRecords = await _aiService.ListRecordsFromServerAsync();
+        var serverRecords = await serverRecordsTask;
         records = serverRecords ?? await Task.Run(() => _aiService.ListRecords());
 
-        Records.Clear();
-        foreach (var r in records) Records.Add(r);
+        _allRecords = records.OrderByDescending(r => r.RangeStartDate).ToList();
+        _loadedCount = 0;
+        LoadMoreRecords(InitialPageSize);
     }
+
+    /// <summary>刷新积分是否充足的判断。</summary>
+    private void RefreshPointsSufficiency()
+    {
+        PointsSufficient = CurrentPoints >= AnalysisCost;
+        InsufficientTip = PointsSufficient
+            ? string.Empty
+            : $"积分不足，需 {AnalysisCost} 积分，当前 {CurrentPoints} 积分（每日签到可获取积分）";
+    }
+
+    /// <summary>从全量记录中加载下一批到 ObservableCollection（懒加载）。</summary>
+    private void LoadMoreRecords(int count)
+    {
+        var remaining = _allRecords.Count - _loadedCount;
+        if (remaining <= 0)
+        {
+            AllLoaded = true;
+            HasMore = false;
+            return;
+        }
+        var take = Math.Min(count, remaining);
+        for (var i = 0; i < take; i++)
+            Records.Add(_allRecords[_loadedCount + i]);
+        _loadedCount += take;
+        AllLoaded = _loadedCount >= _allRecords.Count;
+        HasMore = !AllLoaded;
+    }
+
+    /// <summary>加载更多历史记录（懒加载：每次追加 10 条）。</summary>
+    [RelayCommand(CanExecute = nameof(CanLoadMore))]
+    private void LoadMore()
+    {
+        LoadMoreRecords(LoadMorePageSize);
+        LoadMoreCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanLoadMore => HasMore && !Generating;
 
     partial void OnStartDateChanged(DateTime? value) => UpdateRangeTip();
     partial void OnEndDateChanged(DateTime? value) => UpdateRangeTip();
@@ -115,6 +188,14 @@ public partial class AiAnalysisViewModel : ViewModelBase
             return;
         }
 
+        // 积分不足提示 + 提供充值入口（server 模式下才校验，local 模式不消耗积分）
+        if (config.NoteSource == "server" && !PointsSufficient)
+        {
+            ErrorMessage = InsufficientTip;
+            DisplayToast($"积分不足，需 {AnalysisCost} 积分，当前 {CurrentPoints} 积分");
+            return;
+        }
+
         // 取消上一次未完成的请求（防御性，正常情况下 finally 已清理）
         _generateCts?.Cancel();
         _generateCts?.Dispose();
@@ -127,11 +208,20 @@ public partial class AiAnalysisViewModel : ViewModelBase
         try
         {
             var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date, _generateCts.Token);
+            // 生成后刷新积分余额（server 模式扣了积分）
+            if (config.NoteSource == "server")
+            {
+                var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+                CurrentPoints = dashboard.Points;
+                RefreshPointsSufficiency();
+            }
             // 生成后刷新记录列表：server 模式从后端拉取，local 模式从本地 DB 读取
             var serverRecords = await _aiService.ListRecordsFromServerAsync();
             var records = serverRecords ?? _aiService.ListRecords();
+            _allRecords = records.OrderByDescending(r => r.RangeStartDate).ToList();
+            _loadedCount = 0;
             Records.Clear();
-            foreach (var r in records) Records.Add(r);
+            LoadMoreRecords(InitialPageSize);
             ShowDetail = true;
             DetailText = record.AnalysisText;
             DetailRangeLabel = record.RangeLabel;
@@ -143,6 +233,23 @@ public partial class AiAnalysisViewModel : ViewModelBase
         catch (OperationCanceledException)
         {
             DisplayToast("已取消分析");
+        }
+        catch (AiAnalysisApiException ex)
+        {
+            // 积分不足：刷新余额并提示充值
+            if (ex.IsInsufficientPoints)
+            {
+                var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+                CurrentPoints = dashboard.Points;
+                RefreshPointsSufficiency();
+                ErrorMessage = $"积分不足，本次分析需 {AnalysisCost} 积分，当前余额 {CurrentPoints} 积分";
+                DisplayToast("积分不足，请每日签到获取积分");
+            }
+            else
+            {
+                ErrorMessage = ex.Message;
+                DisplayToast("分析失败：" + ex.Message);
+            }
         }
         catch (Exception ex)
         {
@@ -190,5 +297,12 @@ public partial class AiAnalysisViewModel : ViewModelBase
     private void OpenConfig()
     {
         ConfigRequired?.Invoke();
+    }
+
+    /// <summary>请求跳转到积分页（充值入口）。</summary>
+    [RelayCommand]
+    private void OpenPoints()
+    {
+        PointsRequired?.Invoke();
     }
 }

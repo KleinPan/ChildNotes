@@ -1,5 +1,6 @@
 using System.Text;
 using ChildNotes.Core.Common;
+using ChildNotes.Core.Config;
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Shared.Constants;
@@ -14,6 +15,7 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// AI 分析服务：固定 7 天区间，按 (user_id, baby_id, range_start_date, range_end_date) 幂等。
+/// server 模式下生成分析时扣减积分，积分不足抛 BusinessException(INSUFFICIENT_POINTS)。
 /// </summary>
 public class AiAnalysisService : IAiAnalysisService
 {
@@ -24,16 +26,23 @@ public class AiAnalysisService : IAiAnalysisService
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
     private readonly DeepSeekClient _ai;
+    private readonly PointsWalletService _wallet;
+    private readonly AiCostOptions _cost;
     private readonly string _skillPrompt;
 
-    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai)
+    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai, PointsWalletService wallet, AiCostOptions cost)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
         _ai = ai;
+        _wallet = wallet;
+        _cost = cost;
         _skillPrompt = LoadSkillPrompt();
     }
+
+    /// <summary>当前 AI 喂养分析消耗的积分数量（由配置动态控制）。</summary>
+    public int AnalysisCostPoints => _cost.AnalysisCost;
 
     public async Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, string? babyId, CancellationToken ct = default)
     {
@@ -49,20 +58,35 @@ public class AiAnalysisService : IAiAnalysisService
 
         var sourceText = BuildSourceText(baby, start, end, records);
 
-        // 幂等命中：同区间 + sourceText 相同 → 直接返回
+        // 幂等命中：同区间 + sourceText 相同 → 直接返回（不扣积分）
         var existing = await _db.AiAnalysisRecords.FirstOrDefaultAsync(
             a => a.UserId == uid && a.BabyId == baby.Id
                 && a.RangeStartDate == start && a.RangeEndDate == end, ct);
         if (existing is not null && existing.SourceText == sourceText)
             return ToDto(existing);
 
-        // 调用 AI
-        var userMessage = "请只基于本次输入 TXT 生成分析，不要引用历史会话中未出现在 TXT 的内容。\n\n"
-            + "下面是后端整理的宝宝所选连续7天记录 TXT，请基于这些记录输出分析和建议。\n\n"
-            + sourceText;
-        var (analysisText, model) = await _ai.ChatAsync(_skillPrompt, userMessage, ct);
-        if (string.IsNullOrWhiteSpace(analysisText))
-            throw new BusinessException("AI 分析响应为空", 502);
+        // 调用 AI 前先扣积分（积分不足抛 BusinessException(INSUFFICIENT_POINTS)）
+        // ExecuteUpdateAsync 立即落库，无需事务包裹
+        await _wallet.ChangeAsync(uid, -_cost.AnalysisCost, ct);
+
+        string analysisText;
+        string model;
+        try
+        {
+            // 调用 AI
+            var userMessage = "请只基于本次输入 TXT 生成分析，不要引用历史会话中未出现在 TXT 的内容。\n\n"
+                + "下面是后端整理的宝宝所选连续7天记录 TXT，请基于这些记录输出分析和建议。\n\n"
+                + sourceText;
+            (analysisText, model) = await _ai.ChatAsync(_skillPrompt, userMessage, ct);
+            if (string.IsNullOrWhiteSpace(analysisText))
+                throw new BusinessException("AI 分析响应为空", 502);
+        }
+        catch
+        {
+            // AI 调用失败：退还已扣积分（best-effort，失败仅记日志不阻塞异常传播）
+            try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost, ct); } catch { }
+            throw;
+        }
 
         if (existing is not null)
         {

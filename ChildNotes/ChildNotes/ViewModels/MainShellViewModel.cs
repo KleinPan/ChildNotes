@@ -251,6 +251,7 @@ public partial class MainShellViewModel : ViewModelBase
 
         _aiAnalysis = new AiAnalysisViewModel();
         _aiAnalysis.ConfigRequired += OpenAiSettings;
+        _aiAnalysis.PointsRequired += OpenPoints;
 
         _aiSettings = new AiSettingsViewModel();
 

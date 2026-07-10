@@ -85,6 +85,16 @@ public sealed class AiAnalysisService
         return list?.Select(MapFromDto).ToList();
     }
 
+    /// <summary>
+    /// 查询当前 AI 喂养分析所需消耗的积分数量。
+    /// server 模式从后端 /cost 接口实时获取；local 模式返回默认值。
+    /// </summary>
+    public async Task<int> GetAnalysisCostAsync(CancellationToken ct = default)
+    {
+        if (!IsServerSource()) return PointsConstants.AiAnalysisDefaultCost;
+        return await _apiClient.GetCostAsync(ct);
+    }
+
     public AiAnalysisRecord? GetRecord(string id) => _repo.FindById(id);
 
     public bool HasRangeAnalysis(DateTime start, DateTime end)
@@ -145,12 +155,10 @@ public sealed class AiAnalysisService
         return record;
     }
 
-    /// <summary>server 模式生成：调用后端 /api/smart-analysis/generate。</summary>
+    /// <summary>server 模式生成：调用后端 /api/smart-analysis/generate，积分不足时抛 AiAnalysisApiException。</summary>
     private async Task<AiAnalysisRecord> GenerateViaServerAsync(Baby baby, DateTime start, DateTime end, CancellationToken ct)
     {
-        var dto = await _apiClient.GenerateAsync(start, end, baby.Id, ct);
-        if (dto is null)
-            throw new InvalidOperationException("后端服务不可用或返回错误，请检查同步服务器配置");
+        var dto = await _apiClient.GenerateWithErrorsAsync(start, end, baby.Id, ct);
         return MapFromDto(dto);
     }
 

@@ -93,6 +93,10 @@ builder.Services.AddScoped<ILotteryService, LotteryService>();
 builder.Services.AddScoped<IInviteService, InviteService>();
 builder.Services.AddScoped<IUploadService, UploadService>();
 builder.Services.AddHttpClient<DeepSeekClient>();
+// AI 积分消耗配置：支持从 appsettings.json 的 Ai:Cost 节点读取，默认 AnalysisCost=10
+builder.Services.Configure<ChildNotes.Core.Config.AiCostOptions>(builder.Configuration.GetSection("Ai:Cost"));
+builder.Services.AddSingleton<ChildNotes.Core.Config.AiCostOptions>(sp =>
+    sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.AiCostOptions>>().Value);
 builder.Services.AddScoped<IAiAnalysisService, AiAnalysisService>();
 builder.Services.AddScoped<IAiNoteService, AiNoteService>();
 builder.Services.AddScoped<ICurrentAdminService, CurrentAdminService>();

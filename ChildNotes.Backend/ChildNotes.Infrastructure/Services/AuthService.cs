@@ -1,4 +1,5 @@
 using ChildNotes.Core.Common;
+using ChildNotes.Core.Config;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
@@ -15,13 +16,15 @@ public class AuthService : IAuthService
     private readonly JwtTokenService _jwt;
     private readonly ICurrentUserService _current;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly PointsWalletService _wallet;
 
-    public AuthService(ChildNotesDbContext db, JwtTokenService jwt, ICurrentUserService current, IPasswordHasher passwordHasher)
+    public AuthService(ChildNotesDbContext db, JwtTokenService jwt, ICurrentUserService current, IPasswordHasher passwordHasher, PointsWalletService wallet)
     {
         _db = db;
         _jwt = jwt;
         _current = current;
         _passwordHasher = passwordHasher;
+        _wallet = wallet;
     }
 
     public async Task<LoginResponse> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
@@ -96,7 +99,7 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
-    /// 确保用户积分记录存在（幂等）。
+    /// 确保用户积分记录存在（幂等），并为新用户赠送 <see cref="PointsConstants.NewUserBonusPoints"/> 积分。
     /// 修复原版 bug：原版 AnyAsync 后未重查直接 Add，并发场景下异常被吞但调用方误以为已创建。
     /// 现统一为失败后重查，保证返回存在记录。
     /// </summary>
@@ -111,7 +114,11 @@ public class AuthService : IAuthService
         {
             // 并发幂等：重查确保记录存在
             await _db.UserPoints.FirstOrDefaultAsync(x => x.UserId == userId, ct);
+            return;
         }
+        // 新用户赠送积分（原子增减，幂等：仅首次创建记录时触发）
+        try { await _wallet.ChangeAsync(userId, PointsConstants.NewUserBonusPoints, ct); }
+        catch (BusinessException) { /* 并发竞争已创建，忽略 */ }
     }
 
     private static LoginUserDto ToLoginUserDto(AppUser u) => new()

@@ -5,6 +5,9 @@ namespace ChildNotes.Core.Services;
 
 public interface IAiAnalysisService
 {
+    /// <summary>当前 AI 喂养分析消耗的积分数量（由服务器配置动态控制）。</summary>
+    int AnalysisCostPoints { get; }
+
     Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, string? babyId, CancellationToken ct = default);
     Task<List<AiAnalysisRecordDto>> ListAsync(string? babyId, CancellationToken ct = default);
     Task<AiAnalysisRecordDto?> GetByIdAsync(string id, CancellationToken ct = default);
