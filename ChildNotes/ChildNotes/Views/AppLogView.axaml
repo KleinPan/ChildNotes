@@ -88,7 +88,8 @@
             <Setter Property="Padding" Value="10,8"/>
         </Style>
 
-        <!-- 日志元信息行：徽章 + 时间 + Tag + 消息，单行不换行 -->
+        <!-- 日志元信息行：徽章 + 时间 + Tag + 消息，列定义 Auto,Auto,Auto,* -->
+        <!-- 消息列须为 *（占满剩余空间），TextWrapping=Wrap 才能正确计算换行宽度 -->
         <!-- 注意：ColumnDefinitions 不是 StyledProperty，须在 Grid 上直接声明 -->
         <Style Selector="Grid.log-meta">
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -212,9 +213,11 @@
                     <Border Classes="log-row">
                         <!--
                             单行布局：徽章 | 时间 | Tag | 消息（占满剩余）
-                            选中展开时，log-row 解除固定高度，此 Grid 自动增高容纳换行后的消息
+                            列定义：Auto,Auto,Auto,* — 消息列必须是 *（占满剩余空间），
+                            否则 TextWrapping=Wrap 在 Auto 列里无法计算换行宽度，展开无效。
+                            选中展开时，log-row 解除固定高度，消息列换行撑高此 Grid。
                         -->
-                        <Grid Classes="log-meta" ColumnDefinitions="Auto,Auto,*,Auto">
+                        <Grid Classes="log-meta" ColumnDefinitions="Auto,Auto,Auto,*">
                             <!-- 级别徽章：Converter 绑定 Background，修复原四 class 冲突 Bug -->
                             <Border Grid.Column="0" Classes="log-badge"
                                     Width="44" Height="18" CornerRadius="4"
