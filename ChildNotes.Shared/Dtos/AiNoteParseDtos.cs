@@ -38,6 +38,14 @@ public record AiNoteParseItem
     public string? Dose { get; set; }
     /// <summary>supplement 专用：剂量单位（如"包"、"粒"、"ml"、"滴"）。</summary>
     public string? DoseUnit { get; set; }
+    /// <summary>complementary 专用：食物名称（如"南瓜泥"、"蛋黄"）。</summary>
+    public string? FoodName { get; set; }
+    /// <summary>complementary 专用：食材类型列表（如 ["蔬菜","水果"]）。</summary>
+    public List<string> FoodTypes { get; set; } = new();
+    /// <summary>complementary 专用：食量数值文本（如"20"、"半碗"）。</summary>
+    public string? AmountText { get; set; }
+    /// <summary>complementary 专用：食量单位（如"克"、"个"、"勺"、"碗"）。</summary>
+    public string? AmountUnit { get; set; }
     public double Confidence { get; set; }
 
     /// <summary>

@@ -57,6 +57,10 @@ public partial class AiNoteService : IAiNoteService
 - name: supplement 专用，药品/营养品名称（如"宝泰康颗粒"、"伊可新"、"维D"），不含剂量
 - dose: supplement 专用，剂量数值文本（如"0.5"、"1"、"5"），不含单位
 - doseUnit: supplement 专用，剂量单位（如"包"、"粒"、"ml"、"滴"），与 dose 分开
+- foodName: complementary 专用，食物名称（如"南瓜泥"、"蛋黄"、"米粉"）
+- foodTypes: complementary 专用，食材类型数组（如["蔬菜","水果","主食","肉蛋"]）
+- amountText: complementary 专用，食量数值文本（如"20"、"半碗"）
+- amountUnit: complementary 专用，食量单位（如"克"、"个"、"勺"、"碗"），与 amountText 分开
 - note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note）
 - summary: 一句话人类可读的总结（<=30 字）
 - confidence: 解析置信度 0~1
@@ -85,6 +89,9 @@ public partial class AiNoteService : IAiNoteService
 
 输入"吃了半包宝泰康颗粒"应输出：
 [{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"0.5","doseUnit":"包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
+
+输入"吃了南瓜泥20克"应输出：
+[{"recordType":"complementary","foodName":"南瓜泥","foodTypes":["蔬菜"],"amountText":"20","amountUnit":"克","summary":"辅食 南瓜泥 20克","confidence":0.9}]
 
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
@@ -691,7 +698,11 @@ public partial class AiNoteService : IAiNoteService
             },
             RecordType.Complementary => new ComplementaryRecordDto
             {
-                FoodName = p.Note,
+                FoodName = p.FoodName ?? p.Note,
+                FoodTypes = p.FoodTypes ?? new List<string>(),
+                Amount = p.AmountText,
+                AmountUnit = p.AmountUnit,
+                Note = p.Note,
                 Time = time,
             },
             RecordType.Abnormal => new AbnormalRecordDto

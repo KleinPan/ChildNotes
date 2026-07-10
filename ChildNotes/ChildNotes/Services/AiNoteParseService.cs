@@ -46,12 +46,17 @@ startTime(sleep专用，开始时间HH:mm), endTime(sleep专用，结束时间HH
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
 name(supplement专用，药品/营养品名称，不含剂量), dose(supplement专用，剂量数值文本如"0.5"/"1"/"5"),
 doseUnit(supplement专用，剂量单位如"包"/"粒"/"ml"/"滴"),
+foodName(complementary专用，食物名称如"南瓜泥"/"蛋黄"), foodTypes(complementary专用，食材类型数组如["蔬菜"]),
+amountText(complementary专用，食量数值如"20"), amountUnit(complementary专用，食量单位如"克"/"个"/"勺"/"碗"),
 note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句话), confidence(0~1)。
 
 示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
 示例输出：[{"recordType":"sleep","time":"11:30","startTime":"11:30","endTime":"12:40","duration":70,"summary":"睡眠70分钟","confidence":0.9},
 {"recordType":"feed","recordSubType":"bottle","time":"11:30","amount":130,"summary":"瓶喂130ml","confidence":0.9},
 {"recordType":"water","time":"11:30","amount":10,"summary":"喝水10ml","confidence":0.8}]
+
+示例输入："吃了南瓜泥20克"
+示例输出：[{"recordType":"complementary","foodName":"南瓜泥","foodTypes":["蔬菜"],"amountText":"20","amountUnit":"克","summary":"辅食 南瓜泥 20克","confidence":0.9}]
 
 示例输入："拉了大便"
 示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
@@ -225,7 +230,13 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
     /// <summary>本地规则降级解析：覆盖最常见的育儿记录表述。</summary>
     public static AiNoteParseItem LocalRuleParse(string text)
     {
-        // 0) supplement（用药/营养）：必须在 feed 之前判定
+        // 0) water（喝水）：必须在 feed/supplement 之前判定，避免"喝10ml水"被误判为喂奶或补给
+        if (IsWaterLike(text))
+        {
+            return ParseWater(text);
+        }
+
+        // 0b) supplement（用药/营养）：必须在 feed 之前判定
         if (IsSupplementLike(text))
         {
             return ParseSupplement(text);
@@ -399,6 +410,15 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             };
         }
 
+        // 6) 辅食：含"辅食/泥/粥/米粉/面条"或"吃了X克/勺/碗"
+        if (TryParseComplementary(text, out var compItem)) return compItem;
+
+        // 7) 吸奶：含"吸奶/吸了Xml"
+        if (TryParsePump(text, out var pumpItem)) return pumpItem;
+
+        // 8) 异常：含"发烧/咳嗽/呕吐/腹泻/异常"
+        if (TryParseAbnormal(text, out var abnItem)) return abnItem;
+
         // 兜底
         return new AiNoteParseItem
         {
@@ -409,6 +429,126 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             Confidence = 0.2,
             Source = ParseSource.Rule,
         };
+    }
+
+    // ===== Water（喝水）分支 =====
+
+    /// <summary>判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。</summary>
+    private static bool IsWaterLike(string text)
+        => text.Contains("水") && (text.Contains("喝") || text.Contains("饮"));
+
+    /// <summary>解析喝水记录。</summary>
+    private static AiNoteParseItem ParseWater(string text)
+    {
+        int? amountMl = null;
+        var mlMatch = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL)");
+        if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
+            amountMl = ml;
+        return new AiNoteParseItem
+        {
+            RecordType = RecordType.Water,
+            Amount = amountMl,
+            Time = ExtractTime(text),
+            Summary = amountMl.HasValue ? $"喝水{amountMl}ml" : "喝水",
+            Confidence = 0.6,
+            Source = ParseSource.Rule,
+        };
+    }
+
+    // ===== Complementary（辅食）分支 =====
+
+    private static readonly string[] CompFoodKeywords = { "泥", "粥", "米粉", "面条", "辅食", "蛋黄", "肉泥", "果泥" };
+    private static readonly string[] CompAmountUnits = { "克", "g", "个", "勺", "碗" };
+
+    /// <summary>尝试解析辅食记录。识别"X泥/Y粥"等关键词 + "X克/勺/碗"食量。</summary>
+    private static bool TryParseComplementary(string text, out AiNoteParseItem item)
+    {
+        var hasFoodKw = CompFoodKeywords.Any(text.Contains);
+        var amountMatch = Regex.Match(text, @"(\d+(?:\.\d+)?)\s*(克|g|个|勺|碗)");
+        var hasAmount = amountMatch.Success;
+        // 含辅食关键词，或含食量单位且含"吃"字
+        if (!hasFoodKw && !(hasAmount && text.Contains("吃")))
+        {
+            item = null!;
+            return false;
+        }
+        string? amountText = null, amountUnit = null;
+        if (hasAmount)
+        {
+            amountText = amountMatch.Groups[1].Value;
+            amountUnit = amountMatch.Groups[2].Value == "g" ? "克" : amountMatch.Groups[2].Value;
+        }
+        // 提取食物名称：去掉数量/单位/动词后的剩余文本
+        var foodName = Regex.Replace(text, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "")
+            .Replace("吃了", "").Replace("吃", "").Replace("辅食", "").Trim();
+        if (string.IsNullOrWhiteSpace(foodName)) foodName = "辅食";
+        item = new AiNoteParseItem
+        {
+            RecordType = RecordType.Complementary,
+            FoodName = foodName,
+            AmountText = amountText,
+            AmountUnit = amountUnit,
+            Time = ExtractTime(text),
+            Summary = $"辅食 {foodName}{(amountText is null ? "" : $" {amountText}{amountUnit}")}",
+            Confidence = 0.5,
+            Source = ParseSource.Rule,
+        };
+        return true;
+    }
+
+    // ===== Pump（吸奶）分支 =====
+
+    /// <summary>尝试解析吸奶记录。识别"吸奶/吸了Xml"。</summary>
+    private static bool TryParsePump(string text, out AiNoteParseItem item)
+    {
+        if (!text.Contains("吸奶") && !(text.Contains("吸") && text.Contains("ml")))
+        {
+            item = null!;
+            return false;
+        }
+        int? amount = null;
+        var mlMatch = Regex.Match(text, @"(\d+)\s*(?:ml|毫升|mL)");
+        if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
+            amount = ml;
+        item = new AiNoteParseItem
+        {
+            RecordType = RecordType.Pump,
+            Amount = amount,
+            Time = ExtractTime(text),
+            Summary = amount.HasValue ? $"吸奶{amount}ml" : "吸奶",
+            Confidence = 0.5,
+            Source = ParseSource.Rule,
+        };
+        return true;
+    }
+
+    // ===== Abnormal（异常）分支 =====
+
+    private static readonly string[] AbnKeywords = { "发烧", "发热", "咳嗽", "呕吐", "吐奶", "腹泻", "拉肚子", "异常", "不舒服", "感冒", "鼻塞", "流涕" };
+
+    /// <summary>尝试解析异常记录。识别发烧/咳嗽/呕吐/腹泻等症状关键词。</summary>
+    private static bool TryParseAbnormal(string text, out AiNoteParseItem item)
+    {
+        if (!AbnKeywords.Any(text.Contains))
+        {
+            item = null!;
+            return false;
+        }
+        decimal? temp = null;
+        var tm = Regex.Match(text, @"(\d+(?:\.\d+)?)\s*(?:℃|度)");
+        if (tm.Success && decimal.TryParse(tm.Groups[1].Value, out var t))
+            temp = t;
+        item = new AiNoteParseItem
+        {
+            RecordType = RecordType.Abnormal,
+            Temperature = temp,
+            Note = text,
+            Time = ExtractTime(text),
+            Summary = temp.HasValue ? $"异常 体温{temp}℃" : "异常症状",
+            Confidence = 0.5,
+            Source = ParseSource.Rule,
+        };
+        return true;
     }
 
     // ===== Supplement（用药/营养）分支 =====
@@ -648,7 +788,11 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             case RecordType.Complementary:
                 recordService.AddComplementary(new ChildNotes.Shared.Dtos.ComplementaryRecordDto
                 {
-                    FoodName = r.Note,
+                    FoodName = r.FoodName ?? r.Note,
+                    FoodTypes = r.FoodTypes ?? new List<string>(),
+                    Amount = r.AmountText,
+                    AmountUnit = r.AmountUnit,
+                    Note = r.Note,
                     Time = time,
                 });
                 break;
@@ -725,7 +869,7 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             RecordType.Supplement => $"💊 {SupplementText(r)}{time}",
             RecordType.Water => $"💧 喝水 {r.Amount ?? 0}ml{time}",
             RecordType.Pump => $"🥛 吸奶 {r.Amount ?? 0}ml{time}",
-            RecordType.Complementary => $"🥣 辅食{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
+            RecordType.Complementary => $"🥣 辅食 {(string.IsNullOrEmpty(r.FoodName) ? "" : r.FoodName)}{(string.IsNullOrEmpty(r.AmountText) ? "" : $" {r.AmountText}{r.AmountUnit ?? ""}")}{time}",
             RecordType.Abnormal => $"⚠️ 异常{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
             RecordType.Activity => $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
             _ => $"📝 {r.Summary ?? "已记录"}{time}",
