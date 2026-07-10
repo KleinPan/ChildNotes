@@ -45,13 +45,22 @@ public abstract partial class ViewModelBase : ObservableObject
     private CancellationTokenSource? _toastCts;
     protected void DisplayToast(string msg)
     {
+        DisplayToast(msg, ToastDurationMs);
+    }
+
+    /// <summary>
+    /// 显示 Toast，在指定时长后自动隐藏。
+    /// 供需要更长显示时间（如多条记录的详细 Toast）的场景使用。
+    /// </summary>
+    protected void DisplayToast(string msg, int durationMs)
+    {
         _toastCts?.Cancel();
         _toastCts?.Dispose();
         _toastCts = new CancellationTokenSource();
         var ct = _toastCts.Token;
         ToastMessage = msg;
         ShowToast = true;
-        _ = Task.Delay(ToastDurationMs, ct)
+        _ = Task.Delay(durationMs, ct)
                 .ContinueWith(_ => ShowToast = false,
                               CancellationToken.None,
                               TaskContinuationOptions.None,

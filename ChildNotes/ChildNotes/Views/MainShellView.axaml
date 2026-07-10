@@ -92,7 +92,9 @@
                 RenderTransform="none"
                 IsVisible="{Binding QuickInput.ShowToast}"
                 ZIndex="100">
-            <TextBlock FontSize="13" Foreground="White" Text="{Binding QuickInput.ToastMessage}" />
+            <TextBlock FontSize="13" Foreground="White"
+                       Text="{Binding QuickInput.ToastMessage}"
+                       TextWrapping="Wrap" MaxWidth="340" />
         </Border>
 
         <Border x:Name="TabBarBorder" Grid.Row="3" Classes="tab-bar">

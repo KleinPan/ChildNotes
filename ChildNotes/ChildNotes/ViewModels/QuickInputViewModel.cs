@@ -118,13 +118,17 @@ public partial class QuickInputViewModel : ViewModelBase
                 return;
             }
 
-            // 多条记录时汇总展示条数与首条摘要，并标注解析来源（AI / 规则降级）
+            // 汇总展示：每条记录一行，格式对齐喂养记录卡片信息密度
+            // 标注解析来源（AI / 规则降级），时长随条数动态延长
             var source = items[0].Source == ParseSource.Ai ? "AI" : "规则";
-            var firstSummary = items[0].Summary ?? "已记录";
-            var summary = saved > 1
-                ? $"[{source}] 已记录 {saved} 条（首条：{firstSummary}）"
-                : $"[{source}] 已记录：{firstSummary}";
-            DisplayToast(summary);
+            var header = $"[{source}] 已记录 {saved} 条";
+            var lines = items
+                .Where(i => !string.IsNullOrEmpty(i.RecordType))
+                .Select(AiNoteParseService.FormatForToast);
+            var summary = header + "\n" + string.Join("\n", lines);
+            // 多条记录 Toast 时长：基础 1500ms + 每条 700ms，上限 6000ms
+            var duration = Math.Min(6000, 1500 + saved * 700);
+            DisplayToast(summary, duration);
             InputText = string.Empty; // 清空后 HasContent=false 自动恢复 + 按钮
             Saved?.Invoke();
         }

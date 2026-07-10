@@ -661,4 +661,70 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
         }
         return DateTime.Now.ToString("O");
     }
+
+    // ===== Toast 显示格式化 =====
+
+    /// <summary>
+    /// 将解析结果格式化为 Toast 单行紧凑文本，对齐喂养记录卡片信息密度。
+    /// 格式示例：🍼 瓶喂 130ml (11:30) / 😴 睡眠 70分钟 (11:30) / 💊 用药 宝泰康颗粒 半包
+    /// </summary>
+    public static string FormatForToast(AiNoteParseItem r)
+    {
+        var time = string.IsNullOrEmpty(r.Time) ? "" : $" ({r.Time})";
+        return r.RecordType switch
+        {
+            RecordType.Feed => r.RecordSubType == FeedType.Breast
+                ? $"🍼 母乳亲喂 左{r.LeftDuration ?? 0} 右{r.RightDuration ?? 0}分钟{time}"
+                : $"🍼 瓶喂{(r.RecordSubType == FeedType.Expressed ? "(母乳)" : "")} {r.Amount ?? 0}ml{time}",
+            RecordType.Diaper => $"💩 {DiaperText(r.DiaperType ?? r.RecordSubType)}{time}",
+            RecordType.Sleep => r.Duration.HasValue
+                ? $"😴 睡眠 {r.Duration}分钟{time}"
+                : $"😴 睡眠{time}",
+            RecordType.Temperature => $"🌡️ 体温 {(r.Temperature ?? 0):F1}℃{time}",
+            RecordType.Growth => $"📏 {FormatGrowth(r)}{time}",
+            RecordType.Supplement => $"💊 {SupplementText(r)}{time}",
+            RecordType.Water => $"💧 喝水 {r.Amount ?? 0}ml{time}",
+            RecordType.Pump => $"🥛 吸奶 {r.Amount ?? 0}ml{time}",
+            RecordType.Complementary => $"🥣 辅食{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
+            RecordType.Abnormal => $"⚠️ 异常{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
+            RecordType.Activity => $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
+            _ => $"📝 {r.Summary ?? "已记录"}{time}",
+        };
+    }
+
+    private static string DiaperText(string? sub) => sub switch
+    {
+        "wet" => "小便",
+        "dirty" => "大便",
+        "both" => "大小便",
+        "dry" => "换尿布 干爽",
+        _ => "换尿布",
+    };
+
+    private static string FormatGrowth(AiNoteParseItem r)
+    {
+        var parts = new List<string>();
+        if (r.Height.HasValue) parts.Add($"身高{r.Height}cm");
+        if (r.Weight.HasValue) parts.Add($"体重{r.Weight}kg");
+        return parts.Count > 0 ? string.Join(" ", parts) : "成长记录";
+    }
+
+    private static string SupplementText(AiNoteParseItem r)
+    {
+        var type = r.RecordSubType == "medicine" ? "用药" : "补充剂";
+        var name = r.Name ?? r.Note ?? "";
+        var dose = FormatDose(r.Dose, r.DoseUnit);
+        var parts = new List<string> { type };
+        if (!string.IsNullOrEmpty(name)) parts.Add(name);
+        if (!string.IsNullOrEmpty(dose)) parts.Add(dose);
+        return string.Join(" ", parts);
+    }
+
+    private static string FormatDose(string? dose, string? unit)
+    {
+        if (string.IsNullOrEmpty(dose)) return "";
+        if (string.IsNullOrEmpty(unit)) return dose;
+        if (dose == "0.5") return "半" + unit;
+        return dose + unit;
+    }
 }
