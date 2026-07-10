@@ -8,8 +8,7 @@ namespace ChildNotes.Services;
 /// - DevLogger.Entries：应用内调试日志环形缓冲区（DevLogger 已移除 [Conditional("DEBUG")]，Debug/Release 均写入）。
 /// - ReleaseLogger 文件日志：用于闪退后的问题定位。
 /// 跨平台兼容：
-/// - Android 10+ (API 29+)：通过 MediaStore.Downloads 写入公共 Download 目录（无需存储权限）。
-/// - Android 9 及以下 (API &lt; 29)：直接写 /storage/emulated/0/Download（需 WRITE_EXTERNAL_STORAGE，已由 manifest 声明）。
+/// - Android：直接写公共存储根目录下的 Aiji 文件夹（/storage/emulated/0/Aiji/，需 WRITE_EXTERNAL_STORAGE，已由 manifest 声明）。
 /// - 桌面端 (Windows/macOS/Linux)：写入 SpecialFolder.MyDocuments/ChildNotes/logs。
 /// </summary>
 public static class LogExportService
@@ -108,26 +107,15 @@ public static class LogExportService
     }
 
     /// <summary>
-    /// Android 平台写入 Download 目录。
-    /// - API 29+ (Android 10+)：通过 MediaStore.Downloads，无需权限。
-    /// - API &lt; 29：直接写公共 Download 路径（需 WRITE_EXTERNAL_STORAGE 权限）。
-    /// 通过反射调用 Android API，避免在共享项目引用 Mono.Android。
+    /// Android 平台写入公共 Aiji 目录（/storage/emulated/0/Aiji/）。
+    /// 通过直接文件路径写入，需 WRITE_EXTERNAL_STORAGE 权限（已由 manifest 声明）。
     /// </summary>
     private static async Task<string> WriteToAndroidDownloadAsync(string fileName, string content)
     {
-        var apiLevel = GetAndroidApiLevel();
-
-        // Android 10+ 使用 MediaStore
-        if (apiLevel >= 29)
-        {
-            return await WriteViaMediaStoreAsync(fileName, content);
-        }
-
-        // Android 9 及以下：直接写文件路径
-        // /storage/emulated/0/Download/
-        var downloadDir = "/storage/emulated/0/Download";
-        Directory.CreateDirectory(downloadDir);
-        var path = Path.Combine(downloadDir, fileName);
+        // 直接写公共存储根目录下的 Aiji 文件夹
+        var dir = "/storage/emulated/0/Aiji";
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, fileName);
         await File.WriteAllTextAsync(path, content);
 
         // 通知 MediaScanner 扫描新文件，使其在文件管理器中立即可见
@@ -135,97 +123,7 @@ public static class LogExportService
         return path;
     }
 
-    /// <summary>
-    /// 通过 MediaStore.Downloads 写入文件（Android 10+）。
-    /// 使用反射调用 Android API，避免共享项目直接依赖 Mono.Android。
-    /// </summary>
-    private static async Task<string> WriteViaMediaStoreAsync(string fileName, string content)
-    {
-        // 获取 Android Context
-        var appType = Type.GetType("Android.App.Application, Mono.Android")
-            ?? throw new InvalidOperationException("无法加载 Mono.Android 类型");
-        var context = appType.GetProperty("Context")?.GetValue(null)
-            ?? throw new InvalidOperationException("Android Context 为空");
-
-        // context.ContentResolver
-        var contentResolver = context.GetType().GetMethod("get_ContentResolver")?.Invoke(context, null)
-            ?? throw new InvalidOperationException("ContentResolver 为空");
-
-        // MediaStore.Downloads.ExternalContentUri（静态属性）
-        var mediaStoreType = Type.GetType("Android.Provider.MediaStore, Mono.Android")
-            ?? throw new InvalidOperationException("无法加载 MediaStore");
-        var downloadsType = mediaStoreType.GetNestedType("Downloads")
-            ?? throw new InvalidOperationException("无法加载 MediaStore.Downloads");
-
-        // MediaStore.Downloads.ExternalContentUri
-        var externalContentUri = downloadsType.GetProperty("ExternalContentUri")?.GetValue(null)
-            ?? throw new InvalidOperationException("无法获取 ExternalContentUri");
-
-        // 创建 ContentValues：DISPLAY_NAME = fileName, MIME_TYPE = text/plain
-        var contentValuesType = Type.GetType("Android.Content.ContentValues, Mono.Android")
-            ?? throw new InvalidOperationException("无法加载 ContentValues");
-        var values = Activator.CreateInstance(contentValuesType)!;
-        contentValuesType.GetMethod("Put", new[] { typeof(string), typeof(string) })
-            ?.Invoke(values, new object[] { "_display_name", fileName });
-        contentValuesType.GetMethod("Put", new[] { typeof(string), typeof(string) })
-            ?.Invoke(values, new object[] { "mime_type", "text/plain" });
-
-        // Android 10 (API 29) 需设置 IS_PENDING=1；Android 11+ (API 30+) 由系统自动管理。
-        if (GetAndroidApiLevel() == 29)
-        {
-            contentValuesType.GetMethod("Put", new[] { typeof(string), typeof(int) })
-                ?.Invoke(values, new object[] { "is_pending", 1 });
-        }
-
-        // resolver.Insert(uri, values) → Uri of new file
-        var insertMethod = contentResolver.GetType().GetMethod("Insert",
-            new[] { externalContentUri.GetType(), contentValuesType });
-        var fileUri = insertMethod?.Invoke(contentResolver, new[] { externalContentUri, values })
-            ?? throw new InvalidOperationException("MediaStore.Insert 返回空");
-
-        // resolver.OpenOutputStream(uri) → Stream
-        var openOutputStreamMethod = contentResolver.GetType().GetMethods()
-            .FirstOrDefault(m => m.Name == "OpenOutputStream" && m.GetParameters().Length == 1);
-        if (openOutputStreamMethod is null)
-            throw new InvalidOperationException("无法找到 OpenOutputStream 方法");
-
-        var stream = openOutputStreamMethod.Invoke(contentResolver, new[] { fileUri })
-            ?? throw new InvalidOperationException("OpenOutputStream 返回空");
-
-        // 写入内容
-        using var writer = new StreamWriter((System.IO.Stream)stream);
-        await writer.WriteAsync(content);
-        await writer.FlushAsync();
-
-        // Android 10：写完后清除 IS_PENDING
-        if (GetAndroidApiLevel() == 29)
-        {
-            contentValuesType.GetMethod("Put", new[] { typeof(string), typeof(int) })
-                ?.Invoke(values, new object[] { "is_pending", 0 });
-            contentResolver.GetType().GetMethod("Update",
-                new[] { externalContentUri.GetType(), contentValuesType, typeof(string), typeof(string[]) })
-                ?.Invoke(contentResolver, new[] { fileUri, values, null, null });
-        }
-
-        return $"Download/{fileName}";
-    }
-
-    /// <summary>获取 Android API Level（不可用时返回 0）。</summary>
-    private static int GetAndroidApiLevel()
-    {
-        if (!OperatingSystem.IsAndroid()) return 0;
-        try
-        {
-            var buildVersion = Type.GetType("Android.OS.BuildVersions, Mono.Android");
-            if (buildVersion is null) return 0;
-            var sdkIntProp = buildVersion.GetProperty("SdkInt");
-            if (sdkIntProp?.GetValue(null) is int apiLevel) return apiLevel;
-        }
-        catch { }
-        return 0;
-    }
-
-    /// <summary>通知 MediaScanner 扫描文件（Android 9 及以下，使文件在文件管理器中立即可见）。</summary>
+    /// <summary>通知 MediaScanner 扫描文件（使文件在文件管理器中立即可见）。</summary>
     private static void TryNotifyMediaScanner(string path)
     {
         try
