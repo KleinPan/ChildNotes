@@ -22,7 +22,11 @@
 
 - **禁止** `git push --force` / `--force-with-lease` 到 master/main，除非用户明确要求。
 - 遇 non-fast-forward 优先 `git pull --rebase`，不要强制覆盖。
-- 代理设置见 Proxy Settings 段；远端为 GitHub，分支/tag 推送用标准 `git push origin <name>`。
+- **远端为 GitHub**（`https://github.com/KleinPan/ChildNotes.git`），**从不是 Gerrit**；代理走 `127.0.0.1:10808`（SOCKS5/HTTP 同端口），git 已在全局配置代理，无需额外环境变量。
+- **推送必须带显式 refspec**：`git push origin master:master`、`git push origin refs/tags/vX.Y.Z:refs/tags/vX.Y.Z`。
+  - 原因：全局 `C:\Users\59902081\.gitconfig` 存在误配 `remote.origin.push = refs/heads/*:refs/for/*`（Gerrit 风格），本仓库无法用 `--unset` 抵消（multi-value 合并），裸 `git push origin master` 会被重定向到 `refs/for/master` 而被拒。
+  - **禁止**尝试 `git config --global --unset remote.origin.push`（会影响其他仓库，且属于修改全局 git config，违反安全规则）；用显式 refspec 绕过即可。
+  - Tag 不受 `refs/heads/*` refspec 影响，但为保险仍用显式 refspec。
 
 ## 提交粒度与 Tag 策略（重要）
 
