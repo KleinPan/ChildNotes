@@ -71,7 +71,7 @@
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="服务来源" FontSize="14"/>
-                                <TextBlock Text="选择 Ai 记 使用本地大模型还是后端解析服务" FontSize="11"
+                                <TextBlock Text="选择 Ai 记和宝宝喂养分析使用本地大模型还是后端服务" FontSize="11"
                                            Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>

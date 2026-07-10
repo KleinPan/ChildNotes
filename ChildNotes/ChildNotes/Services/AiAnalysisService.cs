@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ChildNotes.Data.Repositories;
@@ -13,6 +14,7 @@ public sealed class AiAnalysisService
     private readonly BabyService _babyService;
     private readonly AppState _state;
     private readonly LlmClient _llmClient;
+    private readonly AiAnalysisApiClient _apiClient;
 
     private const string SkillPrompt = """
 你是"宝宝成长记录"的智能分析助手。你会收到一份由后端整理的宝宝所选连续 7 天记录 TXT，内容可能包括喂养、睡眠、尿布/排便、体温、生长、辅食、用药、异常症状、疫苗、活动，以及与上一次分析或上一段 7 天记录的结构化对比。
@@ -52,18 +54,22 @@ public sealed class AiAnalysisService
 给出 3-5 条可执行的记录或照护建议，便于家长立刻照做。
 """;
 
-    public AiAnalysisService(AiAnalysisRepository repo, RecordService recordService, BabyService babyService, AppState state, LlmClient llmClient)
+    public AiAnalysisService(AiAnalysisRepository repo, RecordService recordService, BabyService babyService, AppState state, LlmClient llmClient, AiAnalysisApiClient apiClient)
     {
         _repo = repo;
         _recordService = recordService;
         _babyService = babyService;
         _state = state;
         _llmClient = llmClient;
+        _apiClient = apiClient;
     }
 
     public LlmConfig GetLlmConfig() => _repo.GetLlmConfig();
 
     public void SaveLlmConfig(LlmConfig config) => _repo.SaveLlmConfig(config);
+
+    /// <summary>是否走后端服务模式（NoteSource == "server"）。</summary>
+    private bool IsServerSource() => _repo.GetLlmConfig().NoteSource == "server";
 
     public List<AiAnalysisRecord> ListRecords()
     {
@@ -71,11 +77,21 @@ public sealed class AiAnalysisService
         return _repo.GetByBaby(_state.CurrentBaby.Id);
     }
 
+    /// <summary>server 模式下从后端拉取分析记录列表；local 模式或失败返回 null。</summary>
+    public async Task<List<AiAnalysisRecord>?> ListRecordsFromServerAsync(CancellationToken ct = default)
+    {
+        if (!IsServerSource() || _state.CurrentBaby is null) return null;
+        var list = await _apiClient.ListAsync(_state.CurrentBaby.Id, ct);
+        return list?.Select(MapFromDto).ToList();
+    }
+
     public AiAnalysisRecord? GetRecord(string id) => _repo.FindById(id);
 
     public bool HasRangeAnalysis(DateTime start, DateTime end)
     {
         if (_state.CurrentBaby is null) return false;
+        // server 模式下不检查本地缓存，让后端幂等处理重复请求
+        if (IsServerSource()) return false;
         return _repo.FindByRange(_state.CurrentBaby.Id, start, end) is not null;
     }
 
@@ -87,6 +103,13 @@ public sealed class AiAnalysisService
         if (days != 7)
             throw new InvalidOperationException("分析区间必须为连续 7 天");
 
+        // server 模式：调后端 /generate，后端负责数据聚合、幂等、AI 调用
+        if (IsServerSource())
+        {
+            return await GenerateViaServerAsync(baby, start, end, ct);
+        }
+
+        // local 模式：本地聚合数据 + 本地 LLM
         var existing = _repo.FindByRange(baby.Id, start, end);
         if (existing is not null)
             throw new InvalidOperationException("该区间已生成过分析，请查看历史记录");
@@ -121,6 +144,36 @@ public sealed class AiAnalysisService
         record.Id = _repo.Insert(record);
         return record;
     }
+
+    /// <summary>server 模式生成：调用后端 /api/smart-analysis/generate。</summary>
+    private async Task<AiAnalysisRecord> GenerateViaServerAsync(Baby baby, DateTime start, DateTime end, CancellationToken ct)
+    {
+        var dto = await _apiClient.GenerateAsync(start, end, baby.Id, ct);
+        if (dto is null)
+            throw new InvalidOperationException("后端服务不可用或返回错误，请检查同步服务器配置");
+        return MapFromDto(dto);
+    }
+
+    /// <summary>将后端 DTO 映射为本地 AiAnalysisRecord（仅用于展示，不写本地 DB）。</summary>
+    private static AiAnalysisRecord MapFromDto(ServerAiAnalysisDto dto) => new()
+    {
+        Id = dto.Id,
+        BabyId = dto.BabyId,
+        BabyName = dto.BabyName,
+        RangeStartDate = ParseDate(dto.RangeStartDate),
+        RangeEndDate = ParseDate(dto.RangeEndDate),
+        AnalysisText = dto.AnalysisText,
+        DataQualityTip = dto.DataQualityTip,
+        Model = dto.Model,
+        CreatedAt = ParseDateTime(dto.CreatedAt),
+        UpdatedAt = ParseDateTime(dto.UpdatedAt),
+    };
+
+    private static DateTime ParseDate(string s) =>
+        DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : DateTime.Today;
+
+    private static DateTime ParseDateTime(string s) =>
+        DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d) ? d : DateTime.Now;
 
     public void DeleteRecord(string id) => _repo.Delete(id);
 

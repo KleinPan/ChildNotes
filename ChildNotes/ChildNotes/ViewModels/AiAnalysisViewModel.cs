@@ -55,7 +55,10 @@ public partial class AiAnalysisViewModel : ViewModelBase
         EndDate = today;
         UpdateRangeTip();
 
-        var records = await Task.Run(() => _aiService.ListRecords());
+        List<AiAnalysisRecord> records;
+        var serverRecords = await _aiService.ListRecordsFromServerAsync();
+        records = serverRecords ?? await Task.Run(() => _aiService.ListRecords());
+
         Records.Clear();
         foreach (var r in records) Records.Add(r);
     }
@@ -124,8 +127,11 @@ public partial class AiAnalysisViewModel : ViewModelBase
         try
         {
             var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date, _generateCts.Token);
+            // 生成后刷新记录列表：server 模式从后端拉取，local 模式从本地 DB 读取
+            var serverRecords = await _aiService.ListRecordsFromServerAsync();
+            var records = serverRecords ?? _aiService.ListRecords();
             Records.Clear();
-            foreach (var r in _aiService.ListRecords()) Records.Add(r);
+            foreach (var r in records) Records.Add(r);
             ShowDetail = true;
             DetailText = record.AnalysisText;
             DetailRangeLabel = record.RangeLabel;

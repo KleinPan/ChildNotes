@@ -31,7 +31,7 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private double _configTemperature = 0.7;
     [ObservableProperty] private int _configMaxTokens = 2048;
 
-    /// <summary>"Ai记"解析服务来源：local=本地 LLM，server=后端解析接口。</summary>
+    /// <summary>AI 服务来源：local=本地 LLM，server=后端解析接口。作用于 Ai记 和 宝宝喂养分析。</summary>
     [ObservableProperty] private string _noteSource = "local";
     /// <summary>UI 双向绑定用：是否使用本地 LLM。setter 同步更新 NoteSource。</summary>
     public bool UseLocalSource
