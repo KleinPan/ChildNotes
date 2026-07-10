@@ -60,7 +60,19 @@ public sealed class RecordService
     public string AddSleep(SleepRecordDto dto)
     {
         var rec = NewRecord(RecordType.Sleep, dto.Time);
-        rec.DurationSec = (dto.Duration ?? 0) * 60;
+        // Duration 为空时从 StartTime/EndTime 推算（AI/规则解析可能只给起止时间未给时长）
+        var duration = dto.Duration;
+        if (!duration.HasValue
+            && DateTime.TryParse(dto.StartTime, out var s)
+            && DateTime.TryParse(dto.EndTime, out var e))
+        {
+            var diff = e - s;
+            if (diff.TotalMinutes < 0) diff = diff.Add(TimeSpan.FromDays(1));
+            duration = (int)diff.TotalMinutes;
+        }
+        rec.DurationSec = (duration ?? 0) * 60;
+        // 同步回 dto，确保 PayloadJson 中的 Duration 与 DurationSec 一致
+        if (duration.HasValue) dto.Duration = duration;
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         NotifyWrite();
