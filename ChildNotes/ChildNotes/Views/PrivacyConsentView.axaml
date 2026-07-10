@@ -30,9 +30,12 @@
                         <StackPanel Spacing="12">
                             <TextBlock Text="{Binding SummaryText}" FontSize="14"
                                        Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
-                            <Button Content="查看完整协议 ›" Classes="weui-btn mini default"
-                                    HorizontalAlignment="Center"
-                                    Command="{Binding ViewFullPolicyCommand}"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
+                                <Button Content="查看《隐私政策》 ›" Classes="weui-btn mini default"
+                                        Command="{Binding ViewFullPolicyCommand}"/>
+                                <Button Content="查看《用户协议》 ›" Classes="weui-btn mini default"
+                                        Command="{Binding ViewFullAgreementCommand}"/>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -40,11 +43,31 @@
                     <ScrollViewer IsVisible="{Binding ShowFullPolicy}"
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="12">
-                            <Button Content="‹ 返回摘要" Classes="weui-btn mini default"
-                                    HorizontalAlignment="Left"
-                                    Command="{Binding BackToSummaryCommand}"/>
-                            <TextBlock Text="{Binding FullPolicyText}" FontSize="13"
+                        <StackPanel Spacing="8">
+                            <!-- 顶部导航 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="‹ 返回摘要" Classes="weui-btn mini default"
+                                        Command="{Binding BackToSummaryCommand}"/>
+                            </StackPanel>
+
+                            <!-- Tab 切换栏 -->
+                            <Grid ColumnDefinitions="*,*" Margin="0,4,0,8">
+                                <Button Grid.Column="0" Content="隐私政策"
+                                        Classes="weui-btn mini"
+                                        Command="{Binding SwitchToPolicyTabCommand}"/>
+                                <Button Grid.Column="1" Content="用户协议"
+                                        Classes="weui-btn mini"
+                                        Command="{Binding SwitchToAgreementTabCommand}"/>
+                            </Grid>
+
+                            <!-- 协议正文（按 Tab 切换显示） -->
+                            <TextBlock Text="{Binding FullPolicyText}"
+                                       IsVisible="{Binding IsPolicyTabActive}"
+                                       FontSize="13"
+                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                            <TextBlock Text="{Binding FullAgreementText}"
+                                       IsVisible="{Binding IsAgreementTabActive}"
+                                       FontSize="13"
                                        Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
                         </StackPanel>
                     </ScrollViewer>

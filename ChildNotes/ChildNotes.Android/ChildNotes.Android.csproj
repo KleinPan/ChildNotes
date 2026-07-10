@@ -5,7 +5,7 @@
     <!-- .NET 10 for Android 最低支持 API 24（Android 7.0），设为 23 会触发 XA1022 警告 -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
-    <ApplicationId>com.CompanyName.ChildNotes</ApplicationId>
+    <ApplicationId>com.babydiary.app</ApplicationId>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <!-- .NET 10 Android SDK 在 Release 下默认启用 RunAOTCompilation，但要求 PublishTrimmed=true。

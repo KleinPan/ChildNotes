@@ -427,6 +427,14 @@ public partial class MainShellViewModel : ViewModelBase
         IsPrivacyPolicyOpen = true;
     }
 
+    /// <summary>打开用户协议查看（只读模式，不展示同意/不同意按钮）。</summary>
+    public void OpenUserAgreement()
+    {
+        // 直接展示完整协议视图，并切到用户协议 Tab
+        PrivacyPolicy.ViewFullAgreementCommand.Execute(null);
+        IsPrivacyPolicyOpen = true;
+    }
+
     /// <summary>打开应用内消息中心。</summary>
     public async void OpenInAppMessage()
     {

@@ -10,7 +10,7 @@
 		targetSdk=36 时此属性默认就是 true，但显式声明可消除 OEM 差异。
 	-->
 	<application
-		android:label="ChildNotes"
+		android:label="宝宝日记"
 		android:icon="@drawable/icon"
 		android:enableOnBackInvokedCallback="true">
 		<!-- MainActivity 由 C# [Activity] 特性自动生成 <activity> 节点，

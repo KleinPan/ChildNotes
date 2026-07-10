@@ -14,6 +14,7 @@ namespace ChildNotes.ViewModels;
 /// - "同意并继续" → 调 PrivacyConsent.Agree() 持久化 → 触发 ConsentGiven 事件，App 继续启动
 /// - "不同意" → 触发 Disagreed 事件，App 调 IApplicationExit.Exit() 退出
 /// - "查看完整协议" → 弹出完整协议内容（从 Assets/PrivacyPolicy.md 加载）
+/// - "查看《用户协议》" → 弹出用户协议内容（从 Assets/UserAgreement.md 加载）
 /// </summary>
 public partial class PrivacyConsentViewModel : ViewModelBase
 {
@@ -25,18 +26,29 @@ public partial class PrivacyConsentViewModel : ViewModelBase
 
     /// <summary>协议摘要文本（弹窗首屏展示）。</summary>
     [ObservableProperty] private string _summaryText =
-        "感谢您使用 ChildNotes。本应用尊重并保护您的隐私，" +
-        "在您使用前请仔细阅读《隐私政策》。\n\n" +
-        "• 数据默认存储在设备本地\n" +
-        "• 仅在您主动启用同步时上传至您的服务器\n" +
-        "• 不收集设备识别码、位置等敏感信息\n" +
-        "• 日志已自动脱敏处理";
+        "感谢您使用宝宝日记。本应用尊重并保护您和宝宝的隐私，" +
+        "在您使用前请仔细阅读《隐私政策》和《用户协议》。\n\n" +
+        "• 数据默认存储在设备本地，不上传任何服务器\n" +
+        "• 仅在您主动启用同步时，数据才会上传至您配置的服务器\n" +
+        "• 不收集 IMEI/Android ID/位置等系统敏感信息\n" +
+        "• 不集成广告、统计、推送 SDK\n" +
+        "• AI 分析为可选功能，需您主动配置后方可启用\n" +
+        "• 日志已自动脱敏处理，7 天后清理";
 
-    /// <summary>完整协议文本（点击"查看完整协议"后加载）。</summary>
+    /// <summary>隐私政策完整文本（点击"查看完整协议"后加载）。</summary>
     [ObservableProperty] private string _fullPolicyText = string.Empty;
+
+    /// <summary>用户协议完整文本（点击"查看《用户协议》"后加载）。</summary>
+    [ObservableProperty] private string _fullAgreementText = string.Empty;
 
     /// <summary>是否展示完整协议视图（替代摘要视图）。</summary>
     [ObservableProperty] private bool _showFullPolicy;
+
+    /// <summary>完整协议视图中是否展示隐私政策 Tab。</summary>
+    [ObservableProperty] private bool _isPolicyTabActive = true;
+
+    /// <summary>完整协议视图中是否展示用户协议 Tab。</summary>
+    [ObservableProperty] private bool _isAgreementTabActive;
 
     /// <summary>是否为只读模式（从"我的"页打开查看，不展示同意/不同意按钮）。</summary>
     [ObservableProperty] private bool _isReadOnly;
@@ -68,15 +80,62 @@ public partial class PrivacyConsentViewModel : ViewModelBase
         ConsentGiven?.Invoke();
     }
 
-    /// <summary>查看完整协议：从 Assets 加载 markdown 文本并切换视图。</summary>
+    /// <summary>查看完整隐私政策：从 Assets 加载 markdown 文本并切换视图。</summary>
     [RelayCommand]
     private void ViewFullPolicy()
     {
         if (string.IsNullOrEmpty(FullPolicyText))
         {
-            FullPolicyText = LoadEmbeddedPolicy();
+            FullPolicyText = LoadEmbeddedAsset("PrivacyPolicy.md");
         }
+        ActivatePolicyTab();
         ShowFullPolicy = true;
+    }
+
+    /// <summary>查看完整用户协议：从 Assets 加载 markdown 文本并切换视图。</summary>
+    [RelayCommand]
+    private void ViewFullAgreement()
+    {
+        if (string.IsNullOrEmpty(FullAgreementText))
+        {
+            FullAgreementText = LoadEmbeddedAsset("UserAgreement.md");
+        }
+        ActivateAgreementTab();
+        ShowFullPolicy = true;
+    }
+
+    /// <summary>切换到隐私政策 Tab。</summary>
+    [RelayCommand]
+    private void SwitchToPolicyTab()
+    {
+        if (string.IsNullOrEmpty(FullPolicyText))
+        {
+            FullPolicyText = LoadEmbeddedAsset("PrivacyPolicy.md");
+        }
+        ActivatePolicyTab();
+    }
+
+    /// <summary>切换到用户协议 Tab。</summary>
+    [RelayCommand]
+    private void SwitchToAgreementTab()
+    {
+        if (string.IsNullOrEmpty(FullAgreementText))
+        {
+            FullAgreementText = LoadEmbeddedAsset("UserAgreement.md");
+        }
+        ActivateAgreementTab();
+    }
+
+    private void ActivatePolicyTab()
+    {
+        IsPolicyTabActive = true;
+        IsAgreementTabActive = false;
+    }
+
+    private void ActivateAgreementTab()
+    {
+        IsPolicyTabActive = false;
+        IsAgreementTabActive = true;
     }
 
     /// <summary>从完整协议视图返回摘要。</summary>
@@ -86,20 +145,20 @@ public partial class PrivacyConsentViewModel : ViewModelBase
         ShowFullPolicy = false;
     }
 
-    /// <summary>从 Assets/PrivacyPolicy.md 加载协议正文。失败时返回占位文本。</summary>
-    private static string LoadEmbeddedPolicy()
+    /// <summary>从 Assets 加载指定 markdown 文本。失败时返回占位文本。</summary>
+    private static string LoadEmbeddedAsset(string fileName)
     {
         try
         {
             // Avalonia 12 提供静态 AssetLoader 类，直接 Open avares:// 资源
-            var assetUri = new Uri("avares://ChildNotes/Assets/PrivacyPolicy.md");
+            var assetUri = new Uri($"avares://ChildNotes/Assets/{fileName}");
             using var stream = global::Avalonia.Platform.AssetLoader.Open(assetUri);
             using var reader = new StreamReader(stream);
             return reader.ReadToEnd();
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Privacy", $"LoadEmbeddedPolicy failed: {ex.Message}");
+            DevLogger.Log("Privacy", $"LoadEmbeddedAsset({fileName}) failed: {ex.Message}");
         }
 
         return "未能加载完整协议正文。请稍后重试或联系开发者。";

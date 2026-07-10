@@ -29,7 +29,7 @@ public sealed class PrivacyConsentConfig
 public static class PrivacyConsent
 {
     /// <summary>当前协议版本号。每次协议内容更新时递增，已同意用户会重新看到弹窗。</summary>
-    public const string CurrentVersion = "2026.07.001";
+    public const string CurrentVersion = "2026.07.002";
 
     private static readonly string AppDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),

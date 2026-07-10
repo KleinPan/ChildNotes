@@ -57,6 +57,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenPrivacyPolicy();
     }
 
+    private void OnUserAgreementTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenUserAgreement();
+    }
+
     private void OnInAppMessageTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenInAppMessage();

@@ -1,4 +1,4 @@
-﻿﻿using Android.App;
+﻿using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
@@ -13,7 +13,7 @@ using ChildNotes.Android.Services;
 namespace ChildNotes.Android;
 
 [Activity(
-    Label = "ChildNotes.Android",
+    Label = "宝宝日记",
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@drawable/Icon",
     MainLauncher = true,
