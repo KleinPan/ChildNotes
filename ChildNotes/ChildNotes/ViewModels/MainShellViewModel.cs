@@ -124,7 +124,13 @@ public partial class MainShellViewModel : ViewModelBase
         foreach (var entry in _overlays) entry.Close();
     }
 
-    /// <summary>系统返回键处理：关闭最近一个处于打开状态的弹层；若都没有打开，回落到关闭记录表单/快捷菜单。</summary>
+    /// <summary>
+    /// 系统返回键处理，按优先级依次：
+    /// 1. 关闭最近一个处于打开状态的弹层；
+    /// 2. 关闭记录表单/快捷菜单；
+    /// 3. 非首页 Tab 回到首页（符合 Android 返回导航规范，避免直接退出应用）；
+    /// 4. 以上都不满足 → 返回 false，由系统执行默认行为（退出应用）。
+    /// </summary>
     public bool HandleSystemBack()
     {
         for (int i = _overlays.Count - 1; i >= 0; i--)
@@ -138,6 +144,11 @@ public partial class MainShellViewModel : ViewModelBase
         if (IsRecordSheetOpen || QuickMenu.IsMenuOpen)
         {
             CloseRecordSheetAndQuickMenu();
+            return true;
+        }
+        if (!IsHomeSelected)
+        {
+            SwitchTabCommand.Execute("home");
             return true;
         }
         return false;
