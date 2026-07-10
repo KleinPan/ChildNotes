@@ -20,12 +20,9 @@
 
 ## Git Push 规则
 
-- 本仓库远端为 GitHub，使用标准 Git 推送方式：
-  - 分支：`git push origin <branch>` 或直接 `git push`
-  - Tag：`git push origin <tagname>` 或 `git push origin --tags`
-- 推送前必须先设置代理环境变量（见 Proxy Settings 段）。
-- **禁止**使用 `git push --force` / `--force-with-lease` 推送到 master/main 分支，除非用户明确要求。
-- 推送前如遇 non-fast-forward，优先用 `git pull --rebase` 整合远端改动，不要强制覆盖。
+- **禁止** `git push --force` / `--force-with-lease` 到 master/main，除非用户明确要求。
+- 遇 non-fast-forward 优先 `git pull --rebase`，不要强制覆盖。
+- 代理设置见 Proxy Settings 段；远端为 GitHub，分支/tag 推送用标准 `git push origin <name>`。
 
 ## 提交粒度与 Tag 策略（重要）
 
@@ -38,27 +35,15 @@
 
 ## 提交信息（Commit Message）正确写法
 
-PowerShell 不支持 bash 的 heredoc 语法（`<<'EOF'`），多行 commit message 必须用文件方式：
-
-```powershell
-# 1. 写入临时文件（用 Write 工具或 echo）
-# 2. 用 -F 参数传递
-git commit -F .git\COMMIT_MSG_TMP.txt
-# 3. 提交后删除临时文件
-```
-
-**禁止**在 PowerShell 中使用 `git commit -m "$(cat <<'EOF' ... EOF)"`，会因 heredoc 解析失败报错。
-
-单行 commit message 可直接用 `-m "..."`。
+- PowerShell 不支持 heredoc，**多行 message 必须用文件方式**：写临时文件 → `git commit -F .git\COMMIT_MSG_TMP.txt` → 删除临时文件。
+- 单行 message 可直接 `git commit -m "..."`。
+- **禁止** `git commit -m "$(cat <<'EOF' ... EOF)"`（heredoc 解析失败）。
 
 ## Tag 推送完整流程（按需参阅）
 
-打 tag 的详细流程（版本号约定、annotated tag 命令、推送顺序、删除误推 tag 等）已拆分到独立文件，**仅在用户明确要求打 tag 时**参阅：[git-tag-procedure.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/git-tag-procedure.md)
+仅在**用户明确要求打 tag**时参阅 [git-tag-procedure.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/git-tag-procedure.md)（含版本号约定、annotated tag 命令、推送顺序、删除误推 tag）。
 
-核心要点（始终遵守）：
-- **默认不打 tag**，需用户明确要求才打（见上方"提交粒度与 Tag 策略"段）。
-- 必须用 annotated tag（`git tag -a`），禁止轻量级 tag。
-- 打 tag 前先查阅 [git-tag-procedure.md](file:///e:/0_Code/5_Git/AiJi/.trae/rules/git-tag-procedure.md) 确认版本号规则与完整推送顺序。
+始终遵守：必须用 annotated tag（`git tag -a`），禁止轻量级 tag。
 
 ## 共享代码契约（ChildNotes.Shared）
 
