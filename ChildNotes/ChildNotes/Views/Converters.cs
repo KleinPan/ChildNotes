@@ -4,6 +4,8 @@ using Avalonia.Media.Imaging;
 using ChildNotes.Infrastructure;
 using ChildNotes.Shared.Constants;
 using System.Globalization;
+using System.IO;
+using System.Net.Http;
 
 namespace ChildNotes.Views;
 
@@ -155,15 +157,37 @@ internal sealed class LogLevelToTextBrushConverter : IValueConverter
 }
 
 /// <summary>
-/// 本地头像文件路径 → Bitmap 转换器。
-/// 文件不存在或读取失败时返回 null（配合 IsVisible 隐藏 Image，露出占位 emoji）。
+/// 头像 → Bitmap 转换器。支持两种来源：
+/// 1. http/https URL：从服务器加载（头像上传后存的是 URL，跨设备可访问）
+/// 2. 本地文件路径：直接读取文件（旧数据或离线选的头像）
+/// 加载失败时返回 null（配合 IsVisible 隐藏 Image，露出占位 emoji）。
 /// </summary>
 internal sealed class AvatarPathToBitmapConverter : IValueConverter
 {
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not string path || string.IsNullOrWhiteSpace(path))
             return null;
+
+        // URL：异步下载后在 UI 线程返回 Bitmap（同步阻塞等待，简单可靠）
+        if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                var bytes = Http.GetByteArrayAsync(path).GetAwaiter().GetResult();
+                using var ms = new MemoryStream(bytes);
+                return Bitmap.DecodeToWidth(ms, 160);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // 本地文件路径
         if (!System.IO.File.Exists(path))
             return null;
         try

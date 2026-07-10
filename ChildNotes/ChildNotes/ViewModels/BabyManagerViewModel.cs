@@ -201,7 +201,7 @@ public partial class BabyManagerViewModel : ViewModelBase
         _pendingAvatarPath = null;
     }
 
-    /// <summary>从已有路径加载头像到 Bitmap（编辑模式调用）。</summary>
+    /// <summary>从已有路径或 URL 加载头像到 Bitmap（编辑模式调用）。</summary>
     private async void LoadAvatarFromPath(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -211,7 +211,17 @@ public partial class BabyManagerViewModel : ViewModelBase
         }
         try
         {
-            if (System.IO.File.Exists(path))
+            // URL：从服务器下载
+            if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var bytes = await http.GetByteArrayAsync(path);
+                using var ms = new System.IO.MemoryStream(bytes);
+                AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(ms, 160));
+                HasAvatar = true;
+            }
+            else if (System.IO.File.Exists(path))
             {
                 await using var fs = System.IO.File.OpenRead(path);
                 AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fs, 160));
@@ -229,13 +239,13 @@ public partial class BabyManagerViewModel : ViewModelBase
         }
     }
 
-    /// <summary>从文件选择器结果加载头像图片。</summary>
+    /// <summary>从文件选择器结果加载头像图片。先存本地即时显示，再异步上传到服务器存 URL。</summary>
     public async Task LoadAvatarFromFile(IStorageFile file)
     {
         try
         {
             await using var stream = await file.OpenReadAsync();
-            // 复制到本地 AppData 目录持久化存储
+            // 复制到本地 AppData 目录持久化存储（即时显示 + 上传失败时的回退）
             var avatarDir = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ChildNotes", "avatars");
@@ -256,8 +266,22 @@ public partial class BabyManagerViewModel : ViewModelBase
             AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fileStream, 160));
             HasAvatar = true;
 
+            // 先用本地路径，保证即使上传失败也能保存（旧设备仍可用本地路径）
             _pendingAvatarPath = localPath;
             DevLogger.Log("BabyManagerVM", $"头像已选择: {localPath}");
+
+            // 异步上传到服务器，成功则改存 URL（跨设备可访问）
+            var uploadService = ServiceProvider.Instance.UploadService;
+            var serverUrl = await uploadService.UploadToServerAsync(localPath);
+            if (!string.IsNullOrEmpty(serverUrl))
+            {
+                _pendingAvatarPath = serverUrl;
+                DevLogger.Log("BabyManagerVM", $"头像已上传: {serverUrl}");
+            }
+            else
+            {
+                DevLogger.Log("BabyManagerVM", "头像上传失败，保留本地路径");
+            }
         }
         catch (Exception ex)
         {
