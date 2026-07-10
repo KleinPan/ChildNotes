@@ -212,21 +212,11 @@ public sealed partial class RecordDisplayItem : ObservableObject
         string sub = "";
         string extra = "";
         var dto = r.GetPayload<SleepRecordDto>();
-        var startStr = dto?.StartTime;
-        var endStr = dto?.EndTime;
-        if (!string.IsNullOrEmpty(startStr))
+        var s = FormatTimeFromPayload(dto?.StartTime);
+        var e = FormatTimeFromPayload(dto?.EndTime);
+        if (!string.IsNullOrEmpty(s))
         {
-            // StartTime/EndTime 存储为 "HH:mm" 格式
-            var s = startStr.Length >= 5 ? startStr[..5] : startStr;
-            if (!string.IsNullOrEmpty(endStr))
-            {
-                var e = endStr.Length >= 5 ? endStr[..5] : endStr;
-                sub = $"{s} → {e}";
-            }
-            else
-            {
-                sub = $"{s} 开始";
-            }
+            sub = !string.IsNullOrEmpty(e) ? $"{s} → {e}" : $"{s} 开始";
         }
         // 时长（绿色）
         var totalMin = (r.DurationSec ?? 0) / 60;
@@ -235,6 +225,21 @@ public sealed partial class RecordDisplayItem : ObservableObject
             extra = totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟";
         }
         return ("睡眠", sub, extra, "");
+    }
+
+    /// <summary>
+    /// 从 Payload 中提取 "HH:mm" 时间文本，兼容三种历史存储格式：
+    /// 1) "HH:mm"（表单创建）
+    /// 2) ISO 8601（WakeUpSleep 写入的 "O" 格式，如 "2026-07-10T06:00:00+08:00"）
+    /// 3) "yyyy-MM-dd HH:mm"（后端同步下发的 displayStartTime/displayEndTime）
+    /// </summary>
+    private static string FormatTimeFromPayload(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+        // 优先尝试解析为 DateTime，可覆盖 ISO 与 "yyyy-MM-dd HH:mm" 两种格式
+        if (DateTime.TryParse(raw, out var dt)) return dt.ToString("HH:mm");
+        // 回退：截取前 5 字符（"HH:mm" 格式）
+        return raw.Length >= 5 ? raw[..5] : raw;
     }
 
     /// <summary>

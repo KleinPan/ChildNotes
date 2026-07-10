@@ -74,7 +74,9 @@ public sealed class RecordService
         var dto = rec.GetPayload<SleepRecordDto>();
         if (dto is null) return;
         var end = DateTime.Now;
-        dto.EndTime = end.ToString("O");
+        // EndTime 统一存 "HH:mm" 格式，与 SleepFormViewModel.BuildDto 保持一致，
+        // 避免 FeedingViewModel.BuildSleepText 解析 ISO 格式时截取出错
+        dto.EndTime = end.ToString("HH:mm");
         dto.Duration = (int)(end - rec.RecordTime).TotalMinutes;
         rec.DurationSec = dto.Duration * 60;
         rec.PayloadJson = JsonSerializer.Serialize(dto);

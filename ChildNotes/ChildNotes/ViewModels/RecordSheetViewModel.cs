@@ -305,6 +305,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 var slpDto = SleepForm.BuildDto();
                 existing.DurationSec = (slpDto.Duration ?? 0) * 60;
                 existing.RecordTime = ParseTime(slpDto.StartTime, _editingDate);
+                existing.PayloadJson = JsonSerializer.Serialize(slpDto);
                 break;
             case RecordType.Temperature:
                 var tmpDto = TemperatureForm.BuildDto();
@@ -322,6 +323,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 var supDto = SupplementForm.BuildDto();
                 existing.RecordSubType = supDto.Type;
                 existing.RecordTime = ParseTime(supDto.Time, _editingDate);
+                existing.PayloadJson = JsonSerializer.Serialize(supDto);
                 break;
             case RecordType.Pump:
                 var pmpDto = PumpForm.BuildDto();

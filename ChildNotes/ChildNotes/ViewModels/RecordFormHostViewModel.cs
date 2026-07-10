@@ -105,10 +105,22 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 break;
             case RecordType.Sleep:
                 SleepForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
-                SleepForm.StartTimeText = time;
-                var dur = r.DurationSec ?? 0;
-                SleepForm.EndTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(r.RecordTime.AddSeconds(dur));
-                SleepForm.DurationText = (dur / 60).ToString();
+                // 优先从 PayloadJson 回填 Start/EndTime，保持与存储数据一致；
+                // 旧数据 PayloadJson 缺失或格式异常时回退到 RecordTime+DurationSec 重算
+                var sleepDto = r.GetPayload<SleepRecordDto>();
+                if (sleepDto is not null && !string.IsNullOrEmpty(sleepDto.StartTime))
+                {
+                    SleepForm.StartTimeText = sleepDto.StartTime;
+                    SleepForm.EndTimeText = sleepDto.EndTime ?? string.Empty;
+                }
+                else
+                {
+                    SleepForm.StartTimeText = time;
+                    var dur = r.DurationSec ?? 0;
+                    SleepForm.EndTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(r.RecordTime.AddSeconds(dur));
+                }
+                var durMin = (r.DurationSec ?? 0) / 60;
+                SleepForm.DurationText = durMin.ToString();
                 break;
             case RecordType.Temperature:
                 TemperatureForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
