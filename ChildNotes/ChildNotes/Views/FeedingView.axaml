@@ -77,38 +77,44 @@
                         IsVisible="{Binding !IsToday}" />
 
                 <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
-                    <StackPanel Spacing="8">
-                        <StackPanel IsVisible="{Binding DayStats.FeedCount}" Orientation="Horizontal" Spacing="6">
+                    <WrapPanel Orientation="Horizontal">
+                        <StackPanel IsVisible="{Binding DayStats.FeedCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
                             <TextBlock FontSize="15" Text="🍼" />
                             <TextBlock FontSize="13">
-                                <Run Text="喂奶" /><Run Text="{Binding DayStats.FeedCount}" /><Run Text="次 · 奶量" /><Run Text="{Binding DayStats.TotalMilk}" /><Run Text="ml" />
+                                <Run Text="喂奶" /><Run Text="{Binding DayStats.FeedCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.TotalMilk}" /><Run Text="ml" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.BreastCount}" Orientation="Horizontal" Spacing="6">
+                        <StackPanel IsVisible="{Binding DayStats.BreastCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
                             <TextBlock FontSize="15" Text="🤱" />
                             <TextBlock FontSize="13">
                                 <Run Text="亲喂" /><Run Text="{Binding DayStats.BreastCount}" /><Run Text="次" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.DiaperCount}" Orientation="Horizontal" Spacing="6">
+                        <StackPanel IsVisible="{Binding DayStats.DiaperCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
                             <TextBlock FontSize="15" Text="💩" />
                             <TextBlock FontSize="13">
-                                <Run Text="{Binding DayStats.DiaperCount}" /><Run Text="次尿布 · 便" /><Run Text="{Binding DayStats.DirtyDiaperCount}" /><Run Text=" · 尿" /><Run Text="{Binding DayStats.WetDiaperCount}" />
+                                <Run Text="{Binding DayStats.DiaperCount}" /><Run Text="尿布 · 便" /><Run Text="{Binding DayStats.DirtyDiaperCount}" /><Run Text=" · 尿" /><Run Text="{Binding DayStats.WetDiaperCount}" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.SupplementCount}" Orientation="Horizontal" Spacing="6">
+                        <StackPanel IsVisible="{Binding DayStats.WaterCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
+                            <TextBlock FontSize="15" Text="💧" />
+                            <TextBlock FontSize="13">
+                                <Run Text="喝水" /><Run Text="{Binding DayStats.WaterCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.WaterTotalMl}" /><Run Text="ml" />
+                            </TextBlock>
+                        </StackPanel>
+                        <StackPanel IsVisible="{Binding DayStats.SupplementCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
                             <TextBlock FontSize="15" Text="💊" />
                             <TextBlock FontSize="13">
                                 <Run Text="补给" /><Run Text="{Binding DayStats.SupplementCount}" /><Run Text="次" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.SleepTotalMin}" Orientation="Horizontal" Spacing="6">
+                        <StackPanel IsVisible="{Binding DayStats.SleepTotalMin}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
                             <TextBlock FontSize="15" Text="😴" />
                             <TextBlock FontSize="13">
                                 <Run Text="睡眠" /><Run Text="{Binding DayStats.SleepTotalMin}" /><Run Text="分钟" />
                             </TextBlock>
                         </StackPanel>
-                    </StackPanel>
+                    </WrapPanel>
                 </Border>
 
                 <Border Classes="section-title">

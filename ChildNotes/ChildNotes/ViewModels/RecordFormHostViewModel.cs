@@ -104,18 +104,23 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 DiaperForm.TimeText = time;
                 break;
             case RecordType.Sleep:
-                SleepForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
-                // 优先从 PayloadJson 回填 Start/EndTime，保持与存储数据一致；
-                // 旧数据 PayloadJson 缺失或格式异常时回退到 RecordTime+DurationSec 重算
+                // StartTime/EndTime 存储格式为 "yyyy-MM-dd HH:mm"，回填时拆分为日期和时分给 UI
+                // 旧数据可能是 "HH:mm" 格式，日期用 RecordDate 兜底
                 var sleepDto = r.GetPayload<SleepRecordDto>();
                 if (sleepDto is not null && !string.IsNullOrEmpty(sleepDto.StartTime))
                 {
-                    SleepForm.StartTimeText = sleepDto.StartTime;
-                    SleepForm.EndTimeText = sleepDto.EndTime ?? string.Empty;
+                    var (sd, st) = SplitDateAndTime(sleepDto.StartTime, r.RecordDate);
+                    SleepForm.DateText = sd;
+                    SleepForm.StartTimeText = st;
+                    var (ed, et) = SplitDateAndTime(sleepDto.EndTime ?? sleepDto.StartTime, r.RecordDate);
+                    SleepForm.EndDateText = ed;
+                    SleepForm.EndTimeText = et;
                 }
                 else
                 {
+                    SleepForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                     SleepForm.StartTimeText = time;
+                    SleepForm.EndDateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                     var dur = r.DurationSec ?? 0;
                     SleepForm.EndTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(r.RecordTime.AddSeconds(dur));
                 }
@@ -207,4 +212,25 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
 
     /// <summary>抽屉关闭后的扩展点（子类可覆写以触发额外逻辑，如通知 Shell 恢复 FAB）。</summary>
     protected virtual void OnSheetClosed() { }
+
+    /// <summary>
+    /// 从存储的时间字符串中拆分出日期和时分两部分，用于睡眠表单的 UI 回填。
+    /// 兼容两种格式：完整时间 "yyyy-MM-dd HH:mm" 与旧数据 "HH:mm"。
+    /// 旧数据 "HH:mm" 时日期部分用 fallbackDate。
+    /// </summary>
+    private static (string dateText, string timeText) SplitDateAndTime(string s, DateTime fallbackDate)
+    {
+        if (string.IsNullOrEmpty(s)) return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(fallbackDate), "00:00");
+        var space = s.IndexOf(' ');
+        if (space >= 0 && s.Length >= space + 6)
+        {
+            var datePart = s[..space];
+            var timePart = s[(space + 1)..];
+            // 日期转本地格式
+            if (DateTime.TryParse(datePart, out var d))
+                return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(d), timePart);
+        }
+        // 旧数据 "HH:mm" 格式
+        return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(fallbackDate), s);
+    }
 }

@@ -16,6 +16,8 @@ public sealed class DayStats
     public int SleepTotalMin { get; set; }
     public int PumpCount { get; set; }
     public int PumpTotalMl { get; set; }
+    public int WaterCount { get; set; }
+    public int WaterTotalMl { get; set; }
     public int ComplementaryCount { get; set; }
     public bool HasFever { get; set; }
     public bool HasDiarrhea { get; set; }
@@ -57,6 +59,8 @@ public sealed class StatisticsService
             SleepTotalMin = agg.SleepDurationSec / 60,
             PumpCount = agg.PumpCount,
             PumpTotalMl = agg.PumpTotalMl,
+            WaterCount = agg.WaterCount,
+            WaterTotalMl = agg.WaterTotalMl,
             ComplementaryCount = agg.ComplementaryCount,
             HasFever = agg.HasFever,
             HasDiarrhea = agg.HasDiarrhea,

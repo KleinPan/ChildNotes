@@ -60,11 +60,37 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         Records.Clear();
         // 疫苗记录仅在首页"疫苗追踪"模块展示，活动记录仅在首页"活动追踪"模块展示，
         // 两者均不在喂养页面记录列表中显示（对齐小程序 buildRecordList 只处理 feeds/diapers/sleeps 等的逻辑）
-        foreach (var r in records.OrderBy(x => x.RecordTime)
-                     .Where(x => x.RecordType != RecordType.Vaccine && x.RecordType != RecordType.Activity))
+        // 排序对齐小程序 _sort：睡眠记录用 StartTime（PayloadJson 内），其他用 RecordTime
+        // 原因：历史数据中睡眠记录的 RecordTime 可能被存为记录创建时刻而非睡眠开始时间，
+        // 导致睡眠记录在列表中排序错乱
+        foreach (var r in records.Where(x => x.RecordType != RecordType.Vaccine && x.RecordType != RecordType.Activity)
+                     .OrderBy(GetSortTime))
         {
             Records.Add(new RecordDisplayItem(r));
         }
+    }
+
+    /// <summary>
+    /// 获取记录的排序时间。对齐小程序 feeding/index.js 的 _sort 逻辑：
+    /// 睡眠记录用 StartTime（睡眠发生时刻），其他记录用 RecordTime。
+    /// 历史数据中睡眠记录的 RecordTime 可能被存为记录创建时刻而非睡眠开始时间，
+    /// 导致睡眠记录在列表中排序错乱，因此睡眠记录用 StartTime 作为排序依据。
+    /// StartTime 现统一存 "yyyy-MM-dd HH:mm"；旧数据可能是 "HH:mm"，
+    /// 此时结合 RecordDate 拼接为完整时间。
+    /// </summary>
+    private static DateTime GetSortTime(ChildRecord r)
+    {
+        if (r.RecordType == RecordType.Sleep)
+        {
+            var dto = r.GetPayload<SleepRecordDto>();
+            if (dto is not null)
+            {
+                if (DateTime.TryParse(dto.StartTime, out var st)) return st;
+                if (TimeSpan.TryParse(dto.StartTime, out var tp))
+                    return r.RecordDate.Date + tp;
+            }
+        }
+        return r.RecordTime;
     }
 
     private static string GetWeekday(DateTime d) => d.DayOfWeek switch

@@ -165,6 +165,17 @@ public class RecordService : IRecordService
 
     private static DateTime ExtractTime(object dto)
     {
+        // 睡眠记录：优先用 StartTime（小程序不填 Time 字段，只用 StartTime/EndTime）
+        // 原因：小程序 sleep-form 提交时 data 只有 startTime/endTime/duration/note，无 time 字段，
+        // 若回退到 DateTime.Now 会导致睡眠记录排序错乱（RecordTime 为创建时刻而非睡眠开始时间）
+        if (dto is SleepRecordDto sleep && !string.IsNullOrWhiteSpace(sleep.StartTime))
+        {
+            if (DateTime.TryParse(sleep.StartTime, out var st)) return st;
+            // StartTime 是 "HH:mm" 格式时，结合当天日期
+            if (TimeSpan.TryParse(sleep.StartTime, out var tp))
+                return DateTime.Today + tp;
+        }
+
         var timeProp = dto.GetType().GetProperty("Time");
         var timeStr = timeProp?.GetValue(dto)?.ToString();
         if (string.IsNullOrEmpty(timeStr)) return DateTime.Now;
