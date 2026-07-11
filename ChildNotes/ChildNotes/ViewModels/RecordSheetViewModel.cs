@@ -289,10 +289,21 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             case RecordType.Feed:
                 var feedDto = FeedForm.BuildDto();
                 existing.RecordSubType = feedDto.Type;
-                existing.AmountMl = feedDto.Amount;
-                existing.LeftDurationSec = (feedDto.LeftDuration ?? 0) * 60;
-                existing.RightDurationSec = (feedDto.RightDuration ?? 0) * 60;
-                existing.DurationSec = ((feedDto.LeftDuration ?? 0) + (feedDto.RightDuration ?? 0)) * 60;
+                // 与 AddFeed 保持一致：亲喂才写时长字段，瓶喂只写 AmountMl
+                if (feedDto.Type == FeedType.Breast)
+                {
+                    existing.LeftDurationSec = (feedDto.LeftDuration ?? 0) * 60;
+                    existing.RightDurationSec = (feedDto.RightDuration ?? 0) * 60;
+                    existing.DurationSec = ((feedDto.LeftDuration ?? 0) + (feedDto.RightDuration ?? 0)) * 60;
+                    existing.AmountMl = null;
+                }
+                else
+                {
+                    existing.AmountMl = feedDto.Amount;
+                    existing.LeftDurationSec = null;
+                    existing.RightDurationSec = null;
+                    existing.DurationSec = null;
+                }
                 existing.RecordTime = ParseTime(feedDto.Time, _editingDate);
                 existing.RecordDate = existing.RecordTime.Date;
                 existing.PayloadJson = JsonSerializer.Serialize(feedDto);
@@ -335,6 +346,8 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 var pmpDto = PumpForm.BuildDto();
                 existing.LeftDurationSec = (pmpDto.LeftDuration ?? 0) * 60;
                 existing.RightDurationSec = (pmpDto.RightDuration ?? 0) * 60;
+                // 与 AddPump 保持一致：同步更新 DurationSec
+                existing.DurationSec = (existing.LeftDurationSec ?? 0) + (existing.RightDurationSec ?? 0);
                 existing.AmountMl = pmpDto.TotalAmount;
                 existing.RecordTime = ParseTime(pmpDto.Time, _editingDate);
                 existing.RecordDate = existing.RecordTime.Date;

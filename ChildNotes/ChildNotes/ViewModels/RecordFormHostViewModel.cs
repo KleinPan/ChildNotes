@@ -92,8 +92,9 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
             case RecordType.Feed:
                 FeedForm.FeedType = r.RecordSubType ?? "bottle";
                 FeedForm.AmountText = r.AmountMl?.ToString() ?? string.Empty;
-                FeedForm.LeftDurationText = (r.LeftDurationSec / 60).ToString();
-                FeedForm.RightDurationText = (r.RightDurationSec / 60).ToString();
+                // LeftDurationSec/RightDurationSec 可能为 null（AI 生成的瓶喂记录），null 安全处理
+                FeedForm.LeftDurationText = (r.LeftDurationSec / 60)?.ToString() ?? string.Empty;
+                FeedForm.RightDurationText = (r.RightDurationSec / 60)?.ToString() ?? string.Empty;
                 FeedForm.Note = r.GetPayload<FeedRecordDto>()?.Note ?? string.Empty;
                 FeedForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 FeedForm.TimeText = time;
@@ -156,8 +157,9 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 break;
             case RecordType.Pump:
                 PumpForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
-                PumpForm.LeftDurationText = (r.LeftDurationSec / 60).ToString();
-                PumpForm.RightDurationText = (r.RightDurationSec / 60).ToString();
+                // LeftDurationSec/RightDurationSec 可能为 null（旧数据或异常数据），null 安全处理
+                PumpForm.LeftDurationText = (r.LeftDurationSec / 60)?.ToString() ?? string.Empty;
+                PumpForm.RightDurationText = (r.RightDurationSec / 60)?.ToString() ?? string.Empty;
                 PumpForm.TotalAmountText = r.AmountMl?.ToString() ?? string.Empty;
                 PumpForm.TimeText = time;
                 break;
