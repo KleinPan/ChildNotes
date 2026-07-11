@@ -294,17 +294,20 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.RightDurationSec = (feedDto.RightDuration ?? 0) * 60;
                 existing.DurationSec = ((feedDto.LeftDuration ?? 0) + (feedDto.RightDuration ?? 0)) * 60;
                 existing.RecordTime = ParseTime(feedDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 existing.PayloadJson = JsonSerializer.Serialize(feedDto);
                 break;
             case RecordType.Diaper:
                 var diaDto = DiaperForm.BuildDto();
                 existing.RecordSubType = diaDto.Type;
                 existing.RecordTime = ParseTime(diaDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Sleep:
                 var slpDto = SleepForm.BuildDto();
                 existing.DurationSec = (slpDto.Duration ?? 0) * 60;
                 existing.RecordTime = ParseTime(slpDto.StartTime, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 existing.PayloadJson = JsonSerializer.Serialize(slpDto);
                 break;
             case RecordType.Temperature:
@@ -312,17 +315,20 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.TemperatureValue = tmpDto.Temperature;
                 existing.AbnormalFlag = tmpDto.Temperature >= HealthConstants.FeverThreshold;
                 existing.RecordTime = ParseTime(tmpDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Growth:
                 var grwDto = GrowthForm.BuildDto();
                 existing.HeightCm = grwDto.Height;
                 existing.WeightKg = grwDto.Weight;
                 existing.RecordTime = ParseTime(grwDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Supplement:
                 var supDto = SupplementForm.BuildDto();
                 existing.RecordSubType = supDto.Type;
                 existing.RecordTime = ParseTime(supDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 existing.PayloadJson = JsonSerializer.Serialize(supDto);
                 break;
             case RecordType.Pump:
@@ -331,12 +337,14 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.RightDurationSec = (pmpDto.RightDuration ?? 0) * 60;
                 existing.AmountMl = pmpDto.TotalAmount;
                 existing.RecordTime = ParseTime(pmpDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Complementary:
                 var cmpDto = ComplementaryForm.BuildDto();
                 existing.RecordSubType = cmpDto.Texture;
                 existing.AbnormalFlag = cmpDto.Abnormal;
                 existing.RecordTime = ParseTime(cmpDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Abnormal:
                 var abnDto = AbnormalForm.BuildDto();
@@ -355,12 +363,14 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                     existing.RecordSubType = null;
                 existing.PayloadJson = System.Text.Json.JsonSerializer.Serialize(abnDto);
                 existing.RecordTime = ParseTime(abnDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
             case RecordType.Activity:
                 var actDto = ActivityForm.BuildDto();
                 existing.RecordSubType = actDto.Category;
                 existing.DurationSec = (actDto.Duration ?? 0) * 60;
                 existing.RecordTime = ParseTime(actDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
                 break;
         }
         RecordService.Update(existing);

@@ -545,7 +545,12 @@ public static class AiNoteRuleParser
 
     #region 时间解析辅助
 
-    /// <summary>从文本中提取时间，返回 "HH:mm" 格式；无法提取则返回 null。</summary>
+    /// <summary>
+    /// 从文本中提取时间。
+    /// 默认返回 "HH:mm" 格式；当文本含"昨晚/昨天/前天"等相对日期词时，
+    /// 返回 "yyyy-MM-dd HH:mm" 完整格式（基于今天偏移），避免凌晨补记时日期归属错误。
+    /// 无法提取则返回 null。
+    /// </summary>
     public static string? ExtractTime(string text)
     {
         var m = TimeRegex.Match(text);
@@ -561,8 +566,30 @@ public static class AiNoteRuleParser
                 bool isPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
                 if (isPm) hh += 12;
             }
-            return $"{hh:D2}:{mm:D2}";
+            var hhMm = $"{hh:D2}:{mm:D2}";
+
+            // 相对日期词：返回完整日期时间，避免 NormalizeTime 用 DateTime.Today 拼成今天
+            var dateOffset = GetRelativeDateOffset(text);
+            if (dateOffset.HasValue)
+                return DateTime.Today.AddDays(dateOffset.Value).ToString("yyyy-MM-dd ") + hhMm;
+            return hhMm;
         }
+        return null;
+    }
+
+    /// <summary>
+    /// 识别文本中的相对日期词，返回相对于"今天"的偏移天数。
+    /// 昨晚/昨天/昨夜 → -1；前天 → -2；大前天 → -3。
+    /// 不含相对日期词返回 null（包括"今天/今早/今晚"，这些就是今天，偏移 0 但不特殊处理）。
+    /// </summary>
+    private static int? GetRelativeDateOffset(string text)
+    {
+        if (text.Contains("昨晚") || text.Contains("昨天") || text.Contains("昨夜"))
+            return -1;
+        if (text.Contains("大前天"))
+            return -3;
+        if (text.Contains("前天"))
+            return -2;
         return null;
     }
 
@@ -657,6 +684,8 @@ public static class AiNoteRuleParser
     public static string CombineDateAndTime(string fullTime, string hhMm, string format = "O")
     {
         if (!DateTime.TryParse(fullTime, out var baseDt)) return fullTime;
+        // 若 hhMm 是完整日期时间格式（如 LLM 返回 "2026-07-10 20:05"），直接归一化返回
+        if (DateTime.TryParse(hhMm, out var fullT)) return fullT.ToString(format);
         if (!TimeSpan.TryParse(hhMm, out var t)) return fullTime;
         var result = baseDt.Date.Add(t);
         // 若结束时间小于开始时间，说明跨午夜，日期 +1

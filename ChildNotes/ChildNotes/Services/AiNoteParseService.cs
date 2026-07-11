@@ -41,14 +41,21 @@ public sealed class AiNoteParseService
 - water: 喝水（独立类型，amount=水量ml）
 - activity 子类型: play/outdoor/exercise
 
-字段：recordType, recordSubType, time(HH:mm), amount(ml数值), duration(分钟),
-startTime(sleep专用，开始时间HH:mm), endTime(sleep专用，结束时间HH:mm),
+字段：recordType, recordSubType, time, amount(ml数值), duration(分钟),
+startTime(sleep专用，开始时间), endTime(sleep专用，结束时间),
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
 name(supplement专用，药品/营养品名称，不含剂量), dose(supplement专用，剂量数值文本如"0.5"/"1"/"5"),
 doseUnit(supplement专用，剂量单位如"包"/"粒"/"ml"/"滴"),
 foodName(complementary专用，食物名称如"南瓜泥"/"蛋黄"), foodTypes(complementary专用，食材类型数组如["蔬菜"]),
 amountText(complementary专用，食量数值如"20"), amountUnit(complementary专用，食量单位如"克"/"个"/"勺"/"碗"),
 note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句话), confidence(0~1)。
+
+时间格式规则（重要）：
+- time/startTime/endTime 默认用 "HH:mm" 格式（如 "20:05"、"08:30"）
+- 若用户提到"昨晚/昨天/前天/大前天"等相对日期词，必须用完整格式 "yyyy-MM-dd HH:mm"（基于当前日期偏移）
+  示例：今天 2026-07-11，用户说"昨晚8:05" → time="2026-07-10 20:05"
+  示例：今天 2026-07-11，用户说"前天下午3点" → time="2026-07-09 15:00"
+- 当前日期时间：{NowText}
 
 示例输入："11点半睡到12点40，吃了130奶粉，喝10ml水"
 示例输出：[{"recordType":"sleep","time":"11:30","startTime":"11:30","endTime":"12:40","duration":70,"summary":"睡眠70分钟","confidence":0.9},
@@ -144,7 +151,7 @@ note(备注，supplement 不要把 name/dose 塞进 note), summary(<=30字一句
             return null;
         try
         {
-            var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt, text);
+            var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt.Replace("{NowText}", DateTime.Now.ToString("yyyy-MM-dd HH:mm")), text);
             var parsed = ParseLlmJsonArray(raw);
             DevLogger.Log("AiNote", $"[AI-LOG] 本地 LLM 解析返回：{(parsed is null ? "null" : $"{parsed.Count} 条")}");
             return parsed;

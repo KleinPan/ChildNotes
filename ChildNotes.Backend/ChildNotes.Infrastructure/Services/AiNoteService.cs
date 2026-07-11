@@ -43,11 +43,11 @@ public partial class AiNoteService : IAiNoteService
 字段说明（缺失字段使用 null，不要编造）：
 - recordType: 必填，上面列表中的值
 - recordSubType: 子类型，如 feed 的 bottle/breast/expressed；diaper 的 wet/dirty/both/dry；supplement 的 medicine/nutrition；activity 的 play/outdoor/exercise
-- time: HH:mm 格式，未提及时间则使用 null（后端将取当前时间）
+- time: 时间，默认 "HH:mm" 格式；若用户提到"昨晚/昨天/前天/大前天"等相对日期词，必须用完整 "yyyy-MM-dd HH:mm" 格式（基于当前日期偏移）。未提及时间则使用 null（后端将取当前时间）
 - amount: 数值型，单位 ml（用于 feed 瓶喂、pump 总量等）
 - duration: 数值型，单位分钟（用于 sleep、activity）
-- startTime: sleep 专用，开始时间 "HH:mm"（如"23:30"）；若只提到一个时间点则同时填 startTime 和 time
-- endTime: sleep 专用，结束时间 "HH:mm"（如"00:40"）；有明确结束时间时填写
+- startTime: sleep 专用，开始时间，格式同 time；若只提到一个时间点则同时填 startTime 和 time
+- endTime: sleep 专用，结束时间，格式同 time；有明确结束时间时填写
 - leftDuration / rightDuration: 数值型，分钟（用于 feed 亲喂、pump）
 - temperature: 数值型，℃
 - height: 数值型，cm
@@ -97,6 +97,10 @@ public partial class AiNoteService : IAiNoteService
 - "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=数值如"0.5"，doseUnit=单位如"包"）；"维D/益生菌" → supplement/nutrition
 - "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
+- 相对日期词：含"昨晚/昨天/昨夜"则日期为今天-1；"前天"为今天-2；"大前天"为今天-3。此时 time 必须用 "yyyy-MM-dd HH:mm" 完整格式
+  示例：若今天 2026-07-11，用户说"昨晚8:05吃了50ml奶粉" → time="2026-07-10 20:05"
+  示例：若今天 2026-07-11，用户说"前天下午3点睡觉" → time="2026-07-09 15:00"
+- 当前日期时间：{NowText}
 """;
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -158,7 +162,8 @@ public partial class AiNoteService : IAiNoteService
     private async Task<List<AiNoteParseItem>> ParseByAiAsync(string text, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
-        var (raw, _) = await _ai.ChatAsync(SystemPrompt, text, ct);
+        var prompt = SystemPrompt.Replace("{NowText}", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+        var (raw, _) = await _ai.ChatAsync(prompt, text, ct);
         sw.Stop();
         _logger.LogInformation("[AI-LOG] DeepSeek 调用成功 {Ms}ms respLen={Len}", sw.ElapsedMilliseconds, raw?.Length ?? 0);
 
