@@ -60,7 +60,9 @@ public static class ReleaseLogger
             _logDirectory = logDirectory ?? GetDefaultLogDirectory();
             Directory.CreateDirectory(_logDirectory);
 
-            var logPath = Path.Combine(_logDirectory, "app-.log");
+            // 日志文件名前缀区分版本：开发版 "dev-"，正式版 "app-"（保持向后兼容）
+            var logFilePrefix = BuildConfiguration.LogFilePrefix;
+            var logPath = Path.Combine(_logDirectory, logFilePrefix + ".log");
             var levelSwitch = new LoggingLevelSwitch(LogEventLevel.Information);
 
             _logger = new LoggerConfiguration()
@@ -207,7 +209,8 @@ public static class ReleaseLogger
     }
 
     /// <summary>
-    /// 列出当前日志目录中的所有日志文件（按修改时间倒序）。
+    /// 列出当前日志目录中属于本构建版本的日志文件（按修改时间倒序）。
+    /// 开发版只匹配 dev-*.log，正式版只匹配 app-*.log，两个版本日志互不干扰。
     /// 供导出功能使用。
     /// </summary>
     public static IReadOnlyList<FileInfo> GetLogFiles()
@@ -216,8 +219,9 @@ public static class ReleaseLogger
             return Array.Empty<FileInfo>();
         try
         {
+            var pattern = BuildConfiguration.LogFilePrefix + "*.log";
             return new DirectoryInfo(_logDirectory)
-                .GetFiles("app-*.log", SearchOption.TopDirectoryOnly)
+                .GetFiles(pattern, SearchOption.TopDirectoryOnly)
                 .OrderByDescending(f => f.LastWriteTime)
                 .ToList();
         }

@@ -279,7 +279,8 @@ public class ReleaseLoggerTests : IDisposable
 
         var files = ReleaseLogger.GetLogFiles();
         Assert.NotEmpty(files);
-        Assert.All(files, f => Assert.StartsWith("app-", f.Name));
+        // 日志文件名前缀由构建变体决定：开发版 "dev-"，正式版 "app-"
+        Assert.All(files, f => Assert.StartsWith(ChildNotes.Infrastructure.BuildConfiguration.LogFilePrefix, f.Name));
         Assert.All(files, f => Assert.EndsWith(".log", f.Name));
     }
 

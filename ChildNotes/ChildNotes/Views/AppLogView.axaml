@@ -247,7 +247,8 @@
                 <Button Grid.Column="1" Content="导出 .txt"
                         Classes="weui-btn mini primary"
                         Command="{Binding ExportCommand}"
-                        IsEnabled="{Binding !IsExporting}"/>
+                        IsEnabled="{Binding !IsExporting}"
+                        IsVisible="{Binding IsLogExportVisible}"/>
             </Grid>
         </Border>
 

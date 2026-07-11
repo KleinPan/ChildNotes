@@ -30,10 +30,11 @@ public static class LogExportService
 
         // 构造日志文本：头部信息 + Release 文件日志 + Dev 内存日志
         var sb = new StringBuilder(8192);
-        sb.AppendLine("===== ChildNotes 日志 =====");
+        sb.AppendLine($"===== ChildNotes 日志 [{BuildConfiguration.BuildVariant}] =====");
         sb.AppendLine($"导出时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         sb.AppendLine($"平台: {DevLogger.PlatformTag}");
         sb.AppendLine($"应用版本: {GetAppVersion()}");
+        sb.AppendLine($"构建变体: {BuildConfiguration.BuildVariant}");
         sb.AppendLine($"Dev 日志条目数: {devEntries.Count}");
         sb.AppendLine($"Release 日志文件数: {releaseFiles.Count}");
         sb.AppendLine("================================");

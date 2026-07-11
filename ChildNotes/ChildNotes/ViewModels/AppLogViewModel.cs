@@ -33,6 +33,12 @@ public partial class AppLogViewModel : ViewModelBase, IActivatable
     /// <summary>是否正在导出。</summary>
     [ObservableProperty] private bool _isExporting;
 
+    /// <summary>
+    /// 日志导出按钮是否可见。仅开发版可见，正式版隐藏。
+    /// 程序日志页本身仅从开发者选项进入，此属性作为 UI 一致性保障。
+    /// </summary>
+    public bool IsLogExportVisible => Infrastructure.BuildConfiguration.IsDevelopmentBuild;
+
     public bool IsAllLevel => LevelFilter == 0;
     public bool IsInfoLevel => LevelFilter == 1;
     public bool IsWarnLevel => LevelFilter == 2;
