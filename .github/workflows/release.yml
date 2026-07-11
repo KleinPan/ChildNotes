@@ -216,16 +216,16 @@ jobs:
           #
           # 签名：若 Secrets 已配置（keystore 文件存在），通过 -p: 注入固定签名参数；
           #       否则回退到默认 debug 签名（无法覆盖安装，仅用于测试构建）
-          SIGN_ARGS=""
+          SIGN_ARGS=()
           if [ -f "$HOME/childnotes.keystore" ]; then
             # ★★★ AndroidKeyStore=true 是开启自定义 keystore 的总开关，必须显式传入，
             #     否则即使传了 AndroidSigningKeyStore/KeyAlias/StorePass/KeyPass 也不会生效，
             #     会静默回退到 debug 签名（每次 CI 构建签名都不同，导致无法覆盖安装）。
-            SIGN_ARGS="-p:AndroidKeyStore=true \
-              -p:AndroidSigningKeyStore=$HOME/childnotes.keystore \
-              -p:AndroidSigningStorePass=$ANDROID_KEYSTORE_PASS \
-              -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS \
-              -p:AndroidSigningKeyPass=$ANDROID_KEY_PASS"
+            SIGN_ARGS=(-p:AndroidKeyStore=true
+              -p:AndroidSigningKeyStore=$HOME/childnotes.keystore
+              -p:AndroidSigningStorePass=$ANDROID_KEYSTORE_PASS
+              -p:AndroidSigningKeyAlias=$ANDROID_KEY_ALIAS
+              -p:AndroidSigningKeyPass=$ANDROID_KEY_PASS)
             echo "::notice::使用固定 keystore 签名（AndroidKeyStore=true）"
           else
             echo "::warning::未配置 ANDROID_KEYSTORE_BASE64 Secret，使用默认 debug 签名（无法覆盖安装旧版本）"
@@ -245,7 +245,7 @@ jobs:
             -p:InformationalVersion=$VERSION \
             -p:ApplicationDisplayVersion=$VERSION \
             -p:ApplicationVersion=$VERSION_CODE \
-            $SIGN_ARGS \
+            "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-prod
 
           echo "=== 构建开发版 APK（dev）==="
@@ -268,7 +268,7 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION \
             -p:ApplicationVersion=$VERSION_CODE \
             -p:DevBuild=true \
-            $SIGN_ARGS \
+            "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-dev
 
       - name: Collect Android APK
