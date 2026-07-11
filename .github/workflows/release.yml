@@ -249,6 +249,13 @@ jobs:
             -o ../artifacts/android-prod
 
           echo "=== 构建开发版 APK（dev）==="
+
+          # ★★★ 清理 prod 构建的 obj 缓存，避免 JNI 桥接类 CRC 哈希不匹配
+          # DevBuild=true 改变编译常量导致 Java 类名 CRC 不同，复用 obj 缓存会触发
+          # UnsatisfiedLinkError: No implementation found for n_onCreate() → 启动即闪退
+          rm -rf ChildNotes.Android/obj ChildNotes/obj
+          echo "::notice::Cleaned obj cache before dev build"
+
           # DevBuild=true 注入 DEV_BUILD 编译常量 + 切换 ApplicationId 为 com.babydiary.app.dev
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
