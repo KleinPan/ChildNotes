@@ -13,7 +13,6 @@ namespace ChildNotes.Infrastructure.Services;
 
 public class RecordService : IRecordService
 {
-    private const decimal FeverThreshold = 37.3m;
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
@@ -138,7 +137,7 @@ public class RecordService : IRecordService
             case RecordType.Temperature:
                 var t = JsonSerializer.Deserialize<TemperatureRecordDto>(json)!;
                 rec.TemperatureValue = t.Temperature;
-                rec.AbnormalFlag = t.IsAbnormal || t.Temperature >= FeverThreshold;
+                rec.AbnormalFlag = t.IsAbnormal || t.Temperature >= HealthConstants.FeverThreshold;
                 break;
             case RecordType.Growth:
                 var g = JsonSerializer.Deserialize<GrowthRecordDto>(json)!;

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
@@ -32,7 +33,7 @@ public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewMo
     {
         get
         {
-            if (decimal.TryParse(TemperatureText, out var t)) return t >= 37.3m;
+            if (decimal.TryParse(TemperatureText, out var t)) return t >= HealthConstants.FeverThreshold;
             return false;
         }
     }

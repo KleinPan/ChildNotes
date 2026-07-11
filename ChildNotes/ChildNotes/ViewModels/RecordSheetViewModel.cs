@@ -310,7 +310,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             case RecordType.Temperature:
                 var tmpDto = TemperatureForm.BuildDto();
                 existing.TemperatureValue = tmpDto.Temperature;
-                existing.AbnormalFlag = tmpDto.Temperature >= 37.3m;
+                existing.AbnormalFlag = tmpDto.Temperature >= HealthConstants.FeverThreshold;
                 existing.RecordTime = ParseTime(tmpDto.Time, _editingDate);
                 break;
             case RecordType.Growth:

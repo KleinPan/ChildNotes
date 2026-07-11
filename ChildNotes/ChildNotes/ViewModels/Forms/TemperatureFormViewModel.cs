@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
@@ -16,7 +17,7 @@ public partial class TemperatureFormViewModel : ObservableObject, IRecordFormVie
     {
         get
         {
-            if (decimal.TryParse(TemperatureText, out var t)) return t >= 37.3m;
+            if (decimal.TryParse(TemperatureText, out var t)) return t >= HealthConstants.FeverThreshold;
             return false;
         }
     }
@@ -28,7 +29,7 @@ public partial class TemperatureFormViewModel : ObservableObject, IRecordFormVie
             error = "请输入有效体温（30-45℃）";
             return false;
         }
-        IsAbnormal = t >= 37.3m;
+        IsAbnormal = t >= HealthConstants.FeverThreshold;
         error = string.Empty;
         return true;
     }
