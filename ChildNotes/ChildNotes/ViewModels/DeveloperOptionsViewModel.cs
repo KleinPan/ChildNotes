@@ -1,11 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
 
 /// <summary>
 /// 开发者选项页 ViewModel：管理日志导出、动画设置等开发工具。
+/// 仅开发版构建可通过 MineView 入口进入；正式版入口已隐藏。
 /// </summary>
 public partial class DeveloperOptionsViewModel : ViewModelBase
 {
@@ -14,6 +16,13 @@ public partial class DeveloperOptionsViewModel : ViewModelBase
 
     /// <summary>是否启用动画效果。</summary>
     [ObservableProperty] private bool _enableAnimations = true;
+
+    /// <summary>
+    /// 日志导出功能是否可见。仅开发版可见，正式版隐藏导出按钮。
+    /// 虽然开发者选项入口本身在正式版已隐藏，此属性作为双重保险，
+    /// 确保 AppLogView 等其他入口也能正确隐藏导出功能。
+    /// </summary>
+    public bool IsLogExportVisible => BuildConfiguration.IsDevelopmentBuild;
 
     /// <summary>请求打开"程序日志"页（由 MainShellViewModel 订阅）。</summary>
     public event Action? OpenAppLogRequested;

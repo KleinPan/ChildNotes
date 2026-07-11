@@ -56,9 +56,11 @@
                             </StackPanel>
                             <TextBlock Grid.Column="2" Classes="dev-chevron" Text="›"/>
                         </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
-                        <!-- 导出运行日志：标题+描述+操作按钮 -->
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
+                                IsVisible="{Binding IsLogExportVisible}"/>
+                        <!-- 导出运行日志：标题+描述+操作按钮。仅开发版可见。 -->
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto"
+                              IsVisible="{Binding IsLogExportVisible}">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="导出运行日志" FontSize="15" Foreground="{StaticResource WeuiFg0Brush}"/>
                                 <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录"

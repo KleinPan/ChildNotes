@@ -471,14 +471,25 @@ public partial class MainShellViewModel : ViewModelBase
 
     public void OpenDeveloperOptions()
     {
+        // 正式版构建隐藏开发者选项入口（MineView 已通过 IsDeveloperOptionsVisible 隐藏），
+        // 此处作为运行时双重保险，防止通过其他路径（如自动化测试、深链接）绕过 UI 隐藏。
+#if !DEV_BUILD
+        return;
+#else
         IsDeveloperOptionsOpen = true;
+#endif
     }
 
     /// <summary>打开"程序日志"页（开发者选项内入口）。</summary>
     public void OpenAppLog()
     {
+        // 正式版构建拦截程序日志页入口（仅开发者选项内可进入）
+#if !DEV_BUILD
+        return;
+#else
         IsAppLogOpen = true;
         AppLog.Activate();
+#endif
     }
 
     /// <summary>打开"使用帮助"页。</summary>

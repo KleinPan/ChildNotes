@@ -56,7 +56,9 @@
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
-                        <Grid Margin="14,12" ColumnDefinitions="80,*,Auto">
+                        <!-- 开发版：可编辑 TextBox + 保存按钮 -->
+                        <Grid Margin="14,12" ColumnDefinitions="80,*,Auto"
+                              IsVisible="{Binding IsServerUrlEditable}">
                             <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="13"
                                      PlaceholderText="https://api.example.com"
@@ -67,7 +69,7 @@
                                     IsVisible="{Binding IsServerUrlDirty}"
                                     Margin="8,0,0,0"/>
                         </Grid>
-                        <!-- 当前生效地址（含回退到默认值的提示） -->
+                        <!-- 当前生效地址（含回退到默认值的提示）。开发版仅编辑后显示，正式版始终显示 -->
                         <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"
                                 IsVisible="{Binding IsServerUrlDirty}"/>
                         <Grid Margin="14,8" ColumnDefinitions="80,*"
@@ -75,6 +77,13 @@
                             <TextBlock Grid.Column="0" Text="当前生效" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="12"
                                        Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                        <!-- 正式版：只读展示当前生效地址 -->
+                        <Grid Margin="14,12" ColumnDefinitions="80,*"
+                              IsVisible="{Binding !IsServerUrlEditable}">
+                            <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
+                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                     </StackPanel>
                 </Border>

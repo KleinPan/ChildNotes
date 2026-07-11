@@ -40,6 +40,12 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
     /// <summary>服务器地址是否已修改（控制"保存"按钮可见性）。</summary>
     [ObservableProperty] private bool _isServerUrlDirty;
 
+    /// <summary>
+    /// 服务器地址是否可编辑。仅开发版可编辑，正式版改为只读展示当前生效地址。
+    /// 由 <see cref="Infrastructure.BuildConfiguration.IsDevelopmentBuild"/> 编译时决定。
+    /// </summary>
+    public bool IsServerUrlEditable => Infrastructure.BuildConfiguration.IsDevelopmentBuild;
+
     partial void OnServerUrlInputChanged(string value)
     {
         if (_loading) return;

@@ -161,8 +161,10 @@
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
-                    <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap">
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
+                            IsVisible="{Binding IsDeveloperOptionsVisible}" />
+                    <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap"
+                          IsVisible="{Binding IsDeveloperOptionsVisible}">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
@@ -175,7 +177,8 @@
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
+                            IsVisible="{Binding IsDeveloperOptionsVisible}"/>
                     <Grid Margin="14,12" PointerPressed="OnPrivacyPolicyTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />

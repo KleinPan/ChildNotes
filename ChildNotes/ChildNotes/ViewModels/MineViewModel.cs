@@ -25,6 +25,12 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private int _unreadMessageCount;
 
     /// <summary>
+    /// 开发者选项入口是否可见。仅开发版构建可见，正式版隐藏入口。
+    /// 由 <see cref="BuildConfiguration.IsDevelopmentBuild"/> 编译时决定，运行时恒定。
+    /// </summary>
+    public bool IsDeveloperOptionsVisible => BuildConfiguration.IsDevelopmentBuild;
+
+    /// <summary>
     /// 应用版本号（从程序集 InformationalVersion 读取；CI 构建时由 release workflow 用 tag 名覆盖版本号）
     /// </summary>
     public string AppVersion
