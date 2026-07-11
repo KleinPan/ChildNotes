@@ -6,6 +6,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+
+  <!-- 构建变体：通过 DevBuild=true 注入 DEV_BUILD 编译常量，控制开发版/正式版功能开关。
+       由 Android/桌面项目或 CI 命令行 -p:DevBuild=true 传入。 -->
+  <PropertyGroup Condition="'$(DevBuild)' == 'true'">
+    <DefineConstants>$(DefineConstants);DEV_BUILD</DefineConstants>
+  </PropertyGroup>
   
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />

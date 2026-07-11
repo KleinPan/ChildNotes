@@ -209,9 +209,10 @@ jobs:
           # R8/D8 是 JVM 工具，增大堆内存防止 OOM 崩溃（默认堆可能不足处理 Avalonia + AndroidX 全量类）
           _JAVA_OPTIONS: '-Xmx4g'
         run: |
-          # .NET 10 + Avalonia.Android，产出 APK
-          # 显式传入 ApplicationDisplayVersion 覆盖 csproj 默认值（0.0.0），
-          # 确保 release 版本号与 git tag 一致
+          # .NET 10 + Avalonia.Android，产出两个 APK：
+          #   1. 正式版（prod）：com.babydiary.app，移除开发者选项/日志导出，服务器地址只读
+          #   2. 开发版（dev）：com.babydiary.app.dev，保留全部开发者功能
+          # 两个版本使用相同 keystore 签名，可共存安装。
           #
           # 签名：若 Secrets 已配置（keystore 文件存在），通过 -p: 注入固定签名参数；
           #       否则回退到默认 debug 签名（无法覆盖安装，仅用于测试构建）
@@ -230,35 +231,54 @@ jobs:
             echo "::warning::未配置 ANDROID_KEYSTORE_BASE64 Secret，使用默认 debug 签名（无法覆盖安装旧版本）"
           fi
 
+          VERSION="${{ steps.version.outputs.version }}"
+          VERSION_CODE="${{ steps.version.outputs.version_code }}"
+
+          echo "=== 构建正式版 APK（prod）==="
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:SourceRevisionId= \
-            -p:Version=${{ steps.version.outputs.version }} \
-            -p:InformationalVersion=${{ steps.version.outputs.version }} \
-            -p:ApplicationDisplayVersion=${{ steps.version.outputs.version }} \
-            -p:ApplicationVersion=${{ steps.version.outputs.version_code }} \
+            -p:Version=$VERSION \
+            -p:InformationalVersion=$VERSION \
+            -p:ApplicationDisplayVersion=$VERSION \
+            -p:ApplicationVersion=$VERSION_CODE \
             $SIGN_ARGS \
-            -o ../artifacts/android
+            -o ../artifacts/android-prod
+
+          echo "=== 构建开发版 APK（dev）==="
+          # DevBuild=true 注入 DEV_BUILD 编译常量 + 切换 ApplicationId 为 com.babydiary.app.dev
+          dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
+            -c Release \
+            -f net10.0-android \
+            -p:AndroidPackageFormat=apk \
+            -p:PublishTrimmed=false \
+            -p:SourceRevisionId= \
+            -p:Version=$VERSION \
+            -p:InformationalVersion=$VERSION \
+            -p:ApplicationDisplayVersion=$VERSION \
+            -p:ApplicationVersion=$VERSION_CODE \
+            -p:DevBuild=true \
+            $SIGN_ARGS \
+            -o ../artifacts/android-dev
 
       - name: Collect Android APK
         if: matrix.target == 'android'
         shell: bash
         run: |
           mkdir -p staging-android
-          # publish 目录下可能产生 *-Signed.apk 或 *.apk，全部收集
-          find artifacts/android -name '*.apk' -exec cp {} staging-android/ \;
+          # 收集正式版 APK
+          find artifacts/android-prod -name '*.apk' -exec cp {} staging-android/ChildNotes-android-prod-${{ github.ref_name }}.apk \;
+          # 收集开发版 APK
+          find artifacts/android-dev -name '*.apk' -exec cp {} staging-android/ChildNotes-android-dev-${{ github.ref_name }}.apk \;
           if [ -z "$(ls -A staging-android 2>/dev/null)" ]; then
             echo "::error::未找到 APK 产物"
             exit 1
           fi
           ls -la staging-android/
-          # 取第一个 apk 作为发布产物（如有多个，可按需调整）
-          APK_FILE=$(find staging-android -name '*.apk' | head -n 1)
-          cp "$APK_FILE" "ChildNotes-android-${{ github.ref_name }}.apk"
-          echo "::notice::APK created: ChildNotes-android-${{ github.ref_name }}.apk"
+          echo "::notice::APK created: ChildNotes-android-prod-${{ github.ref_name }}.apk, ChildNotes-android-dev-${{ github.ref_name }}.apk"
 
       # ===============================================================
       # 客户端 - iOS 版
@@ -442,7 +462,8 @@ jobs:
             echo "| 平台 | 文件 | 说明 |"
             echo "| ---- | ---- | ---- |"
             echo "| Windows 桌面 | \`ChildNotes-windows-*.zip\` | 自包含（self-contained），解压后运行可执行文件，无需安装 .NET |"
-            echo "| Android | \`ChildNotes-android-*.apk\` | APK 安装包（固定 keystore 签名，可覆盖安装旧版本） |"
+            echo "| Android 正式版 | \`ChildNotes-android-prod-*.apk\` | 正式版 APK（com.babydiary.app），移除开发者选项，面向普通用户 |"
+            echo "| Android 开发版 | \`ChildNotes-android-dev-*.apk\` | 开发版 APK（com.babydiary.app.dev），保留开发者选项与日志导出，可与正式版共存 |"
             echo "| 服务端 | \`ChildNotes-backend-*.tar.gz\` | ASP.NET Core 后端 API，Linux Ubuntu 自包含部署 |"
             echo ""
             echo "## 版本变更说明"
