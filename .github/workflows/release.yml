@@ -271,21 +271,81 @@ jobs:
             "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-dev
 
-      - name: Collect Android APK
+      - name: Collect and sign Android APK
         if: matrix.target == 'android'
         shell: bash
+        env:
+          ANDROID_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASS }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASS: ${{ secrets.ANDROID_KEY_PASS }}
         run: |
           mkdir -p staging-android
-          # 收集正式版 APK
-          find artifacts/android-prod -name '*.apk' -exec cp {} staging-android/ChildNotes-android-prod-${{ github.ref_name }}.apk \;
-          # 收集开发版 APK
-          find artifacts/android-dev -name '*.apk' -exec cp {} staging-android/ChildNotes-android-dev-${{ github.ref_name }}.apk \;
+
+          # 查找 Android SDK build-tools 目录（含 zipalign 和 apksigner）
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ 2>/dev/null | sort -V | tail -1)
+          if [ -z "$BUILD_TOOLS" ]; then
+            BUILD_TOOLS=$(ls -d $ANDROID_SDK_ROOT/build-tools/*/ 2>/dev/null | sort -V | tail -1)
+          fi
+          if [ -z "$BUILD_TOOLS" ]; then
+            # GitHub Actions ubuntu runner 的 SDK 路径
+            BUILD_TOOLS=$(ls -d /usr/local/lib/android/sdk/build-tools/*/ 2>/dev/null | sort -V | tail -1)
+          fi
+          echo "Build tools: $BUILD_TOOLS"
+
+          # 检查是否有 keystore，决定是否手动签名
+          KSTORE="$HOME/childnotes.keystore"
+          if [ ! -f "$KSTORE" ]; then
+            echo "::warning::No keystore found, copying unsigned APKs"
+            find artifacts/android-prod -name '*.apk' -exec cp {} staging-android/ChildNotes-android-prod-${{ github.ref_name }}.apk \;
+            find artifacts/android-dev -name '*.apk' -exec cp {} staging-android/ChildNotes-android-dev-${{ github.ref_name }}.apk \;
+          else
+            # 函数：zipalign + apksigner 签名单个 APK
+            sign_apk() {
+              local SRC="$1"
+              local DST="$2"
+              local UNSIGNED="${DST%.apk}-unsigned.apk"
+
+              cp "$SRC" "$DST"
+
+              # zipalign（必须先对齐再签名）
+              "$BUILD_TOOLS/zipalign" -f -p 4 "$DST" "$UNSIGNED"
+              mv "$UNSIGNED" "$DST"
+
+              # apksigner 签名（v1+v2+v3）
+              "$BUILD_TOOLS/apksigner" sign \
+                --ks "$KSTORE" \
+                --ks-key-alias "$ANDROID_KEY_ALIAS" \
+                --ks-pass "pass:$ANDROID_KEYSTORE_PASS" \
+                --key-pass "pass:$ANDROID_KEY_PASS" \
+                --v1-signing-enabled true \
+                --v2-signing-enabled true \
+                --v3-signing-enabled true \
+                "$DST"
+
+              # 验证签名
+              "$BUILD_TOOLS/apksigner" verify --verbose "$DST" | head -5
+              echo "Signed: $DST"
+            }
+
+            # 签名正式版
+            PROD_APK=$(find artifacts/android-prod -name '*.apk' | head -1)
+            if [ -n "$PROD_APK" ]; then
+              sign_apk "$PROD_APK" "staging-android/ChildNotes-android-prod-${{ github.ref_name }}.apk"
+            fi
+
+            # 签名开发版
+            DEV_APK=$(find artifacts/android-dev -name '*.apk' | head -1)
+            if [ -n "$DEV_APK" ]; then
+              sign_apk "$DEV_APK" "staging-android/ChildNotes-android-dev-${{ github.ref_name }}.apk"
+            fi
+          fi
+
           if [ -z "$(ls -A staging-android 2>/dev/null)" ]; then
             echo "::error::未找到 APK 产物"
             exit 1
           fi
           ls -la staging-android/
-          echo "::notice::APK created: ChildNotes-android-prod-${{ github.ref_name }}.apk, ChildNotes-android-dev-${{ github.ref_name }}.apk"
+          echo "::notice::APK created and signed: ChildNotes-android-prod-${{ github.ref_name }}.apk, ChildNotes-android-dev-${{ github.ref_name }}.apk"
 
       # ===============================================================
       # 客户端 - iOS 版
