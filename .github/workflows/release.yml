@@ -385,8 +385,8 @@ jobs:
         with:
           name: ChildNotes-android-${{ github.ref_name }}
           path: |
-            ChildNotes-android-prod-${{ github.ref_name }}.apk
-            ChildNotes-android-dev-${{ github.ref_name }}.apk
+            staging-android/ChildNotes-android-prod-${{ github.ref_name }}.apk
+            staging-android/ChildNotes-android-dev-${{ github.ref_name }}.apk
           if-no-files-found: error
           retention-days: 1
 
