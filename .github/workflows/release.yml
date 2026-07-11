@@ -370,18 +370,33 @@ jobs:
       # ===============================================================
       # 上传构建产物（workflow artifact，供 release job 下载）
       # ===============================================================
-      - name: Upload build artifact
+      - name: Upload build artifact (windows)
+        if: matrix.target == 'windows'
         uses: actions/upload-artifact@v4
         with:
-          name: ChildNotes-${{ matrix.target }}-${{ github.ref_name }}
+          name: ChildNotes-windows-${{ github.ref_name }}
+          path: ChildNotes-windows-${{ github.ref_name }}.zip
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload build artifact (android)
+        if: matrix.target == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChildNotes-android-${{ github.ref_name }}
           path: |
-            ChildNotes-windows-${{ github.ref_name }}.zip
             ChildNotes-android-prod-${{ github.ref_name }}.apk
             ChildNotes-android-dev-${{ github.ref_name }}.apk
-            ChildNotes-backend-${{ github.ref_name }}.tar.gz
           if-no-files-found: error
-          # artifact 仅作 build→release job 中转用，release job 在同次 workflow 运行内即下载，
-          # 1 天保留足够调试排查；过短不利于复跑失败时查看产物
+          retention-days: 1
+
+      - name: Upload build artifact (backend)
+        if: matrix.target == 'backend'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChildNotes-backend-${{ github.ref_name }}
+          path: ChildNotes-backend-${{ github.ref_name }}.tar.gz
+          if-no-files-found: error
           retention-days: 1
 
       - name: Summarize build status
