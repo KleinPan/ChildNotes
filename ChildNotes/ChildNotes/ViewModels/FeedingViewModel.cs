@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -139,13 +140,43 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     {
         foreach (var r in Records)
         {
-            r.IsSwipeOpen = r == item && !r.IsSwipeOpen;
+            if (r == item)
+            {
+                r.IsSwipeOpen = !r.IsSwipeOpen;
+                r.SwipeOffset = r.IsSwipeOpen ? -RecordDisplayItem.DeleteActionWidth : 0;
+            }
+            else
+            {
+                r.IsSwipeOpen = false;
+                r.SwipeOffset = 0;
+            }
         }
+    }
+
+    /// <summary>关闭所有已展开的滑动行（点击空白/切换页面时调用）。</summary>
+    /// <returns>是否有任何行被关闭（用于消费点击事件）。</returns>
+    public bool CloseAllSwipe()
+    {
+        var changed = false;
+        foreach (var r in Records)
+        {
+            if (r.IsSwipeOpen || r.SwipeOffset != 0)
+            {
+                r.IsSwipeOpen = false;
+                r.SwipeOffset = 0;
+                changed = true;
+            }
+        }
+        return changed;
     }
 
     public void EditRecord(RecordDisplayItem item)
     {
-        foreach (var r in Records) r.IsSwipeOpen = false;
+        foreach (var r in Records)
+        {
+            r.IsSwipeOpen = false;
+            r.SwipeOffset = 0;
+        }
         // 委托给 MainShellViewModel.OpenEditRecord，复用 RecordSheet 编辑模式
         EditRequested?.Invoke(item.Record);
     }
@@ -171,6 +202,25 @@ public sealed partial class RecordDisplayItem : ObservableObject
     public ChildRecord Record { get; }
     public string TimeText => ServiceProvider.Instance.DateTimeFormatter.FormatTime(Record.RecordTime);
     [ObservableProperty] private bool _isSwipeOpen;
+
+    /// <summary>
+    /// 卡片平移变换。X 为负值时卡片向左滑出，露出右侧删除按钮。
+    /// 通过双向绑定到 Border.RenderTransform，由 FeedingView 的滑动手势处理逻辑更新。
+    /// </summary>
+    public TranslateTransform SwipeTransform { get; } = new();
+
+    /// <summary>删除按钮宽度（逻辑像素），与 XAML 中底层 Border Width=72 一致。</summary>
+    public const double DeleteActionWidth = 72;
+
+    /// <summary>
+    /// 当前滑动偏移量（负值）。设置时同步更新 SwipeTransform.X，驱动卡片平移。
+    /// </summary>
+    public double SwipeOffset
+    {
+        get => SwipeTransform.X;
+        set => SwipeTransform.X = Math.Max(-DeleteActionWidth, Math.Min(0, value));
+    }
+
     public string Icon => Record.RecordType switch
     {
         RecordType.Feed => "🍼",
