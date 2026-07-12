@@ -1,0 +1,62 @@
+# Design Language 设计语言
+
+ChildNotes 的设计语言围绕一个目标：帮助父母轻松保存、理解并回忆孩子成长中的珍贵瞬间。它不是单纯的数据录入工具，而是一本长期可信、温暖克制的家庭成长日记。
+
+## 设计关键词
+
+| 关键词 | 含义 | 设计要求 |
+|---|---|---|
+| Warm 温暖 | 像家庭成长日记，而不是冷冰冰的数据系统 | 使用柔和色彩、亲切文案、情绪化但不过度装饰的反馈 |
+| Simple 简洁 | 父母通常在碎片时间记录 | 打开即可记录，减少表单层级，允许自然语言输入 |
+| Trust 信任 | 成长记录具有长期价值 | 明确保存状态、同步状态、隐私边界和 AI 输出来源 |
+
+## 产品原则
+
+### 1. Capture First 记录优先
+
+记录是产品最核心的行为。任何页面、组件和流程都应优先降低记录成本：
+
+- 核心入口必须稳定、明显、低干扰。
+- 允许用户先记录，再补充结构化字段。
+- 表单默认值和快捷选择应服务真实育儿场景。
+
+### 2. Memory Over Data 记忆优先于数据
+
+用户保存的是家庭记忆，不是数据库条目：
+
+- 时间轴更接近成长相册，而不是管理后台列表。
+- 记录卡片应强调宝宝、时间、事件和情绪价值。
+- 统计图表应帮助回忆与理解，而不是制造焦虑。
+
+### 3. AI As Companion AI 作为陪伴者
+
+AI 是记录助手、记忆整理者和成长观察者，不替代父母表达：
+
+- AI 输出必须可确认、可修改、可拒绝。
+- 建议应温和、解释充分，避免医学诊断式表达。
+- AI 只在能减少负担或提升理解时出现。
+
+## 交互语言
+
+- **低打断**：优先使用轻量提示、底部 Sheet、局部状态，而不是全屏阻塞。
+- **状态可见**：保存、同步、失败重试、AI 生成中等状态要明确展示。
+- **可撤回**：删除、覆盖、批量操作等高风险动作需要确认或撤销机制。
+- **跨平台一致**：桌面、Android、iOS 可遵循平台习惯，但信息结构、组件语义和核心流程保持一致。
+
+## 平台适配原则
+
+| 平台 | 适配重点 |
+|---|---|
+| Desktop | 更高信息密度、键鼠操作、宽屏布局 |
+| Android | 单手操作、系统返回、键盘遮挡、国内应用商店合规 |
+| iOS | 安全区、系统动效、权限说明、App Store 审核文案 |
+
+## 历史来源
+
+本规范合并自历史设计语言文档，原文保存在：
+
+- [`../archive/design-language-v1/README.md`](../archive/design-language-v1/README.md)
+- [`../archive/design-language-v1/product-manual.md`](../archive/design-language-v1/product-manual.md)
+- [`../archive/design-language-v1/interaction-language.md`](../archive/design-language-v1/interaction-language.md)
+- [`../archive/design-language-v1/platform-guidelines.md`](../archive/design-language-v1/platform-guidelines.md)
+- [`../archive/design-language-v1/ai-experience.md`](../archive/design-language-v1/ai-experience.md)

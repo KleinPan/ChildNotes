@@ -37,4 +37,4 @@ dotnet test ChildNotes/ChildNotes.Tests/ChildNotes.Tests.csproj
 - 跨平台共享页面、控件、ViewModel、Service 优先放在 `ChildNotes/ChildNotes/`。
 - 平台特定启动逻辑和平台能力适配放在对应平台项目中。
 - 与后端共享的 DTO、常量和同步协议放在仓库根级 `ChildNotes.Shared/`。
-- 前端专项复盘文档可放在 `ChildNotes/ChildNotes/docs/`，并同步更新 `../docs/README.md`。
+- 前端专项复盘文档统一归档到 `../docs/archive/frontend-notes/`；若沉淀为当前规范，请同步更新 `../docs/development/` 或 `../docs/design/` 下的权威文档。
