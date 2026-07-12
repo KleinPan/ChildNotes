@@ -105,6 +105,11 @@ builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminLotteryService, AdminLotteryService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+// 会员服务：套餐查询、订单创建、支付回调、AI 次数管理
+builder.Services.Configure<ChildNotes.Core.Config.MembershipOptions>(builder.Configuration.GetSection("Membership"));
+builder.Services.AddSingleton<ChildNotes.Core.Config.MembershipOptions>(sp =>
+    sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.MembershipOptions>>().Value);
+builder.Services.AddScoped<IMembershipService, MembershipService>();
 
 // Controllers + 过滤器
 builder.Services.AddControllers(opt =>

@@ -15,7 +15,8 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// AI 分析服务：固定 7 天区间，按 (user_id, baby_id, range_start_date, range_end_date) 幂等。
-/// server 模式下生成分析时扣减积分，积分不足抛 BusinessException(INSUFFICIENT_POINTS)。
+/// server 模式下生成分析时先检查每日次数限制，再扣减积分。
+/// 幂等命中不消耗次数、不扣积分。
 /// </summary>
 public class AiAnalysisService : IAiAnalysisService
 {
@@ -28,9 +29,10 @@ public class AiAnalysisService : IAiAnalysisService
     private readonly DeepSeekClient _ai;
     private readonly PointsWalletService _wallet;
     private readonly AiCostOptions _cost;
+    private readonly IMembershipService _membership;
     private readonly string _skillPrompt;
 
-    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai, PointsWalletService wallet, AiCostOptions cost)
+    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai, PointsWalletService wallet, AiCostOptions cost, IMembershipService membership)
     {
         _db = db;
         _current = current;
@@ -38,6 +40,7 @@ public class AiAnalysisService : IAiAnalysisService
         _ai = ai;
         _wallet = wallet;
         _cost = cost;
+        _membership = membership;
         _skillPrompt = LoadSkillPrompt();
     }
 
@@ -58,12 +61,18 @@ public class AiAnalysisService : IAiAnalysisService
 
         var sourceText = BuildSourceText(baby, start, end, records);
 
-        // 幂等命中：同区间 + sourceText 相同 → 直接返回（不扣积分）
+        // 幂等命中：同区间 + sourceText 相同 → 直接返回（不扣积分、不消耗次数）
         var existing = await _db.AiAnalysisRecords.FirstOrDefaultAsync(
             a => a.UserId == uid && a.BabyId == baby.Id
                 && a.RangeStartDate == start && a.RangeEndDate == end, ct);
         if (existing is not null && existing.SourceText == sourceText)
             return ToDto(existing);
+
+        // 每日次数限制检查（非会员 10 次/天，会员 100 次/天）
+        var limit = await _membership.GetAiDailyLimitAsync(uid, ct);
+        var used = await _membership.GetAiUsedTodayAsync(uid, ct);
+        if (used >= limit)
+            throw new BusinessException($"今日 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
 
         // 调用 AI 前先扣积分（积分不足抛 BusinessException(INSUFFICIENT_POINTS)）
         // ExecuteUpdateAsync 立即落库，无需事务包裹
@@ -80,6 +89,9 @@ public class AiAnalysisService : IAiAnalysisService
             (analysisText, model) = await _ai.ChatAsync(_skillPrompt, userMessage, ct);
             if (string.IsNullOrWhiteSpace(analysisText))
                 throw new BusinessException("AI 分析响应为空", 502);
+
+            // AI 调用成功后，增加今日使用次数（幂等命中不消耗，此处才消耗）
+            try { await _membership.IncrementAiUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞分析 */ }
         }
         catch
         {

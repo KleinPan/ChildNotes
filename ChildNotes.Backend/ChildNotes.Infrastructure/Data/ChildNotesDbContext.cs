@@ -24,6 +24,8 @@ public class ChildNotesDbContext : DbContext
     public DbSet<AdminLotteryActivity> AdminLotteryActivities => Set<AdminLotteryActivity>();
     public DbSet<AdminLotteryPrize> AdminLotteryPrizes => Set<AdminLotteryPrize>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
+    public DbSet<MembershipOrder> MembershipOrders => Set<MembershipOrder>();
+    public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,10 +43,12 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.Gender).HasColumnName("gender");
             e.Property(x => x.ReferrerUserId).HasColumnName("referrer_user_id");
             e.Property(x => x.ReferrerBoundAt).HasColumnName("referrer_bound_at");
+            e.Property(x => x.MembershipExpireAt).HasColumnName("membership_expire_at");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => x.Username).IsUnique();
             e.HasIndex(x => x.ReferrerUserId);
+            e.HasIndex(x => x.MembershipExpireAt);
         });
 
         modelBuilder.Entity<Baby>(e =>
@@ -315,6 +319,42 @@ public class ChildNotesDbContext : DbContext
             e.HasIndex(x => new { x.UserId, x.RecordDate });
             e.HasIndex(x => x.BabyId);
             e.HasIndex(x => x.UpdatedAt);
+        });
+
+        modelBuilder.Entity<MembershipOrder>(e =>
+        {
+            e.ToTable("membership_order");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.OrderNo).HasColumnName("order_no").IsRequired().HasMaxLength(32);
+            e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(x => x.PlanType).HasColumnName("plan_type").IsRequired().HasMaxLength(32);
+            e.Property(x => x.PlanName).HasColumnName("plan_name").IsRequired().HasMaxLength(64);
+            e.Property(x => x.DurationDays).HasColumnName("duration_days");
+            e.Property(x => x.PriceCents).HasColumnName("price_cents");
+            e.Property(x => x.Channel).HasColumnName("channel").IsRequired().HasMaxLength(32);
+            e.Property(x => x.Status).HasColumnName("status").IsRequired().HasMaxLength(32);
+            e.Property(x => x.TradeNo).HasColumnName("trade_no").HasMaxLength(64);
+            e.Property(x => x.PaidAt).HasColumnName("paid_at");
+            e.Property(x => x.CallbackPayload).HasColumnName("callback_payload");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasIndex(x => x.OrderNo).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.Status });
+            e.HasIndex(x => x.PaidAt);
+        });
+
+        modelBuilder.Entity<AiUsageRecord>(e =>
+        {
+            e.ToTable("ai_usage_record");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(x => x.UsageDate).HasColumnName("usage_date");
+            e.Property(x => x.UsedCount).HasColumnName("used_count");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasIndex(x => new { x.UserId, x.UsageDate }).IsUnique();
         });
     }
 }

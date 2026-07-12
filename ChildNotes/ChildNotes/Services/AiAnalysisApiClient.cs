@@ -111,6 +111,9 @@ public sealed class AiAnalysisApiException : Exception
     /// <summary>是否为积分不足错误。</summary>
     public bool IsInsufficientPoints => ErrorCode == "INSUFFICIENT_POINTS";
 
+    /// <summary>是否为 AI 次数用尽错误（普通用户每日 10 次，会员每日 100 次）。</summary>
+    public bool IsAiLimitExceeded => ErrorCode == "AI_LIMIT_EXCEEDED";
+
     public AiAnalysisApiException(string message, string? errorCode) : base(message)
     {
         ErrorCode = errorCode;

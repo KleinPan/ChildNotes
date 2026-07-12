@@ -55,6 +55,8 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private StatisticsViewModel _statistics;
     [ObservableProperty] private bool _isPointsOpen;
     [ObservableProperty] private PointsViewModel _points;
+    [ObservableProperty] private bool _isMembershipOpen;
+    [ObservableProperty] private MembershipViewModel _membership;
     [ObservableProperty] private bool _isAiAnalysisOpen;
     [ObservableProperty] private AiAnalysisViewModel _aiAnalysis;
     [ObservableProperty] private bool _isAiSettingsOpen;
@@ -200,6 +202,7 @@ public partial class MainShellViewModel : ViewModelBase
     partial void OnIsBabyManagerOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsStatisticsOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsPointsOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsMembershipOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsAiAnalysisOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsAiSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsSyncSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
@@ -249,9 +252,13 @@ public partial class MainShellViewModel : ViewModelBase
 
         _points = new PointsViewModel();
 
+        _membership = new MembershipViewModel();
+        _membership.PaymentSucceeded += OnMembershipPaymentSucceeded;
+
         _aiAnalysis = new AiAnalysisViewModel();
         _aiAnalysis.ConfigRequired += OpenAiSettings;
         _aiAnalysis.PointsRequired += OpenPoints;
+        _aiAnalysis.MembershipRequired += OpenMembership;
 
         _aiSettings = new AiSettingsViewModel();
 
@@ -279,8 +286,9 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
         RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
         RegisterOverlay(Statistics, () => IsStatisticsOpen = false, () => IsStatisticsOpen);
-        RegisterOverlay(Points, () => IsPointsOpen = false, () => IsPointsOpen);
         RegisterOverlay(AiAnalysis, () => IsAiAnalysisOpen = false, () => IsAiAnalysisOpen);
+        RegisterOverlay(Points, () => IsPointsOpen = false, () => IsPointsOpen);
+        RegisterOverlay(Membership, () => IsMembershipOpen = false, () => IsMembershipOpen);
         RegisterOverlay(AiSettings, () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
@@ -436,6 +444,24 @@ public partial class MainShellViewModel : ViewModelBase
             await Points.LoadAsync();
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenPoints failed: " + ex); }
+    }
+
+    /// <summary>打开会员中心页。</summary>
+    public async void OpenMembership()
+    {
+        try
+        {
+            IsMembershipOpen = true;
+            await Membership.LoadAsync();
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OpenMembership failed: " + ex); }
+    }
+
+    /// <summary>会员支付成功后刷新"我的"页会员状态文案。</summary>
+    private async void OnMembershipPaymentSucceeded()
+    {
+        try { await Mine.RefreshMembershipStatusAsync(); }
+        catch (Exception ex) { DevLogger.Log("Shell", "OnMembershipPaymentSucceeded refresh failed: " + ex); }
     }
 
     public async void OpenAiAnalysis()

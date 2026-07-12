@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:views="using:ChildNotes.Views"
+             xmlns:dto="using:ChildNotes.Shared.Dtos"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.MembershipView"
+             x:DataType="vm:MembershipViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <UserControl.Styles>
+        <Style Selector="Border.plan-card">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16,20"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 统一顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="会员中心"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 会员状态卡片 -->
+                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,28" CornerRadius="0,0,8,8">
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"
+                                   Text="{Binding IsActive, Converter={x:Static views:MembershipView.IsMemberTextConverter}}"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <TextBlock FontSize="28" FontWeight="Bold" Foreground="White">
+                                <Run Text="今日剩余 "/>
+                                <Run Text="{Binding AiRemainingToday}"/>
+                                <Run Text=" / "/>
+                                <Run Text="{Binding AiDailyLimit}"/>
+                                <Run Text=" 次"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <TextBlock FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,8,0,0"
+                                   Text="{Binding ExpireAtText, StringFormat=会员到期：\{0\}}"
+                                   IsVisible="{Binding IsActive}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 权益说明 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="会员权益"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🤖"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="15" Text="AI 分析次数提升"/>
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                           Text="普通用户 10 次/天，会员 100 次/天"/>
+                            </StackPanel>
+                        </Grid>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                        <Grid Margin="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🎰"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock FontSize="15" Text="抽奖积分折扣"/>
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                           Text="会员抽奖消耗积分享 8 折优惠"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- 套餐选择 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="选择套餐"/>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding Plans}" Margin="12,4">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="dto:MembershipPlanDto">
+                            <Border Classes="plan-card" Margin="0,0,0,8"
+                                    BorderBrush="{Binding PlanType, Converter={x:Static views:MembershipView.PlanSelectedBorderConverter}, ConverterParameter={Binding $parent[ItemsControl].DataContext.SelectedPlanType}}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold"/>
+                                            <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                                                    IsVisible="{Binding IsRecommended}">
+                                                <TextBlock Text="推荐" FontSize="11" Foreground="White"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <TextBlock Text="¥" FontSize="14" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            <TextBlock Text="{Binding PriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource WeuiGreenBrush}"/>
+                                            <TextBlock Text="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}, StringFormat=¥\{0\}}"
+                                                       FontSize="13" Foreground="{StaticResource WeuiFg2Brush}"
+                                                       TextDecorations="Strikethrough" Margin="8,0,0,0"
+                                                       VerticalAlignment="Bottom"
+                                                       IsVisible="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.IsPositiveConverter}}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="选择" Classes="weui-btn primary" VerticalAlignment="Center"
+                                            Command="{Binding $parent[ItemsControl].DataContext.SelectPlanCommand}"
+                                            CommandParameter="{Binding PlanType}"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部支付按钮 -->
+        <Border Grid.Row="2" Background="{StaticResource WeuiBg2Brush}" Padding="16,12">
+            <Button Content="立即开通" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                    Command="{Binding PayCommand}" IsEnabled="{Binding !Paying}"/>
+        </Border>
+
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+        </Border>
+    </Grid>
+</UserControl>

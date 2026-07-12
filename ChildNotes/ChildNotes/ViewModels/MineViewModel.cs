@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.ViewModels;
 
@@ -17,6 +18,9 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private string _avatarUrl = string.Empty;
     [ObservableProperty] private string _roleText = "家长";
     [ObservableProperty] private int _babyCount;
+
+    /// <summary>会员状态文案（"会员"/"普通用户"），异步从后端加载。</summary>
+    [ObservableProperty] private string _membershipStatusText = string.Empty;
 
     /// <summary>是否有未读应用内消息（控制 MineView 红点显示）。</summary>
     [ObservableProperty] private bool _hasUnreadMessages;
@@ -63,6 +67,28 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 
         // 刷新未读消息数（用于"我的"页红点显示）
         RefreshUnreadMessages();
+
+        // 异步刷新会员状态文案（不阻塞 UI）
+        _ = RefreshMembershipStatusAsync();
+    }
+
+    /// <summary>从后端拉取会员状态并刷新文案。会员中心关闭后由 MainShellViewModel 调用。</summary>
+    public async Task RefreshMembershipStatusAsync()
+    {
+        try
+        {
+            var status = await ServiceProvider.Instance.MembershipApiClient.GetStatusAsync();
+            // MembershipStatusDto.ExpireAt 为 ISO 8601 字符串，解析为 DateTime? 后判断
+            DateTime? expireAt = null;
+            if (!string.IsNullOrEmpty(status?.ExpireAt) && DateTime.TryParse(status.ExpireAt, out var parsed))
+                expireAt = parsed;
+            MembershipStatusText = MembershipConstants.IsActive(expireAt) ? "会员" : "普通用户";
+        }
+        catch
+        {
+            // 后端不可用时不阻塞 UI，显示本地缓存判断
+            MembershipStatusText = MembershipConstants.IsActive(_auth.CurrentUser?.MembershipExpireAt) ? "会员" : "普通用户";
+        }
     }
 
     /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。</summary>

@@ -15,12 +15,14 @@ public class LotteryService : ILotteryService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly PointsWalletService _wallet;
+    private readonly IMembershipService _membership;
 
-    public LotteryService(ChildNotesDbContext db, ICurrentUserService current, PointsWalletService wallet)
+    public LotteryService(ChildNotesDbContext db, ICurrentUserService current, PointsWalletService wallet, IMembershipService membership)
     {
         _db = db;
         _current = current;
         _wallet = wallet;
+        _membership = membership;
     }
 
     public async Task<LotterySummaryDto?> GetActiveLotteryAsync(CancellationToken ct = default)
@@ -40,7 +42,10 @@ public class LotteryService : ILotteryService
             .AnyAsync(p => p.ActivityId == activityId && p.UserId == uid, ct);
         if (joined) throw new BusinessException("您已参与本期抽奖", 400, "ALREADY_JOINED_LOTTERY");
 
-        var cost = activity.CostPoints <= 0 ? 30 : activity.CostPoints;
+        var baseCost = activity.CostPoints <= 0 ? 30 : activity.CostPoints;
+        // 会员享受折扣（如 8 折），向下取整到整数积分
+        var discount = await _membership.GetLotteryDiscountAsync(uid, ct);
+        var cost = discount < 1m ? Math.Max(1, (int)Math.Floor(baseCost * discount)) : baseCost;
 
         // 事务包裹：积分扣减（ExecuteUpdateAsync 立即落库）与参与记录写入必须原子，
         // 避免扣了积分但写入参与记录失败导致用户损失。

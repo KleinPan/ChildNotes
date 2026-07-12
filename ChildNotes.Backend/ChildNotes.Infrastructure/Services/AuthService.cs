@@ -128,5 +128,7 @@ public class AuthService : IAuthService
         NickName = u.NickName,
         AvatarUrl = u.AvatarUrl,
         Gender = u.Gender,
+        MembershipExpireAt = u.MembershipExpireAt?.ToString("O"),
+        IsMember = Shared.Constants.MembershipConstants.IsActive(u.MembershipExpireAt),
     };
 }

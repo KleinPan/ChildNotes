@@ -42,11 +42,14 @@
         <ContentControl Grid.Row="0" Content="{Binding Statistics}" IsTabStop="False"
                         IsVisible="{Binding IsStatisticsOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding AiAnalysis}" IsTabStop="False"
+                        IsVisible="{Binding IsAiAnalysisOpen}"/>
+
         <ContentControl Grid.Row="0" Content="{Binding Points}" IsTabStop="False"
                         IsVisible="{Binding IsPointsOpen}"/>
 
-        <ContentControl Grid.Row="0" Content="{Binding AiAnalysis}" IsTabStop="False"
-                        IsVisible="{Binding IsAiAnalysisOpen}"/>
+        <ContentControl Grid.Row="0" Content="{Binding Membership}" IsTabStop="False"
+                        IsVisible="{Binding IsMembershipOpen}"/>
 
         <ContentControl Grid.Row="0" Content="{Binding AiSettings}" IsTabStop="False"
                         IsVisible="{Binding IsAiSettingsOpen}"/>

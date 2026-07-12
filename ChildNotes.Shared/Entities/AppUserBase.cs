@@ -14,4 +14,10 @@ public abstract class AppUserBase
     public int Gender { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// 会员到期时间（UTC）。null 或早于当前时间表示非会员。
+    /// 会员状态判断统一通过 MembershipHelper.IsActive(expireAt) 进行。
+    /// </summary>
+    public DateTime? MembershipExpireAt { get; set; }
 }

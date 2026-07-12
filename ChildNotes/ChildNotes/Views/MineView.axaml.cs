@@ -32,6 +32,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenPoints();
     }
 
+    private void OnMembershipTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenMembership();
+    }
+
     private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenAiAnalysis();
