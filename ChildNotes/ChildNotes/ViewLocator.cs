@@ -37,6 +37,7 @@ public class ViewLocator : IDataTemplate
                 BabyManagerViewModel => new BabyManagerView(),
                 StatisticsViewModel => new StatisticsView(),
                 PointsViewModel => new PointsView(),
+                MembershipViewModel => new MembershipView(),
                 AiAnalysisViewModel => new AiAnalysisView(),
                 AiSettingsViewModel => new AiSettingsView(),
                 QuickInputViewModel => new QuickInputView(),
