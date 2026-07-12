@@ -132,12 +132,20 @@ public partial class HomeCoreViewModel : ObservableObject
 
     private static string FormatAge(DateTime birth)
     {
-        var days = (DateTime.Today - birth).Days;
+        var today = DateTime.Today;
+        var days = (today - birth).Days;
+        if (days < 0) return "未出生";
         if (days < 30) return $"出生{days}天";
-        var months = days / 30;
-        if (months < 12) return $"{months}个月{days % 30}天";
+
+        // 按日历月计算（与主流育儿 App 一致）：月数按"日历月对齐"推进，剩余天数为本月对齐日到今天。
+        var months = (today.Year - birth.Year) * 12 + today.Month - birth.Month;
+        if (today.Day < birth.Day) months--;
+        var anchor = birth.AddMonths(months);
+        var remainDays = (today - anchor).Days;
+
+        if (months < 12) return $"{months}个月{remainDays}天";
         var years = months / 12;
-        return $"{years}岁{months % 12}个月";
+        return $"{years}岁{months % 12}个月{remainDays}天";
     }
 
     private static string GetDailyTip(DayStats? stats)
