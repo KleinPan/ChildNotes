@@ -38,8 +38,10 @@ public sealed class ServiceProvider
     public IDateTimeFormatter DateTimeFormatter { get; }
     public Data.Repositories.InAppMessageRepository InAppMessageRepository { get; }
     public Services.InAppMessageService InAppMessageService { get; }
+    public Services.ReminderService ReminderService { get; }
     public Services.Push.IPushPlatform PushPlatform { get; }
-    public Services.Push.ILocalNotification LocalNotification { get; }
+    /// <summary>本地通知：默认 NullLocalNotification，Android/iOS 平台启动时通过 OverrideLocalNotification 注入真实实现。</summary>
+    public Services.Push.ILocalNotification LocalNotification { get; private set; }
     public Services.Push.IPushService PushService { get; }
 
     /// <summary>
@@ -102,6 +104,9 @@ public sealed class ServiceProvider
         // 注入回写触发，避免循环依赖
         RecordService.SyncTrigger = SyncTrigger;
         BabyService.SyncTrigger = SyncTrigger;
+        // 本地提醒服务：依赖 RecordService（反向注入避免循环依赖，与 SyncTrigger 模式一致）
+        ReminderService = new Services.ReminderService(RecordService);
+        RecordService.ReminderService = ReminderService;
         FamilyApiClient = new FamilyApiClient(SyncConfigRepository);
         AiParseApiClient = new AiParseApiClient(SyncConfigRepository);
         DateTimeFormatter = new DateTimeFormatterService();
@@ -113,6 +118,8 @@ public sealed class ServiceProvider
 
         // 推送平台：默认 NullPushPlatform（未接入 SDK），后续 Android/iOS 平台替换为真实实现
         PushPlatform = new Services.Push.NullPushPlatform();
+        // 本地通知：默认 NullLocalNotification；Android 平台在 MainActivity.OnCreate 中
+        // 调用 ServiceProvider.Instance.OverrideLocalNotification(new AndroidLocalNotification()) 注入
         LocalNotification = new Services.Push.NullLocalNotification();
         PushService = new Services.Push.PushApiClient(SyncConfigRepository);
 
@@ -138,6 +145,17 @@ public sealed class ServiceProvider
     {
         AppState.User = AuthService.CurrentUser;
         DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Username}, id={AppState.User?.Id}");
+    }
+
+    /// <summary>
+    /// 运行时注入平台本地通知实现。
+    /// 由 Android MainActivity.OnCreate / iOS AppDelegate.FinishedLaunching 调用，
+    /// 在 ServiceProvider 构造完成后覆盖默认的 NullLocalNotification。
+    /// </summary>
+    public void OverrideLocalNotification(Services.Push.ILocalNotification implementation)
+    {
+        LocalNotification = implementation;
+        DevLogger.Log("DI", $"LocalNotification overridden: {implementation.GetType().Name}, IsSupported={implementation.IsSupported}");
     }
 
     /// <summary>

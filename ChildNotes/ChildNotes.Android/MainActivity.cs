@@ -1,4 +1,4 @@
-﻿using Android.App;
+using Android.App;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
@@ -47,6 +47,10 @@ public class MainActivity : AvaloniaMainActivity
         // 启动原生键盘高度监听，通过回调通知 Avalonia 层
         KeyboardHeightService.StartObserving(this);
         KeyboardHeightService.OnKeyboardHeightChanged = OnKeyboardHeightChanged;
+
+        // 创建本地通知渠道（Android 8.0+ 必需）+ 申请运行时通知权限（Android 13+）
+        // 业务层在 ScheduleAsync 前会调用 RequestPermissionAsync，但渠道必须在此处提前创建
+        InitializeLocalNotification();
 
         // 注册预测式返回回调（Android 13+ / API 33+）。
         // OnBackPressed 在 API 33+ 已废弃，当前 .NET 10 Android SDK 默认 targetSdk 为 36，
@@ -103,6 +107,60 @@ public class MainActivity : AvaloniaMainActivity
         // 必须再次移除 delegate，否则崩溃防护在重建后失效。
         DisableAvaloniaAccessibility();
     }
+
+    /// <summary>
+    /// 初始化本地通知：创建 NotificationChannel（Android 8.0+）+ 申请运行时权限（Android 13+）+ 注入平台实现。
+    ///
+    /// 时机：在 OnCreate 中调用，确保任何业务层 ScheduleAsync 之前渠道已就绪。
+    /// 渠道只需创建一次（重复创建是 no-op），所以放在 OnCreate 而非 OnResume。
+    /// </summary>
+    private void InitializeLocalNotification()
+    {
+        try
+        {
+            // 创建 NotificationChannel（Android 8.0 / API 26+ 强制要求）
+            if ((int)Build.VERSION.SdkInt >= 26)
+            {
+                var channel = new NotificationChannel(
+                    ChildNotes.Android.Services.AndroidLocalNotification.ChannelId,
+                    ChildNotes.Android.Services.AndroidLocalNotification.ChannelName,
+                    NotificationImportance.Default)
+                {
+                    Description = ChildNotes.Android.Services.AndroidLocalNotification.ChannelDescription
+                };
+                var notifMgr = (NotificationManager)GetSystemService(NotificationService);
+                notifMgr?.CreateNotificationChannel(channel);
+                Log.Info("ChildNotes", $"[LocalNoti] Channel created: {ChildNotes.Android.Services.AndroidLocalNotification.ChannelId}");
+            }
+
+            // 注入平台实现到 ServiceProvider：业务层通过 ServiceProvider.Instance.LocalNotification 调用
+            // 在渠道创建后注入，确保业务层 ScheduleAsync 时渠道已就绪
+            ChildNotes.Infrastructure.ServiceProvider.Instance.OverrideLocalNotification(
+                new ChildNotes.Android.Services.AndroidLocalNotification());
+
+            // Android 13+ / API 33+：运行时申请 POST_NOTIFICATIONS 权限
+            // 直接在 OnCreate 申请（而非业务层首次调用时），避免业务层跨线程和时序问题
+            if ((int)Build.VERSION.SdkInt >= 33)
+            {
+                if (CheckSelfPermission(Manifest.Permission.PostNotifications) != Content.PM.Permission.Granted)
+                {
+                    // RequestPermissions 会异步弹窗，业务层 ScheduleAsync 不依赖权限申请完成（即使被拒绝，
+                    // NotificationManager.Notify 也不抛异常，只是不显示）
+                    RequestPermissions(
+                        new[] { Manifest.Permission.PostNotifications },
+                        NotificationPermissionRequestCode);
+                    Log.Info("ChildNotes", "[LocalNoti] Requesting POST_NOTIFICATIONS permission");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error("ChildNotes", $"[LocalNoti] InitializeLocalNotification failed: {ex}");
+        }
+    }
+
+    /// <summary>通知权限申请码（OnRequestPermissionsResult 回调用）</summary>
+    private const int NotificationPermissionRequestCode = 10001;
 
     /// <summary>
     /// 移除 Avalonia 根 View 的无障碍 delegate，绕过 Avalonia 12.0.5 的崩溃 bug。

@@ -1,75 +1,75 @@
 # ChildNotes 文档中心
 
-本文档中心是 ChildNotes（爱记）的统一文档入口。当前目录已经按「设计 / 开发 / 发布 / 归档」重组，重复的 Design System、Components、Design Language 等文档已合并到新的规范文件，历史原文统一保留在 `archive/`。
+本文档中心用于整理 ChildNotes（爱记）的产品、设计、工程、部署与发布资料，避免资料分散在多个目录后难以查找。
 
-## 目录结构
+## 阅读顺序建议
 
-```text
-docs/
-├── README.md
-├── design/
-│   ├── README.md
-│   ├── design-language.md
-│   ├── design-system.md
-│   ├── components.md
-│   └── design-tokens.md
-├── development/
-│   ├── architecture.md
-│   ├── backend.md
-│   └── ai.md
-├── release/
-│   └── app-store.md
-└── archive/
-```
+1. **先看项目全貌**：仓库根目录 [`README.md`](../README.md)
+2. **理解产品与设计方向**：[`design-language/product-manual.md`](design-language/product-manual.md)、[`design-language/README.md`](design-language/README.md)
+3. **理解工程架构**：[`../Docs/architecture-review-report.md`](../Docs/architecture-review-report.md)
+4. **进行后端/同步相关开发**：[`../Docs/backend-migration-plan.md`](../Docs/backend-migration-plan.md)、[`../scripts/deploy/README.md`](../scripts/deploy/README.md)
+5. **准备发布**：[`../Docs/app-store-launch-checklist.md`](../Docs/app-store-launch-checklist.md)
 
-## 推荐阅读顺序
+## 文档分区
 
-1. 项目全貌：[`../README.md`](../README.md)
-2. 设计语言：[`design/design-language.md`](design/design-language.md)
-3. 设计系统：[`design/design-system.md`](design/design-system.md)
-4. 组件与 Token：[`design/components.md`](design/components.md)、[`design/design-tokens.md`](design/design-tokens.md)
-5. 工程架构：[`development/architecture.md`](development/architecture.md)
-6. 后端与 AI：[`development/backend.md`](development/backend.md)、[`development/ai.md`](development/ai.md)
-7. 发布准备：[`release/app-store.md`](release/app-store.md)
+### 产品与设计语言
 
-## 当前权威文档
-
-### 设计
-
-| 文档 | 说明 |
+| 文档 | 用途 |
 |---|---|
-| [`design/README.md`](design/README.md) | 设计文档入口与维护规则 |
-| [`design/design-language.md`](design/design-language.md) | 产品体验、设计理念、交互、平台适配与 AI 体验原则 |
-| [`design/design-system.md`](design/design-system.md) | 视觉系统、品牌、色彩、布局、动效与可访问性 |
-| [`design/components.md`](design/components.md) | 组件分类、核心组件、AI 组件和实现映射 |
-| [`design/design-tokens.md`](design/design-tokens.md) | 颜色、字体、间距、圆角、阴影、动效 Token |
+| [`design-language/product-manual.md`](design-language/product-manual.md) | 产品说明、核心场景和功能范围 |
+| [`design-language/README.md`](design-language/README.md) | 设计语言目录入口 |
+| [`design-language/brand-experience.md`](design-language/brand-experience.md) | 品牌体验与情绪目标 |
+| [`design-language/ui-foundation.md`](design-language/ui-foundation.md) | UI 基础规范 |
+| [`design-language/components.md`](design-language/components.md) | 组件清单与使用说明 |
+| [`design-language/interaction-language.md`](design-language/interaction-language.md) | 交互语言与动效反馈原则 |
+| [`design-language/ai-experience.md`](design-language/ai-experience.md) | AI 功能体验规范 |
+| [`design-language/platform-guidelines.md`](design-language/platform-guidelines.md) | 多平台适配规则 |
 
-### 开发
+### 设计系统与视觉规范
 
-| 文档 | 说明 |
+| 文档 | 用途 |
 |---|---|
-| [`development/architecture.md`](development/architecture.md) | 仓库结构、依赖方向、架构风险与演进方向 |
-| [`development/backend.md`](development/backend.md) | 后端结构、运行命令、能力边界与部署入口 |
-| [`development/ai.md`](development/ai.md) | AI 体验原则、当前能力与工程边界 |
+| [`DesignSystem/README.md`](DesignSystem/README.md) | 旧版/品牌设计系统入口 |
+| [`DesignSystem/00-Vision.md`](DesignSystem/00-Vision.md) | 产品视觉愿景 |
+| [`DesignSystem/01-Brand.md`](DesignSystem/01-Brand.md) | 品牌规范 |
+| [`DesignSystem/02-Design-Principles.md`](DesignSystem/02-Design-Principles.md) | 设计原则 |
+| [`DesignSystem/03-Color-System.md`](DesignSystem/03-Color-System.md) | 色彩系统 |
+| [`design-language/design-token-specification.md`](design-language/design-token-specification.md) | Design Token 规范 |
+| [`design-language/figma-ready-specification.md`](design-language/figma-ready-specification.md) | 面向 Figma 落地的规格 |
 
-### 发布
+### 架构、迁移与工程资料
 
-| 文档 | 说明 |
+| 文档 | 用途 |
 |---|---|
-| [`release/app-store.md`](release/app-store.md) | Android/iOS 应用商店发布与合规清单 |
+| [`../Docs/architecture-review-report.md`](../Docs/architecture-review-report.md) | 当前架构审视、风险与改进建议 |
+| [`../Docs/backend-migration-plan.md`](../Docs/backend-migration-plan.md) | 后端迁移与实施计划 |
+| [`../Docs/git-repo-root-migration.md`](../Docs/git-repo-root-migration.md) | Git 仓库根目录迁移记录 |
+| [`../Docs/sdk-list.md`](../Docs/sdk-list.md) | SDK / 工具链信息 |
+| [`../scripts/deploy/README.md`](../scripts/deploy/README.md) | 部署脚本与服务器部署说明 |
 
-### 归档
+### 发布与合规
 
-| 目录 | 内容 |
+| 文档 | 用途 |
 |---|---|
-| [`archive/design-language-v1/`](archive/design-language-v1/) | 历史设计语言文档原文 |
-| [`archive/design-system-v0/`](archive/design-system-v0/) | 历史品牌与 Design System 文档原文 |
-| [`archive/engineering/`](archive/engineering/) | 历史架构、迁移、发布、SDK 文档原文 |
-| [`archive/frontend-notes/`](archive/frontend-notes/) | 前端专项问题、性能优化和调试复盘原文 |
+| [`../Docs/app-store-launch-checklist.md`](../Docs/app-store-launch-checklist.md) | 应用商店上线检查清单 |
+| [`../ChildNotes/ChildNotes/Assets/UserAgreement.md`](../ChildNotes/ChildNotes/Assets/UserAgreement.md) | 用户协议资产 |
+| [`../ChildNotes/ChildNotes/Assets/PrivacyPolicy.md`](../ChildNotes/ChildNotes/Assets/PrivacyPolicy.md) | 隐私政策资产 |
+
+### 前端专项问题记录
+
+| 文档 | 用途 |
+|---|---|
+| [`../ChildNotes/ChildNotes/docs/Avalonia与小程序功能对比分析报告.md`](../ChildNotes/ChildNotes/docs/Avalonia与小程序功能对比分析报告.md) | Avalonia 与小程序能力对比 |
+| [`../ChildNotes/ChildNotes/docs/异步加载机制全面审查与优化报告.md`](../ChildNotes/ChildNotes/docs/异步加载机制全面审查与优化报告.md) | 异步加载机制审查 |
+| [`../ChildNotes/ChildNotes/docs/疫苗列表加载性能优化方案.md`](../ChildNotes/ChildNotes/docs/疫苗列表加载性能优化方案.md) | 疫苗列表性能优化 |
+| [`../ChildNotes/ChildNotes/docs/疫苗补记面板性能优化.md`](../ChildNotes/ChildNotes/docs/疫苗补记面板性能优化.md) | 疫苗补记面板优化 |
+| [`../ChildNotes/ChildNotes/docs/P1功能实现方案-隐私协议-DeepLink-推送通知.md`](../ChildNotes/ChildNotes/docs/P1功能实现方案-隐私协议-DeepLink-推送通知.md) | P1 功能实现方案 |
+| [`../ChildNotes/ChildNotes/docs/TimeWheelPicker-双击问题调试经验.md`](../ChildNotes/ChildNotes/docs/TimeWheelPicker-双击问题调试经验.md) | TimeWheelPicker 调试经验 |
 
 ## 维护规则
 
-- 新文档默认进入 `design/`、`development/` 或 `release/`，不要再新增 `Docs/`、`docs/DesignSystem/`、`docs/design-language/` 等平行目录。
-- 重复主题先合并到当前权威文档，再把旧版本移入 `archive/`。
-- 归档文档只做保留和必要链接修复，不作为最新规范引用。
-- 新增或移动文档后必须更新本 README 和相关交叉链接。
+- 新增文档后，请同步更新本索引。
+- 产品/设计文档优先放入 `docs/design-language/` 或 `docs/DesignSystem/`。
+- 工程、迁移、发布类文档优先放入 `Docs/`。
+- 前端某个具体控件或性能问题的复盘可保留在 `ChildNotes/ChildNotes/docs/`，但需要在本索引中挂入口。
+- 文档标题建议使用清晰中文名，文件名可用英文或中文，但同一目录内尽量保持风格一致。
