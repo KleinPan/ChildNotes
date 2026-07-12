@@ -70,7 +70,7 @@ public sealed class AndroidLocalNotification : ILocalNotification
         // Android 13+ (API 33+)：需运行时申请 POST_NOTIFICATIONS
         // 注意：CheckSelfPermission 用应用级 Context 即可，无需 Activity
         var ctx = Android.App.Application.Context;
-        var granted = ctx.CheckSelfPermission(Manifest.Permission.PostNotifications) == Permission.Granted;
+        var granted = ctx.CheckSelfPermission(Android.Content.PM.Manifest.Permission.PostNotifications) == Android.Content.PM.Permission.Granted;
         _permissionGranted = granted;
         return Task.FromResult(granted);
     }
