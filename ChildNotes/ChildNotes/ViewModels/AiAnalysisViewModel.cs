@@ -65,6 +65,9 @@ public partial class AiAnalysisViewModel : ViewModelBase
     /// <summary>请求跳转到积分页（充值入口，由 MainShellViewModel 订阅）。</summary>
     public event Action? PointsRequired;
 
+    /// <summary>请求跳转到会员中心（AI 次数用尽时，由 MainShellViewModel 订阅）。</summary>
+    public event Action? MembershipRequired;
+
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
@@ -96,6 +99,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
         _allRecords = records.OrderByDescending(r => r.RangeStartDate).ToList();
         _loadedCount = 0;
+        Records.Clear();
         LoadMoreRecords(InitialPageSize);
     }
 
@@ -244,6 +248,13 @@ public partial class AiAnalysisViewModel : ViewModelBase
                 RefreshPointsSufficiency();
                 ErrorMessage = $"积分不足，本次分析需 {AnalysisCost} 积分，当前余额 {CurrentPoints} 积分";
                 DisplayToast("积分不足，请每日签到获取积分");
+            }
+            // AI 次数用尽：提示并跳转会员中心
+            else if (ex.IsAiLimitExceeded)
+            {
+                ErrorMessage = "今日 AI 分析次数已用完，升级会员可享 100 次/天";
+                DisplayToast("今日次数已达上限，升级会员解锁更多次数");
+                MembershipRequired?.Invoke();
             }
             else
             {
