@@ -21,9 +21,30 @@ public sealed class RecordService
     /// <summary>由 ServiceProvider 在构造完成后注入，避免循环依赖。</summary>
     public SyncTrigger? SyncTrigger { get; set; }
 
+    /// <summary>由 ServiceProvider 在构造完成后注入，避免循环依赖。</summary>
+    public ReminderService? ReminderService { get; set; }
+
     private void NotifyWrite()
     {
         try { SyncTrigger?.NotifyWrite(); } catch { /* 同步触发不应影响写入主流程 */ }
+    }
+
+    /// <summary>触发喂奶提醒调度：失败不影响写入主流程。</summary>
+    private void TryScheduleFeedReminder(DateTime feedTime)
+    {
+        try { ReminderService?.ScheduleFeedReminder(feedTime); } catch { /* 提醒失败不影响记录 */ }
+    }
+
+    /// <summary>触发睡眠提醒调度：失败不影响写入主流程。</summary>
+    private void TryScheduleSleepReminder(string recordId, DateTime startTime)
+    {
+        try { ReminderService?.ScheduleSleepReminder(recordId, startTime); } catch { /* 提醒失败不影响记录 */ }
+    }
+
+    /// <summary>取消睡眠提醒：失败不影响写入主流程。</summary>
+    private void TryCancelSleepReminder(string recordId)
+    {
+        try { ReminderService?.CancelSleepReminder(recordId); } catch { /* 提醒失败不影响记录 */ }
     }
 
     public string AddFeed(FeedRecordDto dto)
@@ -43,6 +64,8 @@ public sealed class RecordService
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         NotifyWrite();
+        // 调度喂奶间隔提醒（3 小时后）；ScheduleFeedReminder 内部会先取消旧的再重新调度
+        TryScheduleFeedReminder(rec.RecordTime);
         return rec.Id;
     }
 
@@ -76,6 +99,12 @@ public sealed class RecordService
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         rec.Id = _repo.Insert(rec);
         NotifyWrite();
+        // 仅在未提供 Duration（即"开始睡眠"而非"补记完整睡眠"）时调度提醒
+        // 若 Duration 已有值（补记已结束的睡眠），不调度提醒避免误报
+        if (!duration.HasValue || duration.Value <= 0)
+        {
+            TryScheduleSleepReminder(rec.Id, rec.RecordTime);
+        }
         return rec.Id;
     }
 
@@ -94,6 +123,8 @@ public sealed class RecordService
         rec.PayloadJson = JsonSerializer.Serialize(dto);
         _repo.Update(rec);
         NotifyWrite();
+        // 睡眠结束：取消对应的睡眠超时提醒
+        TryCancelSleepReminder(recordId);
     }
 
     public string AddTemperature(TemperatureRecordDto dto)
@@ -225,7 +256,24 @@ public sealed class RecordService
     public List<ChildRecord> GetByDateRange(DateTime start, DateTime end) => _repo.GetByDateRange(_state.UserId, _state.CurrentBabyId, start, end);
     public ChildRecord? GetLatest(string type) => _repo.GetLatest(_state.UserId, _state.CurrentBabyId, type);
     public List<ChildRecord> GetByType(string type, int limit = 100) => _repo.GetByType(_state.UserId, _state.CurrentBabyId, type, limit);
-    public void Delete(string id) { _repo.SoftDelete(id); NotifyWrite(); }
+    public void Delete(string id)
+    {
+        // 删除前查询记录类型，用于取消对应的提醒
+        var rec = _repo.FindById(id);
+        _repo.SoftDelete(id);
+        NotifyWrite();
+        if (rec is null) return;
+        // 删除喂奶记录：取消喂奶提醒（避免删除后仍提醒"该喂奶了"）
+        if (rec.RecordType == RecordType.Feed)
+        {
+            try { ReminderService?.CancelFeedReminder(); } catch { /* 提醒取消失败不影响删除 */ }
+        }
+        // 删除睡眠记录：取消对应的睡眠提醒
+        else if (rec.RecordType == RecordType.Sleep)
+        {
+            TryCancelSleepReminder(id);
+        }
+    }
     public ChildRecord? GetById(string id) => _repo.FindById(id);
     public void Update(ChildRecord rec) { _repo.Update(rec); NotifyWrite(); }
 

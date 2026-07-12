@@ -176,6 +176,16 @@ public sealed class AuthService
         _sessions.Clear();
         CurrentUser = null;
         _state.Clear();
+        // 登出时取消所有本地提醒，避免切换账号后仍收到旧账号的喂奶/睡眠提醒
+        try
+        {
+            var localNoti = Infrastructure.ServiceProvider.Instance.LocalNotification;
+            if (localNoti.IsSupported)
+            {
+                _ = localNoti.CancelAllAsync();
+            }
+        }
+        catch { /* 提醒取消失败不影响登出 */ }
     }
 
     public void UpdateProfile(string nickName, string avatarUrl, int gender)
