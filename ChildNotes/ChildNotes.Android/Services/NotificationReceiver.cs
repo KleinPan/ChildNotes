@@ -59,13 +59,14 @@ public sealed class NotificationReceiver : BroadcastReceiver
             }
 
             // 弹出通知：id 用 GetHashCode 保证整数唯一性
-            NotificationManagerCompat.From(context).Notify(id.GetHashCode(), builder.Build());
+            var notifMgr = NotificationManagerCompat.From(context);
+            notifMgr?.Notify(id.GetHashCode(), builder.Build());
 
-            Android.Util.Log.Info("ChildNotes", $"[NotiRecv] Shown id={id} title={title}");
+            Log.Info("ChildNotes", $"[NotiRecv] Shown id={id} title={title}");
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error("ChildNotes", $"[NotiRecv] OnReceive failed: {ex}");
+            Log.Error("ChildNotes", $"[NotiRecv] OnReceive failed: {ex}");
         }
     }
 }

@@ -130,7 +130,7 @@ public class MainActivity : AvaloniaMainActivity
                 {
                     Description = ChildNotes.Android.Services.AndroidLocalNotification.ChannelDescription
                 };
-                var notifMgr = (NotificationManager)GetSystemService(NotificationService);
+                var notifMgr = (NotificationManager?)GetSystemService(NotificationService);
                 notifMgr?.CreateNotificationChannel(channel);
                 Log.Info("ChildNotes", $"[LocalNoti] Channel created: {ChildNotes.Android.Services.AndroidLocalNotification.ChannelId}");
             }
@@ -144,12 +144,12 @@ public class MainActivity : AvaloniaMainActivity
             // 直接在 OnCreate 申请（而非业务层首次调用时），避免业务层跨线程和时序问题
             if ((int)Build.VERSION.SdkInt >= 33)
             {
-                if (CheckSelfPermission(Android.Content.PM.Manifest.Permission.PostNotifications) != Android.Content.PM.Permission.Granted)
+                // 用字符串常量避免 Manifest 类的命名空间冲突
+                const string postNotiPerm = "android.permission.POST_NOTIFICATIONS";
+                if (CheckSelfPermission(postNotiPerm) != (int)Permission.Granted)
                 {
-                    // RequestPermissions 会异步弹窗，业务层 ScheduleAsync 不依赖权限申请完成（即使被拒绝，
-                    // NotificationManager.Notify 也不抛异常，只是不显示）
                     RequestPermissions(
-                        new[] { Android.Content.PM.Manifest.Permission.PostNotifications },
+                        new[] { postNotiPerm },
                         NotificationPermissionRequestCode);
                     Log.Info("ChildNotes", "[LocalNoti] Requesting POST_NOTIFICATIONS permission");
                 }
