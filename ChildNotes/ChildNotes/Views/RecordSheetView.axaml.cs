@@ -486,6 +486,32 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    /// <summary>辅食食物 Chip 多选：切换当前项选中状态（不影响其他项）。</summary>
+    private void OnCompFoodChipTap(object? sender, TappedEventArgs e)
+    {
+        if (sender is Border { Tag: CommonItemViewModel item } && DataContext is RecordSheetViewModel vm)
+        {
+            item.IsSelected = !item.IsSelected;
+        }
+    }
+
+    /// <summary>右键点击自定义辅食 Chip 弹出删除确认对话框（桌面端右键 = 移动端长按的等效操作）。</summary>
+    private async void OnCompFoodChipPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (sender is not Border { Tag: CommonItemViewModel item }) return;
+        if (!item.IsCustom) return;
+        var point = e.GetCurrentPoint((Visual)sender);
+        if (!point.Properties.IsRightButtonPressed) return;
+        if (DataContext is not RecordSheetViewModel vm) return;
+
+        e.Handled = true;
+        var confirmed = await ShowConfirmDialog("删除自定义辅食", $"确定删除「{item.Name}」吗？");
+        if (confirmed)
+        {
+            vm.ComplementaryForm.DeleteCustomCommand.Execute(item);
+        }
+    }
+
     /// <summary>右键点击自定义单位 Chip 弹出删除确认对话框。</summary>
     private async void OnUnitChipPointerReleased(object? sender, PointerReleasedEventArgs e)
     {

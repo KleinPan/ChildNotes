@@ -169,7 +169,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 var compDto = r.GetPayload<ComplementaryRecordDto>();
                 if (compDto is not null)
                 {
-                    ComplementaryForm.FoodName = compDto.FoodName ?? string.Empty;
+                    ComplementaryForm.SelectFoodsByName(compDto.FoodName);
                     ComplementaryForm.AmountText = compDto.Amount ?? string.Empty;
                     ComplementaryForm.SelectAmountUnitByName(compDto.AmountUnit);
                     ComplementaryForm.Note = compDto.Note ?? string.Empty;

@@ -358,6 +358,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.AbnormalFlag = cmpDto.Abnormal;
                 existing.RecordTime = ParseTime(cmpDto.Time, _editingDate);
                 existing.RecordDate = existing.RecordTime.Date;
+                existing.PayloadJson = JsonSerializer.Serialize(cmpDto);
                 break;
             case RecordType.Abnormal:
                 var abnDto = AbnormalForm.BuildDto();

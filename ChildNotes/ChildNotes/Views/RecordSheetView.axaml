@@ -683,10 +683,10 @@
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsComplementary}}">
 
-                            <!--  常用辅食选择区域  -->
+                            <!--  常用辅食选择区域（含系统默认项 + 用户自定义项，右键自定义项可删除）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用辅食（可多选）" />
+                                    <TextBlock Classes="form-label" Text="常用辅食（可多选，右键自定义项可删除）" />
                                     <ItemsControl ItemsSource="{Binding ComplementaryForm.AllCommonFoodItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -695,11 +695,14 @@
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate DataType="vm:CommonItemViewModel">
-                                                <CheckBox Margin="0,0,4,4" Padding="8,4"
-                                                          Content="{Binding Name}"
-                                                          FontSize="12"
-                                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                          Theme="{StaticResource PureCardCheckBox}" />
+                                                <Border Classes="supp-chip"
+                                                        Classes.active="{Binding IsSelected, Mode=OneWay}"
+                                                        Classes.custom="{Binding IsCustom}"
+                                                        PointerReleased="OnCompFoodChipPointerReleased"
+                                                        Tag="{Binding .}"
+                                                        Tapped="OnCompFoodChipTap">
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
@@ -718,6 +721,9 @@
                                                 Command="{Binding ComplementaryForm.AddCustomCommand}"
                                                 Content="+ 添加" CornerRadius="8" Foreground="White" />
                                     </Grid>
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
+                                               IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                               Text="{Binding ComplementaryForm.ErrorMessage}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
