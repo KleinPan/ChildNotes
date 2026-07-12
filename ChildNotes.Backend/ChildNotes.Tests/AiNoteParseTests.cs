@@ -252,6 +252,48 @@ public class AiNoteParseTests
         Assert.Equal(10, waters[0].Amount);
     }
 
+    /// <summary>
+    /// 回归测试：模糊量词"X多"+复合句（喂奶+喝水）应正确解析为 feed+water 两条，
+    /// 不丢失 water 记录，feed amount 取 X（如"110多"→110）。
+    /// 原始 bug：规则降级路径下 IsWaterLike 整体判定为 water，丢失 feed 记录；
+    /// 且 FeedAmountRegex 不支持"X多"模糊量词。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_FuzzyAmountFeedAndWater_SplitsInto2Records()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "2:20喝了110多奶粉和10ml水" 应解析出 feed(110) + water(10) 两条
+        var items = svc.ParseByRulesMulti("2:20喝了110多奶粉和10ml水");
+        Assert.True(items.Count >= 2, $"应解析出至少 2 条，实际 {items.Count}");
+
+        var feeds = items.Where(i => i.RecordType == RecordType.Feed).ToList();
+        Assert.True(feeds.Count >= 1, "应识别出 1 条喂奶记录");
+        Assert.Equal(110, feeds[0].Amount);
+        Assert.Equal(FeedType.Bottle, feeds[0].RecordSubType);
+        Assert.Equal("02:20", feeds[0].Time);
+
+        var waters = items.Where(i => i.RecordType == RecordType.Water).ToList();
+        Assert.True(waters.Count >= 1, "应识别出 1 条喝水记录");
+        Assert.Equal(10, waters[0].Amount);
+    }
+
+    /// <summary>
+    /// 回归测试：纯模糊量词喂奶"110多奶粉"应解析为 feed，amount=110，不被"多"字阻断。
+    /// </summary>
+    [Theory]
+    [InlineData("110多奶粉", 110)]
+    [InlineData("喝了110多奶粉", 110)]
+    [InlineData("吃了90多奶粉", 90)]
+    public void RuleParse_FuzzyAmountFeed_DetectsAmount(string text, int expectedAmount)
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
+        Assert.Equal(RecordType.Feed, parsed.RecordType);
+        Assert.Equal(FeedType.Bottle, parsed.RecordSubType);
+        Assert.Equal(expectedAmount, parsed.Amount);
+    }
+
     [Fact]
     public void RuleParseMulti_DiaperThenSleep_SplitsInto2Records()
     {

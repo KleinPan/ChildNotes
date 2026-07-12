@@ -15,7 +15,7 @@ public static class AiNoteRuleParser
     // ===== 预编译正则（SourceGenerator 在 Shared 层不可用，用 static readonly）=====
 
     private static readonly Regex FeedAmountRegex =
-        new(@"(\d+)\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
+        new(@"(\d+)(?:\s*多)?\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
 
     private static readonly Regex BreastRegex =
         new(@"(?:左|left)\s*(\d+)\s*(?:分|min|分钟)?.*?(?:右|right)\s*(\d+)\s*(?:分|min|分钟)?", RegexOptions.Compiled);
@@ -67,11 +67,33 @@ public static class AiNoteRuleParser
             if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
                 continue;
             results.Add(item);
+
+            // 复合句后处理：若当前段解析出 feed，但原段同时含明确的 water 表述
+            // （如"喝了110奶粉和10ml水"），补充一条 water 记录，避免丢失。
+            // NoteSplitter 不切分"和"字（太通用易误伤），故在此针对性补解。
+            if (item.RecordType == RecordType.Feed && ContainsWaterAmount(seg))
+            {
+                var waterItem = ParseWater(seg);
+                // 仅在 water 提取出水量时才补充（避免无意义的重复记录）
+                if (waterItem.Amount.HasValue)
+                    results.Add(waterItem);
+            }
         }
         // 若全部段都被跳过（罕见），回退到原句解析
         if (results.Count == 0)
             results.Add(Parse(text));
         return results;
+    }
+
+    /// <summary>
+    /// 判断文本是否含明确的"水量"表述（X ml/毫升 水）。
+    /// 用于复合句后处理：feed 段同时含水量时需补充 water 记录。
+    /// </summary>
+    private static bool ContainsWaterAmount(string text)
+    {
+        if (!text.Contains("水"))
+            return false;
+        return MlAmountRegex.Match(text).Success;
     }
 
     #endregion
@@ -255,9 +277,20 @@ public static class AiNoteRuleParser
 
     #region Water（喝水）分支
 
-    /// <summary>判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。</summary>
+    /// <summary>
+    /// 判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。
+    /// 但若文本同时含"奶/奶粉/母乳"等喂奶关键词，说明是复合句（如"喝了110奶粉和10ml水"），
+    /// 不应整体判定为 water（否则丢失 feed 记录），交给后续切分/解析处理。
+    /// </summary>
     private static bool IsWaterLike(string text)
-        => text.Contains("水") && (text.Contains("喝") || text.Contains("饮"));
+    {
+        if (!text.Contains("水") || !(text.Contains("喝") || text.Contains("饮")))
+            return false;
+        // 复合句：同时含喂奶关键词，不整体判定为 water
+        if (text.Contains("奶") || text.Contains("母乳"))
+            return false;
+        return true;
+    }
 
     /// <summary>解析喝水记录。</summary>
     private static AiNoteParseItem ParseWater(string text)
