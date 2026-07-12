@@ -6,10 +6,10 @@
 
 | 文档 | 说明 | 合并来源 |
 |---|---|---|
-| [`design-language.md`](design-language.md) | 产品体验、设计理念、交互、平台适配与 AI 体验原则 | `design-language-v1/README.md`、`product-manual.md`、`brand-experience.md`、`interaction-language.md`、`platform-guidelines.md`、`ai-experience.md` |
-| [`design-system.md`](design-system.md) | 视觉系统、品牌、色彩、布局、动效与可访问性 | `DesignSystem/`、`ui-design-system.md`、`ui-foundation.md`、`theme-system.md`、`motion-system.md` |
-| [`components.md`](components.md) | 组件分类、核心组件、AI 组件和实现映射 | `components.md`、`component-visual-specification.md`、`component-library-specification.md`、`code-mapping-specification.md` |
-| [`design-tokens.md`](design-tokens.md) | 颜色、字体、间距、圆角、阴影、动效 Token | `design-token-specification.md`、`figma-ready-specification.md` |
+| [`design-language.md`](design-language.md) | 产品体验、设计理念、交互、平台适配与 AI 体验原则 | `../archive/design-language-v1/README.md`、`product-manual.md`、`brand-experience.md`、`interaction-language.md`、`platform-guidelines.md`、`ai-experience.md` |
+| [`design-system.md`](design-system.md) | 视觉系统、品牌、色彩、布局、动效与可访问性 | `../archive/design-system-v0/`、`../archive/design-language-v1/ui-design-system.md`、`ui-foundation.md`、`theme-system.md`、`motion-system.md` |
+| [`components.md`](components.md) | 组件分类、核心组件、AI 组件和实现映射 | `../archive/design-language-v1/components.md`、`component-visual-specification.md`、`component-library-specification.md`、`code-mapping-specification.md` |
+| [`design-tokens.md`](design-tokens.md) | 颜色、字体、间距、圆角、阴影、动效 Token | `../archive/design-language-v1/design-token-specification.md`、`figma-ready-specification.md` |
 
 ## 维护规则
 
