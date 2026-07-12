@@ -593,11 +593,24 @@ public static class AiNoteRuleParser
             var mm = ParseMinuteGroup(m.Groups[2]);
             if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
 
-            // 处理 12 小时制表述：晚上/下午/傍晚 +1~11 点 → +12
+            // 处理 12 小时制表述：
+            // 1) 显式 PM 时段词（下午/晚上/傍晚/夜里/夜晚）+ 1~11 点 → +12
+            // 2) 显式 AM 时段词（上午/早上/凌晨/清晨）→ 保持 AM
+            // 3) 无时段词 → 按当前实际时间推断（当前为 PM 时段则 +12）
             if (hh < 12)
             {
-                bool isPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
-                if (isPm) hh += 12;
+                bool isExplicitPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
+                bool isExplicitAm = text.Contains("上午") || text.Contains("早上") || text.Contains("凌晨") || text.Contains("清晨");
+                if (isExplicitPm)
+                {
+                    hh += 12;
+                }
+                else if (!isExplicitAm)
+                {
+                    // 无显式时段词，按当前时间推断
+                    if (DateTime.Now.Hour >= 12) hh += 12;
+                }
+                // 显式 AM 保持不变
             }
             var hhMm = $"{hh:D2}:{mm:D2}";
 
