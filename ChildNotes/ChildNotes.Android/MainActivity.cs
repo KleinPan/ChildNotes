@@ -1,3 +1,4 @@
+using System;
 using Android.App;
 using Android.Content.PM;
 using Android.OS;
@@ -5,6 +6,7 @@ using Android.Runtime;
 using Android.Util;
 using Android.Views;
 using Android.Window;
+using AndroidX.Core.App;
 using AndroidX.Core.View;
 using Avalonia;
 using Avalonia.Android;
