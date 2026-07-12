@@ -3,6 +3,7 @@ using System.Text.Json;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Services;
 using ChildNotes.Infrastructure.Services;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -252,6 +253,48 @@ public class AiNoteParseTests
         Assert.Equal(10, waters[0].Amount);
     }
 
+    /// <summary>
+    /// 回归测试：模糊量词"X多"+复合句（喂奶+喝水）应正确解析为 feed+water 两条，
+    /// 不丢失 water 记录，feed amount 取 X（如"110多"→110）。
+    /// 原始 bug：规则降级路径下 IsWaterLike 整体判定为 water，丢失 feed 记录；
+    /// 且 FeedAmountRegex 不支持"X多"模糊量词。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_FuzzyAmountFeedAndWater_SplitsInto2Records()
+    {
+        var svc = NewServiceWithFailingAi();
+        // "2:20喝了110多奶粉和10ml水" 应解析出 feed(110) + water(10) 两条
+        var items = svc.ParseByRulesMulti("2:20喝了110多奶粉和10ml水");
+        Assert.True(items.Count >= 2, $"应解析出至少 2 条，实际 {items.Count}");
+
+        var feeds = items.Where(i => i.RecordType == RecordType.Feed).ToList();
+        Assert.True(feeds.Count >= 1, "应识别出 1 条喂奶记录");
+        Assert.Equal(110, feeds[0].Amount);
+        Assert.Equal(FeedType.Bottle, feeds[0].RecordSubType);
+        Assert.Equal("02:20", feeds[0].Time);
+
+        var waters = items.Where(i => i.RecordType == RecordType.Water).ToList();
+        Assert.True(waters.Count >= 1, "应识别出 1 条喝水记录");
+        Assert.Equal(10, waters[0].Amount);
+    }
+
+    /// <summary>
+    /// 回归测试：纯模糊量词喂奶"110多奶粉"应解析为 feed，amount=110，不被"多"字阻断。
+    /// </summary>
+    [Theory]
+    [InlineData("110多奶粉", 110)]
+    [InlineData("喝了110多奶粉", 110)]
+    [InlineData("吃了90多奶粉", 90)]
+    public void RuleParse_FuzzyAmountFeed_DetectsAmount(string text, int expectedAmount)
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti(text);
+        var parsed = items[0];
+        Assert.Equal(RecordType.Feed, parsed.RecordType);
+        Assert.Equal(FeedType.Bottle, parsed.RecordSubType);
+        Assert.Equal(expectedAmount, parsed.Amount);
+    }
+
     [Fact]
     public void RuleParseMulti_DiaperThenSleep_SplitsInto2Records()
     {
@@ -469,5 +512,77 @@ public class AiNoteParseTests
 
         public override Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)
             => throw new InvalidOperationException("AI service stubbed out for tests");
+    }
+
+    /// <summary>
+    /// 时间解析：显式 PM 时段词 + 1~11 点 → +12 转 24 小时制
+    /// </summary>
+    [Theory]
+    [InlineData("下午5点吃了奶", 17, 0)]
+    [InlineData("晚上8点睡觉", 20, 0)]
+    [InlineData("傍晚6点半吃奶", 18, 30)]
+    [InlineData("夜里3点醒了", 15, 0)]
+    [InlineData("夜晚9点睡", 21, 0)]
+    public void ExtractTime_ExplicitPm_Adds12(string text, int expectedHour, int expectedMinute)
+    {
+        var time = AiNoteRuleParser.ExtractTime(text);
+        Assert.NotNull(time);
+        // ExtractTime 可能返回 "HH:mm" 或 "yyyy-MM-dd HH:mm"，取末尾 5 位
+        var hhMm = time!.Length >= 5 ? time.Substring(time.Length - 5) : time;
+        Assert.Equal($"{expectedHour:D2}:{expectedMinute:D2}", hhMm);
+    }
+
+    /// <summary>
+    /// 时间解析：显式 AM 时段词 → 保持 AM（不加 12）
+    /// </summary>
+    [Theory]
+    [InlineData("上午5点吃了奶", 5, 0)]
+    [InlineData("早上8点睡觉", 8, 0)]
+    [InlineData("凌晨3点醒了", 3, 0)]
+    [InlineData("清晨6点半吃奶", 6, 30)]
+    public void ExtractTime_ExplicitAm_KeepsAm(string text, int expectedHour, int expectedMinute)
+    {
+        var time = AiNoteRuleParser.ExtractTime(text);
+        Assert.NotNull(time);
+        var hhMm = time!.Length >= 5 ? time.Substring(time.Length - 5) : time;
+        Assert.Equal($"{expectedHour:D2}:{expectedMinute:D2}", hhMm);
+    }
+
+    /// <summary>
+    /// 时间解析：无时段词时按当前实际时间推断 AM/PM
+    /// 当前为下午（Hour >= 12）→ 5点=17:00；当前为上午（Hour < 12）→ 5点=05:00
+    /// </summary>
+    [Theory]
+    [InlineData("5点吃了奶", 5)]  // 小时数 5 < 12，触发 12 小时制推断
+    [InlineData("8点半睡觉", 8)]  // 小时数 8 < 12，触发 12 小时制推断
+    [InlineData("10点吃奶", 10)]
+    public void ExtractTime_NoPeriodWord_InfersByCurrentTime(string text, int baseHour)
+    {
+        var time = AiNoteRuleParser.ExtractTime(text);
+        Assert.NotNull(time);
+        var hhMm = time!.Length >= 5 ? time.Substring(time.Length - 5) : time;
+        var parts = hhMm.Split(':');
+        var hh = int.Parse(parts[0]);
+        var mm = int.Parse(parts[1]);
+
+        // 推断规则：当前 Hour >= 12 → +12；当前 Hour < 12 → 保持
+        var currentHour = DateTime.Now.Hour;
+        var expectedHour = (currentHour >= 12) ? baseHour + 12 : baseHour;
+        Assert.Equal(expectedHour, hh);
+    }
+
+    /// <summary>
+    /// 时间解析：12~23 点的表述不触发 12 小时制推断（已是 24 小时制）
+    /// </summary>
+    [Theory]
+    [InlineData("13点吃奶", 13, 0)]
+    [InlineData("14点半睡觉", 14, 30)]
+    [InlineData("23点醒了", 23, 0)]
+    public void ExtractTime_24HourFormat_NoInference(string text, int expectedHour, int expectedMinute)
+    {
+        var time = AiNoteRuleParser.ExtractTime(text);
+        Assert.NotNull(time);
+        var hhMm = time!.Length >= 5 ? time.Substring(time.Length - 5) : time;
+        Assert.Equal($"{expectedHour:D2}:{expectedMinute:D2}", hhMm);
     }
 }

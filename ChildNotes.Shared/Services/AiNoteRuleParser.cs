@@ -15,7 +15,7 @@ public static class AiNoteRuleParser
     // ===== 预编译正则（SourceGenerator 在 Shared 层不可用，用 static readonly）=====
 
     private static readonly Regex FeedAmountRegex =
-        new(@"(\d+)\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
+        new(@"(\d+)(?:\s*多)?\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
 
     private static readonly Regex BreastRegex =
         new(@"(?:左|left)\s*(\d+)\s*(?:分|min|分钟)?.*?(?:右|right)\s*(\d+)\s*(?:分|min|分钟)?", RegexOptions.Compiled);
@@ -67,11 +67,33 @@ public static class AiNoteRuleParser
             if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
                 continue;
             results.Add(item);
+
+            // 复合句后处理：若当前段解析出 feed，但原段同时含明确的 water 表述
+            // （如"喝了110奶粉和10ml水"），补充一条 water 记录，避免丢失。
+            // NoteSplitter 不切分"和"字（太通用易误伤），故在此针对性补解。
+            if (item.RecordType == RecordType.Feed && ContainsWaterAmount(seg))
+            {
+                var waterItem = ParseWater(seg);
+                // 仅在 water 提取出水量时才补充（避免无意义的重复记录）
+                if (waterItem.Amount.HasValue)
+                    results.Add(waterItem);
+            }
         }
         // 若全部段都被跳过（罕见），回退到原句解析
         if (results.Count == 0)
             results.Add(Parse(text));
         return results;
+    }
+
+    /// <summary>
+    /// 判断文本是否含明确的"水量"表述（X ml/毫升 水）。
+    /// 用于复合句后处理：feed 段同时含水量时需补充 water 记录。
+    /// </summary>
+    private static bool ContainsWaterAmount(string text)
+    {
+        if (!text.Contains("水"))
+            return false;
+        return MlAmountRegex.Match(text).Success;
     }
 
     #endregion
@@ -255,9 +277,20 @@ public static class AiNoteRuleParser
 
     #region Water（喝水）分支
 
-    /// <summary>判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。</summary>
+    /// <summary>
+    /// 判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。
+    /// 但若文本同时含"奶/奶粉/母乳"等喂奶关键词，说明是复合句（如"喝了110奶粉和10ml水"），
+    /// 不应整体判定为 water（否则丢失 feed 记录），交给后续切分/解析处理。
+    /// </summary>
     private static bool IsWaterLike(string text)
-        => text.Contains("水") && (text.Contains("喝") || text.Contains("饮"));
+    {
+        if (!text.Contains("水") || !(text.Contains("喝") || text.Contains("饮")))
+            return false;
+        // 复合句：同时含喂奶关键词，不整体判定为 water
+        if (text.Contains("奶") || text.Contains("母乳"))
+            return false;
+        return true;
+    }
 
     /// <summary>解析喝水记录。</summary>
     private static AiNoteParseItem ParseWater(string text)
@@ -560,11 +593,24 @@ public static class AiNoteRuleParser
             var mm = ParseMinuteGroup(m.Groups[2]);
             if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
 
-            // 处理 12 小时制表述：晚上/下午/傍晚 +1~11 点 → +12
+            // 处理 12 小时制表述：
+            // 1) 显式 PM 时段词（下午/晚上/傍晚/夜里/夜晚）+ 1~11 点 → +12
+            // 2) 显式 AM 时段词（上午/早上/凌晨/清晨）→ 保持 AM
+            // 3) 无时段词 → 按当前实际时间推断（当前为 PM 时段则 +12）
             if (hh < 12)
             {
-                bool isPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
-                if (isPm) hh += 12;
+                bool isExplicitPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
+                bool isExplicitAm = text.Contains("上午") || text.Contains("早上") || text.Contains("凌晨") || text.Contains("清晨");
+                if (isExplicitPm)
+                {
+                    hh += 12;
+                }
+                else if (!isExplicitAm)
+                {
+                    // 无显式时段词，按当前时间推断
+                    if (DateTime.Now.Hour >= 12) hh += 12;
+                }
+                // 显式 AM 保持不变
             }
             var hhMm = $"{hh:D2}:{mm:D2}";
 
