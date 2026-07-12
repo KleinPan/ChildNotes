@@ -6,11 +6,7 @@
 
   <style name="MyTheme.NoActionBar" parent="@style/Theme.AppCompat.NoActionBar">
     <item name="android:windowActionBar">false</item>
-    <item name="android:windowBackground">@null</item>
+    <item name="android:windowBackground">@drawable/splash_screen</item>
     <item name="android:windowNoTitle">true</item>
-    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-    <!-- 使用应用自身图标，替代 Avalonia 模板自带的 avalonia_anim 动画 -->
-    <item name="android:windowSplashScreenAnimatedIcon">@drawable/icon</item>
-    <item name="android:windowSplashScreenAnimationDuration">0</item>
   </style>
 </resources>
