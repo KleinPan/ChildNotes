@@ -157,10 +157,20 @@ public partial class AiNoteService : IAiNoteService
         }
 
         // 时间未提供则使用当前时间（对每个 Item 应用）
+        // 并对 LLM 返回的 12 小时制无时段词时间做"取最近过去时刻"后处理
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         foreach (var it in items)
         {
-            it.Time = string.IsNullOrEmpty(it.Time) ? now : AiNoteRuleParser.NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
+            if (string.IsNullOrEmpty(it.Time))
+            {
+                it.Time = now;
+            }
+            else
+            {
+                // 先归一化，再对无时段词的 12 小时制时间做后处理
+                var normalized = AiNoteRuleParser.NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
+                it.Time = AiNoteRuleParser.NormalizeAmbiguousTime(normalized, text);
+            }
         }
 
         _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Text={Text}",

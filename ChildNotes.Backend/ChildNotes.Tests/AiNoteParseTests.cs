@@ -593,4 +593,55 @@ public class AiNoteParseTests
         var hhMm = time!.Length >= 5 ? time.Substring(time.Length - 5) : time;
         Assert.Equal($"{expectedHour:D2}:{expectedMinute:D2}", hhMm);
     }
+
+    /// <summary>
+    /// NormalizeAmbiguousTime：无时段词时对 LLM 返回的 12 小时制时间做后处理
+    /// </summary>
+    [Theory]
+    [InlineData("14:00", "2点喝了奶粉", 2, 0)]   // LLM 返回 14:00，但应修正为最近的过去时刻
+    [InlineData("02:00", "2点喝了奶粉", 2, 0)]   // LLM 返回 02:00，也应经过算法判断
+    [InlineData("05:30", "5点半吃了奶", 5, 30)]
+    public void NormalizeAmbiguousTime_NoPeriodWord_PicksNearestPast(string llmTime, string originalText, int baseHour, int baseMinute)
+    {
+        var result = AiNoteRuleParser.NormalizeAmbiguousTime(llmTime, originalText);
+        // 验证结果符合"取最近过去时刻"算法
+        var now = DateTime.Now;
+        var amCandidate = new DateTime(now.Year, now.Month, now.Day, baseHour, baseMinute, 0);
+        var pmCandidate = new DateTime(now.Year, now.Month, now.Day, baseHour + 12, baseMinute, 0);
+        DateTime expected;
+        if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+            expected = pmCandidate;
+        else
+            expected = amCandidate;
+        Assert.Equal(expected.ToString("yyyy-MM-dd HH:mm"), result);
+    }
+
+    /// <summary>
+    /// NormalizeAmbiguousTime：含显式时段词时不干预，原样返回（不归一化）
+    /// </summary>
+    [Theory]
+    [InlineData("14:00", "下午2点喝了奶粉")]   // 显式 PM，不干预
+    [InlineData("02:00", "凌晨2点喝了奶粉")]   // 显式 AM，不干预
+    [InlineData("17:00", "下午5点吃了奶")]
+    [InlineData("08:00", "早上8点睡觉")]
+    public void NormalizeAmbiguousTime_ExplicitPeriod_NoChange(string llmTime, string originalText)
+    {
+        var result = AiNoteRuleParser.NormalizeAmbiguousTime(llmTime, originalText);
+        // 显式时段词原样返回（不归一化、不修正）
+        Assert.Equal(llmTime, result);
+    }
+
+    /// <summary>
+    /// NormalizeAmbiguousTime：用户显式说 13~23 点（24小时制）或 0 点时不触发修正
+    /// </summary>
+    [Theory]
+    [InlineData("13:00", "13点吃奶")]   // 用户显式说 13 点（24小时制），不触发
+    [InlineData("00:30", "0点半醒了")]   // 0 点无 AM/PM 歧义，不触发
+    [InlineData("12:00", "12点吃奶")]   // 12 点无 AM/PM 歧义，不触发
+    public void NormalizeAmbiguousTime_OutOfRange_NoChange(string llmTime, string originalText)
+    {
+        var result = AiNoteRuleParser.NormalizeAmbiguousTime(llmTime, originalText);
+        // 24小时制或无歧义时间不修正，原样返回
+        Assert.Equal(llmTime, result);
+    }
 }

@@ -731,6 +731,63 @@ public static class AiNoteRuleParser
     }
 
     /// <summary>
+    /// 对 LLM 返回的时间做"取最近过去时刻"后处理。
+    /// 仅当原始输入文本不含显式时段词（上午/早上/凌晨/下午/晚上/傍晚/夜里/夜晚/清晨），
+    /// 且 LLM 返回的时间小时数在 1~11 范围时，应用算法：
+    /// - 计算 AM 候选（hh:mm）和 PM 候选（hh+12:mm）
+    /// - 选 &lt;= 当前时间且最近的；都 > 当前时间则取 AM
+    /// 这样可以修正 LLM 不遵守 prompt 规则导致的时间推断错误。
+    /// </summary>
+    public static string NormalizeAmbiguousTime(string llmTime, string originalText, string format = "yyyy-MM-dd HH:mm")
+    {
+        // 原始输入含显式时段词，不干预
+        bool isExplicitPm = originalText.Contains("晚上") || originalText.Contains("下午") || originalText.Contains("傍晚") || originalText.Contains("夜里") || originalText.Contains("夜晚");
+        bool isExplicitAm = originalText.Contains("上午") || originalText.Contains("早上") || originalText.Contains("凌晨") || originalText.Contains("清晨");
+        if (isExplicitPm || isExplicitAm) return llmTime;
+
+        // 从原始输入提取用户实际说的小时数，判断是否为 24 小时制表述（13~23点）
+        var timeMatch = TimeRegex.Match(originalText);
+        if (timeMatch.Success && int.TryParse(timeMatch.Groups[1].Value, out var userHh))
+        {
+            // 用户显式说了 13~23 点（24 小时制），不干预
+            if (userHh >= 13 && userHh <= 23) return llmTime;
+        }
+
+        // 解析 LLM 返回的时间（支持 "HH:mm" 和 "yyyy-MM-dd HH:mm" 两种格式）
+        int hh24, mm;
+        if (TimeSpan.TryParse(llmTime, out var ts))
+        {
+            hh24 = ts.Hours;
+            mm = ts.Minutes;
+        }
+        else if (DateTime.TryParse(llmTime, out var dt))
+        {
+            hh24 = dt.Hour;
+            mm = dt.Minute;
+        }
+        else
+        {
+            return llmTime; // 无法解析，不干预
+        }
+
+        // 转为 12 小时制小时数（0点和12点都映射为12，但这两个值不触发歧义，下面会过滤）
+        int hh12 = hh24 % 12;
+        // 仅对 1~11 点范围做修正（0点和12点无 AM/PM 歧义）
+        if (hh12 == 0) return llmTime;
+
+        var now = DateTime.Now;
+        var amCandidate = new DateTime(now.Year, now.Month, now.Day, hh12, mm, 0);
+        var pmCandidate = new DateTime(now.Year, now.Month, now.Day, hh12 + 12, mm, 0);
+        DateTime chosen;
+        if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+            chosen = pmCandidate; // PM 候选更近且已过去
+        else
+            chosen = amCandidate; // 取 AM
+
+        return chosen.ToString(format);
+    }
+
+    /// <summary>
     /// 将完整时间的日期部分与 "HH:mm" 时间部分拼接，支持跨日（endTime &lt; startTime 时日期 +1）。
     /// <paramref name="format"/> 传入 "O" 则输出 ISO 8601，传入 "yyyy-MM-dd HH:mm" 则输出后端格式。
     /// </summary>
