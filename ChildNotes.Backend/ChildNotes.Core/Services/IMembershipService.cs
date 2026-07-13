@@ -60,4 +60,10 @@ public interface IMembershipService
     /// 获取会员抽奖折扣。非会员返回 1（原价）。
     /// </summary>
     Task<decimal> GetLotteryDiscountAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 为当前用户激活永不过期会员（开发版 APK 调用）。
+    /// 调用方需自行通过 MembershipOptions.EnableDevAutoActivate 控制端点暴露。
+    /// </summary>
+    Task DevActivatePermanentAsync(CancellationToken ct = default);
 }

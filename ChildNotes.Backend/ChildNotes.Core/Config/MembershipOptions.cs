@@ -41,6 +41,13 @@ public class MembershipOptions
     /// <summary>会员抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public decimal MemberLotteryDiscount { get; set; } = MembershipConstants.MemberLotteryDiscount;
 
+    /// <summary>
+    /// 是否启用开发版自动激活会员端点（POST /api/membership/dev/activate）。
+    /// 默认 false。仅在需要为开发版 APK 提供永久会员的后端环境置 true。
+    /// 端点本身需要 JWT 鉴权，不会匿名开放。
+    /// </summary>
+    public bool EnableDevAutoActivate { get; set; } = false;
+
     /// <summary>订单超时关闭时间（分钟，默认 30）。</summary>
     public int OrderTimeoutMinutes { get; set; } = 30;
 

@@ -1,8 +1,10 @@
+using ChildNotes.Core.Config;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Services;
 using ChildNotes.Shared.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Api.Controllers;
 
@@ -14,10 +16,12 @@ namespace ChildNotes.Api.Controllers;
 public class MembershipController : AppBaseController
 {
     private readonly IMembershipService _membership;
+    private readonly MembershipOptions _opt;
 
-    public MembershipController(IMembershipService membership)
+    public MembershipController(IMembershipService membership, IOptions<MembershipOptions> opt)
     {
         _membership = membership;
+        _opt = opt.Value;
     }
 
     /// <summary>获取所有可用套餐。</summary>
@@ -57,5 +61,18 @@ public class MembershipController : AppBaseController
         }
         var result = await _membership.HandleAlipayNotifyAsync(form, ct);
         return Content(result, "text/plain");
+    }
+
+    /// <summary>
+    /// 为当前用户激活永不过期会员（开发版 APK 调用）。
+    /// 仅在 MembershipOptions.EnableDevAutoActivate=true 时可用，否则返回 404。
+    /// </summary>
+    [HttpPost("dev/activate")]
+    public async Task<IActionResult> DevActivate(CancellationToken ct)
+    {
+        if (!_opt.EnableDevAutoActivate)
+            return NotFound();
+        await _membership.DevActivatePermanentAsync(ct);
+        return Ok(new { state = 0, msg = "ok" });
     }
 }

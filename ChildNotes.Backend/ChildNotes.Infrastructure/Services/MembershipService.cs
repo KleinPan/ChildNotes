@@ -235,6 +235,24 @@ public class MembershipService : IMembershipService
     }
 
     /// <summary>
+    /// 为当前用户激活永不过期会员。
+    /// 直接将 MembershipExpireAt 设为 DateTime.MaxValue，开发版 APK 登录后自动调用。
+    /// </summary>
+    public async Task DevActivatePermanentAsync(CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == uid, ct);
+        if (user is null) return;
+
+        // 已是永久会员则跳过
+        if (user.MembershipExpireAt == DateTime.MaxValue) return;
+
+        user.MembershipExpireAt = DateTime.MaxValue;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
     /// 通用次数递增逻辑。按 (userId, usageType, periodStart) 唯一约束。
     /// PostgreSQL 走 ExecuteUpdateAsync 原子递增；InMemory 走 EF 跟踪。
     /// </summary>

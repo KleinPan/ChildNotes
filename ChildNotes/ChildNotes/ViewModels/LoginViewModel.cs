@@ -101,6 +101,20 @@ public partial class LoginViewModel : ViewModelBase
                 // fire-and-forget：同步失败不影响登录流程，下次触发会再试
                 _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
                 DevLogger.Log("Login", "Initial sync triggered");
+
+#if DEV_BUILD
+                // 开发版 APK：自动激活永不过期会员（后端需开启 EnableDevAutoActivate）
+                // fire-and-forget：失败静默忽略，不影响登录流程
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var ok = await ServiceProvider.Instance.MembershipApiClient.DevActivatePermanentAsync();
+                        DevLogger.Log("Login", $"Dev auto-activate membership: {(ok ? "success" : "skipped/failed")}");
+                    }
+                    catch (Exception exDev) { DevLogger.Log("Login", "Dev auto-activate failed: " + exDev.Message); }
+                });
+#endif
             }
             else
             {

@@ -44,4 +44,21 @@ public sealed class MembershipApiClient : BaseApiClient
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Get, path, null, ct);
         return resp is null ? null : await ReadDataAsync<OrderStatusResponse>(resp, ct);
     }
+
+    /// <summary>
+    /// 【开发版】激活永不过期会员。仅 DEV_BUILD 构建调用。
+    /// 后端需开启 EnableDevAutoActivate，否则返回 404（静默忽略）。
+    /// </summary>
+    public async Task<bool> DevActivatePermanentAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/membership/dev/activate", null, ct);
+            return resp is { IsSuccessStatusCode: true };
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
