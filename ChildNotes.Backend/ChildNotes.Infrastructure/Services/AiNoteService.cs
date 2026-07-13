@@ -17,12 +17,16 @@ namespace ChildNotes.Infrastructure.Services;
 /// 支持复合语句切分（如"睡了一觉，喝了奶，换了尿布"→3条记录）。
 /// 注意：本服务仅做解析，不落库；调用方需自行持久化。
 ///
+/// 次数限制：非会员 10 次/天，会员 100 次/天（按自然日重置）。
+/// 规则降级解析同样消耗次数（保证后端 AI 调用配额可控）。
 /// 规则降级逻辑已提取到 ChildNotes.Shared/Services/AiNoteRuleParser，前后端共用。
 /// </summary>
 public partial class AiNoteService : IAiNoteService
 {
     private readonly ILogger<AiNoteService> _logger;
     private readonly DeepSeekClient _ai;
+    private readonly IMembershipService _membership;
+    private readonly ICurrentUserService _current;
 
     private const string SystemPrompt = """
 你是一名育儿记录解析助手。请将用户输入的自然语言文本解析为一条或多条结构化的育儿记录，并仅输出 JSON 数组。
@@ -120,10 +124,12 @@ public partial class AiNoteService : IAiNoteService
         PropertyNameCaseInsensitive = true,
     };
 
-    public AiNoteService(DeepSeekClient ai, ILogger<AiNoteService> logger)
+    public AiNoteService(DeepSeekClient ai, ILogger<AiNoteService> logger, IMembershipService membership, ICurrentUserService current)
     {
         _ai = ai;
         _logger = logger;
+        _membership = membership;
+        _current = current;
     }
 
     public async Task<AiNoteParseBatchResponse> ParseAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
@@ -138,6 +144,13 @@ public partial class AiNoteService : IAiNoteService
         // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
         _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse 文本={Text}",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), text);
+
+        // 每日次数限制检查（非会员 10 次/天，会员 100 次/天）
+        var uid = _current.RequireUserId();
+        var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
+        var used = await _membership.GetAiNoteUsedTodayAsync(uid, ct);
+        if (used >= limit)
+            throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
 
         List<AiNoteParseItem> items;
         try
@@ -178,6 +191,10 @@ public partial class AiNoteService : IAiNoteService
             items.FirstOrDefault()?.RecordType ?? "-",
             items.FirstOrDefault()?.RecordSubType ?? "-",
             text);
+
+        // 解析成功后增加今日使用次数（best-effort，统计失败不阻塞解析）
+        try { await _membership.IncrementAiNoteUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞 */ }
+
         return new AiNoteParseBatchResponse { Items = items };
     }
 

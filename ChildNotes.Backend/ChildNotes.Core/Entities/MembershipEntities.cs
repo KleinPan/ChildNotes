@@ -49,8 +49,14 @@ public class MembershipOrder : IAuditable
 }
 
 /// <summary>
-/// AI 分析每日调用次数记录。
-/// 按 (UserId, Date) 唯一，每次实际调用 AI 分析（非幂等命中）时 +1。
+/// AI 调用次数记录。
+/// 支持按使用类型区分：
+/// - <see cref="MembershipConstants.UsageTypeAiNote"/>：AI 记（按日重置，每日 10/100 次）
+/// - <see cref="MembershipConstants.UsageTypeAiAnalysis"/>：AI 分析（按周重置，每周 1/10 次）
+///
+/// 按 (UserId, UsageType, PeriodStart) 唯一：
+/// - AiNote 的 PeriodStart 为当日 UTC 0 点
+/// - AiAnalysis 的 PeriodStart 为本周一 UTC 0 点
 /// </summary>
 public class AiUsageRecord : IAuditable
 {
@@ -59,10 +65,16 @@ public class AiUsageRecord : IAuditable
     /// <summary>用户 ID。</summary>
     public string UserId { get; set; } = string.Empty;
 
-    /// <summary>日期（UTC，仅日期部分，时间固定 00:00:00）。</summary>
-    public DateTime UsageDate { get; set; }
+    /// <summary>使用类型（ai_note / ai_analysis）。</summary>
+    public string UsageType { get; set; } = MembershipConstants.UsageTypeAiNote;
 
-    /// <summary>当日已使用次数。</summary>
+    /// <summary>
+    /// 周期起始日（UTC，仅日期部分）。
+    /// AiNote：当日 0 点；AiAnalysis：本周一 0 点。
+    /// </summary>
+    public DateTime PeriodStart { get; set; }
+
+    /// <summary>当前周期内已使用次数。</summary>
     public int UsedCount { get; set; }
 
     public DateTime CreatedAt { get; set; }

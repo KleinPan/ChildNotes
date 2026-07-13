@@ -197,24 +197,54 @@ public class MembershipService : IMembershipService
         }
     }
 
-    public async Task<int> GetAiDailyLimitAsync(string userId, CancellationToken ct = default)
+    public async Task<int> GetAiNoteDailyLimitAsync(string userId, CancellationToken ct = default)
     {
         var user = await _db.AppUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return _opt.FreeDailyAiLimit;
+        if (user is null) return _opt.FreeDailyAiNoteLimit;
         return MembershipConstants.IsActive(user.MembershipExpireAt)
-            ? _opt.MemberDailyAiLimit
-            : _opt.FreeDailyAiLimit;
+            ? _opt.MemberDailyAiNoteLimit
+            : _opt.FreeDailyAiNoteLimit;
     }
 
-    public async Task<int> IncrementAiUsageAsync(string userId, CancellationToken ct = default)
-    {
-        var today = DateTime.UtcNow.Date;
+    public Task<int> IncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
 
+    public Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default)
+        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+
+    public async Task<int> GetAiAnalysisWeeklyLimitAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await _db.AppUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return _opt.FreeWeeklyAiAnalysisLimit;
+        return MembershipConstants.IsActive(user.MembershipExpireAt)
+            ? _opt.MemberWeeklyAiAnalysisLimit
+            : _opt.FreeWeeklyAiAnalysisLimit;
+    }
+
+    public Task<int> IncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+
+    public Task<int> GetAiAnalysisUsedThisWeekAsync(string userId, CancellationToken ct = default)
+        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+
+    public async Task<decimal> GetLotteryDiscountAsync(string userId, CancellationToken ct = default)
+    {
+        var user = await _db.AppUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null) return 1m;
+        return MembershipConstants.IsActive(user.MembershipExpireAt) ? _opt.MemberLotteryDiscount : 1m;
+    }
+
+    /// <summary>
+    /// 通用次数递增逻辑。按 (userId, usageType, periodStart) 唯一约束。
+    /// PostgreSQL 走 ExecuteUpdateAsync 原子递增；InMemory 走 EF 跟踪。
+    /// </summary>
+    private async Task<int> IncrementUsageAsync(string userId, string usageType, DateTime periodStart, CancellationToken ct)
+    {
         // 尝试原子递增（PostgreSQL 支持 ExecuteUpdateAsync）
         if (_db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
         {
             var rows = await _db.AiUsageRecords
-                .Where(x => x.UserId == userId && x.UsageDate == today)
+                .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart)
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(x => x.UsedCount, x => x.UsedCount + 1)
                     .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
@@ -222,14 +252,15 @@ public class MembershipService : IMembershipService
             if (rows > 0)
             {
                 return await _db.AiUsageRecords
-                    .Where(x => x.UserId == userId && x.UsageDate == today)
+                    .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart)
                     .Select(x => x.UsedCount)
                     .FirstAsync(ct);
             }
         }
 
         // 首次或 InMemory：插入新记录（幂等处理）
-        var existing = await _db.AiUsageRecords.FirstOrDefaultAsync(x => x.UserId == userId && x.UsageDate == today, ct);
+        var existing = await _db.AiUsageRecords.FirstOrDefaultAsync(
+            x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart, ct);
         if (existing is not null)
         {
             existing.UsedCount++;
@@ -242,7 +273,8 @@ public class MembershipService : IMembershipService
         {
             Id = Guid.NewGuid().ToString("N"),
             UserId = userId,
-            UsageDate = today,
+            UsageType = usageType,
+            PeriodStart = periodStart,
             UsedCount = 1,
         };
         _db.AiUsageRecords.Add(record);
@@ -253,7 +285,8 @@ public class MembershipService : IMembershipService
         catch (DbUpdateException)
         {
             // 并发竞态：重新递增
-            existing = await _db.AiUsageRecords.FirstAsync(x => x.UserId == userId && x.UsageDate == today, ct);
+            existing = await _db.AiUsageRecords.FirstAsync(
+                x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart, ct);
             existing.UsedCount++;
             await _db.SaveChangesAsync(ct);
             return existing.UsedCount;
@@ -261,18 +294,23 @@ public class MembershipService : IMembershipService
         return 1;
     }
 
-    public async Task<int> GetAiUsedTodayAsync(string userId, CancellationToken ct = default)
+    private async Task<int> GetUsedAsync(string userId, string usageType, DateTime periodStart, CancellationToken ct)
     {
-        var today = DateTime.UtcNow.Date;
-        var record = await _db.AiUsageRecords.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == userId && x.UsageDate == today, ct);
+        var record = await _db.AiUsageRecords.AsNoTracking().FirstOrDefaultAsync(
+            x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart, ct);
         return record?.UsedCount ?? 0;
     }
 
-    public async Task<decimal> GetLotteryDiscountAsync(string userId, CancellationToken ct = default)
+    /// <summary>
+    /// 获取本周一的 UTC 0 点（按自然周计算，周一为一周起始）。
+    /// </summary>
+    private static DateTime GetWeekStartUtc(DateTime dt)
     {
-        var user = await _db.AppUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user is null) return 1m;
-        return MembershipConstants.IsActive(user.MembershipExpireAt) ? _opt.MemberLotteryDiscount : 1m;
+        var d = dt.Date;
+        // DayOfWeek: Sunday=0, Monday=1, ..., Saturday=6
+        // 转换为"距本周一的天数"
+        int diff = d.DayOfWeek == DayOfWeek.Sunday ? 6 : (int)d.DayOfWeek - 1;
+        return d.AddDays(-diff);
     }
 
     /// <summary>
@@ -299,16 +337,23 @@ public class MembershipService : IMembershipService
             ?? throw new UnauthorizedException();
 
         var isActive = MembershipConstants.IsActive(user.MembershipExpireAt);
-        var limit = isActive ? _opt.MemberDailyAiLimit : _opt.FreeDailyAiLimit;
-        var used = await GetAiUsedTodayAsync(userId, ct);
+
+        var noteLimit = isActive ? _opt.MemberDailyAiNoteLimit : _opt.FreeDailyAiNoteLimit;
+        var noteUsed = await GetAiNoteUsedTodayAsync(userId, ct);
+
+        var analysisLimit = isActive ? _opt.MemberWeeklyAiAnalysisLimit : _opt.FreeWeeklyAiAnalysisLimit;
+        var analysisUsed = await GetAiAnalysisUsedThisWeekAsync(userId, ct);
 
         return new MembershipStatusDto
         {
             IsActive = isActive,
             ExpireAt = user.MembershipExpireAt?.ToString("O"),
-            AiUsedToday = used,
-            AiRemainingToday = limit - used,
-            AiDailyLimit = limit,
+            AiNoteUsedToday = noteUsed,
+            AiNoteRemainingToday = noteLimit - noteUsed,
+            AiNoteDailyLimit = noteLimit,
+            AiAnalysisUsedThisWeek = analysisUsed,
+            AiAnalysisRemainingThisWeek = analysisLimit - analysisUsed,
+            AiAnalysisWeeklyLimit = analysisLimit,
             LotteryDiscount = isActive ? _opt.MemberLotteryDiscount : 1m,
         };
     }

@@ -6,14 +6,34 @@ namespace ChildNotes.Shared.Constants;
 /// </summary>
 public static class MembershipConstants
 {
-    /// <summary>普通用户每日免费 AI 分析次数。</summary>
-    public const int FreeDailyAiLimit = 10;
+    /// <summary>普通用户每日 AI 记次数（AI 智能记：自然语言解析为记录）。</summary>
+    public const int FreeDailyAiNoteLimit = 10;
 
-    /// <summary>会员用户每日 AI 分析次数。</summary>
-    public const int MemberDailyAiLimit = 100;
+    /// <summary>会员用户每日 AI 记次数。</summary>
+    public const int MemberDailyAiNoteLimit = 100;
+
+    /// <summary>普通用户每周 AI 分析次数（7 天喂养分析）。</summary>
+    public const int FreeWeeklyAiAnalysisLimit = 1;
+
+    /// <summary>会员用户每周 AI 分析次数。</summary>
+    public const int MemberWeeklyAiAnalysisLimit = 10;
 
     /// <summary>会员抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public const decimal MemberLotteryDiscount = 0.8m;
+
+    /// <summary>普通用户成长记录图片同步压缩参数：最大边 1280px，JPEG 质量 85%。</summary>
+    public const int FreePhotoMaxEdge = 1280;
+    public const int FreePhotoJpegQuality = 85;
+
+    /// <summary>会员用户成长记录图片同步压缩参数：最大边 1920px，JPEG 质量 92%（接近无损观感）。</summary>
+    public const int MemberPhotoMaxEdge = 1920;
+    public const int MemberPhotoJpegQuality = 92;
+
+    /// <summary>使用类型：AI 记（智能解析）。</summary>
+    public const string UsageTypeAiNote = "ai_note";
+
+    /// <summary>使用类型：AI 分析（7 天喂养分析）。</summary>
+    public const string UsageTypeAiAnalysis = "ai_analysis";
 
     /// <summary>套餐类型：月卡。</summary>
     public const string PlanMonthly = "monthly";

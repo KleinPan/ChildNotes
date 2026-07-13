@@ -26,11 +26,17 @@ public class MembershipOptions
     /// <summary>套餐列表。</summary>
     public List<MembershipPlanConfig> Plans { get; set; } = new();
 
-    /// <summary>普通用户每日免费 AI 分析次数（默认 10）。</summary>
-    public int FreeDailyAiLimit { get; set; } = MembershipConstants.FreeDailyAiLimit;
+    /// <summary>普通用户每日 AI 记次数（默认 10）。</summary>
+    public int FreeDailyAiNoteLimit { get; set; } = MembershipConstants.FreeDailyAiNoteLimit;
 
-    /// <summary>会员用户每日 AI 分析次数（默认 100）。</summary>
-    public int MemberDailyAiLimit { get; set; } = MembershipConstants.MemberDailyAiLimit;
+    /// <summary>会员用户每日 AI 记次数（默认 100）。</summary>
+    public int MemberDailyAiNoteLimit { get; set; } = MembershipConstants.MemberDailyAiNoteLimit;
+
+    /// <summary>普通用户每周 AI 分析次数（默认 1）。</summary>
+    public int FreeWeeklyAiAnalysisLimit { get; set; } = MembershipConstants.FreeWeeklyAiAnalysisLimit;
+
+    /// <summary>会员用户每周 AI 分析次数（默认 10）。</summary>
+    public int MemberWeeklyAiAnalysisLimit { get; set; } = MembershipConstants.MemberWeeklyAiAnalysisLimit;
 
     /// <summary>会员抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public decimal MemberLotteryDiscount { get; set; } = MembershipConstants.MemberLotteryDiscount;

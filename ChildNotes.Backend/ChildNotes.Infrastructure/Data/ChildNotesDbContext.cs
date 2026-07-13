@@ -350,11 +350,13 @@ public class ChildNotesDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
-            e.Property(x => x.UsageDate).HasColumnName("usage_date");
+            e.Property(x => x.UsageType).HasColumnName("usage_type").IsRequired();
+            e.Property(x => x.PeriodStart).HasColumnName("period_start");
             e.Property(x => x.UsedCount).HasColumnName("used_count");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            e.HasIndex(x => new { x.UserId, x.UsageDate }).IsUnique();
+            // 同一用户同一类型同一周期只能有一条记录
+            e.HasIndex(x => new { x.UserId, x.UsageType, x.PeriodStart }).IsUnique();
         });
     }
 }

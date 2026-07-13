@@ -25,20 +25,36 @@ public interface IMembershipService
     Task<string> HandleAlipayNotifyAsync(IDictionary<string, string> form, CancellationToken ct = default);
 
     /// <summary>
-    /// 获取当前用户的每日 AI 次数限制（根据会员状态决定）。
+    /// 获取当前用户的 AI 记每日次数限制（根据会员状态决定）。
     /// </summary>
-    Task<int> GetAiDailyLimitAsync(string userId, CancellationToken ct = default);
+    Task<int> GetAiNoteDailyLimitAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
-    /// 增加用户今日 AI 调用次数（+1）。幂等命中不调用。
+    /// 增加用户今日 AI 记调用次数（+1）。
     /// 返回增加后的已用次数。
     /// </summary>
-    Task<int> IncrementAiUsageAsync(string userId, CancellationToken ct = default);
+    Task<int> IncrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
-    /// 获取用户今日已用 AI 次数。
+    /// 获取用户今日 AI 记已用次数。
     /// </summary>
-    Task<int> GetAiUsedTodayAsync(string userId, CancellationToken ct = default);
+    Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 获取当前用户的 AI 分析每周次数限制（根据会员状态决定）。
+    /// </summary>
+    Task<int> GetAiAnalysisWeeklyLimitAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 增加用户本周 AI 分析调用次数（+1）。
+    /// 返回增加后的已用次数。
+    /// </summary>
+    Task<int> IncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 获取用户本周 AI 分析已用次数。
+    /// </summary>
+    Task<int> GetAiAnalysisUsedThisWeekAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
     /// 获取会员抽奖折扣。非会员返回 1（原价）。

@@ -23,9 +23,12 @@ public partial class MembershipViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _expireAtText = string.Empty;
-    [ObservableProperty] private int _aiUsedToday;
-    [ObservableProperty] private int _aiRemainingToday;
-    [ObservableProperty] private int _aiDailyLimit;
+    [ObservableProperty] private int _aiNoteUsedToday;
+    [ObservableProperty] private int _aiNoteRemainingToday;
+    [ObservableProperty] private int _aiNoteDailyLimit;
+    [ObservableProperty] private int _aiAnalysisUsedThisWeek;
+    [ObservableProperty] private int _aiAnalysisRemainingThisWeek;
+    [ObservableProperty] private int _aiAnalysisWeeklyLimit;
     [ObservableProperty] private decimal _lotteryDiscount = 1m;
     [ObservableProperty] private bool _loading;
     [ObservableProperty] private bool _paying;
@@ -84,9 +87,12 @@ public partial class MembershipViewModel : ViewModelBase
         ExpireAtText = string.IsNullOrEmpty(status.ExpireAt)
             ? string.Empty
             : DateTime.Parse(status.ExpireAt).ToLocalTime().ToString("yyyy-MM-dd HH:mm");
-        AiUsedToday = status.AiUsedToday;
-        AiRemainingToday = status.AiRemainingToday;
-        AiDailyLimit = status.AiDailyLimit;
+        AiNoteUsedToday = status.AiNoteUsedToday;
+        AiNoteRemainingToday = status.AiNoteRemainingToday;
+        AiNoteDailyLimit = status.AiNoteDailyLimit;
+        AiAnalysisUsedThisWeek = status.AiAnalysisUsedThisWeek;
+        AiAnalysisRemainingThisWeek = status.AiAnalysisRemainingThisWeek;
+        AiAnalysisWeeklyLimit = status.AiAnalysisWeeklyLimit;
         LotteryDiscount = status.LotteryDiscount;
     }
 
@@ -95,6 +101,7 @@ public partial class MembershipViewModel : ViewModelBase
     private void SelectPlan(string planType)
     {
         SelectedPlanType = planType;
+        PayCommand.NotifyCanExecuteChanged();
     }
 
     /// <summary>

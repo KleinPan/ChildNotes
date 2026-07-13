@@ -44,14 +44,23 @@ public class MembershipStatusDto
     /// <summary>会员到期时间（UTC，ISO 8601 字符串）。非会员为 null。</summary>
     public string? ExpireAt { get; set; }
 
-    /// <summary>今日 AI 分析已使用次数。</summary>
-    public int AiUsedToday { get; set; }
+    /// <summary>今日 AI 记已使用次数。</summary>
+    public int AiNoteUsedToday { get; set; }
 
-    /// <summary>今日 AI 分析剩余次数（负数表示已超限但仍允许调用，由后端决定是否拦截）。</summary>
-    public int AiRemainingToday { get; set; }
+    /// <summary>今日 AI 记剩余次数。</summary>
+    public int AiNoteRemainingToday { get; set; }
 
-    /// <summary>今日 AI 分析次数上限。</summary>
-    public int AiDailyLimit { get; set; }
+    /// <summary>今日 AI 记次数上限。</summary>
+    public int AiNoteDailyLimit { get; set; }
+
+    /// <summary>本周 AI 分析已使用次数。</summary>
+    public int AiAnalysisUsedThisWeek { get; set; }
+
+    /// <summary>本周 AI 分析剩余次数。</summary>
+    public int AiAnalysisRemainingThisWeek { get; set; }
+
+    /// <summary>本周 AI 分析次数上限。</summary>
+    public int AiAnalysisWeeklyLimit { get; set; }
 
     /// <summary>抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public decimal LotteryDiscount { get; set; } = 1m;

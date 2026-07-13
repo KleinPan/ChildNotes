@@ -1,8 +1,6 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
-using Avalonia.Media;
-using Avalonia.Styling;
 
 namespace ChildNotes.Views;
 
@@ -26,15 +24,31 @@ public partial class MembershipView : UserControl
         new FuncValueConverter<int, bool>(val => val > 0);
 
     /// <summary>
-    /// 套餐选中边框颜色：选中时返回主题绿色，未选中返回透明。
-    /// ConverterParameter 为当前选中的 PlanType。
+    /// 套餐选中判断（MultiBinding 转换器）：
+    /// values[0] = 当前项的 PlanType，values[1] = ViewModel.SelectedPlanType。
+    /// 两者相等返回 true（选中），否则 false。
+    /// 用于 classes.selected 伪类与 ✓ 图标的 IsVisible。
     /// </summary>
-    public static readonly IValueConverter PlanSelectedBorderConverter =
-        new FuncValueConverter<object?, IBrush?>(value =>
+    public static readonly IMultiValueConverter PlanSelectedConverter =
+        new FuncMultiValueConverter<object?, bool>(values =>
         {
-            // ConverterParameter 无法直接在 DataTemplate 中绑定到父级属性，
-            // 此 Converter 简化处理：返回绿色，由 code-behind 的选中样式统一处理。
-            // 选中态的视觉区分通过"选择"按钮的点击 + 底部"立即开通"按钮体现。
-            return Brushes.Transparent;
+            var arr = values?.ToArray();
+            if (arr is null || arr.Length < 2) return false;
+            var currentPlan = arr[0]?.ToString();
+            var selectedPlan = arr[1]?.ToString();
+            return !string.IsNullOrEmpty(currentPlan) && currentPlan == selectedPlan;
+        });
+
+    /// <summary>
+    /// 套餐类型转中文名（底部"已选"显示用）。
+    /// monthly→月卡，quarterly→季卡，yearly→年卡，空值→"未选择"。
+    /// </summary>
+    public static readonly IValueConverter PlanTypeToNameConverter =
+        new FuncValueConverter<string?, string>(planType => planType switch
+        {
+            "monthly" => "月卡",
+            "quarterly" => "季卡",
+            "yearly" => "年卡",
+            _ => "未选择",
         });
 }

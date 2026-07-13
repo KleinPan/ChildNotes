@@ -249,11 +249,11 @@ public partial class AiAnalysisViewModel : ViewModelBase
                 ErrorMessage = $"积分不足，本次分析需 {AnalysisCost} 积分，当前余额 {CurrentPoints} 积分";
                 DisplayToast("积分不足，请每日签到获取积分");
             }
-            // AI 次数用尽：提示并跳转会员中心
+            // AI 分析次数用尽（本周）：提示并跳转会员中心
             else if (ex.IsAiLimitExceeded)
             {
-                ErrorMessage = "今日 AI 分析次数已用完，升级会员可享 100 次/天";
-                DisplayToast("今日次数已达上限，升级会员解锁更多次数");
+                ErrorMessage = "本周 AI 分析次数已用完，升级会员可享 10 次/周";
+                DisplayToast("本周次数已达上限，升级会员解锁更多次数");
                 MembershipRequired?.Invoke();
             }
             else

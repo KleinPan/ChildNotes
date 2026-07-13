@@ -68,11 +68,11 @@ public class AiAnalysisService : IAiAnalysisService
         if (existing is not null && existing.SourceText == sourceText)
             return ToDto(existing);
 
-        // 每日次数限制检查（非会员 10 次/天，会员 100 次/天）
-        var limit = await _membership.GetAiDailyLimitAsync(uid, ct);
-        var used = await _membership.GetAiUsedTodayAsync(uid, ct);
+        // 每周次数限制检查（非会员 1 次/周，会员 10 次/周）
+        var limit = await _membership.GetAiAnalysisWeeklyLimitAsync(uid, ct);
+        var used = await _membership.GetAiAnalysisUsedThisWeekAsync(uid, ct);
         if (used >= limit)
-            throw new BusinessException($"今日 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
+            throw new BusinessException($"本周 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
 
         // 调用 AI 前先扣积分（积分不足抛 BusinessException(INSUFFICIENT_POINTS)）
         // ExecuteUpdateAsync 立即落库，无需事务包裹
@@ -90,8 +90,8 @@ public class AiAnalysisService : IAiAnalysisService
             if (string.IsNullOrWhiteSpace(analysisText))
                 throw new BusinessException("AI 分析响应为空", 502);
 
-            // AI 调用成功后，增加今日使用次数（幂等命中不消耗，此处才消耗）
-            try { await _membership.IncrementAiUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞分析 */ }
+            // AI 调用成功后，增加本周使用次数（幂等命中不消耗，此处才消耗）
+            try { await _membership.IncrementAiAnalysisUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞分析 */ }
         }
         catch
         {

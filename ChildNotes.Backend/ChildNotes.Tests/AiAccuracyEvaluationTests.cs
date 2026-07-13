@@ -140,7 +140,7 @@ public class AiAccuracyEvaluationTests
     private static AiNoteService NewServiceWithFailingAi()
     {
         var failingAi = new FailingDeepSeekClient();
-        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance);
+        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance, null!, null!);
     }
 
     /// <summary>
