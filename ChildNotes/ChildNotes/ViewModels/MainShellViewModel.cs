@@ -261,6 +261,8 @@ public partial class MainShellViewModel : ViewModelBase
 
         _aiSettings = new AiSettingsViewModel();
 
+        _reminderSettings = new ReminderSettingsViewModel();
+
         _syncSettings = new SyncSettingsViewModel();
 
         _family = new FamilyViewModel();
