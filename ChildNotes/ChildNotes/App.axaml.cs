@@ -155,25 +155,48 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// 隐私协议通过后的启动流程（与原 OnFrameworkInitializationCompleted 的恢复会话+展示逻辑一致）。
-    /// 抽取为独立方法供协议同意后调用。
+    /// 隐私协议通过后的启动流程。
+    /// 先显示 LoadingView 作为视觉过渡（避免系统启动屏到应用首帧的空白突兀），
+    /// 然后在后台线程执行 ServiceProvider 静态构造 + DB 初始化 + 会话恢复，
+    /// 完成后切回 UI 线程进入登录页或主界面。
     /// </summary>
     private void ContinueStartupAfterPrivacy()
     {
-        var restored = TryRestoreSession();
-        DevLogger.Log("Startup", $"TryRestoreSession (restored={restored})");
-
+        // 先显示 LoadingView（UI 线程立即返回，用户看到应用首帧）
+        var loadingView = new LoadingView();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
             && desktop.MainWindow is not null)
         {
-            if (restored) EnterMainShell(desktop.MainWindow);
-            else ShowLogin(desktop.MainWindow);
+            desktop.MainWindow.Content = loadingView;
         }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+        else if (_rootContainer is not null)
         {
-            if (restored) EnterMainShell(null);
-            else ShowLogin(singleViewPlatform);
+            _rootContainer.SetContent(loadingView);
         }
+        DevLogger.Log("Startup", "LoadingView shown, starting async init");
+
+        // 后台线程执行初始化（ServiceProvider 静态构造 + DB + 会话恢复）
+        // 避免阻塞 UI 线程，用户看到 loading 动画而不是卡在系统启动屏
+        _ = Task.Run(() =>
+        {
+            var restored = TryRestoreSession();
+            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored})");
+
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                    && desktop.MainWindow is not null)
+                {
+                    if (restored) EnterMainShell(desktop.MainWindow);
+                    else ShowLogin(desktop.MainWindow);
+                }
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+                {
+                    if (restored) EnterMainShell(null);
+                    else ShowLogin(singleViewPlatform);
+                }
+            });
+        });
     }
 
     /// <summary>

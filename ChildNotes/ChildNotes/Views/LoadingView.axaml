@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ChildNotes.Views.LoadingView"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid>
+        <!-- 顶部 logo 区（与 LoginView 顶部样式一致，视觉延续） -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,80">
+            <Border x:Name="LogoBorder" Width="84" Height="84" CornerRadius="42"
+                    Background="{StaticResource WeuiGreenBrush}"
+                    HorizontalAlignment="Center" Margin="0,0,0,16"
+                    Opacity="0">
+                <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock x:Name="TitleText" Text="成长记录" FontSize="18" FontWeight="Bold"
+                       HorizontalAlignment="Center" Opacity="0"/>
+            <TextBlock x:Name="SubtitleText" Text="记录宝宝成长的每一天" FontSize="13"
+                       Foreground="{StaticResource WeuiFg1Brush}"
+                       HorizontalAlignment="Center" Margin="0,6,0,0" Opacity="0"/>
+        </StackPanel>
+
+        <!-- 底部 indeterminate 进度条 -->
+        <Border x:Name="ProgressBar" HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                Margin="0,0,0,80" Width="120" Height="3" CornerRadius="1.5"
+                Background="{StaticResource WeuiBg1Brush}" Opacity="0">
+            <Border x:Name="ProgressFill" Width="40" Height="3" CornerRadius="1.5"
+                    Background="{StaticResource WeuiGreenBrush}" HorizontalAlignment="Left"/>
+        </Border>
+    </Grid>
+</UserControl>
