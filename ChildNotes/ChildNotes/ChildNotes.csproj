@@ -8,7 +8,15 @@
   </PropertyGroup>
 
   <!-- 构建变体：通过 DevBuild=true 注入 DEV_BUILD 编译常量，控制开发版/正式版功能开关。
-       由 Android/桌面项目或 CI 命令行 -p:DevBuild=true 传入。 -->
+       两种触发方式：
+       1. CI 命令行 -p:DevBuild=true（Android dev 版用 Release+DevBuild=true）
+       2. Debug 配置自动启用（本地 F5 调试 / Android 本地 Debug 构建）
+       Release 配置默认为正式版（DevBuild 不设）。
+       注意：不能只在 Desktop.csproj 设 DevBuild 再通过 ProjectReference 传递，
+       因为解决方案级构建会直接构建本项目（不带 DevBuild），输出到同一 bin 路径会覆盖 dev 版产物。 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DevBuild>true</DevBuild>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(DevBuild)' == 'true'">
     <DefineConstants>$(DefineConstants);DEV_BUILD</DefineConstants>
   </PropertyGroup>

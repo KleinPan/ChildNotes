@@ -7,6 +7,18 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!--
+    dev/正式版区分（参考 Android 的 DevBuild 机制）：
+    - Debug 配置（F5 调试）：DevBuild=true → 注入 DEV_BUILD 编译常量到子项目，
+      运行时 BuildConfiguration.IsDevelopmentBuild=true，显示开发者选项/日志导出/可编辑服务器地址。
+    - Release 配置：正式版，隐藏所有开发专用功能。
+    注意：子项目 ChildNotes.csproj 自身也在 Debug 配置下设 DevBuild=true，
+    避免解决方案级直接构建子项目时输出非 dev 版 DLL 覆盖 Desktop 引用的 dev 版产物。
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <DevBuild>true</DevBuild>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
