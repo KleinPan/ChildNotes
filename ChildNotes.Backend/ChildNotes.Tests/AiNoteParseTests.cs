@@ -265,7 +265,8 @@ public class AiNoteParseTests
     {
         var svc = NewServiceWithFailingAi();
         // "2:20喝了110多奶粉和10ml水" 应解析出 feed(110) + water(10) 两条
-        var items = svc.ParseByRulesMulti("2:20喝了110多奶粉和10ml水");
+        // 传入固定上午时间，让无时段词的"2:20"按"最近的过去时刻"算法稳定解析为 AM（02:20）
+        var items = svc.ParseByRulesMulti("2:20喝了110多奶粉和10ml水", new DateTime(2026, 7, 13, 10, 0, 0));
         Assert.True(items.Count >= 2, $"应解析出至少 2 条，实际 {items.Count}");
 
         var feeds = items.Where(i => i.RecordType == RecordType.Feed).ToList();
@@ -354,7 +355,8 @@ public class AiNoteParseTests
     public void RuleParse_Time_IsExtracted(string text, string expectedTime)
     {
         var svc = NewServiceWithFailingAi();
-        var items = svc.ParseByRulesMulti(text);
+        // 传入固定上午时间，让无时段词的"3:00"按"最近的过去时刻"算法稳定解析为 AM（03:00）
+        var items = svc.ParseByRulesMulti(text, new DateTime(2026, 7, 13, 10, 0, 0));
         var parsed = items[0];
         Assert.Equal(expectedTime, parsed.Time);
     }
@@ -490,15 +492,17 @@ public class AiNoteParseTests
     public void RuleParse_SpecialTimeFormats()
     {
         var svc = NewServiceWithFailingAi();
+        // 传入固定上午时间，让无时段词的"3:00"按"最近的过去时刻"算法稳定解析为 AM（03:00）
+        var fixedNow = new DateTime(2026, 7, 13, 10, 0, 0);
         // 12 小时制模糊表述仍应被识别为时间
-        var items1 = svc.ParseByRulesMulti("14点30分喝了120ml奶");
+        var items1 = svc.ParseByRulesMulti("14点30分喝了120ml奶", fixedNow);
         Assert.Equal("14:30", items1[0].Time);
 
-        var items2 = svc.ParseByRulesMulti("3:00吃了奶");
+        var items2 = svc.ParseByRulesMulti("3:00吃了奶", fixedNow);
         Assert.Equal("03:00", items2[0].Time);
 
         // 没有时间表述时应返回 null（后端取当前时间）
-        var items3 = svc.ParseByRulesMulti("喝了120ml奶");
+        var items3 = svc.ParseByRulesMulti("喝了120ml奶", fixedNow);
         Assert.Null(items3[0].Time);
     }
 

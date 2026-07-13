@@ -267,10 +267,10 @@ public partial class AiNoteService : IAiNoteService
     /// 基于规则的多条解析：委托给共享层 AiNoteRuleParser。
     /// 保留公开方法以便单元测试和外部调用。
     /// </summary>
-    public List<AiNoteParseItem> ParseByRulesMulti(string text)
-        => AiNoteRuleParser.ParseMulti(text);
+    public List<AiNoteParseItem> ParseByRulesMulti(string text, DateTime? now = null)
+        => AiNoteRuleParser.ParseMulti(text, now);
 
     /// <summary>基于正则的降级解析：委托给共享层 AiNoteRuleParser。公开以便单元测试访问。</summary>
-    public AiNoteParseItem ParseByRules(string text)
-        => AiNoteRuleParser.Parse(text);
+    public AiNoteParseItem ParseByRules(string text, DateTime? now = null)
+        => AiNoteRuleParser.Parse(text, now);
 }

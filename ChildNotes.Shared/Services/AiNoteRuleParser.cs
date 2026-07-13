@@ -52,16 +52,16 @@ public static class AiNoteRuleParser
     /// 多条解析：先用 NoteSplitter 切分复合语句，再逐段解析。
     /// 若切分后所有段都解析失败，回退到对原句调一次 Parse，避免切分破坏整体语义。
     /// </summary>
-    public static List<AiNoteParseItem> ParseMulti(string text)
+    public static List<AiNoteParseItem> ParseMulti(string text, DateTime? now = null)
     {
         var segments = NoteSplitter.Split(text);
         if (segments.Count == 0)
-            return new List<AiNoteParseItem> { Parse(text) };
+            return new List<AiNoteParseItem> { Parse(text, now) };
 
         var results = new List<AiNoteParseItem>(segments.Count);
         foreach (var seg in segments)
         {
-            var item = Parse(seg);
+            var item = Parse(seg, now);
             // 兜底未识别（activity + 原文）的段不加入结果，避免噪声
             // 但如果整句只有一段且未识别，仍需返回兜底
             if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
@@ -81,7 +81,7 @@ public static class AiNoteRuleParser
         }
         // 若全部段都被跳过（罕见），回退到原句解析
         if (results.Count == 0)
-            results.Add(Parse(text));
+            results.Add(Parse(text, now));
         return results;
     }
 
@@ -104,18 +104,18 @@ public static class AiNoteRuleParser
     /// 单条解析：覆盖最常见的育儿记录表述。
     /// 判定优先级：water → supplement → feed(瓶喂) → feed(亲喂) → diaper → sleep → temperature → growth → complementary → pump → abnormal → 兜底 activity。
     /// </summary>
-    public static AiNoteParseItem Parse(string text)
+    public static AiNoteParseItem Parse(string text, DateTime? now = null)
     {
         // 0) water（喝水）：必须在 feed/supplement 之前判定，避免"喝10ml水"被误判为喂奶或补给
         if (IsWaterLike(text))
         {
-            return ParseWater(text);
+            return ParseWater(text, now);
         }
 
         // 0b) supplement（用药/营养）：必须在 feed 之前判定，避免"喝了半包药"被误判为喂奶
         if (IsSupplementLike(text))
         {
-            return ParseSupplement(text);
+            return ParseSupplement(text, now);
         }
 
         // 1) 喂奶：奶量
@@ -130,7 +130,7 @@ public static class AiNoteRuleParser
                 RecordType = RecordType.Feed,
                 RecordSubType = FeedType.Bottle,
                 Amount = amount,
-                Time = ExtractTime(text),
+                Time = ExtractTime(text, now),
                 Summary = "瓶喂 " + amount + (hasExplicitUnit ? "ml" : ""),
                 Confidence = hasExplicitUnit ? 0.6 : 0.5,
                 Source = ParseSource.Rule,
@@ -149,7 +149,7 @@ public static class AiNoteRuleParser
                 RecordSubType = FeedType.Breast,
                 LeftDuration = left,
                 RightDuration = right,
-                Time = ExtractTime(text),
+                Time = ExtractTime(text, now),
                 Summary = $"亲喂 左{left} 右{right}分钟",
                 Confidence = 0.6,
                 Source = ParseSource.Rule,
@@ -159,7 +159,7 @@ public static class AiNoteRuleParser
         // 2) 换尿布（含大便/小便相关各种口语表述）
         if (IsDiaperLike(text))
         {
-            return ParseDiaper(text);
+            return ParseDiaper(text, now);
         }
 
         // 3) 睡眠
@@ -170,7 +170,7 @@ public static class AiNoteRuleParser
 
         if (sleepMatch.Success && hasSleepKw)
         {
-            var st = sleepStart ?? ExtractTime(text);
+            var st = sleepStart ?? ExtractTime(text, now);
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
@@ -189,7 +189,7 @@ public static class AiNoteRuleParser
             var dur = TryCalcSleepDuration(text);
             if (dur.HasValue)
             {
-                var st = sleepStart ?? ExtractTime(text);
+                var st = sleepStart ?? ExtractTime(text, now);
                 return new AiNoteParseItem
                 {
                     RecordType = RecordType.Sleep,
@@ -205,7 +205,7 @@ public static class AiNoteRuleParser
         }
         if (hasSleepKw)
         {
-            var st = sleepStart ?? ExtractTime(text);
+            var st = sleepStart ?? ExtractTime(text, now);
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Sleep,
@@ -227,7 +227,7 @@ public static class AiNoteRuleParser
             {
                 RecordType = RecordType.Temperature,
                 Temperature = t,
-                Time = ExtractTime(text),
+                Time = ExtractTime(text, now),
                 Summary = t.HasValue ? $"体温 {t}℃" : "体温",
                 Confidence = 0.6,
                 Source = ParseSource.Rule,
@@ -245,7 +245,7 @@ public static class AiNoteRuleParser
                 RecordType = RecordType.Growth,
                 Height = h,
                 Weight = w,
-                Time = ExtractTime(text),
+                Time = ExtractTime(text, now),
                 Summary = $"身高{h}cm 体重{w}kg",
                 Confidence = 0.55,
                 Source = ParseSource.Rule,
@@ -253,20 +253,20 @@ public static class AiNoteRuleParser
         }
 
         // 6) 辅食：含"辅食/泥/粥/米粉/面条"或"吃了X克/勺/碗"
-        if (TryParseComplementary(text, out var compItem)) return compItem;
+        if (TryParseComplementary(text, out var compItem, now)) return compItem;
 
         // 7) 吸奶：含"吸奶/吸了Xml"
-        if (TryParsePump(text, out var pumpItem)) return pumpItem;
+        if (TryParsePump(text, out var pumpItem, now)) return pumpItem;
 
         // 8) 异常：含"发烧/咳嗽/呕吐/腹泻/异常"
-        if (TryParseAbnormal(text, out var abnItem)) return abnItem;
+        if (TryParseAbnormal(text, out var abnItem, now)) return abnItem;
 
         // 兜底
         return new AiNoteParseItem
         {
             RecordType = RecordType.Activity,
             Note = text,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = "未识别记录",
             Confidence = 0.2,
             Source = ParseSource.Rule,
@@ -293,7 +293,7 @@ public static class AiNoteRuleParser
     }
 
     /// <summary>解析喝水记录。</summary>
-    private static AiNoteParseItem ParseWater(string text)
+    private static AiNoteParseItem ParseWater(string text, DateTime? now = null)
     {
         int? amountMl = null;
         var mlMatch = MlAmountRegex.Match(text);
@@ -304,7 +304,7 @@ public static class AiNoteRuleParser
         {
             RecordType = RecordType.Water,
             Amount = amountMl,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = amountMl.HasValue ? $"喝水{amountMl}ml" : "喝水",
             Confidence = 0.6,
             Source = ParseSource.Rule,
@@ -327,7 +327,7 @@ public static class AiNoteRuleParser
     }
 
     /// <summary>解析换尿布记录。</summary>
-    private static AiNoteParseItem ParseDiaper(string text)
+    private static AiNoteParseItem ParseDiaper(string text, DateTime? now = null)
     {
         if (text.Contains("干爽") || text.Contains("干燥"))
         {
@@ -336,7 +336,7 @@ public static class AiNoteRuleParser
                 RecordType = RecordType.Diaper,
                 RecordSubType = DiaperType.Dry,
                 DiaperType = DiaperType.Dry,
-                Time = ExtractTime(text),
+                Time = ExtractTime(text, now),
                 Summary = "换尿布 干爽",
                 Confidence = 0.6,
                 Source = ParseSource.Rule,
@@ -361,7 +361,7 @@ public static class AiNoteRuleParser
             RecordType = RecordType.Diaper,
             RecordSubType = sub,
             DiaperType = sub,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = "换尿布 " + sub,
             Confidence = 0.6,
             Source = ParseSource.Rule,
@@ -373,7 +373,7 @@ public static class AiNoteRuleParser
     #region Complementary（辅食）分支
 
     /// <summary>尝试解析辅食记录。识别"X泥/Y粥"等关键词 + "X克/勺/碗"食量。</summary>
-    private static bool TryParseComplementary(string text, out AiNoteParseItem item)
+    private static bool TryParseComplementary(string text, out AiNoteParseItem item, DateTime? now = null)
     {
         var hasFoodKw = CompFoodKeywords.Any(text.Contains);
         var amountMatch = Regex.Match(text, @"(\d+(?:\.\d+)?)\s*(克|g|个|勺|碗)");
@@ -400,7 +400,7 @@ public static class AiNoteRuleParser
             FoodName = foodName,
             AmountText = amountText,
             AmountUnit = amountUnit,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = $"辅食 {foodName}{(amountText is null ? "" : $" {amountText}{amountUnit}")}",
             Confidence = 0.5,
             Source = ParseSource.Rule,
@@ -413,7 +413,7 @@ public static class AiNoteRuleParser
     #region Pump（吸奶）分支
 
     /// <summary>尝试解析吸奶记录。识别"吸奶/吸了Xml"。</summary>
-    private static bool TryParsePump(string text, out AiNoteParseItem item)
+    private static bool TryParsePump(string text, out AiNoteParseItem item, DateTime? now = null)
     {
         if (!text.Contains("吸奶") && !(text.Contains("吸") && text.Contains("ml")))
         {
@@ -428,7 +428,7 @@ public static class AiNoteRuleParser
         {
             RecordType = RecordType.Pump,
             Amount = amount,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = amount.HasValue ? $"吸奶{amount}ml" : "吸奶",
             Confidence = 0.5,
             Source = ParseSource.Rule,
@@ -441,7 +441,7 @@ public static class AiNoteRuleParser
     #region Abnormal（异常）分支
 
     /// <summary>尝试解析异常记录。识别发烧/咳嗽/呕吐/腹泻等症状关键词。</summary>
-    private static bool TryParseAbnormal(string text, out AiNoteParseItem item)
+    private static bool TryParseAbnormal(string text, out AiNoteParseItem item, DateTime? now = null)
     {
         if (!AbnKeywords.Any(text.Contains))
         {
@@ -457,7 +457,7 @@ public static class AiNoteRuleParser
             RecordType = RecordType.Abnormal,
             Temperature = temp,
             Note = text,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = temp.HasValue ? $"异常 体温{temp}℃" : "异常症状",
             Confidence = 0.5,
             Source = ParseSource.Rule,
@@ -494,7 +494,7 @@ public static class AiNoteRuleParser
     }
 
     /// <summary>解析用药/营养补充记录。</summary>
-    private static AiNoteParseItem ParseSupplement(string text)
+    private static AiNoteParseItem ParseSupplement(string text, DateTime? now = null)
     {
         // 区分 medicine / nutrition
         // nutrition：营养补充剂（维D/益生菌等；喝水已由 ParseWater 提前处理）
@@ -549,7 +549,7 @@ public static class AiNoteRuleParser
             Dose = dose,
             DoseUnit = doseUnit,
             Note = string.IsNullOrEmpty(name) ? text : null,
-            Time = ExtractTime(text),
+            Time = ExtractTime(text, now),
             Summary = (string.IsNullOrEmpty(doseDisplay) ? "" : doseDisplay + " ") + (name ?? (isNutrition ? "补充剂记录" : "用药记录")),
             Confidence = 0.5,
             Source = ParseSource.Rule,
@@ -584,7 +584,7 @@ public static class AiNoteRuleParser
     /// 返回 "yyyy-MM-dd HH:mm" 完整格式（基于今天偏移），避免凌晨补记时日期归属错误。
     /// 无法提取则返回 null。
     /// </summary>
-    public static string? ExtractTime(string text)
+    public static string? ExtractTime(string text, DateTime? now = null)
     {
         var m = TimeRegex.Match(text);
         if (m.Success)
@@ -610,10 +610,10 @@ public static class AiNoteRuleParser
                     // 无显式时段词：取最近的过去时刻
                     // 候选 AM 时刻 = today hh:mm；候选 PM 时刻 = today (hh+12):mm
                     // 选择 <= 当前时间且最近的；若都 > 当前时间（罕见，如当前 1:00 输入"2点"），取 AM
-                    var now = DateTime.Now;
-                    var amCandidate = new DateTime(now.Year, now.Month, now.Day, hh, mm, 0);
-                    var pmCandidate = new DateTime(now.Year, now.Month, now.Day, hh + 12, mm, 0);
-                    if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+                    var n = now ?? DateTime.Now;
+                    var amCandidate = new DateTime(n.Year, n.Month, n.Day, hh, mm, 0);
+                    var pmCandidate = new DateTime(n.Year, n.Month, n.Day, hh + 12, mm, 0);
+                    if (pmCandidate <= n && (amCandidate > n || pmCandidate > amCandidate))
                         hh += 12; // PM 候选更近且已过去
                     // 否则保持 AM
                 }
@@ -624,7 +624,7 @@ public static class AiNoteRuleParser
             // 相对日期词：返回完整日期时间，避免 NormalizeTime 用 DateTime.Today 拼成今天
             var dateOffset = GetRelativeDateOffset(text);
             if (dateOffset.HasValue)
-                return DateTime.Today.AddDays(dateOffset.Value).ToString("yyyy-MM-dd ") + hhMm;
+                return (now ?? DateTime.Now).Date.AddDays(dateOffset.Value).ToString("yyyy-MM-dd ") + hhMm;
             return hhMm;
         }
         return null;
@@ -738,7 +738,7 @@ public static class AiNoteRuleParser
     /// - 选 &lt;= 当前时间且最近的；都 > 当前时间则取 AM
     /// 这样可以修正 LLM 不遵守 prompt 规则导致的时间推断错误。
     /// </summary>
-    public static string NormalizeAmbiguousTime(string llmTime, string originalText, string format = "yyyy-MM-dd HH:mm")
+    public static string NormalizeAmbiguousTime(string llmTime, string originalText, string format = "yyyy-MM-dd HH:mm", DateTime? now = null)
     {
         // 原始输入含显式时段词，不干预
         bool isExplicitPm = originalText.Contains("晚上") || originalText.Contains("下午") || originalText.Contains("傍晚") || originalText.Contains("夜里") || originalText.Contains("夜晚");
@@ -775,11 +775,11 @@ public static class AiNoteRuleParser
         // 仅对 1~11 点范围做修正（0点和12点无 AM/PM 歧义）
         if (hh12 == 0) return llmTime;
 
-        var now = DateTime.Now;
-        var amCandidate = new DateTime(now.Year, now.Month, now.Day, hh12, mm, 0);
-        var pmCandidate = new DateTime(now.Year, now.Month, now.Day, hh12 + 12, mm, 0);
+        var n = now ?? DateTime.Now;
+        var amCandidate = new DateTime(n.Year, n.Month, n.Day, hh12, mm, 0);
+        var pmCandidate = new DateTime(n.Year, n.Month, n.Day, hh12 + 12, mm, 0);
         DateTime chosen;
-        if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+        if (pmCandidate <= n && (amCandidate > n || pmCandidate > amCandidate))
             chosen = pmCandidate; // PM 候选更近且已过去
         else
             chosen = amCandidate; // 取 AM
