@@ -69,10 +69,6 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
 
-    /// <summary>"程序日志"弹层（从开发者选项打开）。</summary>
-    [ObservableProperty] private bool _isAppLogOpen;
-    [ObservableProperty] private AppLogViewModel _appLog;
-
     /// <summary>"使用帮助"弹层（从"我的"页打开）。</summary>
     [ObservableProperty] private bool _isHelpOpen;
     [ObservableProperty] private HelpViewModel _help;
@@ -208,7 +204,6 @@ public partial class MainShellViewModel : ViewModelBase
     partial void OnIsSyncSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsFamilyOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsDeveloperOptionsOpenChanged(bool value) => RaiseInterceptBackChanged();
-    partial void OnIsAppLogOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsHelpOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsPrivacyPolicyOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsInAppMessageOpenChanged(bool value) => RaiseInterceptBackChanged();
@@ -269,9 +264,6 @@ public partial class MainShellViewModel : ViewModelBase
         _family = new FamilyViewModel();
 
         _developerOptions = new DeveloperOptionsViewModel();
-        _developerOptions.OpenAppLogRequested += OpenAppLog;
-
-        _appLog = new AppLogViewModel();
 
         _help = new HelpViewModel();
 
@@ -295,7 +287,6 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
         RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
-        RegisterOverlay(AppLog, () => IsAppLogOpen = false, () => IsAppLogOpen);
         RegisterOverlay(Help, () => IsHelpOpen = false, () => IsHelpOpen);
         RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
         RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
@@ -505,18 +496,7 @@ public partial class MainShellViewModel : ViewModelBase
         return;
 #else
         IsDeveloperOptionsOpen = true;
-#endif
-    }
-
-    /// <summary>打开"程序日志"页（开发者选项内入口）。</summary>
-    public void OpenAppLog()
-    {
-        // 正式版构建拦截程序日志页入口（仅开发者选项内可进入）
-#if !DEV_BUILD
-        return;
-#else
-        IsAppLogOpen = true;
-        AppLog.Activate();
+        DeveloperOptions.Activate();
 #endif
     }
 

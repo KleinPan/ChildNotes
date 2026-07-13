@@ -46,7 +46,6 @@ public class ViewLocator : IDataTemplate
                 RecordSheetViewModel => new RecordSheetView(),
                 QuickMenuViewModel => new QuickMenuView(),
                 DeveloperOptionsViewModel => new DeveloperOptionsView(),
-                AppLogViewModel => new AppLogView(),
                 HelpViewModel => new HelpView(),
                 PrivacyConsentViewModel => new PrivacyConsentView(),
                 InAppMessageViewModel => new InAppMessageView(),

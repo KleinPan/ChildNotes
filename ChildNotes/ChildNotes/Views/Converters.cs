@@ -111,7 +111,7 @@ public static class AppConverters
     public static readonly IValueConverter AvatarPathToBitmap = new AvatarPathToBitmapConverter();
 
     // ===== 程序日志：级别 → 徽章背景色 =====
-    // 用于 AppLogView 日志条目的级别徽章 Background 绑定。
+    // 用于 DeveloperOptionsView 日志条目的级别徽章 Background 绑定。
     // 修复原实现中 Border 同时挂 lvl-Info/Warn/Error/Debug 四个 class 导致 Debug 灰色覆盖所有的 Bug。
     public static readonly IValueConverter LogLevelToBrush = new LogLevelToBrushConverter();
 

@@ -8,7 +8,7 @@ namespace ChildNotes.Services;
 /// 文件路径：LocalApplicationData/ChildNotes/developer-options.json
 ///
 /// 注意：日志悬浮层（DevLogOverlay）已移除，日志改写入文件（ReleaseLogger），
-/// 通过开发者选项的"导出运行日志"功能查看。
+/// 通过开发者选项页直接查看实时日志并支持导出。
 /// 当前 EnableAnimations 字段被 AnimationService 实际使用（App.axaml.cs 中读取）。
 /// </summary>
 public sealed class DeveloperOptionsConfig

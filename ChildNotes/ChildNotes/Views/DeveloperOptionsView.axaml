@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:v="using:ChildNotes.Views"
+             xmlns:infra="using:ChildNotes.Infrastructure"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -9,95 +10,258 @@
              x:DataType="vm:DeveloperOptionsViewModel"
              Background="{StaticResource WeuiBg0Brush}">
 
-    <Grid RowDefinitions="Auto,*,Auto">
+    <UserControl.Styles>
+        <!-- 搜索框：圆角胶囊形，浅灰底，对齐微信风格 -->
+        <Style Selector="TextBox.log-search">
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="{StaticResource WeuiBg0Brush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="PlaceholderForeground" Value="{StaticResource WeuiFg2Brush}"/>
+        </Style>
+
+        <!-- 级别筛选按钮：未选中=描边浅灰，选中=实心主色 -->
+        <Style Selector="Button.lvl-btn">
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="CornerRadius" Value="{StaticResource WeuiBtnRadius}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" Easing="QuadraticEaseOut"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.lvl-btn:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+        </Style>
+        <!-- 选中态：实心 WeUI 主色（绿），白字，无边框 -->
+        <Style Selector="Button.lvl-btn.selected">
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+        </Style>
+
+        <!-- 日志列表：ListBox + VirtualizingStackPanel，固定行高，虚拟化生效 -->
+        <Style Selector="ListBox.log-list">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+        </Style>
+        <Style Selector="ListBox.log-list > ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+        </Style>
+        <Style Selector="ListBox.log-list > ListBoxItem /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <!-- 日志条目：单行固定高，白底卡片，行间距 4px -->
+        <Style Selector="Border.log-row">
+            <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Height" Value="32"/>
+        </Style>
+        <!-- 选中项（点击展开）：解除固定高度，消息换行显示完整内容 -->
+        <Style Selector="ListBox.log-list > ListBoxItem:selected > Border.log-row">
+            <Setter Property="Height" Value="NaN"/>
+            <Setter Property="Padding" Value="10,8"/>
+        </Style>
+
+        <Style Selector="Grid.log-meta">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.log-time">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}"/>
+            <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.log-tag">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+        <Style Selector="TextBlock.log-msg">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+            <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="6,0,0,0"/>
+        </Style>
+        <!-- 选中展开时：消息换行显示完整内容 -->
+        <Style Selector="ListBox.log-list > ListBoxItem:selected TextBlock.log-msg">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="TextTrimming" Value="None"/>
+            <Setter Property="Margin" Value="6,2,0,0"/>
+        </Style>
+        <!-- 级别徽章文字 -->
+        <Style Selector="Border.log-badge TextBlock">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- 顶栏"清空"按钮：与 nav-back 一致的无边框风格 -->
+        <Style Selector="Button.nav-text-btn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.nav-text-btn:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource WeuiBgColorActiveBrush}"/>
+        </Style>
+        <Style Selector="Button.nav-text-btn:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <!--
+        布局：
+        Row=0: 顶栏（返回 + 标题 + 清空按钮）
+        Row=1: 动画设置（紧凑卡片）
+        Row=2: 日志工具栏（搜索框 + 级别筛选）
+        Row=3: 日志列表（占满剩余空间，虚拟化）
+        Row=4: 底部操作栏（筛选条数 + 导出按钮）
+    -->
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
         <!-- 顶栏 -->
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
                 <TextBlock Grid.Column="1" Classes="nav-title" Text="开发者选项"/>
-                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+                <Button Grid.Column="2" Content="清空" Classes="nav-text-btn"
+                        Command="{Binding ClearLogsCommand}"
+                        Margin="0,0,4,0"/>
             </Grid>
         </Border>
 
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+        <!-- 动画设置（紧凑卡片） -->
+        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}"
+                CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,8,12,4">
+            <Grid Margin="14,10" ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="启用动画效果" FontSize="15"/>
+                    <TextBlock Text="关闭可提升性能或满足无障碍需求"
+                               FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                               Margin="0,2,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAnimations}"/>
+            </Grid>
+        </Border>
 
-                <!-- 动画设置 -->
-                <Border Classes="section-title">
-                    <TextBlock Text="动画设置"/>
-                </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
-                    <StackPanel>
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="启用动画效果" FontSize="15"/>
-                                <TextBlock Text="开启后弹窗、按钮、页面切换等会有流畅的过渡动画。关闭可提升性能或满足无障碍需求。"
-                                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
-                                           Margin="0,2,0,0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAnimations}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 调试工具 -->
-                <Border Classes="section-title">
-                    <TextBlock Text="调试工具"/>
-                </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
-                    <StackPanel>
-                        <!-- 程序日志：使用统一 dev-cell 样式，修复右箭头对齐 -->
-                        <Grid Classes="dev-cell" ColumnDefinitions="Auto,*,Auto" PointerPressed="OnAppLogTap">
-                            <TextBlock Grid.Column="0" Classes="dev-icon" Text="📋"/>
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Classes="dev-title" Text="程序日志"/>
-                                <TextBlock Classes="dev-desc" Text="查看实时日志、LLM 调用明细，支持搜索与导出"/>
-                            </StackPanel>
-                            <TextBlock Grid.Column="2" Classes="dev-chevron" Text="›"/>
-                        </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
-                                IsVisible="{Binding IsLogExportVisible}"/>
-                        <!-- 导出运行日志：标题+描述+操作按钮。仅开发版可见。 -->
-                        <Grid Margin="14,12" ColumnDefinitions="*,Auto"
-                              IsVisible="{Binding IsLogExportVisible}">
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="导出运行日志" FontSize="15" Foreground="{StaticResource WeuiFg0Brush}"/>
-                                <TextBlock Text="将当前全部日志导出为 .txt 文件，保存到 Download 目录"
-                                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
-                                           Margin="0,2,0,0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                            <Button Grid.Column="1"
-                                    Content="{Binding IsExporting, Converter={x:Static v:DeveloperOptionsView.ExportingTextConverter}}"
-                                    Classes="weui-btn mini primary"
-                                    Command="{Binding ExportLogCommand}"
-                                    IsEnabled="{Binding !IsExporting}"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-                <!-- 说明 -->
-                <Border Classes="section-title">
-                    <TextBlock Text="说明"/>
-                </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
-                    <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="• 开发者选项仅供调试使用，普通用户无需开启"
-                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 日志会自动写入应用文件目录，可通过上方按钮导出"
-                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 导出的日志文件位于系统 Download 目录，可通过文件管理器查看"
-                                   FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                    </StackPanel>
-                </Border>
-
+        <!-- 日志工具栏：搜索框 + 级别筛选 -->
+        <StackPanel Grid.Row="2" Spacing="6" Margin="12,8,12,4">
+            <TextBox Text="{Binding SearchText}" PlaceholderText="搜索 Tag 或内容…"
+                     Classes="log-search"
+                     InnerLeftContent="🔍"
+                     Margin="0"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+                <Button Classes="lvl-btn" Content="全部"
+                        Command="{Binding SelectAllLevelCommand}"
+                        Classes.selected="{Binding IsAllLevel}"/>
+                <Button Classes="lvl-btn" Content="Info"
+                        Command="{Binding SelectInfoLevelCommand}"
+                        Classes.selected="{Binding IsInfoLevel}"/>
+                <Button Classes="lvl-btn" Content="Warn"
+                        Command="{Binding SelectWarnLevelCommand}"
+                        Classes.selected="{Binding IsWarnLevel}"/>
+                <Button Classes="lvl-btn" Content="Error"
+                        Command="{Binding SelectErrorLevelCommand}"
+                        Classes.selected="{Binding IsErrorLevel}"/>
+                <Button Classes="lvl-btn" Content="AI"
+                        Command="{Binding SelectAiLevelCommand}"
+                        Classes.selected="{Binding IsAiLevel}"/>
             </StackPanel>
-        </ScrollViewer>
+        </StackPanel>
 
-        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,80"
-                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"
-                       TextWrapping="Wrap" MaxWidth="320"/>
+        <!--
+            日志列表：ListBox + VirtualizingStackPanel，虚拟化 + 固定行高
+            - 固定行高 32px 让 VirtualizingStackPanel 精确计算可视区，2000 条只渲染 ~20 条
+            - 点击条目选中 → 选中项解除固定高度 + 消息换行，实现"点击展开查看完整日志"
+        -->
+        <ListBox Grid.Row="3" Classes="log-list"
+                 ItemsSource="{Binding Filtered}"
+                 Padding="12,4,12,8"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <VirtualizingStackPanel CacheLength="0.3"/>
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="infra:DevLogger+LogEntry">
+                    <Border Classes="log-row">
+                        <Grid Classes="log-meta" ColumnDefinitions="Auto,Auto,Auto,*">
+                            <!-- 级别徽章 -->
+                            <Border Grid.Column="0" Classes="log-badge"
+                                    Width="44" Height="18" CornerRadius="4"
+                                    Background="{Binding Level, Converter={x:Static v:AppConverters.LogLevelToBrush}}">
+                                <TextBlock Text="{Binding Level}"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Classes="log-time"
+                                       Text="{Binding Time, StringFormat=HH:mm:ss}"/>
+                            <TextBlock Grid.Column="2" Classes="log-tag"
+                                       Text="{Binding Tag}"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Classes="log-msg"
+                                       Text="{Binding Message}"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- 底部操作栏：筛选条数 + 导出按钮 -->
+        <Border Grid.Row="4" Padding="14,10" Background="{StaticResource WeuiBg2Brush}"
+                BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Grid.Column="0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                           Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
+                <Button Grid.Column="1" Content="导出 .txt"
+                        Classes="weui-btn mini primary"
+                        Command="{Binding ExportCommand}"
+                        IsEnabled="{Binding !IsExporting}"
+                        IsVisible="{Binding IsLogExportVisible}"/>
+            </Grid>
+        </Border>
+
+        <!-- Toast -->
+        <Border Grid.Row="0" Grid.RowSpan="5"
+                VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                Margin="16,0,16,16"
+                Background="#CC000000" CornerRadius="8" Padding="20,10"
+                IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White"
+                       FontSize="13" TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>
 </UserControl>
