@@ -45,4 +45,15 @@ public partial class HomeView : UserControl
             vm.ActivityTracking.RequestDeleteActivity(item);
         }
     }
+
+    /// <summary>
+    /// 点击活动卡片（非删除按钮区域）：进入编辑。对齐喂养页 OnRecordTap 用 Tapped 而非 PointerPressed，
+    /// 避免上下滑动滚动列表时误触。删除按钮的 PointerPressed 已设 e.Handled=true，正常不会触发此 Tapped。
+    /// </summary>
+    private void OnActivityCardTap(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Border border || border.Tag is not ActivityTimelineItem item) return;
+        if (DataContext is not HomeViewModel vm) return;
+        vm.ActivityTracking.EditActivity(item);
+    }
 }

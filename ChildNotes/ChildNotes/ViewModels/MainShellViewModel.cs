@@ -219,6 +219,7 @@ public partial class MainShellViewModel : ViewModelBase
         Home.StatisticsRequested += OpenStatistics;
         Home.CheckInRequested += OpenPoints;
         Home.QuickRecordRequested += OpenQuickRecord;
+        Home.ActivityTracking.EditRequested += OpenEditRecord;
         Feeding.EditRequested += OpenEditRecord;
         Mine.LogoutRequested += OnLogout;
 

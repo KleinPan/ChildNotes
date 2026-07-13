@@ -19,6 +19,9 @@ public partial class ActivityTrackingViewModel : ObservableObject
 {
     private readonly RecordService _recordService = ServiceProvider.Instance.RecordService;
 
+    /// <summary>点击活动卡片请求编辑。宿主（MainShellViewModel）订阅后调用 RecordSheet.Edit。</summary>
+    public event Action<ChildRecord>? EditRequested;
+
     [ObservableProperty] private bool _isActivityExpanded;
     [ObservableProperty] private bool _isActivityDetailOpen;
     [ObservableProperty] private ActivityLatestItem? _lastActivity;
@@ -77,7 +80,7 @@ public partial class ActivityTrackingViewModel : ObservableObject
             dto?.Name ?? string.Empty,
             dto?.Category ?? latest.RecordSubType ?? "play",
             dto?.Duration,
-            ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(latest.RecordTime));
+            BuildTimeRange(latest.RecordTime, dto?.EndTime, dto?.Duration));
 
         UpdateActivityTimeSince();
         StartActivitySinceTimer();
@@ -192,7 +195,7 @@ public partial class ActivityTrackingViewModel : ObservableObject
                 dto?.Name ?? string.Empty,
                 dto?.Category ?? rec.RecordSubType ?? "play",
                 dto?.Duration,
-                ServiceProvider.Instance.DateTimeFormatter.FormatDateTime(rec.RecordTime)));
+                BuildTimeRange(rec.RecordTime, dto?.EndTime, dto?.Duration)));
         }
         _activityLoadedCount = endIndex;
     }
@@ -265,6 +268,14 @@ public partial class ActivityTrackingViewModel : ObservableObject
         IsActivityDetailOpen = false;
     }
 
+    /// <summary>点击时间轴卡片（非删除按钮区域）：通过 RecordId 查记录并触发编辑。</summary>
+    public void EditActivity(ActivityTimelineItem item)
+    {
+        var rec = _recordService.GetById(item.RecordId);
+        if (rec is null) return;
+        EditRequested?.Invoke(rec);
+    }
+
     /// <summary>点击时间轴卡片上的删除按钮：记录待删除项并弹出确认对话框。</summary>
     public void RequestDeleteActivity(ActivityTimelineItem item)
     {
@@ -292,5 +303,22 @@ public partial class ActivityTrackingViewModel : ObservableObject
 
         // 通知宿主刷新首页最近活动展示
         RefreshRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// 构建活动时间范围文本：优先用 EndTime 显示"开始 → 结束"（对齐睡眠记录）；
+    /// 无 EndTime 有 Duration 则用 Duration 推算结束；都没有则显示单个开始时间。
+    /// </summary>
+    private static string BuildTimeRange(DateTime start, string? endTimeText, int? durationMinutes)
+    {
+        var fmt = ServiceProvider.Instance.DateTimeFormatter;
+        var startText = fmt.FormatTime(start);
+        // 优先用 EndTime
+        if (!string.IsNullOrWhiteSpace(endTimeText) && DateTime.TryParse(endTimeText, out var end))
+            return $"{startText} → {fmt.FormatTime(end)}";
+        // 其次用 Duration 推算
+        if (durationMinutes.HasValue && durationMinutes.Value > 0)
+            return $"{startText} → {fmt.FormatTime(start.AddMinutes(durationMinutes.Value))}";
+        return startText;
     }
 }

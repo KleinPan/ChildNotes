@@ -385,6 +385,8 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.DurationSec = (actDto.Duration ?? 0) * 60;
                 existing.RecordTime = ParseTime(actDto.Time, _editingDate);
                 existing.RecordDate = existing.RecordTime.Date;
+                // 与 AddActivity 保持一致：序列化 dto 到 PayloadJson，否则编辑后 Name/Category/Duration 丢失
+                existing.PayloadJson = JsonSerializer.Serialize(actDto);
                 break;
         }
         RecordService.Update(existing);

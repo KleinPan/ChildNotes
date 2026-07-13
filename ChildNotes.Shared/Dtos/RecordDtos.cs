@@ -149,6 +149,8 @@ public sealed class ActivityRecordDto : BaseRecordDto
     public string Name { get; set; } = string.Empty;
     public string? Category { get; set; }
     public int? Duration { get; set; }
+    /// <summary>结束时间 "yyyy-MM-dd HH:mm"，可选。填了则用 EndTime-Time 算时长，覆盖 Duration。</summary>
+    public string? EndTime { get; set; }
 }
 
 public sealed class MilestoneRecordDto

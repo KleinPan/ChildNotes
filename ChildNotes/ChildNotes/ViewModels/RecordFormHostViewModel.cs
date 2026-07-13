@@ -199,8 +199,20 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 break;
             case RecordType.Activity:
                 ActivityForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
-                ActivityForm.DurationText = ((r.DurationSec ?? 0) / 60).ToString();
                 ActivityForm.TimeText = time;
+                // 回填名称/类别/结束时间（从 PayloadJson 反序列化），否则编辑时表单为空无法修改
+                var actDto = r.GetPayload<ActivityRecordDto>();
+                if (actDto is not null)
+                {
+                    ActivityForm.Name = actDto.Name ?? string.Empty;
+                    ActivityForm.SelectCategory(actDto.Category ?? "play");
+                    // 有 EndTime 则回填结束时间；否则用 DurationSec 反推
+                    if (!string.IsNullOrWhiteSpace(actDto.EndTime)
+                        && DateTime.TryParse(actDto.EndTime, out var et))
+                        ActivityForm.EndTimeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(et);
+                    else
+                        ActivityForm.DurationText = ((r.DurationSec ?? 0) / 60).ToString();
+                }
                 break;
         }
     }

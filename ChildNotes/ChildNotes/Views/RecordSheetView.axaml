@@ -1223,23 +1223,33 @@
                                     </Grid>
                                 </StackPanel>
                             </Border>
-                            <Border Classes="form-section">
-                                <StackPanel>
-                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding ActivityForm.DurationText}" />
-                                </StackPanel>
-                            </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="记录日期" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="开始时间" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ActivityForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="结束时间（选填）" />
+                                    <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="#AAAAAA" Text="留空则用下方时长" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding ActivityForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）" />
+                                    <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding ActivityForm.DurationText}" />
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
 
                         <TextBlock Margin="0,4" FontSize="13"

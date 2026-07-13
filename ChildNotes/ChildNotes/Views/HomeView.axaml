@@ -454,7 +454,9 @@
                                                             <!--  卡片  -->
                                                             <Border Grid.Column="1" Margin="4,0,0,0" Padding="12,10"
                                                                     Background="{StaticResource StatsAreaBgBrush}"
-                                                                    CornerRadius="8">
+                                                                    CornerRadius="8"
+                                                                    Tapped="OnActivityCardTap"
+                                                                    Tag="{Binding .}">
                                                                 <StackPanel Spacing="4">
                                                                     <Grid ColumnDefinitions="Auto,*">
                                                                         <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14" Text="{Binding CategoryEmoji, Mode=OneTime}" />
