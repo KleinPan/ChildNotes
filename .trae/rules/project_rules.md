@@ -71,7 +71,28 @@
 - 构建/测试命令：
   - 后端构建：`dotnet build ChildNotes.Backend\ChildNotes.Backend.slnx -v quiet --nologo`
   - 后端测试：`dotnet test ChildNotes.Backend\ChildNotes.Backend.slnx --no-build -v quiet --nologo`
-  - 前端构建（避开 Android Java 编码问题）：`dotnet build ChildNotes\ChildNotes\ChildNotes.csproj -v quiet --nologo`
+  - 前端构建（避开 Android Java 编译问题）：`dotnet build ChildNotes\ChildNotes\ChildNotes.csproj -v quiet --nologo`
+
+## 新增页面/ViewModel 必须注册到 ViewLocator（重要）
+
+项目使用显式 switch 的 `ViewLocator`（[ViewLocator.cs](file:///e:/0_Code/5_Git/AiJi/ChildNotes/ChildNotes/ViewLocator.cs)）做 ViewModel → View 映射，**不使用反射**，以兼容 AOT / Trimming（iOS Release、Android Release AOT）。
+
+**新增任何独立导航的 ViewModel + View 时，必须同时：**
+
+1. 在 `ViewLocator.cs` 的 `switch` 表达式中追加一条分支：
+   ```csharp
+   XxxViewModel => new XxxView(),
+   ```
+2. 在 `MainShellViewModel` 中注册 Overlay（如果是设置类弹层页面）：
+   - 声明 `[ObservableProperty] private bool _isXxxOpen;` 和 `[ObservableProperty] private XxxViewModel _xxx;`
+   - 构造函数中 `_xxx = new XxxViewModel();`（**容易漏，会触发 RegisterOverlay NPE**）
+   - `RegisterOverlay(Xxx, () => IsXxxOpen = false, () => IsXxxOpen);`
+   - 添加 `public void OpenXxx() { Xxx.Activate(); IsXxxOpen = true; }`
+3. 在 `MainShellView.axaml` 添加 `ContentControl` 绑定（如果是 Overlay 页面）
+4. 在 `MineView.axaml`（或其他入口页）添加跳转入口 + `MineView.axaml.cs` 事件处理
+
+**遗漏 ViewLocator 注册的症状**：页面打不开，ContentControl 显示 "View Not Mapped: XxxViewModel"。
+**遗漏 MainShellViewModel 实例化的症状**：`RegisterOverlay(xxx, ...)` 抛 `NullReferenceException`。
 
 ## 提交前自检
 

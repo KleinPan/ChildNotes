@@ -40,6 +40,7 @@ public class ViewLocator : IDataTemplate
                 MembershipViewModel => new MembershipView(),
                 AiAnalysisViewModel => new AiAnalysisView(),
                 AiSettingsViewModel => new AiSettingsView(),
+                ReminderSettingsViewModel => new ReminderSettingsView(),
                 QuickInputViewModel => new QuickInputView(),
                 SyncSettingsViewModel => new SyncSettingsView(),
                 FamilyViewModel => new FamilyView(),
