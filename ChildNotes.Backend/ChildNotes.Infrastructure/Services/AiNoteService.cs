@@ -64,7 +64,7 @@ public partial class AiNoteService : IAiNoteService
 - foodTypes: complementary 专用，食材类型数组（如["蔬菜","水果","主食","肉蛋"]）
 - amountText: complementary 专用，食量数值文本（如"20"、"半碗"）
 - amountUnit: complementary 专用，食量单位（如"克"、"个"、"勺"、"碗"），与 amountText 分开
-- note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note）
+- note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note；diaper 的大便颜色/性状如"黄绿色"、"稀"、"糊状"放 note）
 - summary: 一句话人类可读的总结（<=30 字）
 - confidence: 解析置信度 0~1
 
@@ -85,7 +85,10 @@ public partial class AiNoteService : IAiNoteService
 ]
 
 输入"拉了大便"应输出：
-[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
+[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":null,"summary":"换尿布 大便","confidence":0.9}]
+
+输入"20:00拉黄绿色大便"应输出：
+[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","time":"20:00","note":"黄绿色","summary":"换尿布 大便 黄绿色","confidence":0.9}]
 
 输入"换尿布 便便"应输出：
 [{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","summary":"换尿布 便便","confidence":0.9}]

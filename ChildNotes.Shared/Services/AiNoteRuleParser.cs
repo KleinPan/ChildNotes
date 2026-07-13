@@ -356,16 +356,36 @@ public static class AiNoteRuleParser
             (false, true) => DiaperType.Wet,
             _ => DiaperType.Dry,
         };
+        // 提取颜色/性状描述作为备注（如"黄绿色"、"稀"、"糊状"）
+        var note = ExtractDiaperNote(text);
         return new AiNoteParseItem
         {
             RecordType = RecordType.Diaper,
             RecordSubType = sub,
             DiaperType = sub,
+            Note = note,
             Time = ExtractTime(text, now),
-            Summary = "换尿布 " + sub,
+            Summary = "换尿布 " + sub + (string.IsNullOrEmpty(note) ? "" : " " + note),
             Confidence = 0.6,
             Source = ParseSource.Rule,
         };
+    }
+
+    /// <summary>
+    /// 从文本中提取尿布记录的颜色/性状描述作为备注。
+    /// 识别"黄绿色/金黄色/墨绿色/黑色/棕色"等颜色词，以及"稀/糊状/硬/软"等性状词。
+    /// 去掉时间、动作词、尿布关键词后，剩余的描述性文字作为备注。
+    /// </summary>
+    private static string? ExtractDiaperNote(string text)
+    {
+        // 颜色词正则：X色（如黄色、绿色、黄绿色、金黄色、墨绿色、棕褐色等）
+        var colorMatch = Regex.Match(text, @"(?:黄|绿|黑|棕|褐|金|墨|灰|白|红)[颜色]?(?:绿|黄|黑|棕|褐|色)?色?");
+        // 性状词正则：稀/糊状/硬/软/水样/蛋花状等
+        var consistencyMatch = Regex.Match(text, @"稀|糊状?|水样|蛋花样?|硬|软|成形|黏液|泡沫样?|奶瓣");
+        var parts = new List<string>();
+        if (colorMatch.Success) parts.Add(colorMatch.Value);
+        if (consistencyMatch.Success) parts.Add(consistencyMatch.Value);
+        return parts.Count > 0 ? string.Join(" ", parts) : null;
     }
 
     #endregion

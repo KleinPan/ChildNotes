@@ -264,7 +264,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
                 "dirty" => "大便",
                 "both" => "大小便",
                 _ => "换尿布",
-            }, "", "", ""),
+            }, "", "", r.GetPayload<DiaperRecordDto>()?.Consistency ?? ""),
             RecordType.Sleep => BuildSleepText(r),
             RecordType.Temperature => ("体温", $"{r.TemperatureValue:F1}℃", "", ""),
             RecordType.Growth => ("成长记录", $"{(r.HeightCm.HasValue ? $"身高{r.HeightCm}cm " : "")}{(r.WeightKg.HasValue ? $"体重{r.WeightKg}kg" : "")}", "", ""),

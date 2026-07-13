@@ -59,7 +59,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 - note 仅用于真正的补充说明，不要把已结构化字段的内容原文写入 note
 - amount/dose/name/foodName/duration 等已结构化的字段，其值不要重复写入 note
 - 模糊量词处理："110多奶粉"→amount=110（不要 note="110多奶粉"）；"约120ml奶"→amount=120（不要 note）；"大概30分钟"→duration=30（不要 note）
-- 仅当用户有真正的备注信息（如"吃完吐了一点"、"左边的奶冲多了倒掉"）时才填 note，否则 note=null
+- diaper 的大便颜色/性状（如"黄绿色"、"金黄色"、"稀"、"糊状"）放 note
+- 仅当用户有真正的备注信息（如"吃完吐了一点"、"左边的奶冲多了倒掉"、"黄绿色"）时才填 note，否则 note=null
 
 时间格式规则（重要）：
 - time/startTime/endTime 默认用 "HH:mm" 格式（如 "20:05"、"08:30"）
@@ -77,7 +78,10 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 示例输出：[{"recordType":"complementary","foodName":"南瓜泥","foodTypes":["蔬菜"],"amountText":"20","amountUnit":"克","summary":"辅食 南瓜泥 20克","confidence":0.9}]
 
 示例输入："拉了大便"
-示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":"大便","summary":"换尿布 大便","confidence":0.9}]
+示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":null,"summary":"换尿布 大便","confidence":0.9}]
+
+示例输入："20:00拉黄绿色大便"
+示例输出：[{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","time":"20:00","note":"黄绿色","summary":"换尿布 大便 黄绿色","confidence":0.9}]
 
 示例输入："吃了半包宝泰康颗粒"
 示例输出：[{"recordType":"supplement","recordSubType":"medicine","name":"宝泰康颗粒","dose":"0.5","doseUnit":"包","summary":"用药 宝泰康颗粒 半包","confidence":0.9}]
@@ -294,6 +298,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
                 recordService.AddDiaper(new ChildNotes.Shared.Dtos.DiaperRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.DiaperType) ? (r.RecordSubType ?? DiaperType.Dry) : r.DiaperType,
+                    // AI/规则解析的颜色/性状描述存入 Consistency（与表单备注框绑定字段一致）
+                    Consistency = r.Note,
                     Time = time,
                 });
                 break;
@@ -409,7 +415,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             RecordType.Feed => r.RecordSubType == FeedType.Breast
                 ? $"🍼 母乳亲喂 左{r.LeftDuration ?? 0} 右{r.RightDuration ?? 0}分钟{time}"
                 : $"🍼 瓶喂{(r.RecordSubType == FeedType.Expressed ? "(母乳)" : "")} {r.Amount ?? 0}ml{time}",
-            RecordType.Diaper => $"💩 {DiaperText(r.DiaperType ?? r.RecordSubType)}{time}",
+            RecordType.Diaper => $"💩 {DiaperText(r.DiaperType ?? r.RecordSubType)}{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
             RecordType.Sleep => r.Duration.HasValue
                 ? $"😴 睡眠 {r.Duration}分钟{time}"
                 : $"😴 睡眠{time}",
