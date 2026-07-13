@@ -50,8 +50,8 @@ public partial class AiNoteService : IAiNoteService
 - time: 时间，默认 "HH:mm" 格式；若用户提到"昨晚/昨天/前天/大前天"等相对日期词，必须用完整 "yyyy-MM-dd HH:mm" 格式（基于当前日期偏移）。未提及时间则使用 null（后端将取当前时间）
 - amount: 数值型，单位 ml（用于 feed 瓶喂、pump 总量等）
 - duration: 数值型，单位分钟（用于 sleep、activity）
-- startTime: sleep 专用，开始时间，格式同 time；若只提到一个时间点则同时填 startTime 和 time
-- endTime: sleep 专用，结束时间，格式同 time；有明确结束时间时填写
+- startTime: sleep/activity 专用，开始时间，格式同 time；若只提到一个时间点则同时填 startTime 和 time
+- endTime: sleep/activity 专用，结束时间，格式同 time；有明确结束时间时填写
 - leftDuration / rightDuration: 数值型，分钟（用于 feed 亲喂、pump）
 - temperature: 数值型，℃
 - height: 数值型，cm
@@ -95,6 +95,12 @@ public partial class AiNoteService : IAiNoteService
 
 输入"吃了南瓜泥20克"应输出：
 [{"recordType":"complementary","foodName":"南瓜泥","foodTypes":["蔬菜"],"amountText":"20","amountUnit":"克","summary":"辅食 南瓜泥 20克","confidence":0.9}]
+
+输入"10点到11点做游戏"应输出：
+[{"recordType":"activity","recordSubType":"play","time":"10:00","startTime":"10:00","endTime":"11:00","duration":60,"summary":"游戏 10:00-11:00","confidence":0.9}]
+
+输入"户外散步30分钟"应输出：
+[{"recordType":"activity","recordSubType":"outdoor","duration":30,"summary":"户外 30分钟","confidence":0.9}]
 
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）

@@ -42,13 +42,18 @@ public sealed class AiNoteParseService
 - activity 子类型: play/outdoor/exercise
 
 字段：recordType, recordSubType, time, amount(ml数值), duration(分钟),
-startTime(sleep专用，开始时间), endTime(sleep专用，结束时间),
+startTime(sleep/activity专用，开始时间), endTime(sleep/activity专用，结束时间),
 leftDuration, rightDuration, temperature(℃), height(cm), weight(kg), diaperType,
 name(supplement专用，药品/营养品名称，不含剂量), dose(supplement专用，剂量数值文本如"0.5"/"1"/"5"),
 doseUnit(supplement专用，剂量单位如"包"/"粒"/"ml"/"滴"),
 foodName(complementary专用，食物名称如"南瓜泥"/"蛋黄"), foodTypes(complementary专用，食材类型数组如["蔬菜"]),
 amountText(complementary专用，食量数值如"20"), amountUnit(complementary专用，食量单位如"克"/"个"/"勺"/"碗"),
 note(备注，仅用于真正的补充说明，如"吃后半段哭闹"、"温度计换了电池"), summary(<=30字一句话), confidence(0~1)。
+
+activity 字段使用规则（重要）：
+- activity 有明确起止时间（如"10点到11点做游戏"）→ 填 startTime/endTime（"HH:mm"），duration 由起止差值算出
+- activity 只有时长（如"玩了30分钟"）→ 填 duration，startTime/endTime 留 null
+- activity 有起止时间时，time = startTime；仅有时长时，time = 活动开始时间（若未提及则 null）
 
 note 字段使用规则（重要，避免备注与结构化字段重复）：
 - note 仅用于真正的补充说明，不要把已结构化字段的内容原文写入 note
@@ -80,6 +85,12 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 示例输入："2:20喝了110多奶粉和10ml水"
 示例输出：[{"recordType":"feed","recordSubType":"bottle","time":"02:20","amount":110,"note":null,"summary":"瓶喂110ml","confidence":0.9},
 {"recordType":"water","time":"02:20","amount":10,"note":null,"summary":"喝水10ml","confidence":0.8}]
+
+示例输入："10点到11点做游戏"
+示例输出：[{"recordType":"activity","recordSubType":"play","time":"10:00","startTime":"10:00","endTime":"11:00","duration":60,"summary":"游戏 10:00-11:00","confidence":0.9}]
+
+示例输入："户外散步30分钟"
+示例输出：[{"recordType":"activity","recordSubType":"outdoor","duration":30,"summary":"户外 30分钟","confidence":0.9}]
 
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
@@ -369,6 +380,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
                     Category = r.RecordSubType,
                     Duration = r.Duration,
                     Time = time,
+                    // 有起止时间则存 EndTime（与表单编辑路径一致，时间轴显示"开始→结束"）
+                    EndTime = string.IsNullOrEmpty(r.EndTime) ? null : AiNoteRuleParser.CombineDateAndTime(time, r.EndTime),
                 });
                 break;
             default:
@@ -407,7 +420,11 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             RecordType.Pump => $"🥛 吸奶 {r.Amount ?? 0}ml{time}",
             RecordType.Complementary => $"🥣 辅食 {(string.IsNullOrEmpty(r.FoodName) ? "" : r.FoodName)}{(string.IsNullOrEmpty(r.AmountText) ? "" : $" {r.AmountText}{r.AmountUnit ?? ""}")}{time}",
             RecordType.Abnormal => $"⚠️ 异常{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
-            RecordType.Activity => $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
+            RecordType.Activity => r.EndTime is not null && r.StartTime is not null
+                ? $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)} {r.StartTime}-{r.EndTime}{time}"
+                : r.Duration.HasValue
+                    ? $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)} {r.Duration}分钟{time}"
+                    : $"🏃 活动{(string.IsNullOrEmpty(r.Note) ? "" : " " + r.Note)}{time}",
             _ => $"📝 {r.Summary ?? "已记录"}{time}",
         };
     }
