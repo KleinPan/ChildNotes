@@ -43,17 +43,20 @@ public partial class QuickMenuViewModel : ViewModelBase
 
     public QuickMenuViewModel()
     {
-        // 8 项：常用在下排（Row=2），不常用在上排（Row=1）
+        // 9 项：常用在下排（Row=2），不常用在上排（Row=1）
         // Ai 记已迁移到首页底部输入栏
         // 异常记录已在首页有独立红色入口
-        Actions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
+        // 活动记录已从首页"活动追踪"模块移除，入口收到此快捷面板
+        // 顺序：高频（喂奶/活动/辅食）在前，低频（成长）在后
+        Actions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed, "#FFF0E6"));
+        Actions.Add(new QuickActionItem("🏃", "活动", RecordType.Activity, "#E3F2FD"));
         Actions.Add(new QuickActionItem("🥣", "辅食", RecordType.Complementary, "#FFF3E0"));
         Actions.Add(new QuickActionItem("🍶", "吸奶", RecordType.Pump, "#E8F5E9"));
         Actions.Add(new QuickActionItem("💊", "补给用药", RecordType.Supplement, "#F3E5F5"));
         Actions.Add(new QuickActionItem("🌡️", "体温", RecordType.Temperature, "#FFE8E8"));
         Actions.Add(new QuickActionItem("🌙", "睡眠", RecordType.Sleep, "#E8F0FE"));
         Actions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper, "#FFF8E1"));
-        Actions.Add(new QuickActionItem("🍼", "喂奶", RecordType.Feed, "#FFF0E6"));
+        Actions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
 
         RebuildPages();
         Actions.CollectionChanged += (_, _) => RebuildPages();

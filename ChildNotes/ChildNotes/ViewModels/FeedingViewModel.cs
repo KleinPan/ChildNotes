@@ -23,8 +23,13 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     [ObservableProperty] private bool _isNextDayEnabled;
     [ObservableProperty] private bool _showDeleteConfirm;
     [ObservableProperty] private string _deleteItemTitle = string.Empty;
+    /// <summary>当前选中的类型筛选（"all"/"feed"/"sleep"/"diaper"/"activity"/"other"）。默认"all"显示全部。</summary>
+    [ObservableProperty] private string _selectedFilter = "all";
 
+    /// <summary>展示用记录列表（根据 SelectedFilter 从 _allRecords 过滤）。</summary>
     public ObservableCollection<RecordDisplayItem> Records { get; } = new();
+    /// <summary>全量记录缓存（未筛选），切换筛选时直接从此过滤，避免重复 DB 查询。</summary>
+    private List<RecordDisplayItem> _allRecords = new();
 
     /// <summary>请求主壳层打开编辑记录抽屉（复用 RecordSheet 编辑模式）。</summary>
     public event Action<ChildRecord>? EditRequested;
@@ -58,17 +63,50 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         IsNextDayEnabled = date.Date < DateTime.Today;
         DayStats = stats;
 
-        Records.Clear();
-        // 疫苗记录仅在首页"疫苗追踪"模块展示，活动记录仅在首页"活动追踪"模块展示，
-        // 两者均不在喂养页面记录列表中显示（对齐小程序 buildRecordList 只处理 feeds/diapers/sleeps 等的逻辑）
+        // 疫苗记录仅在首页"疫苗追踪"模块展示，不在喂养页面记录列表中显示
+        // 活动记录已从首页移到喂养页时间轴展示（与喂奶/睡眠等并列）
         // 排序对齐小程序 _sort：睡眠记录用 StartTime（PayloadJson 内），其他用 RecordTime
         // 原因：历史数据中睡眠记录的 RecordTime 可能被存为记录创建时刻而非睡眠开始时间，
         // 导致睡眠记录在列表中排序错乱
-        foreach (var r in records.Where(x => x.RecordType != RecordType.Vaccine && x.RecordType != RecordType.Activity)
-                     .OrderBy(GetSortTime))
+        _allRecords = records.Where(x => x.RecordType != RecordType.Vaccine)
+            .OrderBy(GetSortTime)
+            .Select(r => new RecordDisplayItem(r))
+            .ToList();
+        ApplyFilter();
+    }
+
+    /// <summary>
+    /// 根据 SelectedFilter 从 _allRecords 过滤记录到 Records。
+    /// 切换筛选时不重新查 DB，直接从内存过滤，响应 &lt;5ms。
+    /// </summary>
+    private void ApplyFilter()
+    {
+        Records.Clear();
+        IEnumerable<RecordDisplayItem> filtered = SelectedFilter switch
         {
-            Records.Add(new RecordDisplayItem(r));
-        }
+            "feed" => _allRecords.Where(x => x.Record.RecordType == RecordType.Feed),
+            "sleep" => _allRecords.Where(x => x.Record.RecordType == RecordType.Sleep),
+            "diaper" => _allRecords.Where(x => x.Record.RecordType == RecordType.Diaper),
+            "activity" => _allRecords.Where(x => x.Record.RecordType == RecordType.Activity),
+            "other" => _allRecords.Where(x => !IsMainType(x.Record.RecordType)),
+            _ => _allRecords,
+        };
+        foreach (var item in filtered)
+            Records.Add(item);
+    }
+
+    /// <summary>主类型（有独立筛选 Tab 的类型）：feed/sleep/diaper/activity。</summary>
+    private static bool IsMainType(string recordType)
+        => recordType == RecordType.Feed || recordType == RecordType.Sleep
+           || recordType == RecordType.Diaper || recordType == RecordType.Activity;
+
+    /// <summary>切换类型筛选。由 View 层筛选条按钮调用。</summary>
+    [RelayCommand]
+    private void ApplyTypeFilter(string filter)
+    {
+        if (SelectedFilter == filter) return;
+        SelectedFilter = filter;
+        ApplyFilter();
     }
 
     /// <summary>
@@ -233,7 +271,6 @@ public sealed partial class RecordDisplayItem : ObservableObject
         RecordType.Pump => "🥛",
         RecordType.Complementary => "🥣",
         // 疫苗记录不在喂养页面显示，已移除 Vaccine 图标分支
-        // 注：Activity 同样被过滤（见 Where 条件），此处保留分支仅为防御性写法
         RecordType.Abnormal => "⚠️",
         RecordType.Activity => "🏃",
         _ => "📝",
@@ -274,7 +311,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
             RecordType.Complementary => BuildComplementaryText(r),
             // 疫苗记录仅在首页"疫苗追踪"模块展示，移除 BuildText 中的 Vaccine 分支
             RecordType.Abnormal => ("异常记录", BuildAbnormalText(r), "", ""),
-            RecordType.Activity => ("活动", $"{(r.DurationSec ?? 0) / 60}分钟", "", ""),
+            RecordType.Activity => BuildActivityText(r),
             _ => (r.RecordType, "", "", ""),
         };
     }
@@ -301,6 +338,27 @@ public sealed partial class RecordDisplayItem : ObservableObject
             extra = totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟";
         }
         return ("睡眠", sub, extra, "");
+    }
+
+    /// <summary>
+    /// 活动记录：title 显示活动名称，sub 显示"开始→结束"时间（有 EndTime 时），extra（绿色）显示时长。
+    /// 对齐睡眠记录的起止时间展示格式。
+    /// </summary>
+    private static (string Title, string Sub, string Extra, string Note) BuildActivityText(ChildRecord r)
+    {
+        var dto = r.GetPayload<ActivityRecordDto>();
+        var name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto.Name : "活动";
+        string sub = "";
+        var s = r.RecordTime.ToString("HH:mm");
+        var e = FormatTimeFromPayload(dto?.EndTime);
+        if (!string.IsNullOrEmpty(e))
+            sub = $"{s} → {e}";
+        // 时长（绿色）
+        var totalMin = (r.DurationSec ?? 0) / 60;
+        string extra = totalMin > 0
+            ? (totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟")
+            : "";
+        return (name, sub, extra, "");
     }
 
     /// <summary>

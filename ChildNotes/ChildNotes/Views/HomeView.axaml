@@ -1,7 +1,6 @@
 <UserControl x:Class="ChildNotes.Views.HomeView"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:m="using:ChildNotes.Models.Home"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -287,78 +286,6 @@
                     </StackPanel>
                 </Border>
 
-                <!--  活动追踪：延迟显示（首屏构建优化）  -->
-                <Border Classes="weui-card" IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
-                    <StackPanel Spacing="10">
-                        <!--  头部：🎯 活动追踪 + 展开/收起 + 详情 + 记录  -->
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-                            <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="18" Text="🎯" />
-                            <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
-                                       FontWeight="SemiBold" Text="活动追踪" />
-                            <Button Grid.Column="2" Margin="8,0,0,0" Classes="tracker-btn-outline"
-                                    Command="{Binding ToggleActivityPanelCommand}"
-                                    Content="{Binding IsActivityExpanded, Converter={x:Static v:HomeView.ExpandTextConverter}}" />
-                            <Button Grid.Column="3" Margin="6,0,0,0" Classes="tracker-btn-outline"
-                                    Command="{Binding ToggleActivityDetailCommand}"
-                                    Content="详情" />
-                            <Button Grid.Column="4" Margin="6,0,0,0" Classes="tracker-btn-primary"
-                                    Command="{Binding QuickRecordCommand}"
-                                    CommandParameter="activity" Content="记录" />
-                        </Grid>
-
-                        <!--  折叠态：最近活动 + 距上次（仅当有数据且未展开）  -->
-                        <Border Margin="0,2,0,0" Padding="11,9" Background="#F8FAFC" BorderBrush="#EDF1F7"
-                                BorderThickness="1" CornerRadius="6"
-                                IsVisible="{Binding LastActivity, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <Panel>
-                                <!--  折叠内容：用 IsVisible 绑定 !IsActivityExpanded  -->
-                                <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding !IsActivityExpanded}">
-                                    <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock FontSize="10" Foreground="#99A1AD" Text="最近活动" />
-                                        <TextBlock FontSize="13" FontWeight="Bold" Foreground="#1F2937"
-                                                   Text="{Binding LastActivity.Name}"
-                                                   TextTrimming="CharacterEllipsis" />
-                                    </StackPanel>
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold"
-                                               Foreground="#555555"
-                                               Text="{Binding ActivityTimeSince}" />
-                                </Grid>
-                                <!--  展开内容（对齐小程序 at-body）：两列 + 类别胶囊 + 时长 + 时间  -->
-                                <StackPanel IsVisible="{Binding IsActivityExpanded}" Spacing="8">
-                                    <Grid ColumnDefinitions="*,*">
-                                        <StackPanel Grid.Column="0" Spacing="2">
-                                            <TextBlock FontSize="10" Foreground="#AAAAAA" Text="最近活动" />
-                                            <TextBlock FontSize="14" FontWeight="Bold" Foreground="#333333"
-                                                       Text="{Binding LastActivity.Name}"
-                                                       TextTrimming="CharacterEllipsis" />
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="2">
-                                            <TextBlock HorizontalAlignment="Right" FontSize="10" Foreground="#AAAAAA" Text="距上次" />
-                                            <TextBlock HorizontalAlignment="Right" FontSize="13" FontWeight="SemiBold" Foreground="#555555"
-                                                       Text="{Binding ActivityTimeSince}" />
-                                        </StackPanel>
-                                    </Grid>
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Border Padding="7,2" Background="{Binding LastActivity.Category, Converter={x:Static v:HomeView.ActivityCategoryBgConverter}}" CornerRadius="8">
-                                            <TextBlock FontSize="11" FontWeight="Medium" Foreground="{Binding LastActivity.Category, Converter={x:Static v:HomeView.ActivityCategoryFgConverter}}" Text="{Binding LastActivity.CategoryText}" />
-                                        </Border>
-                                        <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#999999"
-                                                   IsVisible="{Binding LastActivity.Duration, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                                   Text="{Binding LastActivity.DurationText}" />
-                                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11" Foreground="#BBBBBB"
-                                                   Text="{Binding LastActivity.Time}" />
-                                    </StackPanel>
-                                </StackPanel>
-                            </Panel>
-                        </Border>
-
-                        <!--  空态  -->
-                        <TextBlock Margin="0,2,0,4" HorizontalAlignment="Center" FontSize="12" Foreground="#BBBBBB"
-                                   IsVisible="{Binding LastActivity, Converter={x:Static ObjectConverters.IsNull}}"
-                                   Text="暂无活动记录，点击「记录」添加" />
-                    </StackPanel>
-                </Border>
-
                 <!--  异常/生病追踪卡片：延迟显示（首屏构建优化）  -->
                 <Border Margin="12,8,12,0" BorderBrush="#FFCDD2" BorderThickness="1" Classes="weui-card"
                         IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
@@ -402,122 +329,6 @@
 
             </StackPanel>
         </ScrollViewer>
-
-        <!--  活动追踪详情：底部时间轴弹出菜单（对齐小程序 activity-tracker 详情抽屉）  -->
-        <Panel IsVisible="{Binding IsActivityDetailOpen}">
-            <!--  遮罩：点击关闭  -->
-            <Border Background="#66000000" />
-            <Button MinWidth="0" MinHeight="0" Padding="0" HorizontalAlignment="Stretch"
-                    VerticalAlignment="Stretch" Background="Transparent" BorderThickness="0"
-                    Command="{Binding CloseActivityDetailCommand}" />
-            <!--  底部抽屉  -->
-            <Border MaxHeight="560" Padding="16,16,16,20" VerticalAlignment="Bottom" Background="White"
-                    CornerRadius="16,16,0,0">
-                <Grid RowDefinitions="Auto,*">
-                    <!--  头部：标题 + 关闭  -->
-                    <Grid Grid.Row="0" Margin="0,0,0,12" ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" FontSize="17" FontWeight="SemiBold" Foreground="#333333"
-                                   Text="活动记录" />
-                        <Button Grid.Column="1" Padding="8,2" Background="Transparent" BorderThickness="0"
-                                Command="{Binding CloseActivityDetailCommand}"
-                                Content="✕" FontSize="18" Foreground="#BBBBBB" />
-                    </Grid>
-                    <!--  时间轴内容（可滚动）  -->
-                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                        <StackPanel>
-                            <!--  Loading 占位：DB 查询后台线程执行时显示，避免 UI 卡顿无反馈  -->
-                            <StackPanel Margin="0,40" HorizontalAlignment="Center" IsVisible="{Binding IsActivityLoading}" Spacing="8">
-                                <ProgressBar Width="120" Height="4" IsIndeterminate="True" />
-                                <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="#999999" Text="加载中..." />
-                            </StackPanel>
-
-                            <!--  时间轴主体（对齐小程序 at-timeline）  -->
-                            <ItemsControl IsVisible="{Binding !IsActivityLoading}" ItemsSource="{Binding ActivityTimelineGroups}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="m:ActivityTimelineGroup">
-                                        <StackPanel Margin="0,0,0,16">
-                                            <!--  日期分组标签  -->
-                                            <TextBlock Margin="0,0,0,8" FontSize="12" FontWeight="Medium" Foreground="#999999"
-                                                       Text="{Binding Label, Mode=OneTime}" />
-                                            <!--  组内时间轴项  -->
-                                            <ItemsControl ItemsSource="{Binding Items}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="m:ActivityTimelineItem">
-                                                        <Grid Margin="0,0,0,14" ColumnDefinitions="20,*">
-                                                            <!--  左轴：竖线 + 圆点  -->
-                                                            <Panel Grid.Column="0">
-                                                                <Border Width="2" Margin="0,-7,0,-21" HorizontalAlignment="Center" Background="{StaticResource StatsSplitBrush}" />
-                                                                <Border Width="11" Height="11" Margin="0,2,0,0" HorizontalAlignment="Center"
-                                                                        VerticalAlignment="Top" Background="#D0D0D0" BorderBrush="White" BorderThickness="2"
-                                                                        CornerRadius="6" />
-                                                            </Panel>
-                                                            <!--  卡片  -->
-                                                            <Border Grid.Column="1" Margin="4,0,0,0" Padding="12,10"
-                                                                    Background="{StaticResource StatsAreaBgBrush}"
-                                                                    CornerRadius="8"
-                                                                    Tapped="OnActivityCardTap"
-                                                                    Tag="{Binding .}">
-                                                                <StackPanel Spacing="4">
-                                                                    <Grid ColumnDefinitions="Auto,*">
-                                                                        <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="14" Text="{Binding CategoryEmoji, Mode=OneTime}" />
-                                                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
-                                                                                   Foreground="#333333"
-                                                                                   Text="{Binding Name, Mode=OneTime}"
-                                                                                   TextTrimming="CharacterEllipsis" />
-
-                                                                    </Grid>
-                                                                    <Grid ColumnDefinitions="*,Auto">
-                                                                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                                                                            <TextBlock FontSize="11" Foreground="#AAAAAA" Text="{Binding Time, Mode=OneTime}" />
-                                                                            <TextBlock FontSize="11" Foreground="#888888" IsVisible="{Binding Duration, Converter={x:Static ObjectConverters.IsNotNull}}" Text="{Binding DurationText, Mode=OneTime}" />
-                                                                        </StackPanel>
-                                                                        <!--  删除按钮（对齐喂养页 OnDeleteTap 模式）  -->
-                                                                        <Border Grid.Column="1" Width="24" Height="24" VerticalAlignment="Center"
-                                                                                Background="#FFFFFF" CornerRadius="12" PointerPressed="OnActivityDeleteTap"
-                                                                                Tag="{Binding .}">
-                                                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" Text="🗑" />
-                                                                        </Border>
-                                                                    </Grid>
-                                                                </StackPanel>
-                                                            </Border>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <!--  空态  -->
-                            <TextBlock Padding="0,40" HorizontalAlignment="Center" FontSize="14" Foreground="#CCCCCC"
-                                       IsVisible="{Binding ActivityTimelineGroups.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
-                                       Text="暂无活动记录" />
-                            <!--  加载更多按钮：分页加载剩余活动记录  -->
-                            <Button Margin="0,8,0,0" Padding="0,10" HorizontalAlignment="Stretch" Classes="weui-btn default"
-                                    Command="{Binding LoadMoreActivitiesCommand}"
-                                    Content="加载更多" CornerRadius="6"
-                                    IsEnabled="{Binding !IsActivityLoading}"
-                                    IsVisible="{Binding HasMoreActivities}" />
-                        </StackPanel>
-                    </ScrollViewer>
-                </Grid>
-            </Border>
-
-            <!--  删除确认对话框（对齐喂养页 DialogHost 模式）  -->
-            <controls:DialogHost Title="确认删除"
-                                 CancelCommand="{Binding CancelDeleteActivityCommand}"
-                                 CancelText="取消"
-                                 ConfirmCommand="{Binding ConfirmDeleteActivityCommand}"
-                                 ConfirmText="确认删除"
-                                 IsOpen="{Binding ShowActivityDeleteConfirm}">
-                <controls:DialogHost.MessageContent>
-                    <StackPanel HorizontalAlignment="Center">
-                        <TextBlock FontSize="13" Foreground="#666" Text="确定要删除这条活动记录吗？" TextAlignment="Center" />
-                        <TextBlock FontSize="13" Foreground="#999" Text="{Binding DeleteActivityTitle}" TextAlignment="Center" />
-                    </StackPanel>
-                </controls:DialogHost.MessageContent>
-            </controls:DialogHost>
-        </Panel>
 
     </Panel>
 </UserControl>

@@ -23,7 +23,6 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     // ===== 子 ViewModel（协调者持有引用，各模块职责单一） =====
     public HomeCoreViewModel Core { get; }
     public VaccineTrackingViewModel VaccineTracking { get; }
-    public ActivityTrackingViewModel ActivityTracking { get; }
     public AbnormalTrackingViewModel AbnormalTracking { get; }
     public AiStatusViewModel AiStatus { get; }
 
@@ -37,21 +36,17 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     {
         Core = new HomeCoreViewModel();
         VaccineTracking = new VaccineTrackingViewModel();
-        ActivityTracking = new ActivityTrackingViewModel();
         AbnormalTracking = new AbnormalTrackingViewModel();
         AiStatus = new AiStatusViewModel();
 
         // 异常恢复后触发首页刷新
         AbnormalTracking.RefreshRequested += async () => await RefreshAsync();
-        // 活动记录删除后触发首页刷新
-        ActivityTracking.RefreshRequested += async () => await RefreshAsync();
 
         // 转发子 ViewModel 的 PropertyChanged 通知到 HomeViewModel，
         // 使 View 层（编译绑定）能在子 VM 属性变更时收到通知并更新 UI。
         ForwardPropertyChanged(Core);
         ForwardPropertyChanged(AiStatus);
         ForwardPropertyChanged(VaccineTracking);
-        ForwardPropertyChanged(ActivityTracking);
         ForwardPropertyChanged(AbnormalTracking);
     }
 
@@ -133,9 +128,6 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         var appState = ServiceProvider.Instance.AppState;
         var currentBabyId = appState.CurrentBabyId;
 
-        // 失效活动时间轴缓存：保存记录后 RefreshAsync 会触发，下次打开活动面板需重查 DB 取最新数据
-        ActivityTracking.InvalidateCache();
-
         // UI 线程：属性赋值与集合更新（被取消则静默跳过）
         try
         {
@@ -149,19 +141,18 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
                 if (baby is null)
                     return (Baby: (Baby?)null, TodayRecords: new List<ChildRecord>(),
                             LatestFeed: (ChildRecord?)null, VaccineRecords: new List<ChildRecord>(),
-                            Activities: new List<ChildRecord>(), GrowthRecords: new List<ChildRecord>(),
+                            GrowthRecords: new List<ChildRecord>(),
                             AbnormalRecords: new List<ChildRecord>(), Stats: (DayStats?)null);
 
                 var todayRecords = _recordService.GetByDate(DateTime.Today);
                 var stats = _statsService.GetDayStats(DateTime.Today, todayRecords);
                 var latestFeed = _recordService.GetLatest(RecordType.Feed);
                 var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
-                var activities = _recordService.GetByType(RecordType.Activity, 100);
                 var growthRecords = _recordService.GetByType(RecordType.Growth, 1);
                 var abnormalRecords = _recordService.GetByType(RecordType.Abnormal, 1);
                 return (Baby: (Baby?)baby, TodayRecords: todayRecords,
                         LatestFeed: latestFeed, VaccineRecords: vaccineRecords,
-                        Activities: activities, GrowthRecords: growthRecords,
+                        GrowthRecords: growthRecords,
                         AbnormalRecords: abnormalRecords, Stats: (DayStats?)stats);
             }, ct);
 
@@ -172,7 +163,6 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             {
                 Core.Reset();
                 VaccineTracking.Reset();
-                ActivityTracking.ApplyActivity(new List<ChildRecord>());
                 AbnormalTracking.ApplyAbnormal(null, new List<ChildRecord>());
                 AiStatus.Reset();
                 return;
@@ -186,14 +176,12 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             var birthDate = snapshot.Baby.BirthDate;
             var today = DateTime.Today;
             VaccineTracking.ApplyVaccines(snapshot.VaccineRecords, birthDate, today);
-            var tAct = sw.ElapsedMilliseconds;
-            ActivityTracking.ApplyActivity(snapshot.Activities);
             var tAbn = sw.ElapsedMilliseconds;
             AbnormalTracking.ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
 
             sw.Stop();
             s_lastRefreshCompletedUtc = DateTime.UtcNow; // 记录完成时间，用于最小间隔防抖
-            DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAct - tVac}ms activity={tAbn - tAct}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
+            DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAbn - tVac}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
         }
         catch (OperationCanceledException)
         {
@@ -255,25 +243,6 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
     public bool NeedsVaccineExpand => VaccineTracking.NeedsVaccineExpand;
     public double VaccineListMaxHeight => VaccineTracking.VaccineListMaxHeight;
     public ICommand ToggleVaccinePanelCommand => VaccineTracking.ToggleVaccinePanelCommand;
-
-    // 活动追踪
-    public bool IsActivityExpanded { get => ActivityTracking.IsActivityExpanded; set => ActivityTracking.IsActivityExpanded = value; }
-    public bool IsActivityDetailOpen { get => ActivityTracking.IsActivityDetailOpen; set => ActivityTracking.IsActivityDetailOpen = value; }
-    public ActivityLatestItem? LastActivity { get => ActivityTracking.LastActivity; set => ActivityTracking.LastActivity = value; }
-    public string ActivityTimeSince { get => ActivityTracking.ActivityTimeSince; set => ActivityTracking.ActivityTimeSince = value; }
-    public ObservableCollection<ActivityTimelineGroup> ActivityTimelineGroups => ActivityTracking.ActivityTimelineGroups;
-    public bool IsActivityLoading { get => ActivityTracking.IsActivityLoading; set => ActivityTracking.IsActivityLoading = value; }
-    public bool HasMoreActivities => ActivityTracking.HasMoreActivities;
-    public ICommand ToggleActivityPanelCommand => ActivityTracking.ToggleActivityPanelCommand;
-    public ICommand ToggleActivityDetailCommand => ActivityTracking.ToggleActivityDetailCommand;
-    public ICommand CloseActivityDetailCommand => ActivityTracking.CloseActivityDetailCommand;
-    public ICommand LoadMoreActivitiesCommand => ActivityTracking.LoadMoreActivitiesCommand;
-
-    // 活动删除确认对话框（对齐喂养页 ShowDeleteConfirm 模式）
-    public bool ShowActivityDeleteConfirm { get => ActivityTracking.ShowActivityDeleteConfirm; set => ActivityTracking.ShowActivityDeleteConfirm = value; }
-    public string DeleteActivityTitle { get => ActivityTracking.DeleteActivityTitle; set => ActivityTracking.DeleteActivityTitle = value; }
-    public ICommand CancelDeleteActivityCommand => ActivityTracking.CancelDeleteActivityCommand;
-    public ICommand ConfirmDeleteActivityCommand => ActivityTracking.ConfirmDeleteActivityCommand;
 
     // 异常追踪
     public bool HasActiveAbnormal { get => AbnormalTracking.HasActiveAbnormal; set => AbnormalTracking.HasActiveAbnormal = value; }
