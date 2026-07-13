@@ -18,10 +18,6 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
-        <!-- 选中套餐的边框高亮：通过 code-behind 切换 classes.selected -->
-        <Style Selector="Border.plan-card:selected">
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
-        </Style>
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*,Auto">
@@ -165,8 +161,13 @@
                                     <!-- 选中标记：✓ 图标，仅在选中时显示 -->
                                     <Border Grid.Column="1" Width="28" Height="28" CornerRadius="14"
                                             Background="{StaticResource WeuiGreenBrush}"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding $parent[ItemsControl].DataContext.(vm:MembershipViewModel.SelectedPlanType), Converter={x:Static views:MembershipView.IsPlanSelectedConverter}, ConverterParameter={Binding PlanType}}">
+                                            VerticalAlignment="Center">
+                                        <Border.IsVisible>
+                                            <MultiBinding Converter="{x:Static views:MembershipView.PlanSelectedConverter}">
+                                                <Binding Path="PlanType"/>
+                                                <Binding Path="$parent[ItemsControl].DataContext.SelectedPlanType"/>
+                                            </MultiBinding>
+                                        </Border.IsVisible>
                                         <TextBlock Text="✓" Foreground="White" FontSize="16" FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>

@@ -1,6 +1,8 @@
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
+using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
 
@@ -9,6 +11,18 @@ public partial class MembershipView : UserControl
     public MembershipView()
     {
         InitializeComponent();
+    }
+
+    /// <summary>
+    /// 点击套餐卡片：调用 SelectPlanCommand 选定套餐。
+    /// 选中高亮（✓ 图标）通过 MultiBinding 绑定 SelectedPlanType 自动切换，无需手动管理伪类。
+    /// </summary>
+    private void OnPlanCardTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Border border && border.Tag is string planType && DataContext is MembershipViewModel vm)
+        {
+            vm.SelectPlanCommand.Execute(planType);
+        }
     }
 
     /// <summary>会员状态文本：会员显示"会员用户"，非会员显示"普通用户"。</summary>
@@ -26,8 +40,7 @@ public partial class MembershipView : UserControl
     /// <summary>
     /// 套餐选中判断（MultiBinding 转换器）：
     /// values[0] = 当前项的 PlanType，values[1] = ViewModel.SelectedPlanType。
-    /// 两者相等返回 true（选中），否则 false。
-    /// 用于 classes.selected 伪类与 ✓ 图标的 IsVisible。
+    /// 两者相等返回 true（选中），否则 false。用于 ✓ 图标的 IsVisible。
     /// </summary>
     public static readonly IMultiValueConverter PlanSelectedConverter =
         new FuncMultiValueConverter<object?, bool>(values =>
