@@ -5,11 +5,32 @@ namespace ChildNotes.Data;
 
 public static class DbInitializer
 {
+    /// <summary>
+    /// 当前 DB schema 版本号，配合 PRAGMA user_version 使用。
+    /// 新增表/列/索引时递增此版本号，已迁移到该版本的 DB 启动时跳过全部 DDL。
+    /// </summary>
+    private const int CurrentSchemaVersion = 1;
+
     public static void Initialize(DbConnectionFactory factory)
     {
         DevLogger.Log("DB", "DbInitializer.Initialize start");
         using var conn = factory.Create();
         DevLogger.Log("DB", "DbInitializer got connection");
+
+        // 版本检查：已迁移到 CurrentSchemaVersion 的 DB 跳过全部 DDL（CREATE/ALTER/INDEX），
+        // 避免每次启动重复执行 13 表 + 13 列 + 5 索引的 IF NOT EXISTS 探测。
+        // 新库（user_version=0）或版本落后时执行完整 DDL，完成后写 user_version。
+        int dbVersion = GetUserVersion(conn);
+        if (dbVersion >= CurrentSchemaVersion)
+        {
+            DevLogger.Log("DB", $"DbInitializer skip DDL (user_version={dbVersion} >= {CurrentSchemaVersion})");
+            // 仍需清理上次未完成的 sync_log running 记录（运行时数据，非 schema）
+            ClearRunningSyncLog(conn);
+            DevLogger.Log("DB", "DbInitializer.Initialize done (skipped DDL)");
+            return;
+        }
+
+        DevLogger.Log("DB", $"DbInitializer run full DDL (user_version={dbVersion} -> {CurrentSchemaVersion})");
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS app_user (
@@ -235,7 +256,7 @@ CREATE TABLE IF NOT EXISTS sync_log (
         // 启动时清理上次未完成的 running 记录：进程被中断（崩溃/被杀）时
         // SyncTrigger 已写入 running 但未执行 UpdateFinal，残留记录会让 UI
         // 永久显示"进行中"。这里将其标记为 failed，语义与实际一致。
-        conn.ExecuteNonQuery("UPDATE sync_log SET status='failed', message=COALESCE(message,'') || '（上次未完成，已重置）' WHERE status='running';");
+        ClearRunningSyncLog(conn);
 
         // child_record 增量索引：updated_at 用于增量上送查询
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_child_record_updated ON child_record (updated_at);");
@@ -278,7 +299,38 @@ CREATE TABLE IF NOT EXISTS in_app_message (
 CREATE INDEX IF NOT EXISTS idx_in_app_message_user_read
     ON in_app_message (user_id, is_read, created_at);");
 
-        DevLogger.Log("DB", "DbInitializer.Initialize done");
+        // 全部 DDL 执行完成，写入 schema 版本号，后续启动跳过 DDL
+        SetUserVersion(conn, CurrentSchemaVersion);
+        DevLogger.Log("DB", $"DbInitializer.Initialize done (user_version set to {CurrentSchemaVersion})");
+    }
+
+    /// <summary>读取 PRAGMA user_version（SQLite 内置 4 字节整数，不占表空间）。</summary>
+    private static int GetUserVersion(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA user_version;";
+        // Microsoft.Data.Sqlite 返回 Int64，直接 (int) 强转会抛 InvalidCastException。
+        // 用 Convert.ToInt32 安全转换。
+        return Convert.ToInt32(cmd.ExecuteScalar() ?? 0, System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>写入 PRAGMA user_version。</summary>
+    private static void SetUserVersion(SqliteConnection conn, int version)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"PRAGMA user_version = {version};";
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// 清理上次未完成的 sync_log running 记录：进程被中断（崩溃/被杀）时
+    /// SyncTrigger 已写入 running 但未执行 UpdateFinal，残留记录会让 UI
+    /// 永久显示"进行中"。这里将其标记为 failed，语义与实际一致。
+    /// schema 版本检查跳过 DDL 的路径仍需执行此清理（运行时数据，非 schema）。
+    /// </summary>
+    private static void ClearRunningSyncLog(SqliteConnection conn)
+    {
+        conn.ExecuteNonQuery("UPDATE sync_log SET status='failed', message=COALESCE(message,'') || '（上次未完成，已重置）' WHERE status='running';");
     }
 
     /// <summary>
