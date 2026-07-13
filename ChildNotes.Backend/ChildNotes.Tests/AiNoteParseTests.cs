@@ -549,14 +549,15 @@ public class AiNoteParseTests
     }
 
     /// <summary>
-    /// 时间解析：无时段词时按当前实际时间推断 AM/PM
-    /// 当前为下午（Hour >= 12）→ 5点=17:00；当前为上午（Hour < 12）→ 5点=05:00
+    /// 时间解析：无时段词时取最近的过去时刻
+    /// 算法：计算 AM 候选（baseHour:00）和 PM 候选（baseHour+12:00），
+    /// 选择 <= 当前时间且最接近的；若都 > 当前时间，取 AM。
     /// </summary>
     [Theory]
-    [InlineData("5点吃了奶", 5)]  // 小时数 5 < 12，触发 12 小时制推断
-    [InlineData("8点半睡觉", 8)]  // 小时数 8 < 12，触发 12 小时制推断
-    [InlineData("10点吃奶", 10)]
-    public void ExtractTime_NoPeriodWord_InfersByCurrentTime(string text, int baseHour)
+    [InlineData("5点吃了奶", 5, 0)]  // 小时数 5 < 12，触发 12 小时制推断
+    [InlineData("8点半睡觉", 8, 30)]
+    [InlineData("10点吃奶", 10, 0)]
+    public void ExtractTime_NoPeriodWord_PicksNearestPast(string text, int baseHour, int baseMinute)
     {
         var time = AiNoteRuleParser.ExtractTime(text);
         Assert.NotNull(time);
@@ -565,10 +566,17 @@ public class AiNoteParseTests
         var hh = int.Parse(parts[0]);
         var mm = int.Parse(parts[1]);
 
-        // 推断规则：当前 Hour >= 12 → +12；当前 Hour < 12 → 保持
-        var currentHour = DateTime.Now.Hour;
-        var expectedHour = (currentHour >= 12) ? baseHour + 12 : baseHour;
+        // 推断规则：取 AM/PM 候选中 <= now 且最近的；都 > now 则取 AM
+        var now = DateTime.Now;
+        var amCandidate = new DateTime(now.Year, now.Month, now.Day, baseHour, baseMinute, 0);
+        var pmCandidate = new DateTime(now.Year, now.Month, now.Day, baseHour + 12, baseMinute, 0);
+        int expectedHour;
+        if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+            expectedHour = baseHour + 12; // PM 候选更近且已过去
+        else
+            expectedHour = baseHour; // 取 AM
         Assert.Equal(expectedHour, hh);
+        Assert.Equal(baseMinute, mm);
     }
 
     /// <summary>

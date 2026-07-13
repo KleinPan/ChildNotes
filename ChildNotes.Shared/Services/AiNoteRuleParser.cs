@@ -596,7 +596,7 @@ public static class AiNoteRuleParser
             // 处理 12 小时制表述：
             // 1) 显式 PM 时段词（下午/晚上/傍晚/夜里/夜晚）+ 1~11 点 → +12
             // 2) 显式 AM 时段词（上午/早上/凌晨/清晨）→ 保持 AM
-            // 3) 无时段词 → 按当前实际时间推断（当前为 PM 时段则 +12）
+            // 3) 无时段词 → 取最近的过去时刻（AM/PM 两个候选中选 <= 当前且最近的）
             if (hh < 12)
             {
                 bool isExplicitPm = text.Contains("晚上") || text.Contains("下午") || text.Contains("傍晚") || text.Contains("夜里") || text.Contains("夜晚");
@@ -607,8 +607,15 @@ public static class AiNoteRuleParser
                 }
                 else if (!isExplicitAm)
                 {
-                    // 无显式时段词，按当前时间推断
-                    if (DateTime.Now.Hour >= 12) hh += 12;
+                    // 无显式时段词：取最近的过去时刻
+                    // 候选 AM 时刻 = today hh:mm；候选 PM 时刻 = today (hh+12):mm
+                    // 选择 <= 当前时间且最近的；若都 > 当前时间（罕见，如当前 1:00 输入"2点"），取 AM
+                    var now = DateTime.Now;
+                    var amCandidate = new DateTime(now.Year, now.Month, now.Day, hh, mm, 0);
+                    var pmCandidate = new DateTime(now.Year, now.Month, now.Day, hh + 12, mm, 0);
+                    if (pmCandidate <= now && (amCandidate > now || pmCandidate > amCandidate))
+                        hh += 12; // PM 候选更近且已过去
+                    // 否则保持 AM
                 }
                 // 显式 AM 保持不变
             }
