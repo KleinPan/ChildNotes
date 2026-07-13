@@ -54,6 +54,9 @@
         <ContentControl Grid.Row="0" Content="{Binding AiSettings}" IsTabStop="False"
                         IsVisible="{Binding IsAiSettingsOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding ReminderSettings}" IsTabStop="False"
+                        IsVisible="{Binding IsReminderSettingsOpen}"/>
+
         <ContentControl Grid.Row="0" Content="{Binding SyncSettings}" IsTabStop="False"
                         IsVisible="{Binding IsSyncSettingsOpen}"/>
 

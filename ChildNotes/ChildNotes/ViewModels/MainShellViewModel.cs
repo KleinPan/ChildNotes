@@ -61,6 +61,8 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private AiAnalysisViewModel _aiAnalysis;
     [ObservableProperty] private bool _isAiSettingsOpen;
     [ObservableProperty] private AiSettingsViewModel _aiSettings;
+    [ObservableProperty] private bool _isReminderSettingsOpen;
+    [ObservableProperty] private ReminderSettingsViewModel _reminderSettings;
     [ObservableProperty] private bool _isSyncSettingsOpen;
     [ObservableProperty] private SyncSettingsViewModel _syncSettings;
     [ObservableProperty] private bool _isFamilyOpen;
@@ -284,6 +286,7 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(Points, () => IsPointsOpen = false, () => IsPointsOpen);
         RegisterOverlay(Membership, () => IsMembershipOpen = false, () => IsMembershipOpen);
         RegisterOverlay(AiSettings, () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
+        RegisterOverlay(ReminderSettings, () => IsReminderSettingsOpen = false, () => IsReminderSettingsOpen);
         RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
         RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
         RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
@@ -471,6 +474,12 @@ public partial class MainShellViewModel : ViewModelBase
     {
         AiSettings.Activate();
         IsAiSettingsOpen = true;
+    }
+
+    public void OpenReminderSettings()
+    {
+        ReminderSettings.Activate();
+        IsReminderSettingsOpen = true;
     }
 
     public void OpenSyncSettings()

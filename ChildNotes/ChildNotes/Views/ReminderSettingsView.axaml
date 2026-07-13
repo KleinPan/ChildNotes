@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.ReminderSettingsView"
+             x:DataType="vm:ReminderSettingsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="提醒设置"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- 喂奶提醒 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="喂奶提醒"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="启用喂奶提醒" FontSize="15"/>
+                                <TextBlock Text="记录喂奶后按间隔时长提醒下次喂奶" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding FeedReminderEnabled}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel Margin="14,12">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="提醒间隔" FontSize="14"/>
+                            <TextBlock Grid.Column="1" Text="{Binding FeedIntervalHours, StringFormat='{}{0} 小时'}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="1" Maximum="6" Value="{Binding FeedIntervalHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                        <TextBlock Text="新生儿建议 2-3 小时，大月龄可适当延长" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 睡眠提醒 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="睡眠提醒"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="启用睡眠提醒" FontSize="15"/>
+                                <TextBlock Text="宝宝睡满阈值时长后提醒是否需要唤醒" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding SleepReminderEnabled}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                    <StackPanel Margin="14,12">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                            <TextBlock Grid.Column="0" Text="提醒阈值" FontSize="14"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SleepTimeoutHours, StringFormat=\{0\} 小时}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                        </Grid>
+                        <Slider Minimum="2" Maximum="10" Value="{Binding SleepTimeoutHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                        <TextBlock Text="新生儿睡眠周期短，大月龄可能睡整觉" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Button Content="保存配置" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                        Command="{Binding SaveCommand}"/>
+
+                <!-- 说明 -->
+                <Border Classes="section-title">
+                    <TextBlock Text="说明"/>
+                </Border>
+                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                    <StackPanel Margin="14,12" Spacing="6">
+                        <TextBlock Text="• 开关切换立即生效，时长修改需点保存按钮" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• 修改后对后续记录的喂奶/睡眠立即生效；已调度的旧提醒不会自动更新" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• App 被杀进程后仍能准点触发（由系统 AlarmManager 托管）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="• Android 13+ 需授予通知权限，可在系统设置中确认" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+        </Border>
+    </Grid>
+</UserControl>

@@ -47,6 +47,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenAiSettings();
     }
 
+    private void OnReminderSettingsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenReminderSettings();
+    }
+
     private void OnSyncSettingsTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenSyncSettings();

@@ -29,6 +29,7 @@ public sealed class ServiceProvider
     public AiAnalysisService AiAnalysisService { get; }
     public SyncConfigRepository SyncConfigRepository { get; }
     public SyncLogRepository SyncLogRepository { get; }
+    public ReminderConfigRepository ReminderConfigRepository { get; }
     public ApiSyncService ApiSyncService { get; }
     public SyncTrigger SyncTrigger { get; }
     public NetworkMonitor NetworkMonitor { get; }
@@ -106,8 +107,10 @@ public sealed class ServiceProvider
         // 注入回写触发，避免循环依赖
         RecordService.SyncTrigger = SyncTrigger;
         BabyService.SyncTrigger = SyncTrigger;
+        // 本地提醒配置仓储：供 ReminderService 读取阈值、ReminderSettingsViewModel 读写配置
+        ReminderConfigRepository = new ReminderConfigRepository(DbFactory);
         // 本地提醒服务：依赖 RecordService（反向注入避免循环依赖，与 SyncTrigger 模式一致）
-        ReminderService = new Services.ReminderService(RecordService);
+        ReminderService = new Services.ReminderService(RecordService, ReminderConfigRepository);
         RecordService.ReminderService = ReminderService;
         FamilyApiClient = new FamilyApiClient(SyncConfigRepository);
         AiParseApiClient = new AiParseApiClient(SyncConfigRepository);

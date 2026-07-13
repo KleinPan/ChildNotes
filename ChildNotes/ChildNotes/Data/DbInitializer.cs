@@ -8,8 +8,9 @@ public static class DbInitializer
     /// <summary>
     /// 当前 DB schema 版本号，配合 PRAGMA user_version 使用。
     /// 新增表/列/索引时递增此版本号，已迁移到该版本的 DB 启动时跳过全部 DDL。
+    /// v1→v2：新增 reminder_config 表。
     /// </summary>
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -298,6 +299,22 @@ CREATE TABLE IF NOT EXISTS in_app_message (
         conn.ExecuteNonQuery(@"
 CREATE INDEX IF NOT EXISTS idx_in_app_message_user_read
     ON in_app_message (user_id, is_read, created_at);");
+
+        // ===== 本地提醒配置表（单行，id=1）=====
+        // ReminderService 读取此表调度喂奶/睡眠提醒；用户在"提醒设置"页调整阈值。
+        // 用 IF NOT EXISTS + INSERT OR IGNORE 保证幂等，已建库的老版本升级时自动补建。
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS reminder_config (
+    id INTEGER PRIMARY KEY,
+    feed_reminder_enabled INTEGER NOT NULL DEFAULT 1,
+    feed_interval_hours INTEGER NOT NULL DEFAULT 3,
+    sleep_reminder_enabled INTEGER NOT NULL DEFAULT 1,
+    sleep_timeout_hours INTEGER NOT NULL DEFAULT 4
+);");
+        conn.ExecuteNonQuery(@"
+INSERT OR IGNORE INTO reminder_config (id, feed_reminder_enabled, feed_interval_hours, sleep_reminder_enabled, sleep_timeout_hours)
+VALUES (1, 1, 3, 1, 4);
+");
 
         // 全部 DDL 执行完成，写入 schema 版本号，后续启动跳过 DDL
         SetUserVersion(conn, CurrentSchemaVersion);
