@@ -19,6 +19,25 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
     public ObservableCollection<MilestoneDisplayItem> Milestones { get; } = new();
     public MilestoneEditViewModel MilestoneEdit { get; } = new();
 
+    /// <summary>当前预览的图片路径列表（本地路径或远程 URL）。</summary>
+    public List<string> PreviewPhotos { get; private set; } = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewCountText))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewPrev))]
+    [NotifyPropertyChangedFor(nameof(CanPreviewNext))]
+    private int _previewIndex;
+
+    [ObservableProperty]
+    private Bitmap? _previewCurrentBitmap;
+
+    [ObservableProperty]
+    private bool _isPreviewOpen;
+
+    public string PreviewCountText => PreviewPhotos.Count > 0 ? $"{PreviewIndex + 1} / {PreviewPhotos.Count}" : string.Empty;
+    public bool CanPreviewPrev => PreviewIndex > 0;
+    public bool CanPreviewNext => PreviewIndex < PreviewPhotos.Count - 1;
+
     public GrowthViewModel()
     {
         MilestoneEdit.Saved += OnMilestoneSaved;
@@ -71,6 +90,82 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
     public void OnMilestoneSaved()
     {
         _ = LoadDataAsync();
+    }
+
+    /// <summary>
+    /// 打开大图预览：由 View 点击缩略图时调用。
+    /// index 为点击的缩略图索引，photos 为该条记录的全部图片路径。
+    /// </summary>
+    public void OpenPreview(IReadOnlyList<string> photos, int index)
+    {
+        if (photos.Count == 0) return;
+        PreviewPhotos = photos.ToList();
+        PreviewIndex = Math.Clamp(index, 0, photos.Count - 1);
+        IsPreviewOpen = true;
+        _ = LoadPreviewBitmapAsync();
+    }
+
+    [RelayCommand]
+    private void ClosePreview()
+    {
+        IsPreviewOpen = false;
+        PreviewCurrentBitmap = null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPreviewPrev))]
+    private void PreviewPrev()
+    {
+        if (PreviewIndex <= 0) return;
+        PreviewIndex--;
+        _ = LoadPreviewBitmapAsync();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanPreviewNext))]
+    private void PreviewNext()
+    {
+        if (PreviewIndex >= PreviewPhotos.Count - 1) return;
+        PreviewIndex++;
+        _ = LoadPreviewBitmapAsync();
+    }
+
+    /// <summary>加载当前索引的大图（本地原图或远程原图，不走缩略图缓存）。</summary>
+    private async Task LoadPreviewBitmapAsync()
+    {
+        if (PreviewIndex < 0 || PreviewIndex >= PreviewPhotos.Count) return;
+        var path = PreviewPhotos[PreviewIndex];
+        PreviewCurrentBitmap = null;
+        try
+        {
+            if (!path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!File.Exists(path)) return;
+                using var fs = File.OpenRead(path);
+                // 大图：解码到较大宽度，避免内存爆炸（最大边约 1920）
+                PreviewCurrentBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fs, 1920));
+            }
+            else
+            {
+                // 远程图：直接下载原图（已是压缩后的同步图，无需再降采样）
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+                using var resp = await http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead);
+                if (!resp.IsSuccessStatusCode) return;
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                ms.Position = 0;
+                PreviewCurrentBitmap = await Task.Run(() => new Bitmap(ms));
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("GrowthPreview", $"大图加载失败: {ex.Message}");
+        }
+    }
+
+    partial void OnPreviewIndexChanged(int value)
+    {
+        PreviewPrevCommand.NotifyCanExecuteChanged();
+        PreviewNextCommand.NotifyCanExecuteChanged();
     }
 }
 

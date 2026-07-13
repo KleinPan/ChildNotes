@@ -128,11 +128,31 @@ public partial class GrowthView : UserControl
         }
     }
 
-    /// <summary>关闭图片预览弹窗。</summary>
-    private void OnClosePreview(object? sender, RoutedEventArgs e)
+    /// <summary>
+    /// 点击时间轴上的缩略图：打开大图预览，并阻止事件冒泡到父级（避免触发卡片编辑）。
+    /// 通过 ItemsControl 查找点击项的索引，连同该记录的全部图片路径交给 ViewModel。
+    /// </summary>
+    private void OnPhotoTap(object? sender, PointerPressedEventArgs e)
     {
-        PhotoPreviewPanel.IsVisible = false;
-        PreviewImage.Source = null;
+        e.Handled = true; // 阻止冒泡到 growth-card 的 OnMilestoneTap
+        if (sender is not Border border) return;
+        if (DataContext is not GrowthViewModel vm) return;
+        // 沿可视树向上找到 ItemsControl，其 DataContext 是 MilestoneDisplayItem
+        var itemsControl = border.FindAncestorOfType<ItemsControl>();
+        if (itemsControl?.DataContext is not MilestoneDisplayItem item) return;
+        var index = item.PhotoThumbnails.FindIndex(t => t.Source == (border.DataContext as MilestoneThumbItem)?.Source);
+        if (index < 0) index = 0;
+        vm.OpenPreview(item.Photos, index);
+    }
+
+    /// <summary>点击预览弹窗背景空白处关闭（不响应图片/按钮上的点击）。</summary>
+    private void OnPreviewBackgroundTap(object? sender, PointerPressedEventArgs e)
+    {
+        // 仅当点击的是背景 Panel 本身（非其子元素）时才关闭
+        if (ReferenceEquals(e.Source, sender) && DataContext is GrowthViewModel vm)
+        {
+            vm.ClosePreviewCommand.Execute(null);
+        }
     }
 
     /// <summary>

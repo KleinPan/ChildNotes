@@ -157,7 +157,8 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:MilestoneThumbItem">
                                                     <Border Width="72" Height="72" Margin="0,0,6,6" Background="#F0F0F0"
-                                                            CornerRadius="6" ClipToBounds="True">
+                                                            CornerRadius="6" ClipToBounds="True"
+                                                            PointerPressed="OnPhotoTap">
                                                         <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
                                                     </Border>
                                                 </DataTemplate>
@@ -308,16 +309,37 @@
         </Panel>
 
         <!--  全屏图片预览弹窗（点击缩略图触发）  -->
-        <Panel x:Name="PhotoPreviewPanel" IsVisible="False" Background="#CC000000">
+        <Panel IsVisible="{Binding IsPreviewOpen}" Background="#CC000000"
+               PointerPressed="OnPreviewBackgroundTap">
             <Grid>
-                <Image x:Name="PreviewImage" Width="900" Height="700"
+                <Image Source="{Binding PreviewCurrentBitmap}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Stretch="Uniform" />
+                       Stretch="Uniform" Margin="24" />
+                <!--  关闭按钮  -->
                 <Button Width="44" Height="44" Margin="0,24,24,0"
                         HorizontalAlignment="Right" VerticalAlignment="Top"
                         Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
-                        Click="OnClosePreview"
+                        Command="{Binding ClosePreviewCommand}"
                         Content="✕" FontSize="18" Foreground="Black" />
+                <!--  上一张  -->
+                <Button Width="44" Height="44" Margin="24,0"
+                        HorizontalAlignment="Left" VerticalAlignment="Center"
+                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Command="{Binding PreviewPrevCommand}"
+                        Content="‹" FontSize="24" Foreground="Black" />
+                <!--  下一张  -->
+                <Button Width="44" Height="44" Margin="24,0"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Command="{Binding PreviewNextCommand}"
+                        Content="›" FontSize="24" Foreground="Black" />
+                <!--  计数  -->
+                <Border Margin="0,0,0,24" Padding="12,6"
+                        HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                        Background="#80000000" CornerRadius="12">
+                    <TextBlock Foreground="White" FontSize="13"
+                               Text="{Binding PreviewCountText}" />
+                </Border>
             </Grid>
         </Panel>
 
