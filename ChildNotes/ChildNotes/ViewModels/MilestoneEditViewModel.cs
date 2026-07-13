@@ -127,15 +127,16 @@ public partial class MilestoneEditViewModel : ViewModelBase
 
     /// <summary>
     /// 添加图片：由 View 调用，传入文件选择器返回的 IStorageFile。
-    /// 流程：1) 立即复制到本地 images 目录（本地优先）；2) 加入 Photos 集合立即显示；
-    ///       3) 后台异步上传到服务器，成功后用 URL 替换 Source（用户可见性无变化，但 PhotosJson 序列化为 URL）。
+    /// 流程：1) 压缩为缩略图存本地 images 目录（按会员等级选参数，原图不保留）；
+    ///       2) 加入 Photos 集合立即显示；
+    ///       3) 后台异步上传压缩图到服务器，成功后用 URL 替换 Source（PhotosJson 序列化为 URL）。
     /// </summary>
     public async Task AddPhotoAsync(IStorageFile file)
     {
         if (Photos.Count >= MaxPhotos) return;
 
-        // 1. 复制到本地持久化目录
-        var localPath = await _upload.SaveImageAsync(file);
+        // 1. 压缩为缩略图并保存到本地持久化目录
+        var localPath = await _upload.CompressAndSaveAsync(file);
         if (localPath is null)
         {
             ErrorMessage = "图片保存失败";

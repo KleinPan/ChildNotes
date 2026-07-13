@@ -1,11 +1,9 @@
 using System.Globalization;
-using System.IO;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -69,24 +67,6 @@ public partial class GrowthView : UserControl
 
     public static readonly IValueConverter IsEditingConverter = new FuncValueConverter<string, bool>(
         s => s == "编辑成长时刻");
-
-    /// <summary>
-    /// 本地图片路径 → Bitmap 转换器（用于卡片缩略图绑定）。
-    /// 远程 URL（http 开头）暂不在此加载，避免阻塞 UI；可后续扩展为异步加载。
-    /// </summary>
-    public static readonly IValueConverter LocalPathToBitmapConverter = new FuncValueConverter<string, Bitmap?>(path =>
-    {
-        if (string.IsNullOrWhiteSpace(path)) return null;
-        if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return null;
-        if (!File.Exists(path)) return null;
-        try
-        {
-            using var fs = File.OpenRead(path);
-            // 缩略图用较小宽度解码，降低内存占用
-            return Bitmap.DecodeToWidth(fs, 200);
-        }
-        catch { return null; }
-    });
 
     private void OnAddMilestone(object? sender, PointerPressedEventArgs e)
     {

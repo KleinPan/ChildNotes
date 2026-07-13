@@ -1,5 +1,9 @@
+using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Net.Http;
 using System.Text.Json;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Data.Repositories;
@@ -80,8 +84,114 @@ public sealed class MilestoneDisplayItem
         ? new()
         : JsonSerializer.Deserialize<List<string>>(Milestone.PhotosJson) ?? new();
     public bool HasPhotos => Photos.Count > 0;
-    /// <summary>卡片缩略图最多展示 4 张（与表单上限对齐）。</summary>
-    public List<string> PhotoThumbnails => Photos.Take(4).ToList();
+    /// <summary>卡片缩略图最多展示 4 张（与表单上限对齐）。远程 URL 异步加载，本地路径同步加载。</summary>
+    public List<MilestoneThumbItem> PhotoThumbnails { get; }
 
-    public MilestoneDisplayItem(Milestone m) => Milestone = m;
+    public MilestoneDisplayItem(Milestone m)
+    {
+        Milestone = m;
+        PhotoThumbnails = Photos.Take(4).Select(p => new MilestoneThumbItem(p)).ToList();
+    }
+}
+
+/// <summary>
+/// 成长记录卡片缩略图视图项。
+/// 本地路径：构造时立即同步加载 Bitmap。
+/// 远程 URL：构造时启动后台下载（带进程内缓存），下载完成后通知 UI 更新。
+/// </summary>
+public sealed class MilestoneThumbItem : ObservableObject
+{
+    private Bitmap? _bitmap;
+    public Bitmap? Bitmap
+    {
+        get => _bitmap;
+        private set => SetProperty(ref _bitmap, value);
+    }
+
+    public string Source { get; }
+
+    public MilestoneThumbItem(string source)
+    {
+        Source = source;
+        _ = LoadAsync(this);
+    }
+
+    private static async Task LoadAsync(MilestoneThumbItem item)
+    {
+        var path = item.Source;
+        if (string.IsNullOrWhiteSpace(path)) return;
+
+        // 本地路径：同步存在性检查 + 后台解码
+        if (!path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!File.Exists(path)) return;
+            try
+            {
+                using var fs = File.OpenRead(path);
+                item.Bitmap = await Task.Run(() => Bitmap.DecodeToWidth(fs, 200));
+            }
+            catch (Exception ex)
+            {
+                DevLogger.Log("GrowthThumb", $"本地图片加载失败: {ex.Message}");
+            }
+            return;
+        }
+
+        // 远程 URL：带进程内缓存，避免列表滚动重复下载
+        if (RemoteThumbCache.TryGet(path, out var cached))
+        {
+            item.Bitmap = cached;
+            return;
+        }
+        try
+        {
+            var bmp = await RemoteThumbCache.LoadAsync(path);
+            if (bmp is not null) item.Bitmap = bmp;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("GrowthThumb", $"远程图片加载失败: {ex.Message}");
+        }
+    }
+}
+
+/// <summary>远程缩略图进程内缓存：同 URL 只下载一次，避免列表滚动/重建重复请求。</summary>
+internal static class RemoteThumbCache
+{
+    private static readonly ConcurrentDictionary<string, Bitmap?> _cache = new();
+    private static readonly ConcurrentDictionary<string, Task<Bitmap?>> _loading = new();
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
+
+    public static bool TryGet(string url, out Bitmap? bmp) => _cache.TryGetValue(url, out bmp);
+
+    public static async Task<Bitmap?> LoadAsync(string url)
+    {
+        if (_cache.TryGetValue(url, out var cached)) return cached;
+        // 同 URL 并发请求合并为一次下载
+        var task = _loading.GetOrAdd(url, async u =>
+        {
+            try
+            {
+                using var resp = await Http.GetAsync(u, HttpCompletionOption.ResponseHeadersRead);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    DevLogger.Log("GrowthThumb", $"下载失败: {(int)resp.StatusCode}");
+                    return null;
+                }
+                await using var stream = await resp.Content.ReadAsStreamAsync();
+                // 先读到内存流再解码，避免网络流和 Bitmap 跨线程访问冲突
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                ms.Position = 0;
+                var bmp = await Task.Run(() => Bitmap.DecodeToWidth(ms, 200));
+                _cache.TryAdd(u, bmp);
+                return bmp;
+            }
+            finally
+            {
+                _loading.TryRemove(u, out _);
+            }
+        });
+        return await task;
+    }
 }

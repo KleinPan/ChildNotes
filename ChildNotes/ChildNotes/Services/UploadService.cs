@@ -1,9 +1,12 @@
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Avalonia;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.Services;
 
@@ -52,6 +55,60 @@ public sealed class UploadService
         var fullPath = Path.Combine(_storageRoot, fileName);
         File.Copy(sourcePath, fullPath, true);
         return fullPath;
+    }
+
+    /// <summary>
+    /// 将源图片压缩为同步用缩略图并保存到本地 images/ 目录，返回缩略图本地路径。
+    /// 压缩参数按当前用户会员状态选择：会员高质量（1920px/92%），普通用户（1280px/85%）。
+    /// 失败时返回 null，调用方可回退到 SaveImageAsync 保留原图。
+    /// </summary>
+    public async Task<string?> CompressAndSaveAsync(IStorageFile file)
+    {
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var srcBmp = new Bitmap(stream);
+
+            var (maxEdge, quality) = GetCompressParams();
+            var scaled = ScaleToMaxEdge(srcBmp, maxEdge);
+
+            var fileName = $"img_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}.jpg";
+            var fullPath = Path.Combine(_storageRoot, fileName);
+            await using (var fs = File.Create(fullPath))
+            {
+                scaled.Save(fs, quality);
+            }
+            scaled.Dispose();
+            return fullPath;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Upload", $"CompressAndSaveAsync 失败: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>按当前用户会员状态返回压缩参数。</summary>
+    private static (int maxEdge, int quality) GetCompressParams()
+    {
+        var user = Infrastructure.ServiceProvider.Instance.AuthService.CurrentUser;
+        var isMember = MembershipConstants.IsActive(user?.MembershipExpireAt);
+        return isMember
+            ? (MembershipConstants.MemberPhotoMaxEdge, MembershipConstants.MemberPhotoJpegQuality)
+            : (MembershipConstants.FreePhotoMaxEdge, MembershipConstants.FreePhotoJpegQuality);
+    }
+
+    /// <summary>按最大边等比缩放（若原图小于 maxEdge 则不放大）。返回新 Bitmap，调用方负责释放。</summary>
+    private static Bitmap ScaleToMaxEdge(Bitmap src, int maxEdge)
+    {
+        var w = src.PixelSize.Width;
+        var h = src.PixelSize.Height;
+        var longEdge = Math.Max(w, h);
+        if (longEdge <= maxEdge) return src.CreateScaledBitmap(src.PixelSize, BitmapInterpolationMode.HighQuality);
+        var scale = (double)maxEdge / longEdge;
+        var newW = Math.Max(1, (int)(w * scale));
+        var newH = Math.Max(1, (int)(h * scale));
+        return src.CreateScaledBitmap(new PixelSize(newW, newH), BitmapInterpolationMode.HighQuality);
     }
 
     /// <summary>

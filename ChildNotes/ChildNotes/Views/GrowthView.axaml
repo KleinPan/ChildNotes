@@ -147,7 +147,7 @@
                                         <Border Padding="10,8" Background="#F5F5F5" CornerRadius="4" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Classes="growth-content" Text="{Binding Content}" />
                                         </Border>
-                                        <!--  照片缩略图网格（最多 4 张）  -->
+                                        <!--  照片缩略图网格（最多 4 张，本地路径同步加载，远程 URL 异步加载）  -->
                                         <ItemsControl IsVisible="{Binding HasPhotos}" ItemsSource="{Binding PhotoThumbnails}">
                                             <ItemsControl.ItemsPanel>
                                                 <ItemsPanelTemplate>
@@ -155,10 +155,10 @@
                                                 </ItemsPanelTemplate>
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="x:String">
-                                                    <Border Width="72" Height="72" Margin="0,0,6,6" CornerRadius="6" ClipToBounds="True">
-                                                        <Image Source="{Binding Converter={x:Static v:GrowthView.LocalPathToBitmapConverter}}"
-                                                               Stretch="UniformToFill" />
+                                                <DataTemplate x:DataType="vm:MilestoneThumbItem">
+                                                    <Border Width="72" Height="72" Margin="0,0,6,6" Background="#F0F0F0"
+                                                            CornerRadius="6" ClipToBounds="True">
+                                                        <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
                                                     </Border>
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
