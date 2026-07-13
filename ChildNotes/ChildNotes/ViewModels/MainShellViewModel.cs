@@ -237,6 +237,8 @@ public partial class MainShellViewModel : ViewModelBase
 
         _quickInput = new QuickInputViewModel();
         _quickInput.Saved += OnRecordSaved;
+        // AI 记次数用尽 → 跳转会员中心
+        _quickInput.MembershipRequired += OpenMembership;
         // + 按钮点击 → 转发到功能面板展开/收起
         _quickInput.ToggleActionsRequested += () => QuickMenu.ToggleMenuCommand.Execute(null);
         // 输入内容时强制收起功能面板

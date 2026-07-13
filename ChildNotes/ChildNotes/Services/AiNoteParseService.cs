@@ -141,7 +141,11 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         return ruleItems;
     }
 
-    /// <summary>尝试调用后端解析接口；未配置或失败时返回 null。</summary>
+    /// <summary>
+    /// 尝试调用后端解析接口；未配置或一般失败时返回 null（降级到本地 LLM/规则）。
+    /// AI 记次数用尽（AI_NOTE_LIMIT_EXCEEDED）时抛出 <see cref="AiNoteApiException"/>，
+    /// 不降级，由上层提示用户升级会员。
+    /// </summary>
     private async Task<List<AiNoteParseItem>?> TryServerAsync(string text)
     {
         var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
@@ -153,9 +157,21 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note");
         try
         {
-            var batch = await _apiClient.ParseAsync(text);
-            DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{(batch is null ? "null" : $"{batch.Items.Count} 条")}");
-            return batch?.Items;
+            var batch = await _apiClient.ParseWithErrorsAsync(text);
+            DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{batch.Items.Count} 条");
+            return batch.Items;
+        }
+        catch (AiNoteApiException ex)
+        {
+            // AI 次数用尽：不降级，向上抛出由 ViewModel 引导用户升级会员
+            if (ex.IsAiNoteLimitExceeded)
+            {
+                DevLogger.Log("AiNote", "[AI-LOG] AI 记次数已用尽，不降级", DevLogger.Level.Warn);
+                throw;
+            }
+            // 其他业务错误（如文本为空等）：降级到本地
+            DevLogger.Log("AiNote", "[AI-LOG] 后端解析业务失败：" + ex.Message, DevLogger.Level.Warn);
+            return null;
         }
         catch (Exception ex)
         {

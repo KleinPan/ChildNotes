@@ -27,6 +27,9 @@ public partial class QuickInputViewModel : ViewModelBase
     /// <summary>解析并保存成功后通知主壳层刷新首页。</summary>
     public event Action? Saved;
 
+    /// <summary>请求跳转到会员中心（AI 记次数用尽时，由 MainShellViewModel 订阅）。</summary>
+    public event Action? MembershipRequired;
+
     /// <summary>请求展开/收起功能面板（由 MainShellViewModel 订阅转发到 QuickMenu）。</summary>
     public event Action? ToggleActionsRequested;
 
@@ -131,6 +134,13 @@ public partial class QuickInputViewModel : ViewModelBase
             DisplayToast(summary, duration);
             InputText = string.Empty; // 清空后 HasContent=false 自动恢复 + 按钮
             Saved?.Invoke();
+        }
+        catch (AiNoteApiException ex) when (ex.IsAiNoteLimitExceeded)
+        {
+            // AI 记次数用尽：提示并跳转会员中心（与 AI 分析次数用尽的处理一致）
+            DevLogger.Log("QuickInput", "[AI-LOG] AI 记次数已用尽：" + ex.Message, DevLogger.Level.Warn);
+            DisplayToast("今日 AI 记次数已达上限，升级会员可享 100 次/天");
+            MembershipRequired?.Invoke();
         }
         catch (Exception ex)
         {
