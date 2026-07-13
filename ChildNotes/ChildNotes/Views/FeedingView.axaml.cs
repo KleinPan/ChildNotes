@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using ChildNotes.ViewModels;
 
@@ -15,6 +17,16 @@ public partial class FeedingView : UserControl
     private const double SwipeFastVelocity = 0.25;
     // 判定水平/垂直方向的最小位移
     private const double DirectionThreshold = 6;
+
+    // 类型筛选条：选中态背景色（绿色 #07C160），未选中态（浅灰 #F0F0F0）
+    // ConverterParameter 为筛选 key（all/feed/sleep/diaper/activity/other），
+    // 未传 ConverterParameter 时默认与 "all" 比较（用于"全部"按钮）
+    public static readonly IValueConverter FilterBgConverter = new FuncValueConverter<string?, string?, IBrush?>(
+        (selected, filter) => selected == (filter ?? "all") ? Brush.Parse("#07C160") : Brush.Parse("#F0F0F0"));
+
+    // 类型筛选条：选中态文字色（白色），未选中态（深灰 #333333）
+    public static readonly IValueConverter FilterFgConverter = new FuncValueConverter<string?, string?, IBrush?>(
+        (selected, filter) => selected == (filter ?? "all") ? Brushes.White : Brush.Parse("#333333"));
 
     private struct SwipeState
     {

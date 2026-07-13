@@ -4,6 +4,7 @@
              xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:v="using:ChildNotes.Views"
              xmlns:vm="using:ChildNotes.ViewModels"
              d:DesignHeight="844"
              d:DesignWidth="390"
@@ -120,6 +121,48 @@
                 <Border Classes="section-title">
                     <TextBlock Text="记录列表" />
                 </Border>
+
+                <!--  类型筛选条：横向滚动 Pill 标签，选中态绿底白字  -->
+                <ScrollViewer Margin="12,0,12,8" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="all" Content="全部" />
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=feed}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=feed}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="feed" Content="喂奶" />
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=sleep}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=sleep}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="sleep" Content="睡眠" />
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=diaper}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=diaper}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="diaper" Content="尿布" />
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=activity}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=activity}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="activity" Content="活动" />
+                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=other}"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=other}"
+                                BorderThickness="0"
+                                Command="{Binding ApplyTypeFilterCommand}"
+                                CommandParameter="other" Content="其他" />
+                    </StackPanel>
+                </ScrollViewer>
 
                 <ItemsControl ItemsSource="{Binding Records}">
                     <ItemsControl.ItemTemplate>
