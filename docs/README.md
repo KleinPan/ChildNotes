@@ -1,6 +1,6 @@
 # ChildNotes 文档中心
 
-本文档中心是 ChildNotes（爱记）的统一文档入口。当前目录已经按「设计 / 开发 / 发布 / 归档」重组，重复的 Design System、Components、Design Language 等文档已合并到新的规范文件，历史原文统一保留在 `archive/`。
+本文档中心是 ChildNotes（爱记）的统一文档入口。当前目录已经按「设计 / 开发 / 发布 / 归档」重组，重复内容已精简到当前规范；仍需指导后续演进的 `design-system-v0` 与 `design-language-v1` 保留在 `design/`，不归档。
 
 ## 目录结构
 
@@ -12,7 +12,9 @@ docs/
 │   ├── design-language.md
 │   ├── design-system.md
 │   ├── components.md
-│   └── design-tokens.md
+│   ├── design-tokens.md
+│   ├── design-system-v0/
+│   └── design-language-v1/
 ├── development/
 │   ├── architecture.md
 │   ├── backend.md
@@ -44,6 +46,8 @@ docs/
 | [`design/design-system.md`](design/design-system.md) | 视觉系统、品牌、色彩、布局、动效与可访问性 |
 | [`design/components.md`](design/components.md) | 组件分类、核心组件、AI 组件和实现映射 |
 | [`design/design-tokens.md`](design/design-tokens.md) | 颜色、字体、间距、圆角、阴影、动效 Token |
+| [`design/design-system-v0/`](design/design-system-v0/) | Design System 后续演进指导资料 |
+| [`design/design-language-v1/`](design/design-language-v1/) | Design Language 后续演进指导资料 |
 
 ### 开发
 
@@ -63,14 +67,13 @@ docs/
 
 | 目录 | 内容 |
 |---|---|
-| [`archive/design-language-v1/`](archive/design-language-v1/) | 历史设计语言文档原文 |
-| [`archive/design-system-v0/`](archive/design-system-v0/) | 历史品牌与 Design System 文档原文 |
 | [`archive/engineering/`](archive/engineering/) | 历史架构、迁移、发布、SDK 文档原文 |
 | [`archive/frontend-notes/`](archive/frontend-notes/) | 前端专项问题、性能优化和调试复盘原文 |
 
 ## 维护规则
 
 - 新文档默认进入 `design/`、`development/` 或 `release/`，不要再新增 `Docs/`、`docs/DesignSystem/`、`docs/design-language/` 等平行目录。
-- 重复主题先合并到当前权威文档，再把旧版本移入 `archive/`。
+- 重复主题先合并到当前权威文档；只有阶段性、废弃或仅供追溯的旧版本才移入 `archive/`。
+- `design/design-system-v0/` 与 `design/design-language-v1/` 是未来指导资料，不移入 `archive/`。
 - 归档文档只做保留和必要链接修复，不作为最新规范引用。
 - 新增或移动文档后必须更新本 README 和相关交叉链接。

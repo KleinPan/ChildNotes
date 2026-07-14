@@ -49,9 +49,4 @@ Components
 
 ## 历史来源
 
-本规范合并自：
-
-- [`../archive/design-language-v1/components.md`](../archive/design-language-v1/components.md)
-- [`../archive/design-language-v1/component-visual-specification.md`](../archive/design-language-v1/component-visual-specification.md)
-- [`../archive/design-language-v1/component-library-specification.md`](../archive/design-language-v1/component-library-specification.md)
-- [`../archive/design-language-v1/code-mapping-specification.md`](../archive/design-language-v1/code-mapping-specification.md)
+本规范提炼自 [`design-language-v1/README.md`](design-language-v1/README.md)。

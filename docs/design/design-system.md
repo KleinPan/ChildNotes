@@ -43,14 +43,4 @@ ChildNotes 的设计系统负责把设计语言落到可执行的视觉规则：
 
 ## 历史来源
 
-本规范合并自：
-
-- [`../archive/design-system-v0/README.md`](../archive/design-system-v0/README.md)
-- [`../archive/design-system-v0/00-Vision.md`](../archive/design-system-v0/00-Vision.md)
-- [`../archive/design-system-v0/01-Brand.md`](../archive/design-system-v0/01-Brand.md)
-- [`../archive/design-system-v0/02-Design-Principles.md`](../archive/design-system-v0/02-Design-Principles.md)
-- [`../archive/design-system-v0/03-Color-System.md`](../archive/design-system-v0/03-Color-System.md)
-- [`../archive/design-language-v1/ui-design-system.md`](../archive/design-language-v1/ui-design-system.md)
-- [`../archive/design-language-v1/ui-foundation.md`](../archive/design-language-v1/ui-foundation.md)
-- [`../archive/design-language-v1/theme-system.md`](../archive/design-language-v1/theme-system.md)
-- [`../archive/design-language-v1/motion-system.md`](../archive/design-language-v1/motion-system.md)
+本规范提炼自 [`design-system-v0/README.md`](design-system-v0/README.md) 与 [`design-language-v1/README.md`](design-language-v1/README.md)。

@@ -52,7 +52,4 @@ Design Token
 
 ## 历史来源
 
-本规范合并自：
-
-- [`../archive/design-language-v1/design-token-specification.md`](../archive/design-language-v1/design-token-specification.md)
-- [`../archive/design-language-v1/figma-ready-specification.md`](../archive/design-language-v1/figma-ready-specification.md)
+本规范提炼自 [`design-language-v1/README.md`](design-language-v1/README.md)。
