@@ -16,7 +16,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="数据同步"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Sync_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -26,14 +26,14 @@
 
                 <!-- 同步（核心操作区：开关 + 同步状态合并） -->
                 <Border Classes="section-title">
-                    <TextBlock Text="同步"/>
+                    <TextBlock Text="{DynamicResource Sync_SyncLabel}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="启用云同步" FontSize="15"/>
-                                <TextBlock Text="关闭时本地数据仍可正常使用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                <TextBlock Text="{DynamicResource Sync_EnableCloud}" FontSize="15"/>
+                                <TextBlock Text="{DynamicResource Sync_EnableCloudHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
                         </Grid>
@@ -52,19 +52,19 @@
 
                 <!-- 服务器（地址可配置，后期可隐藏编辑入口改为只读） -->
                 <Border Classes="section-title">
-                    <TextBlock Text="服务器"/>
+                    <TextBlock Text="{DynamicResource Sync_Server}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
                         <!-- 开发版：可编辑 TextBox + 保存按钮 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*,Auto"
                               IsVisible="{Binding IsServerUrlEditable}">
-                            <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="13"
                                      PlaceholderText="https://api.example.com"
                                      VerticalAlignment="Center"
                                      BorderThickness="0" Padding="0"/>
-                            <Button Grid.Column="2" Content="保存" Classes="weui-btn mini primary"
+                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn mini primary"
                                     Command="{Binding SaveServerUrlCommand}"
                                     IsVisible="{Binding IsServerUrlDirty}"
                                     Margin="8,0,0,0"/>
@@ -74,14 +74,14 @@
                                 IsVisible="{Binding IsServerUrlDirty}"/>
                         <Grid Margin="14,8" ColumnDefinitions="80,*"
                               IsVisible="{Binding IsServerUrlDirty}">
-                            <TextBlock Grid.Column="0" Text="当前生效" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_CurrentEffect}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="12"
                                        Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                         <!-- 正式版：只读展示当前生效地址 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*"
                               IsVisible="{Binding !IsServerUrlEditable}">
-                            <TextBlock Grid.Column="0" Text="地址" FontSize="14" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="14" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
@@ -90,7 +90,7 @@
 
                 <!-- 网络状态 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="网络状态"/>
+                    <TextBlock Text="{DynamicResource Sync_NetworkStatus}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
@@ -102,7 +102,7 @@
 
                 <!-- 同步日志（最近 10 条，按时间倒序） -->
                 <Border Classes="section-title">
-                    <TextBlock Text="同步日志"/>
+                    <TextBlock Text="{DynamicResource Sync_SyncLog}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <!-- 限定最大高度，超出后内部独立垂直滚动；不影响整页滚动 -->
@@ -133,7 +133,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <!-- 空状态：暂无日志 -->
-                            <TextBlock Text="暂无同步记录" FontSize="13"
+                            <TextBlock Text="{DynamicResource Sync_NoLog}" FontSize="13"
                                        Foreground="{StaticResource WeuiFg2Brush}"
                                        HorizontalAlignment="Center" Margin="0,20"
                                        IsVisible="{Binding SyncLogs.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
@@ -143,15 +143,15 @@
 
                 <!-- 说明 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="说明"/>
+                    <TextBlock Text="{DynamicResource Sync_NotesTitle}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="• 本地数据为优先源，离线可正常使用" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 服务器地址与登录账号由应用自动配置，无需手动填写" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 网络恢复后自动同步；新增记录 5 秒后自动同步" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 同步失败会自动重试，瞬时错误无需手动干预" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 冲突按更新时间合并（后写覆盖）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note5}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.LanguageSettingsView"
+             x:DataType="vm:LanguageSettingsViewModel"
+             Background="{StaticResource WeuiBg0Brush}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Language_Title}"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <!-- 内容区 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Classes="section-title">
+                    <TextBlock Text="{DynamicResource Language_Title}"/>
+                </Border>
+
+                <Border Background="{StaticResource WeuiBg2Brush}"
+                        CornerRadius="{StaticResource WeuiCardRadius}"
+                        Margin="12,4">
+                    <StackPanel>
+                        <!-- 简体中文 -->
+                        <Grid Margin="14,14" ColumnDefinitions="*,Auto"
+                              PointerPressed="OnSelectZhHans">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource Language_ZhHans}" FontSize="15"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Width="22" Height="22"
+                                    CornerRadius="11"
+                                    BorderBrush="{Binding $self.Background}"
+                                    IsVisible="{Binding IsZhHans}">
+                                <Border.Background>
+                                    <SolidColorBrush Color="#07C160"/>
+                                </Border.Background>
+                                <TextBlock Text="✓" Foreground="White" FontSize="13"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+
+                        <!-- English -->
+                        <Grid Margin="14,14" ColumnDefinitions="*,Auto"
+                              PointerPressed="OnSelectEn">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource Language_En}" FontSize="15"/>
+                            </StackPanel>
+                            <Border Grid.Column="1" Width="22" Height="22"
+                                    CornerRadius="11"
+                                    BorderBrush="{Binding $self.Background}"
+                                    IsVisible="{Binding IsEn}">
+                                <Border.Background>
+                                    <SolidColorBrush Color="#07C160"/>
+                                </Border.Background>
+                                <TextBlock Text="✓" Foreground="White" FontSize="13"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{DynamicResource Language_Description}"
+                           FontSize="12" Foreground="{StaticResource WeuiFg2Brush}"
+                           Margin="16,10,16,0" TextWrapping="Wrap"/>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

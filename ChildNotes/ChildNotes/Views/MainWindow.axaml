@@ -5,7 +5,7 @@
         mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
         x:Class="ChildNotes.Views.MainWindow"
         Icon="/Assets/avalonia-logo.ico"
-        Title="成长记录"
+        Title="{DynamicResource App_Name}"
         Width="390" Height="844"
         MinWidth="360" MinHeight="640"
         CanResize="True"

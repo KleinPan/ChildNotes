@@ -83,6 +83,10 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isInAppMessageOpen;
     [ObservableProperty] private InAppMessageViewModel _inAppMessage;
 
+    /// <summary>语言设置弹层（中英文切换）。</summary>
+    [ObservableProperty] private bool _isLanguageSettingsOpen;
+    [ObservableProperty] private LanguageSettingsViewModel _languageSettings;
+
     public HomeViewModel Home { get; }
     public FeedingViewModel Feeding { get; }
     public GrowthViewModel Growth { get; }
@@ -209,6 +213,7 @@ public partial class MainShellViewModel : ViewModelBase
     partial void OnIsHelpOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsPrivacyPolicyOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsInAppMessageOpenChanged(bool value) => RaiseInterceptBackChanged();
+    partial void OnIsLanguageSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
 
     public MainShellViewModel()
     {
@@ -280,6 +285,9 @@ public partial class MainShellViewModel : ViewModelBase
         // 消息中心内标记已读/全部已读后，同步刷新"我的"页红点
         _inAppMessage.UnreadCountChanged += () => Mine.RefreshUnreadMessages();
 
+        // 语言设置
+        _languageSettings = new LanguageSettingsViewModel();
+
         // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
         RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
         RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
@@ -295,6 +303,7 @@ public partial class MainShellViewModel : ViewModelBase
         RegisterOverlay(Help, () => IsHelpOpen = false, () => IsHelpOpen);
         RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
         RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
+        RegisterOverlay(LanguageSettings, () => IsLanguageSettingsOpen = false, () => IsLanguageSettingsOpen);
 
         // 订阅 QuickMenu.IsMenuOpen 变化，触发返回拦截状态检查
         QuickMenu.PropertyChanged += (_, e) =>
@@ -542,6 +551,12 @@ public partial class MainShellViewModel : ViewModelBase
             await InAppMessage.LoadAsync();
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenInAppMessage failed: " + ex); }
+    }
+
+    /// <summary>打开语言设置页（中英文切换）。</summary>
+    public void OpenLanguageSettings()
+    {
+        IsLanguageSettingsOpen = true;
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>

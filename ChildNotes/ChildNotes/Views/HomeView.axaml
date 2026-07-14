@@ -101,7 +101,7 @@
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
                                         <TextBlock HorizontalAlignment="Center" FontSize="17" Text="📊" />
                                         <TextBlock HorizontalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="#0A84FF"
-                                                   Text="统计" />
+                                                   Text="{DynamicResource Home_Stats}" />
                                     </StackPanel>
                                 </Button>
                                 <!--  原版 bs-action-entry.sign: 浅橙底 + 橙边框  -->
@@ -112,7 +112,7 @@
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
                                         <TextBlock HorizontalAlignment="Center" FontSize="17" Foreground="#E86F24" Text="✓" />
                                         <TextBlock HorizontalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="#E86F24"
-                                                   Text="签到" />
+                                                   Text="{DynamicResource Home_CheckIn}" />
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -131,7 +131,7 @@
                                             Background="{StaticResource FeedAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="🍼 距上次喂奶" />
+                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_LastFeed}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding LastFeedAgoText}" />
                                             <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{Binding LastFeedSummary}" />
@@ -147,7 +147,7 @@
                                             Background="{StaticResource DiaperAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="💩 换尿布" />
+                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_Diaper}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding DiaperTodayText}" />
                                             <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{Binding DiaperDetailText}" />
@@ -166,10 +166,10 @@
                                             Background="{StaticResource SleepAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="😴 今日已睡" />
+                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_SleepToday}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding SleepTodayText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="1次" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{DynamicResource Home_SleepCount}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -182,7 +182,7 @@
                                             Background="{StaticResource GrowthAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="📏 身高体重" />
+                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_HeightWeight}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding LatestHeightText}" />
                                             <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="/" />
@@ -208,7 +208,7 @@
                         <TextBlock Margin="42,0,0,0" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" Text="{Binding AiStatusSubtitle}" />
                         <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12"
                                    Foreground="{StaticResource WeuiFg2Brush}"
-                                   Text="—— 宝宝的变化 ~" />
+                                   Text="{DynamicResource Home_AiChangeHint}" />
                         <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="6">
                             <PathIcon Width="14" Height="14" Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource WeuiYellowBrush}" />
                             <TextBlock FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding AiTipText}" />
@@ -223,7 +223,7 @@
                             <PathIcon Grid.Column="0" Width="18" Height="18" VerticalAlignment="Center"
                                       Data="{StaticResource icon-vaccine}" />
                             <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
-                                       FontWeight="SemiBold" Text="疫苗追踪" />
+                                       FontWeight="SemiBold" Text="{DynamicResource Home_VaccineTracking}" />
                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{StaticResource WeuiFg2Brush}"
                                        Text="{Binding VaccineProgressText}" />
@@ -233,7 +233,7 @@
                                     IsVisible="{Binding NeedsVaccineExpand}" />
                             <Button Grid.Column="4" Margin="6,0,0,0" Classes="tracker-btn-primary"
                                     Command="{Binding QuickRecordCommand}"
-                                    CommandParameter="vaccine" Content="补记" />
+                                    CommandParameter="vaccine" Content="{DynamicResource Home_QuickRecord}" />
                         </Grid>
                         <!--
                             疫苗列表：ListBox 自带虚拟化（VirtualizingStackPanel）
@@ -295,7 +295,7 @@
                             <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource WeuiRedBrush}"
-                                       Text="异常 / 生病记" />
+                                       Text="{DynamicResource Home_AbnormalTracking}" />
                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
                                        Foreground="{StaticResource WeuiRedBrush}"
                                        IsVisible="{Binding HasActiveAbnormal}"
@@ -304,7 +304,7 @@
                                     Background="{StaticResource WeuiRedBrush}"
                                     Classes="tracker-btn-primary"
                                     Command="{Binding QuickRecordCommand}"
-                                    CommandParameter="abnormal" Content="记录" />
+                                    CommandParameter="abnormal" Content="{DynamicResource Home_Record}" />
                         </Grid>
 
                         <!--  活动异常状态摘要（发烧/腹泻/其他异常），无活动异常时隐藏  -->
@@ -314,10 +314,10 @@
                                 <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="8">
                                     <Button Padding="10,4" Background="White" BorderBrush="#FFCDD2" Classes="tracker-btn-outline"
                                             Command="{Binding QuickRecordCommand}"
-                                            CommandParameter="abnormal" Content="继续记录" FontSize="11" Foreground="#C62828" />
+                                            CommandParameter="abnormal" Content="{DynamicResource Home_ContinueRecord}" FontSize="11" Foreground="#C62828" />
                                     <Button Padding="10,4" Background="White" BorderBrush="#07C160" Classes="tracker-btn-outline"
                                             Command="{Binding MarkAbnormalResolvedCommand}"
-                                            Content="已恢复" FontSize="11" Foreground="#07C160"
+                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="#07C160"
                                             IsVisible="{Binding HasOtherAbnormal}" />
                                 </StackPanel>
                             </StackPanel>

@@ -123,9 +123,9 @@
                 <StackPanel Margin="0,40,0,32" HorizontalAlignment="Center">
                     <TextBlock Margin="0,0,0,8" HorizontalAlignment="Center" FontSize="40" Text="📆" />
                     <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="#5D4037"
-                               Text="成长记录" />
+                               Text="{DynamicResource Growth_Title}" />
                     <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F"
-                               Text="记录宝宝每一个重要时刻" />
+                               Text="{DynamicResource Growth_Subtitle}" />
                 </StackPanel>
 
                 <ItemsControl ItemsSource="{Binding Milestones}">
@@ -176,7 +176,7 @@
                                            DotSize="14" DotTopMargin="10" HalfSpacing="20" LineBrush="#EEE"
                                            LineWidth="2" />
                     <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card-add" PointerPressed="OnAddMilestone">
-                        <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="#BBB" Text="记录成长时刻" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="#BBB" Text="{DynamicResource Growth_AddMoment}" />
                     </Border>
                 </Grid>
 
@@ -186,12 +186,12 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="10">
                         <TextBlock HorizontalAlignment="Center" FontSize="36" Text="🌱" />
                         <TextBlock HorizontalAlignment="Center" FontSize="15" FontWeight="SemiBold" Foreground="#8D6E63"
-                                   Text="还没有成长记录" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="点击上方「记录成长时刻」"
+                                   Text="{DynamicResource Growth_EmptyTitle}" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="{DynamicResource Growth_EmptyHint1}"
                                    TextAlignment="Center" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="添加宝宝的第一个里程碑吧~"
+                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="{DynamicResource Growth_EmptyHint2}"
                                    TextAlignment="Center" />
-                        <Button Margin="0,8,0,0" Classes="weui-btn primary" Command="{Binding AddMilestoneCommand}" Content="立即添加" />
+                        <Button Margin="0,8,0,0" Classes="weui-btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -224,30 +224,30 @@
                                 放在表单顶部可确保展开时有充足空间，不会被底部保存按钮遮挡
                             -->
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="日期" />
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditDate}" />
                                 <ctrl:DateWheelPicker HorizontalAlignment="Stretch"
                                                       SelectedDate="{Binding MilestoneEdit.RecordDate, Mode=TwoWay}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="标题" />
-                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="#F5F5F5" CornerRadius="6" PlaceholderText="如：第一次翻身、第一次叫妈妈..."
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditTitle}" />
+                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="#F5F5F5" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
                                          Text="{Binding MilestoneEdit.Title}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="详细内容（选填）" />
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditContentLabel}" />
                                 <TextBox Height="100" Padding="12,8" VerticalContentAlignment="Top" AcceptsReturn="True"
-                                         Background="#F5F5F5" CornerRadius="6" PlaceholderText="记录这个美好时刻的细节..."
+                                         Background="#F5F5F5" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
                                          Text="{Binding MilestoneEdit.Content}"
                                          TextWrapping="Wrap" />
                             </StackPanel>
                             <!--  照片编辑区：网格 + 添加按钮，最多 4 张  -->
                             <StackPanel>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="照片（选填，最多4张）" />
+                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditPhotosLabel}" />
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11"
                                                Foreground="{StaticResource WeuiFg2Brush}"
                                                IsVisible="{Binding MilestoneEdit.CanAddPhoto}"
-                                               Text="点击 + 添加" />
+                                               Text="{DynamicResource Growth_EditAddPhotoHint}" />
                                 </Grid>
                                 <WrapPanel>
                                     <ItemsControl HorizontalAlignment="Left" ItemsSource="{Binding MilestoneEdit.Photos}">
@@ -266,7 +266,7 @@
                                                     <!--  上传中指示器  -->
                                                     <Border Background="#80000000" CornerRadius="6" IsVisible="{Binding IsUploading}">
                                                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   FontSize="10" Foreground="White" Text="上传中" />
+                                                                   FontSize="10" Foreground="White" Text="{DynamicResource Growth_Uploading}" />
                                                     </Border>
                                                     <!--  删除按钮（右上角内侧，对齐小程序 top:4rpx right:4rpx）  -->
                                                 <Button Width="22" Height="22" Margin="0,3,3,0"
@@ -297,10 +297,10 @@
                         <Grid ColumnDefinitions="*,Auto">
                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="weui-btn primary"
                                     Command="{Binding MilestoneEdit.SaveCommand}"
-                                    Content="保存" />
+                                    Content="{DynamicResource Common_Save}" />
                             <Button Grid.Column="1" Margin="8,0,0,0" Classes="weui-btn warn"
                                     Command="{Binding MilestoneEdit.DeleteCommand}"
-                                    Content="删除"
+                                    Content="{DynamicResource Common_Delete}"
                                     IsVisible="{Binding MilestoneEdit.SheetTitle, Converter={x:Static v:GrowthView.IsEditingConverter}}" />
                         </Grid>
                     </Border>

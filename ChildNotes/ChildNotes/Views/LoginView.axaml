@@ -17,28 +17,28 @@
                             HorizontalAlignment="Center" Margin="0,0,0,16">
                         <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <TextBlock Text="成长记录" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="记录宝宝成长的每一天" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                    <TextBlock Text="{DynamicResource Login_AppName}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource Login_AppSlogan}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
                                HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
 
                 <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}"
                         Margin="12,0" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                        <TextBlock Text="{DynamicResource Login_Account}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
                                    IsVisible="{Binding !IsRegisterMode}"/>
-                        <TextBlock Text="设置账号" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                        <TextBlock Text="{DynamicResource Login_SetAccount}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
                                    IsVisible="{Binding IsRegisterMode}"/>
-                        <TextBox Text="{Binding Username}" PlaceholderText="请输入用户名" CornerRadius="6"
+                        <TextBox Text="{Binding Username}" PlaceholderText="{DynamicResource Login_AccountPlaceholder}" CornerRadius="6"
                                  Margin="0,0,0,12"/>
 
-                        <TextBlock Text="密码" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
-                        <TextBox Text="{Binding Password}" PlaceholderText="请输入密码" PasswordChar="●" CornerRadius="6"
+                        <TextBlock Text="{DynamicResource Login_Password}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                        <TextBox Text="{Binding Password}" PlaceholderText="{DynamicResource Login_PasswordPlaceholder}" PasswordChar="●" CornerRadius="6"
                                  Margin="0,0,0,12"/>
 
                         <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
-                            <TextBlock Text="昵称" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
-                            <TextBox Text="{Binding NickName}" PlaceholderText="请输入昵称（选填）" CornerRadius="6"/>
+                            <TextBlock Text="{DynamicResource Login_Nickname}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                            <TextBox Text="{Binding NickName}" PlaceholderText="{DynamicResource Login_NicknamePlaceholder}" CornerRadius="6"/>
                         </StackPanel>
 
                         <!-- 服务器地址配置（可折叠，默认展开让首次部署用户先填地址再注册） -->
@@ -46,44 +46,44 @@
                                 HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚙" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="服务器设置" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                <TextBlock Text="{DynamicResource Login_ServerSettings}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
                                            VerticalAlignment="Center" IsVisible="{Binding !ShowServerConfig}"/>
-                                <TextBlock Text="服务器设置 ▼" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                <TextBlock Text="{DynamicResource Login_ServerSettingsToggle}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
                                            VerticalAlignment="Center" IsVisible="{Binding ShowServerConfig}"/>
                             </StackPanel>
                         </Button>
                         <StackPanel IsVisible="{Binding ShowServerConfig}" Margin="0,0,0,12">
-                            <TextBlock Text="服务器地址（留空=纯本地模式）" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{DynamicResource Login_ServerUrlLabel}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,0,0,6"/>
                             <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://your-server.com"
                                      CornerRadius="6"/>
-                            <TextBlock Text="注册前先填地址，账号会同步到后端服务器" FontSize="11"
+                            <TextBlock Text="{DynamicResource Login_ServerUrlHint}" FontSize="11"
                                        Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0"/>
                         </StackPanel>
 
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}"
                                    FontSize="13" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                        <Button Content="登 录" Classes="weui-btn primary"
+                        <Button Content="{DynamicResource Login_LoginBtn}" Classes="weui-btn primary"
                                 Command="{Binding SubmitCommand}"
                                 IsVisible="{Binding !IsRegisterMode}"
                                 Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-                        <Button Content="注 册" Classes="weui-btn primary"
+                        <Button Content="{DynamicResource Login_RegisterBtn}" Classes="weui-btn primary"
                                 Command="{Binding SubmitCommand}"
                                 IsVisible="{Binding IsRegisterMode}"
                                 Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
 
-                        <Button Content="没有账号？去注册" Classes="weui-btn default"
+                        <Button Content="{DynamicResource Login_GoRegister}" Classes="weui-btn default"
                                 Command="{Binding ToggleModeCommand}"
                                 IsVisible="{Binding !IsRegisterMode}"
                                 HorizontalAlignment="Stretch"/>
-                        <Button Content="已有账号？去登录" Classes="weui-btn default"
+                        <Button Content="{DynamicResource Login_GoLogin}" Classes="weui-btn default"
                                 Command="{Binding ToggleModeCommand}"
                                 IsVisible="{Binding IsRegisterMode}"
                                 HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Border>
 
-                <TextBlock Grid.Row="2" Text="本地离线版 · 数据存储于本设备"
+                <TextBlock Grid.Row="2" Text="{DynamicResource Login_LocalMode}"
                            FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
                            HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24,0,0"/>
             </Grid>

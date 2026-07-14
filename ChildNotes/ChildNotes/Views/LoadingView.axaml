@@ -12,9 +12,9 @@
                     Opacity="0">
                 <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
-            <TextBlock x:Name="TitleText" Text="成长记录" FontSize="18" FontWeight="Bold"
+            <TextBlock x:Name="TitleText" Text="{DynamicResource App_Name}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Opacity="0"/>
-            <TextBlock x:Name="SubtitleText" Text="记录宝宝成长的每一天" FontSize="13"
+            <TextBlock x:Name="SubtitleText" Text="{DynamicResource App_Slogan}" FontSize="13"
                        Foreground="{StaticResource WeuiFg1Brush}"
                        HorizontalAlignment="Center" Margin="0,6,0,0" Opacity="0"/>
         </StackPanel>

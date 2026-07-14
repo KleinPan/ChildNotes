@@ -14,7 +14,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="提醒设置"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Reminder_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -24,15 +24,15 @@
 
                 <!-- 喂奶提醒 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="喂奶提醒"/>
+                    <TextBlock Text="{DynamicResource Reminder_FeedSection}"/>
                 </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="启用喂奶提醒" FontSize="15"/>
-                                <TextBlock Text="记录喂奶后按间隔时长提醒下次喂奶" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{DynamicResource Reminder_FeedEnable}" FontSize="15"/>
+                                <TextBlock Text="{DynamicResource Reminder_FeedEnableHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding FeedReminderEnabled}"/>
                         </Grid>
@@ -42,25 +42,25 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="提醒间隔" FontSize="14"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Reminder_FeedInterval}" FontSize="14"/>
                             <TextBlock Grid.Column="1" Text="{Binding FeedIntervalHours, StringFormat='{}{0} 小时'}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
                         </Grid>
                         <Slider Minimum="1" Maximum="6" Value="{Binding FeedIntervalHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                        <TextBlock Text="新生儿建议 2-3 小时，大月龄可适当延长" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_FeedIntervalHint}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
                 <!-- 睡眠提醒 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="睡眠提醒"/>
+                    <TextBlock Text="{DynamicResource Reminder_SleepSection}"/>
                 </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="启用睡眠提醒" FontSize="15"/>
-                                <TextBlock Text="宝宝睡满阈值时长后提醒是否需要唤醒" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{DynamicResource Reminder_SleepEnable}" FontSize="15"/>
+                                <TextBlock Text="{DynamicResource Reminder_SleepEnableHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding SleepReminderEnabled}"/>
                         </Grid>
@@ -70,27 +70,27 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="提醒阈值" FontSize="14"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Reminder_SleepThreshold}" FontSize="14"/>
                             <TextBlock Grid.Column="1" Text="{Binding SleepTimeoutHours, StringFormat=\{0\} 小时}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
                         </Grid>
                         <Slider Minimum="2" Maximum="10" Value="{Binding SleepTimeoutHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                        <TextBlock Text="新生儿睡眠周期短，大月龄可能睡整觉" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_SleepThresholdHint}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
-                <Button Content="保存配置" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource Reminder_Save}" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
                         Command="{Binding SaveCommand}"/>
 
                 <!-- 说明 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="说明"/>
+                    <TextBlock Text="{DynamicResource Reminder_NotesTitle}"/>
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="• 开关切换立即生效，时长修改需点保存按钮" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 修改后对后续记录的喂奶/睡眠立即生效；已调度的旧提醒不会自动更新" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• App 被杀进程后仍能准点触发（由系统 AlarmManager 托管）" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• Android 13+ 需授予通知权限，可在系统设置中确认" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

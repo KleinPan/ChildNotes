@@ -26,7 +26,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="会员中心"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Membership_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -42,7 +42,7 @@
 
                         <!-- AI 记次数（今日） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="AI 记（今日）"/>
+                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="White" Margin="8,0,0,0">
                                 <Run Text="{Binding AiNoteRemainingToday}"/>
                                 <Run Text=" / "/>
@@ -52,7 +52,7 @@
 
                         <!-- AI 分析次数（本周） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="AI 分析（本周）"/>
+                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="White" Margin="8,0,0,0">
                                 <Run Text="{Binding AiAnalysisRemainingThisWeek}"/>
                                 <Run Text=" / "/>
@@ -68,7 +68,7 @@
 
                 <!-- 权益说明 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="会员权益"/>
+                    <TextBlock Text="{DynamicResource Membership_Benefits}"/>
                 </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
@@ -80,9 +80,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="✏️"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="AI 记次数提升"/>
+                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit1Title}"/>
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
-                                           Text="普通用户 10 次/天，会员 100 次/天"/>
+                                           Text="{DynamicResource Membership_Benefit1Desc}"/>
                             </StackPanel>
                         </Grid>
                         <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
@@ -93,9 +93,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="📊"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="AI 分析次数提升"/>
+                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit2Title}"/>
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
-                                           Text="普通用户 1 次/周，会员 10 次/周"/>
+                                           Text="{DynamicResource Membership_Benefit2Desc}"/>
                             </StackPanel>
                         </Grid>
                         <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
@@ -106,9 +106,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🎰"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="抽奖积分折扣"/>
+                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit3Title}"/>
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
-                                           Text="会员抽奖消耗积分享 8 折优惠"/>
+                                           Text="{DynamicResource Membership_Benefit3Desc}"/>
                             </StackPanel>
                         </Grid>
                         <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
@@ -119,9 +119,9 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🖼️"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="成长记录图片高清同步"/>
+                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit4Title}"/>
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
-                                           Text="普通用户 1280px/85% 质量，会员 1920px/92% 接近无损"/>
+                                           Text="{DynamicResource Membership_Benefit4Desc}"/>
                             </StackPanel>
                         </Grid>
                     </StackPanel>
@@ -129,7 +129,7 @@
 
                 <!-- 套餐选择 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="选择套餐"/>
+                    <TextBlock Text="{DynamicResource Membership_SelectPlan}"/>
                 </Border>
 
                 <ItemsControl ItemsSource="{Binding Plans}" Margin="12,4">
@@ -144,7 +144,7 @@
                                             <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold"/>
                                             <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
                                                     IsVisible="{Binding IsRecommended}">
-                                                <TextBlock Text="推荐" FontSize="11" Foreground="White"/>
+                                                <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="11" Foreground="White"/>
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
@@ -184,11 +184,11 @@
         <Border Grid.Row="2" Background="{StaticResource WeuiBg2Brush}" Padding="16,12">
             <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="已选：" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource Membership_Selected}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
                     <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"
                                Text="{Binding SelectedPlanType, Converter={x:Static views:MembershipView.PlanTypeToNameConverter}}"/>
                 </StackPanel>
-                <Button Content="立即开通" Classes="weui-btn primary" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource Membership_Subscribe}" Classes="weui-btn primary" HorizontalAlignment="Stretch"
                         Command="{Binding PayCommand}" IsEnabled="{Binding !Paying}"/>
             </StackPanel>
         </Border>

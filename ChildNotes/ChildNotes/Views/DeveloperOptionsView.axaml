@@ -155,8 +155,8 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="开发者选项"/>
-                <Button Grid.Column="2" Content="清空" Classes="nav-text-btn"
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Dev_Title}"/>
+                <Button Grid.Column="2" Content="{DynamicResource Dev_Clear}" Classes="nav-text-btn"
                         Command="{Binding ClearLogsCommand}"
                         Margin="0,0,4,0"/>
             </Grid>
@@ -167,8 +167,8 @@
                 CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,8,12,4">
             <Grid Margin="14,10" ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="启用动画效果" FontSize="15"/>
-                    <TextBlock Text="关闭可提升性能或满足无障碍需求"
+                    <TextBlock Text="{DynamicResource Dev_AnimEnabled}" FontSize="15"/>
+                    <TextBlock Text="{DynamicResource Dev_AnimHint}"
                                FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
                                Margin="0,2,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
@@ -178,12 +178,12 @@
 
         <!-- 日志工具栏：搜索框 + 级别筛选 -->
         <StackPanel Grid.Row="2" Spacing="6" Margin="12,8,12,4">
-            <TextBox Text="{Binding SearchText}" PlaceholderText="搜索 Tag 或内容…"
+            <TextBox Text="{Binding SearchText}" PlaceholderText="{DynamicResource Dev_SearchPlaceholder}"
                      Classes="log-search"
                      InnerLeftContent="🔍"
                      Margin="0"/>
             <StackPanel Orientation="Horizontal" Spacing="6">
-                <Button Classes="lvl-btn" Content="全部"
+                <Button Classes="lvl-btn" Content="{DynamicResource Dev_FilterAll}"
                         Command="{Binding SelectAllLevelCommand}"
                         Classes.selected="{Binding IsAllLevel}"/>
                 <Button Classes="lvl-btn" Content="Info"
@@ -246,7 +246,7 @@
                 <TextBlock Grid.Column="0" VerticalAlignment="Center"
                            FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
                            Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
-                <Button Grid.Column="1" Content="导出 .txt"
+                <Button Grid.Column="1" Content="{DynamicResource Dev_ExportTxt}"
                         Classes="weui-btn mini primary"
                         Command="{Binding ExportCommand}"
                         IsEnabled="{Binding !IsExporting}"

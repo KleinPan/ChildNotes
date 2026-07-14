@@ -291,22 +291,22 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*,*">
                                 <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBottle}}" PointerPressed="OnFeedBottle">
-                                    <TextBlock Text="🍼 配方奶" />
+                                    <TextBlock Text="{DynamicResource RS_FormulaMilk}" />
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                         Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBreast}}"
                                         PointerPressed="OnFeedBreast">
-                                    <TextBlock Text="🤱 亲喂" />
+                                    <TextBlock Text="{DynamicResource RS_Breastfeed}" />
                                 </Border>
                                 <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsExpressed}}" PointerPressed="OnFeedExpressed">
-                                    <TextBlock Text="🍶 瓶喂母乳" />
+                                    <TextBlock Text="{DynamicResource RS_BottleBreastMilk}" />
                                 </Border>
                             </Grid>
 
                             <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.IsBreast}}">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="← 左侧时长（分钟）" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_LeftDuration}" />
                                         <TextBox x:Name="FeedLeftDurationTextBox" Classes="form-input" KeyboardNavigation.IsTabStop="True"
                                                  PlaceholderText="0"
                                                  Text="{Binding FeedForm.LeftDurationText}" />
@@ -314,7 +314,7 @@
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="→ 右侧时长（分钟）" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_RightDuration}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding FeedForm.RightDurationText}" />
                                     </StackPanel>
                                 </Border>
@@ -323,26 +323,26 @@
                             <StackPanel IsVisible="{Binding FeedForm.FeedType, Converter={x:Static v:AppConverters.NotBreast}}">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="奶量（ml）" />
-                                        <TextBox x:Name="FeedAmountTextBox" Classes="form-input" PlaceholderText="请输入奶量" Text="{Binding FeedForm.AmountText}" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_MilkAmount}" />
+                                        <TextBox x:Name="FeedAmountTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_MilkAmountPlaceholder}" Text="{Binding FeedForm.AmountText}" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
 
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker SelectedDate="{Binding FeedForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Background="#F5F5F5" CornerRadius="8" FontSize="14" SelectedTime="{Binding FeedForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="如：同时喝水 20ml" Text="{Binding FeedForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NotePlaceholder}" Text="{Binding FeedForm.Note}" />
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -352,7 +352,7 @@
                                 <Border Grid.Column="0" Classes="type-card" Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsWet}}" PointerPressed="OnDiaperWet">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock HorizontalAlignment="Center" FontSize="24" Text="💧" />
-                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="嘘嘘" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="{DynamicResource RS_Wet}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0" Classes="type-card"
@@ -360,13 +360,13 @@
                                         PointerPressed="OnDiaperDirty">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock HorizontalAlignment="Center" FontSize="24" Text="💩" />
-                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="便便" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="{DynamicResource RS_Dirty}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="2" Classes="type-card" Classes.active="{Binding DiaperForm.DiaperType, Converter={x:Static v:AppConverters.IsBoth}}" PointerPressed="OnDiaperBoth">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock HorizontalAlignment="Center" FontSize="20" Text="💧💩" />
-                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="都有" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="{DynamicResource RS_Both}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="3" Margin="8,0,0,0" Classes="type-card"
@@ -374,23 +374,23 @@
                                         PointerPressed="OnDiaperDry">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock HorizontalAlignment="Center" FontSize="24" Text="✅" />
-                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="干爽" />
+                                        <TextBlock Margin="0,2,0,0" HorizontalAlignment="Center" FontSize="12" Text="{DynamicResource RS_Dry}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox x:Name="DiaperNoteTextBox" Classes="form-input" PlaceholderText="补充说明..." Text="{Binding DiaperForm.SelectedConsistency}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox x:Name="DiaperNoteTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding DiaperForm.SelectedConsistency}" />
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding DiaperForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding DiaperForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -400,22 +400,22 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSleep}}">
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="开始日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_StartDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding SleepForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="开始时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_StartTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SleepForm.StartTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="结束日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_EndDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding SleepForm.EndDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="结束时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_EndTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SleepForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -425,27 +425,27 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsTemp}}">
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="体温（℃）" />
-                                    <TextBox x:Name="TemperatureTextBox" Classes="form-input" PlaceholderText="输入体温" Text="{Binding TemperatureForm.TemperatureText}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_Temperature}" />
+                                    <TextBox x:Name="TemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperaturePlaceholder}" Text="{Binding TemperatureForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
                             <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding TemperatureForm.IsFeverWarning}">
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverWarn}" />
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding TemperatureForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding TemperatureForm.Note}" />
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker MinWidth="250" Padding="8,4" SelectedDate="{Binding TemperatureForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding TemperatureForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -459,7 +459,7 @@
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="📏" />
                                         <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
                                                    Foreground="{StaticResource WeuiFg1Brush}"
-                                                   Text="身高" />
+                                                   Text="{DynamicResource RS_Height}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                             <TextBox x:Name="GrowthHeightTextBox" Width="80" HorizontalContentAlignment="Center" Background="White"
                                                      CornerRadius="8" FontSize="22" FontWeight="Bold" PlaceholderText="0"
@@ -476,7 +476,7 @@
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="⚖️" />
                                         <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
                                                    Foreground="{StaticResource WeuiFg1Brush}"
-                                                   Text="体重" />
+                                                   Text="{DynamicResource RS_Weight}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                             <TextBox Width="80" HorizontalContentAlignment="Center" Background="White" CornerRadius="8"
                                                      FontSize="22" FontWeight="Bold" PlaceholderText="0"
@@ -490,11 +490,11 @@
                             </Grid>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding GrowthForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding GrowthForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -504,19 +504,19 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsSupplement}}">
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
                                 <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsSupplementType}}" PointerPressed="OnSuppSupplement">
-                                    <TextBlock Text="💚 补充剂" />
+                                    <TextBlock Text="{DynamicResource RS_Supplement}" />
                                 </Border>
                                 <Border Grid.Column="1" Margin="12,0,0,0" Classes="type-tab"
                                         Classes.active="{Binding SupplementForm.SuppType, Converter={x:Static v:AppConverters.IsMedicine}}"
                                         PointerPressed="OnSuppMedicine">
-                                    <TextBlock Text="💊 用药" />
+                                    <TextBlock Text="{DynamicResource RS_Medicine}" />
                                 </Border>
                             </Grid>
 
                             <!--  常用选择区域（含系统默认项 + 用户自定义项）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用内容（右键自定义项可删除）" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CommonItems}" />
                                     <ItemsControl ItemsSource="{Binding SupplementForm.CurrentAllItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -543,14 +543,14 @@
                             <!--  自定义输入  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="自定义添加" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CustomAdd}" />
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入其他补充剂/药品..." Text="{Binding SupplementForm.CustomItem}" />
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomSupplementPlaceholder}" Text="{Binding SupplementForm.CustomItem}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomCommand}"
-                                                Content="+ 添加" CornerRadius="8" Foreground="White" />
+                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="White" />
                                     </Grid>
                                     <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
                                                IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -559,9 +559,9 @@
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="剂量（选填）" />
-                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" PlaceholderText="请输入数量..." Text="{Binding SupplementForm.Dose}" />
-                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="单位" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_DoseOptional}" />
+                                    <TextBox x:Name="SupplementDoseTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_DosePlaceholder}" Text="{Binding SupplementForm.Dose}" />
+                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="{DynamicResource RS_Unit}" />
                                     <ItemsControl ItemsSource="{Binding SupplementForm.AllDoseUnitItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -583,14 +583,14 @@
                                     </ItemsControl>
                                     <!--  自定义单位输入区（点击 + 自定义 切换显示）  -->
                                     <Grid Margin="0,6,0,0" ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入单位（如：滴、片、丸）..."
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_UnitPlaceholder}"
                                                  IsVisible="{Binding SupplementForm.ShowCustomUnitInput}"
                                                  Text="{Binding SupplementForm.CustomUnit}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomUnitCommand}"
-                                                Content="添加" CornerRadius="8" Foreground="White"
+                                                Content="{DynamicResource RS_AddCustomBtn}" CornerRadius="8" Foreground="White"
                                                 IsVisible="{Binding SupplementForm.ShowCustomUnitInput}" />
                                     </Grid>
                                     <Button Margin="0,6,0,0"
@@ -599,7 +599,7 @@
                                             BorderBrush="#07C160"
                                             BorderThickness="1"
                                             Command="{Binding SupplementForm.ToggleCustomUnitInputCommand}"
-                                            Content="+ 自定义"
+                                            Content="{DynamicResource RS_AddCustom}"
                                             CornerRadius="8"
                                             FontSize="12"
                                             Foreground="#07C160"
@@ -608,17 +608,17 @@
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding SupplementForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding SupplementForm.Note}" />
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding SupplementForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SupplementForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -629,14 +629,14 @@
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
                                 <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="左侧时长（分钟）" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftDurationLabel}" />
                                         <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftDurationText}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
                                         CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="右侧时长（分钟）" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_RightDurationLabel}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightDurationText}" />
                                     </StackPanel>
                                 </Border>
@@ -644,37 +644,37 @@
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
                                 <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="左侧奶量（ml）" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftMilkAmount}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftAmountText}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
                                         CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="右侧奶量（ml）" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_RightMilkAmount}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightAmountText}" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="总奶量（ml，选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="不填则自动计算" Text="{Binding PumpForm.TotalAmountText}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_TotalMilkAmount}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_TotalMilkPlaceholder}" Text="{Binding PumpForm.TotalAmountText}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding PumpForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding PumpForm.Note}" />
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding PumpForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding PumpForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -686,7 +686,7 @@
                             <!--  常用辅食选择区域（含系统默认项 + 用户自定义项，右键自定义项可删除）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="常用辅食（可多选，右键自定义项可删除）" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CommonFoods}" />
                                     <ItemsControl ItemsSource="{Binding ComplementaryForm.AllCommonFoodItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -712,14 +712,14 @@
                             <!--  自定义输入  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="自定义添加" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CustomAdd}" />
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="输入其他辅食名称..." Text="{Binding ComplementaryForm.CustomFood}" />
+                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomFoodPlaceholder}" Text="{Binding ComplementaryForm.CustomFood}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding ComplementaryForm.AddCustomCommand}"
-                                                Content="+ 添加" CornerRadius="8" Foreground="White" />
+                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="White" />
                                     </Grid>
                                     <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
                                                IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -728,27 +728,27 @@
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="质地" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_Texture}" />
                                     <Grid ColumnDefinitions="*,*,*">
                                         <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsPuree}}" PointerPressed="OnTexturePuree">
-                                            <TextBlock Text="泥糊" />
+                                            <TextBlock Text="{DynamicResource RS_Texture_Puree}" />
                                         </Border>
                                         <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsMashed}}"
                                                 PointerPressed="OnTextureMashed">
-                                            <TextBlock Text="碎末" />
+                                            <TextBlock Text="{DynamicResource RS_Texture_Minced}" />
                                         </Border>
                                         <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedTexture, Converter={x:Static v:AppConverters.IsLumpy}}" PointerPressed="OnTextureLumpy">
-                                            <TextBlock Text="小块" />
+                                            <TextBlock Text="{DynamicResource RS_Texture_Chunk}" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="食量（选填）" />
-                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" PlaceholderText="请输入数量..." Text="{Binding ComplementaryForm.AmountText}" />
-                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="单位" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_AmountOptional}" />
+                                    <TextBox x:Name="ComplementaryAmountTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_DosePlaceholder}" Text="{Binding ComplementaryForm.AmountText}" />
+                                    <TextBlock Margin="0,8,0,4" Classes="form-label" Text="{DynamicResource RS_Unit}" />
                                     <ItemsControl ItemsSource="{Binding ComplementaryForm.AmountUnitItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -770,40 +770,40 @@
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="反应" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_Reaction}" />
                                     <Grid ColumnDefinitions="*,*,*,*">
                                         <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsNoneReaction}}" PointerPressed="OnReactionNone">
-                                            <TextBlock Text="无" />
+                                            <TextBlock Text="{DynamicResource RS_Reaction_None}" />
                                         </Border>
                                         <Border Grid.Column="1" Margin="6,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsAllergy}}"
                                                 PointerPressed="OnReactionAllergy">
-                                            <TextBlock Text="过敏" />
+                                            <TextBlock Text="{DynamicResource RS_Reaction_Allergy}" />
                                         </Border>
                                         <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsVomitReaction}}" PointerPressed="OnReactionVomit">
-                                            <TextBlock Text="呕吐" />
+                                            <TextBlock Text="{DynamicResource RS_Reaction_Vomit}" />
                                         </Border>
                                         <Border Grid.Column="3" Margin="6,0,0,0" Classes="type-tab"
                                                 Classes.active="{Binding ComplementaryForm.SelectedReaction, Converter={x:Static v:AppConverters.IsDiarrheaReaction}}"
                                                 PointerPressed="OnReactionDiarrhea">
-                                            <TextBlock Text="腹泻" />
+                                            <TextBlock Text="{DynamicResource RS_Reaction_Diarrhea}" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding ComplementaryForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding ComplementaryForm.Note}" />
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding ComplementaryForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ComplementaryForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -814,37 +814,37 @@
                             <!--  体温（选填）：对齐小程序 abnormal-form 的 temperature 字段语义  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="体温（℃，选填）" />
-                                    <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" PlaceholderText="如有发热请填写" Text="{Binding AbnormalForm.TemperatureText}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_TemperatureOptional}" />
+                                    <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperatureFeverHint}" Text="{Binding AbnormalForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
                             <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding AbnormalForm.IsFeverWarning}">
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="⚠️ 体温 ≥ 37.3℃，建议持续监测并注意补水" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverMonitor}" />
                             </Border>
 
                             <!--  呼吸道症状（多选 chip）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="呼吸道症状（可多选）" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RespiratoryLabel}" />
                                     <WrapPanel>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCough}}" PointerPressed="OnRespCough">
-                                            <TextBlock Text="咳嗽(轻微)" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_CoughMild}" />
                                         </Border>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCoughFreq}}" PointerPressed="OnRespCoughFreq">
-                                            <TextBlock Text="咳嗽(频繁)" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_CoughSevere}" />
                                         </Border>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsSneeze}}" PointerPressed="OnRespSneeze">
-                                            <TextBlock Text="打喷嚏" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_Sneeze}" />
                                         </Border>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsRhinorrhea}}" PointerPressed="OnRespRhinorrhea">
-                                            <TextBlock Text="流鼻涕" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_RunnyNose}" />
                                         </Border>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsCongestion}}" PointerPressed="OnRespCongestion">
-                                            <TextBlock Text="鼻塞" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_StuffyNose}" />
                                         </Border>
                                         <Border Classes="abn-chip" Classes.active="{Binding AbnormalForm.Respiratory, Converter={x:Static v:RecordSheetView.RespiratoryContainsTachypnea}}" PointerPressed="OnRespTachypnea">
-                                            <TextBlock Text="呼吸急促" />
+                                            <TextBlock Text="{DynamicResource RS_Resp_RapidBreath}" />
                                         </Border>
                                     </WrapPanel>
                                 </StackPanel>
@@ -853,15 +853,15 @@
                             <!--  消化道异常（呕吐单选）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="消化道异常" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_DigestiveLabel}" />
                                     <Grid ColumnDefinitions="*,*">
                                         <Border Grid.Column="0" Classes="abn-chip-danger" Classes.active="{Binding AbnormalForm.VomitType, Converter={x:Static v:AppConverters.IsVomitSpitUp}}" PointerPressed="OnVomitSpitUp">
-                                            <TextBlock Text="溢奶(轻微)" />
+                                            <TextBlock Text="{DynamicResource RS_Digestive_SpitMild}" />
                                         </Border>
                                         <Border Grid.Column="1" Margin="8,0,0,0" Classes="abn-chip-danger"
                                                 Classes.active="{Binding AbnormalForm.VomitType, Converter={x:Static v:AppConverters.IsVomitProjectile}}"
                                                 PointerPressed="OnVomitProjectile">
-                                            <TextBlock Text="喷射状呕吐(严重)" />
+                                            <TextBlock Text="{DynamicResource RS_Digestive_ProjectileVomit}" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
@@ -870,8 +870,8 @@
                             <!--  其他异常（自由文本）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="其他异常" />
-                                    <TextBox AcceptsReturn="True" Classes="form-input" MaxLength="300" PlaceholderText="如：精神差、哭闹、皮疹、辅食后反应异常等"
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_OtherAbnormalLabel}" />
+                                    <TextBox AcceptsReturn="True" Classes="form-input" MaxLength="300" PlaceholderText="{DynamicResource RS_OtherAbnormalPlaceholder}"
                                              Text="{Binding AbnormalForm.Other}"
                                              TextWrapping="Wrap" />
                                 </StackPanel>
@@ -880,26 +880,26 @@
                             <!--  是否用药  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="是否用药" />
-                                    <CheckBox Content="已服用药物" IsChecked="{Binding AbnormalForm.HasMedicine}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_MedicationLabel}" />
+                                    <CheckBox Content="{DynamicResource RS_Medicated}" IsChecked="{Binding AbnormalForm.HasMedicine}" />
                                 </StackPanel>
                             </Border>
 
                             <!--  备注（选填）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="备注（选填）" />
-                                    <TextBox Classes="form-input" PlaceholderText="补充说明..." Text="{Binding AbnormalForm.Note}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding AbnormalForm.Note}" />
                                 </StackPanel>
                             </Border>
 
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding AbnormalForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="记录时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding AbnormalForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
@@ -924,8 +924,8 @@
                             <Border Grid.Row="0" Classes="vf-entry" PointerPressed="OnVaccineToggleCustomForm">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock FontSize="14" FontWeight="Medium" Text="添加自定义疫苗" />
-                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Text="添加后会进入当前宝宝的疫苗时间线" />
+                                        <TextBlock FontSize="14" FontWeight="Medium" Text="{DynamicResource RS_AddCustomVaccine}" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Text="{DynamicResource RS_AddCustomVaccineHint}" />
                                     </StackPanel>
                                     <Border Grid.Column="1" Padding="10,3" VerticalAlignment="Center" Background="#EEF8FF"
                                             CornerRadius="12">
@@ -938,32 +938,32 @@
                             <StackPanel Grid.Row="1" Margin="0,0,0,12" IsVisible="{Binding VaccineForm.ShowCustomVaccineForm}" Spacing="10">
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="疫苗名称" />
-                                        <TextBox Classes="form-input" PlaceholderText="如：流感疫苗加强针" Text="{Binding VaccineForm.CustomVaccineName}" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccineName}" />
+                                        <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_VaccineNamePlaceholder}" Text="{Binding VaccineForm.CustomVaccineName}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="类型" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_Type}" />
                                         <Grid ColumnDefinitions="*,*">
                                             <Border Grid.Column="0" Margin="0,0,4,0" Classes="vf-segment"
                                                     Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:AppConverters.IsCustomFree}}"
                                                     PointerPressed="OnCustomCategoryFree">
-                                                <TextBlock Text="免费疫苗" />
+                                                <TextBlock Text="{DynamicResource RS_FreeVaccine}" />
                                             </Border>
                                             <Border Grid.Column="1" Margin="4,0,0,0" Classes="vf-segment"
                                                     Classes.active="{Binding VaccineForm.CustomVaccineCategory, Converter={x:Static v:AppConverters.IsCustomPaid}}"
                                                     PointerPressed="OnCustomCategoryPaid">
-                                                <TextBlock Text="自费疫苗" />
+                                                <TextBlock Text="{DynamicResource RS_PaidVaccine}" />
                                             </Border>
                                         </Grid>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="接种时间" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccinationTime}" />
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <TextBox Grid.Column="0" Margin="0,0,8,0" Classes="form-input" PlaceholderText="数值"
+                                            <TextBox Grid.Column="0" Margin="0,0,8,0" Classes="form-input" PlaceholderText="{DynamicResource RS_VaccinationTimePlaceholder}"
                                                      Text="{Binding VaccineForm.CustomVaccineAgeValue}" />
                                             <ComboBox Grid.Column="1" MinWidth="100" ItemsSource="{Binding VaccineForm.CustomVaccineAgeUnits}" SelectedIndex="{Binding VaccineForm.CustomVaccineAgeUnitIndex}" />
                                         </Grid>
@@ -971,11 +971,11 @@
                                 </Border>
                                 <Border Classes="form-section">
                                     <StackPanel>
-                                        <TextBlock Classes="form-label" Text="预防疾病" />
-                                        <TextBox Classes="form-input" PlaceholderText="可不填" Text="{Binding VaccineForm.CustomVaccineDisease}" />
+                                        <TextBlock Classes="form-label" Text="{DynamicResource RS_PreventDisease}" />
+                                        <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_PreventDiseasePlaceholder}" Text="{Binding VaccineForm.CustomVaccineDisease}" />
                                     </StackPanel>
                                 </Border>
-                                <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Click="OnAddCustomVaccine" Content="加入时间线" />
+                                <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Click="OnAddCustomVaccine" Content="{DynamicResource RS_AddToTimeline}" />
                             </StackPanel>
 
                             <!--  C. 已选剂次卡片  -->
@@ -984,7 +984,7 @@
                                     IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="已选择" />
+                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="{DynamicResource RS_Selected}" />
                                         <TextBlock FontSize="14" FontWeight="Medium" Text="{Binding VaccineForm.SelectedPlan.Name}" />
                                         <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}">
                                             <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}" />
@@ -1005,15 +1005,15 @@
                             <Grid Grid.Row="3" Margin="0,4,0,4" ClipToBounds="True" ColumnDefinitions="*,60,*">
                                 <Border Grid.Column="0" Padding="8,6" Background="#EEF8FF" CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#0675B8"
-                                               Text="免费疫苗" />
+                                               Text="{DynamicResource RS_FreeVaccine}" />
                                 </Border>
                                 <Border Grid.Column="1" Margin="4,0" Padding="8,6" Background="#F3F4F6"
                                         CornerRadius="6">
-                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="时间" />
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_TimeAxis}" />
                                 </Border>
                                 <Border Grid.Column="2" Padding="8,6" Background="#FFF7ED" CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#B45309"
-                                               Text="自费疫苗" />
+                                               Text="{DynamicResource RS_PaidVaccine}" />
                                 </Border>
                             </Grid>
 
@@ -1072,9 +1072,9 @@
                                                                         <!--  操作按钮：独立一行，等宽平分（与小程序 vf-time-actions 一致）  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
-                                                                                    Content="已打" />
+                                                                                    Content="{DynamicResource RS_Done}" />
                                                                             <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-skip" Click="OnVaccineSkip"
-                                                                                    Content="跳过" />
+                                                                                    Content="{DynamicResource RS_Skip}" />
                                                                         </Grid>
                                                                         <!--  完成时间  -->
                                                                         <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
@@ -1087,14 +1087,14 @@
                                                                         <!--  已打：改时间 / 取消  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding IsDone}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-edit" Click="OnVaccineEdit"
-                                                                                    Content="改时间" />
+                                                                                    Content="{DynamicResource RS_ChangeTime}" />
                                                                             <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelDone"
-                                                                                    Content="取消" />
+                                                                                    Content="{DynamicResource Common_Cancel}" />
                                                                         </Grid>
                                                                         <!--  已跳过：取消跳过（直接执行，不弹窗）  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*" IsVisible="{Binding IsSkipped}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelSkipped"
-                                                                                    Content="取消跳过" />
+                                                                                    Content="{DynamicResource RS_CancelSkip}" />
                                                                         </Grid>
                                                                     </StackPanel>
                                                                 </Border>
@@ -1104,7 +1104,7 @@
                                                     <TextBlock HorizontalAlignment="Center" FontSize="11"
                                                                Foreground="{StaticResource WeuiFg3Brush}"
                                                                IsVisible="{Binding !HasFree}"
-                                                               Text="暂无" />
+                                                               Text="{DynamicResource RS_None}" />
                                                 </StackPanel>
 
                                                 <!--  中：时间轴节点（固定 60px 宽度，竖线在这里）  -->
@@ -1158,9 +1158,9 @@
                                                                         <!--  操作按钮：独立一行，等宽平分  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
-                                                                                    Content="已打" />
+                                                                                    Content="{DynamicResource RS_Done}" />
                                                                             <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-skip" Click="OnVaccineSkip"
-                                                                                    Content="跳过" />
+                                                                                    Content="{DynamicResource RS_Skip}" />
                                                                         </Grid>
                                                                         <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
                                                                                    IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -1172,14 +1172,14 @@
                                                                         <!--  已打：改时间 / 取消  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding IsDone}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-edit" Click="OnVaccineEdit"
-                                                                                    Content="改时间" />
+                                                                                    Content="{DynamicResource RS_ChangeTime}" />
                                                                             <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelDone"
-                                                                                    Content="取消" />
+                                                                                    Content="{DynamicResource Common_Cancel}" />
                                                                         </Grid>
                                                                         <!--  已跳过：取消跳过（直接执行，不弹窗）  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*" IsVisible="{Binding IsSkipped}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-cancel" Click="OnVaccineCancelSkipped"
-                                                                                    Content="取消跳过" />
+                                                                                    Content="{DynamicResource RS_CancelSkip}" />
                                                                         </Grid>
                                                                     </StackPanel>
                                                                 </Border>
@@ -1189,7 +1189,7 @@
                                                     <TextBlock HorizontalAlignment="Center" FontSize="11"
                                                                Foreground="{StaticResource WeuiFg3Brush}"
                                                                IsVisible="{Binding !HasPaid}"
-                                                               Text="暂无" />
+                                                               Text="{DynamicResource RS_None}" />
                                                 </StackPanel>
                                             </Grid>
                                         </DataTemplate>
@@ -1201,43 +1201,43 @@
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsActivity}}">
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="活动名称" />
-                                    <TextBox x:Name="ActivityNameTextBox" Classes="form-input" PlaceholderText="如：翻身练习、户外散步..." Text="{Binding ActivityForm.Name}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_ActivityName}" />
+                                    <TextBox x:Name="ActivityNameTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_ActivityNamePlaceholder}" Text="{Binding ActivityForm.Name}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="活动类型" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_ActivityType}" />
                                     <Grid ColumnDefinitions="*,*,*">
                                         <Border Grid.Column="0" Classes="type-tab" Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsPlay}}" PointerPressed="OnCategoryPlay">
-                                            <TextBlock Text="游戏" />
+                                            <TextBlock Text="{DynamicResource RS_ActivityType_Game}" />
                                         </Border>
                                         <Border Grid.Column="1" Margin="8,0" Classes="type-tab"
                                                 Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsOutdoor}}"
                                                 PointerPressed="OnCategoryOutdoor">
-                                            <TextBlock Text="户外" />
+                                            <TextBlock Text="{DynamicResource RS_ActivityType_Outdoor}" />
                                         </Border>
                                         <Border Grid.Column="2" Classes="type-tab" Classes.active="{Binding ActivityForm.SelectedCategory, Converter={x:Static v:AppConverters.IsExercise}}" PointerPressed="OnCategoryExercise">
-                                            <TextBlock Text="运动" />
+                                            <TextBlock Text="{DynamicResource RS_ActivityType_Sport}" />
                                         </Border>
                                     </Grid>
                                 </StackPanel>
                             </Border>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="记录日期" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
                                     <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding ActivityForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <TextBlock Classes="form-label" Text="开始时间" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_StartTime}" />
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ActivityForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Classes="form-label" Text="结束时间（选填）" />
-                                    <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="#AAAAAA" Text="留空则用下方时长" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_EndTimeOptional}" />
+                                    <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="#AAAAAA" Text="{DynamicResource RS_EndTimeHint}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
@@ -1246,7 +1246,7 @@
                             </Grid>
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="时长（分钟，选填）" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_DurationOptional}" />
                                     <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding ActivityForm.DurationText}" />
                                 </StackPanel>
                             </Border>
@@ -1263,29 +1263,29 @@
                         BorderBrush="{StaticResource WeuiFg3Brush}"
                         BorderThickness="0,1,0,0"
                         IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.NotVaccine}}">
-                    <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Command="{Binding SaveCommand}" Content="保存记录" />
+                    <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />
                 </Border>
             </Grid>
         </Border>
         <!--  改时间弹窗：包含日期/时间选择器  -->
-        <ctrl:DialogHost Title="改时间"
+        <ctrl:DialogHost Title="{DynamicResource RS_ChangeTimeTitle}"
                          CancelCommand="{Binding CancelVaccineEditCommand}"
-                         CancelText="取消"
+                         CancelText="{DynamicResource Common_Cancel}"
                          ConfirmCommand="{Binding ConfirmVaccineEditCommand}"
-                         ConfirmText="确认"
+                         ConfirmText="{DynamicResource Common_Confirm}"
                          IsOpen="{Binding ShowVaccineEditConfirm}">
             <ctrl:DialogHost.MessageContent>
                 <StackPanel Margin="0,8,0,0" Spacing="12">
                     <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineEditConfirmTitle}" TextAlignment="Center" />
                     <Border Classes="form-section">
                         <StackPanel>
-                            <TextBlock Classes="form-label" Text="接种日期" />
+                            <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccineDate}" />
                             <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding VaccineForm.RecordDateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
                         </StackPanel>
                     </Border>
                     <Border Classes="form-section">
                         <StackPanel>
-                            <TextBlock Classes="form-label" Text="接种时间" />
+                            <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccineTime}" />
                             <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
                                                   SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                         </StackPanel>
@@ -1295,17 +1295,17 @@
         </ctrl:DialogHost>
 
         <!--  取消已打操作确认弹窗  -->
-        <ctrl:DialogHost Title="确认取消"
+        <ctrl:DialogHost Title="{DynamicResource RS_ConfirmCancelTitle}"
                          CancelCommand="{Binding CancelVaccineCancelCommand}"
-                         CancelText="再想想"
+                         CancelText="{DynamicResource RS_ThinkAgain}"
                          ConfirmCommand="{Binding ConfirmVaccineCancelCommand}"
-                         ConfirmText="确认取消"
+                         ConfirmText="{DynamicResource RS_ConfirmCancel}"
                          IsOpen="{Binding ShowVaccineCancelConfirm}">
             <ctrl:DialogHost.MessageContent>
                 <StackPanel HorizontalAlignment="Center" Spacing="6">
-                    <TextBlock FontSize="13" Foreground="#666" Text="确定要取消本次操作吗？" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="#666" Text="{DynamicResource RS_ConfirmCancelMsg}" TextAlignment="Center" />
                     <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineCancelConfirmTitle}" TextAlignment="Center" />
-                    <TextBlock FontSize="12" Foreground="#999" Text="取消后该剂次将恢复为待接种状态。" TextAlignment="Center"
+                    <TextBlock FontSize="12" Foreground="#999" Text="{DynamicResource RS_ConfirmCancelHint}" TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </StackPanel>
             </ctrl:DialogHost.MessageContent>

@@ -15,7 +15,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="AI 分析设置"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource AiSettings_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -27,8 +27,8 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,12,12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="启用 AI 分析" FontSize="15"/>
-                            <TextBlock Text="关闭后无法生成新的分析" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{DynamicResource AiSettings_EnableAi}" FontSize="15"/>
+                            <TextBlock Text="{DynamicResource AiSettings_EnableAiHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
                     </Grid>
@@ -63,15 +63,15 @@
 
                 <!-- "Ai记"解析服务来源 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="Ai 记 解析服务"/>
+                    <TextBlock Text="{DynamicResource AiSettings_ParseService}"/>
                 </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="服务来源" FontSize="14"/>
-                                <TextBlock Text="选择 Ai 记和宝宝喂养分析使用本地大模型还是后端服务" FontSize="11"
+                                <TextBlock Text="{DynamicResource AiSettings_SourceLabel}" FontSize="14"/>
+                                <TextBlock Text="{DynamicResource AiSettings_SourceHint}" FontSize="11"
                                            Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
@@ -133,7 +133,7 @@
                     </StackPanel>
                 </Border>
 
-                <Button Content="保存配置" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource AiSettings_Save}" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
                         Command="{Binding SaveCommand}"/>
 
                 <!-- 说明 -->
@@ -142,12 +142,12 @@
                 </Border>
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="• 配置 OpenAI 兼容的大模型 API，支持 OpenAI、DeepSeek、通义千问、Moonshot 等" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• API 地址默认追加 /v1/chat/completions；若模型仅支持 v2 路径（如阿里云百炼 qwen3），请直接填写完整 URL，例如 https://dashscope.aliyuncs.com/api/ais-v2/chat/completions" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 本地大模型（Ollama/vLLM/LM Studio 等）可不填 API Key" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• API Key 仅保存在本地，不会上传服务器" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 温度越高输出越多样，越低越确定" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="• 修改配置后需重新生成分析才会生效" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note5}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note6}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

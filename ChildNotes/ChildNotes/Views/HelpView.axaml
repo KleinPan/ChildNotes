@@ -14,7 +14,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="使用帮助"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Help_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -28,9 +28,9 @@
                         Background="{StaticResource WeuiBlueBrush}"
                         CornerRadius="{StaticResource WeuiCardRadius}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
-                        <TextBlock Text="Ai记" FontSize="28" FontWeight="Bold" Foreground="White"
+                        <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="White"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="一句话，记录宝宝的一天" FontSize="13" Foreground="#E6FFFFFF"
+                        <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="13" Foreground="#E6FFFFFF"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>

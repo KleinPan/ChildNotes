@@ -47,7 +47,7 @@
                 <Border Grid.Row="0" Classes="nav-bar">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                        <TextBlock Grid.Column="1" Classes="nav-title" Text="宝宝管理"/>
+                        <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource BabyMgr_Title}"/>
                         <TextBlock Grid.Column="2" Text=" " Width="40"/>
                     </Grid>
                 </Border>
@@ -60,8 +60,8 @@
                                 IsVisible="{Binding !HasBaby}">
                             <StackPanel HorizontalAlignment="Center" Spacing="8">
                                 <TextBlock Text="🍼" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="还没有宝宝信息" FontSize="16" FontWeight="SemiBold" Foreground="#222" HorizontalAlignment="Center"/>
-                                <TextBlock Text="先添加宝宝后，就能在这里查看和修改。" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_EmptyTitle}" FontSize="16" FontWeight="SemiBold" Foreground="#222" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_EmptyHint}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center"/>
                             </StackPanel>
                         </Border>
 
@@ -89,7 +89,7 @@
                                             </StackPanel>
                                             <Border Grid.Column="2" Background="#1A07C160" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
                                                     IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
-                                                <TextBlock Text="当前" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"/>
+                                                <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"/>
                                             </Border>
                                             <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                         </Grid>
@@ -102,7 +102,7 @@
 
                 <!-- 底部添加按钮 -->
                 <Border Grid.Row="2" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Padding="16,12">
-                    <Button Content="+ 添加宝宝" Classes="weui-btn primary" CornerRadius="24"
+                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary" CornerRadius="24"
                             HorizontalAlignment="Stretch" MinHeight="48"
                             Click="OnAddTapped"/>
                 </Border>
@@ -149,16 +149,16 @@
                                     </Grid>
                                 </Border>
                             </Button>
-                            <TextBlock Text="点击更换头像" FontSize="11"
+                            <TextBlock Text="{DynamicResource BabyMgr_ChangeAvatar}" FontSize="11"
                                        Foreground="{StaticResource WeuiFg2Brush}"
                                        HorizontalAlignment="Center"/>
 
                             <!-- 性别选择 -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,6">
-                                <Button Content="👦 男宝" Classes="gender-btn"
+                                <Button Content="{DynamicResource BabyMgr_Boy}" Classes="gender-btn"
                                         Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                         Click="OnBoyTap"/>
-                                <Button Content="👧 女宝" Classes="gender-btn" Margin="10,0,0,0"
+                                <Button Content="{DynamicResource BabyMgr_Girl}" Classes="gender-btn" Margin="10,0,0,0"
                                         Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsGirl}}"
                                         Click="OnGirlTap"/>
                             </StackPanel>
@@ -167,8 +167,8 @@
 
                             <!-- 姓名 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="姓名" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
-                                <TextBox x:Name="BabyNameTextBox" Text="{Binding Name}" PlaceholderText="请输入宝宝姓名或小名" MaxLength="20"
+                                <TextBlock Text="{DynamicResource BabyMgr_Name}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <TextBox x:Name="BabyNameTextBox" Text="{Binding Name}" PlaceholderText="{DynamicResource BabyMgr_NamePlaceholder}" MaxLength="20"
                                          BorderThickness="0" Background="Transparent" FontSize="15"
                                          VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
                             </StackPanel>
@@ -177,9 +177,9 @@
 
                             <!-- 出生日期 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="生日" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_Birthday}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
                                 <CalendarDatePicker SelectedDate="{Binding BirthDate}"
-                                                    PlaceholderText="请选择出生日期"
+                                                    PlaceholderText="{DynamicResource BabyMgr_BirthdayPlaceholder}"
                                                     HorizontalAlignment="Stretch" FontSize="15"/>
                             </StackPanel>
 
@@ -192,7 +192,7 @@
                             <!-- 宝宝 ID 行（仅编辑模式可见）：主人可复制给家人用于加入家庭 -->
                             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0"
                                   IsVisible="{Binding IsEditing}">
-                                <TextBlock Grid.Column="0" Text="宝宝 ID" FontSize="13"
+                                <TextBlock Grid.Column="0" Text="{DynamicResource BabyMgr_BabyId}" FontSize="13"
                                            Foreground="{StaticResource WeuiFg1Brush}"
                                            VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding EditingId}" FontSize="12"
@@ -200,12 +200,12 @@
                                            FontFamily="Consolas,Menlo,monospace"
                                            VerticalAlignment="Center" Margin="8,0,0,0"
                                            TextTrimming="CharacterEllipsis"/>
-                                <Button Grid.Column="2" Content="复制" Classes="weui-btn mini"
+                                <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="weui-btn mini"
                                         Click="OnCopyEditingIdTap"/>
                             </Grid>
 
                             <!-- 删除按钮（仅编辑模式） -->
-                            <Button Content="删除此宝宝" Classes="weui-btn warn" CornerRadius="24"
+                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="weui-btn warn" CornerRadius="24"
                                     IsVisible="{Binding IsEditing}"
                                     HorizontalAlignment="Stretch" MinHeight="44" Margin="0,16,0,0"
                                     Click="OnDeleteTapped"/>
@@ -215,10 +215,10 @@
                     <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
                     <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,10,*">
-                            <Button Grid.Column="0" Content="取消" Classes="weui-btn default"
+                            <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default"
                                     CornerRadius="24" MinHeight="40"
                                     Command="{Binding CloseEditorCommand}"/>
-                            <Button Grid.Column="2" Content="保存" Classes="weui-btn primary"
+                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary"
                                     CornerRadius="24" MinHeight="40"
                                     Command="{Binding SaveCommand}"/>
                         </Grid>
@@ -229,8 +229,8 @@
 
         <!-- 删除确认对话框 -->
         <controls:DialogHost IsOpen="{Binding IsDeleteConfirmOpen}"
-                             Title="删除宝宝"
-                             CancelText="取消" ConfirmText="删除"
+                             Title="{DynamicResource BabyMgr_DeleteTitle}"
+                             CancelText="{DynamicResource Common_Cancel}" ConfirmText="{DynamicResource Common_Delete}"
                              CancelCommand="{Binding CloseDeleteConfirmCommand}"
                              ConfirmCommand="{Binding ConfirmDeleteCommand}">
             <controls:DialogHost.MessageContent>

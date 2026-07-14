@@ -82,6 +82,11 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenHelp();
     }
 
+    private void OnLanguageSettingsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenLanguageSettings();
+    }
+
     private MainShellViewModel? FindShell()
     {
         var shell = this.FindAncestorOfType<UserControl>();

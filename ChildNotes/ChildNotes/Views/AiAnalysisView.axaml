@@ -25,7 +25,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="喂养分析"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource AiAnalysis_Title}"/>
                 <Button Grid.Column="2" Classes="nav-back" Command="{Binding OpenConfigCommand}"
                         Content="⚙" FontSize="18" Padding="8,4" Background="Transparent" BorderThickness="0"
                         Foreground="{StaticResource WeuiFg1Brush}"/>
@@ -122,12 +122,12 @@
                         </ItemsControl>
 
                         <!-- 加载更多 -->
-                        <Button Content="加载更多" Classes="weui-btn default" CornerRadius="6" Padding="0,9"
+                        <Button Content="{DynamicResource AiAnalysis_LoadMore}" Classes="weui-btn default" CornerRadius="6" Padding="0,9"
                                 Command="{Binding LoadMoreCommand}"
                                 Margin="12,2,12,6" HorizontalAlignment="Stretch" FontSize="13"
                                 IsVisible="{Binding HasMore}"/>
 
-                        <TextBlock Text="— 已全部加载 —" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
+                        <TextBlock Text="{DynamicResource AiAnalysis_AllLoaded}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
                                    HorizontalAlignment="Center" Margin="0,2,0,8"
                                    IsVisible="{Binding AllLoaded}"/>
 
@@ -135,8 +135,8 @@
                         <Panel IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Margin="0,30,0,0">
                             <StackPanel HorizontalAlignment="Center">
                                 <TextBlock Text="📊" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="暂无分析记录" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                                <TextBlock Text="选择日期范围后点击上方按钮生成" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="16,0"/>
+                                <TextBlock Text="{DynamicResource AiAnalysis_Empty}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource AiAnalysis_EmptyHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="16,0"/>
                             </StackPanel>
                         </Panel>
 
@@ -160,7 +160,7 @@
                             <TextBlock Text="{Binding DetailText}" FontSize="14" TextWrapping="Wrap" LineHeight="24"/>
                         </Border>
 
-                        <Button Content="返回列表" Classes="weui-btn default" CornerRadius="6" Padding="0,11"
+                        <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="weui-btn default" CornerRadius="6" Padding="0,11"
                                 Command="{Binding BackToListCommand}" Margin="12,6,12,8" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Panel>

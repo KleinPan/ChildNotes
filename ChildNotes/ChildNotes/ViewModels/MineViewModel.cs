@@ -13,10 +13,11 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     private readonly AuthService _auth = ServiceProvider.Instance.AuthService;
     private readonly BabyService _babyService = ServiceProvider.Instance.BabyService;
     private readonly InAppMessageService _msgService = ServiceProvider.Instance.InAppMessageService;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private string _nickName = string.Empty;
     [ObservableProperty] private string _avatarUrl = string.Empty;
-    [ObservableProperty] private string _roleText = "家长";
+    [ObservableProperty] private string _roleText = string.Empty;
     [ObservableProperty] private int _babyCount;
 
     /// <summary>会员状态文案（"会员"/"普通用户"），异步从后端加载。</summary>
@@ -33,6 +34,18 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     /// 由 <see cref="BuildConfiguration.IsDevelopmentBuild"/> 编译时决定，运行时恒定。
     /// </summary>
     public bool IsDeveloperOptionsVisible => BuildConfiguration.IsDevelopmentBuild;
+
+    /// <summary>
+    /// 宝宝数量展示文案（"3个宝宝" / "3 babies"）。语言切换时随翻译后缀刷新。
+    /// </summary>
+    public string BabyCountText => $"{BabyCount}{_locale.GetString("Mine_BabyCount_Suffix", "个宝宝")}";
+
+    /// <summary>
+    /// 当前语言显示名（在 MineView 语言入口右侧展示，如 "简体中文" / "English"）。
+    /// </summary>
+    public string LanguageDisplayText => _locale.CurrentLanguage == AppLanguage.En
+        ? _locale.GetString("Language_En", "English")
+        : _locale.GetString("Language_ZhHans", "简体中文");
 
     /// <summary>
     /// 应用版本号（从程序集 InformationalVersion 读取；CI 构建时由 release workflow 用 tag 名覆盖版本号）
@@ -54,16 +67,36 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 
     public event Action? LogoutRequested;
 
+    public MineViewModel()
+    {
+        // 语言切换时刷新所有依赖翻译的属性
+        _locale.LanguageChanged += OnLanguageChanged;
+        // 初始 RoleText
+        RoleText = _locale.GetString("Mine_Role_Parent", "家长");
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 刷新依赖翻译的派生属性
+        RoleText = _locale.GetString("Mine_Role_Parent", "家长");
+        OnPropertyChanged(nameof(BabyCountText));
+        OnPropertyChanged(nameof(LanguageDisplayText));
+        // 会员状态文案重新计算
+        _ = RefreshMembershipStatusAsync();
+    }
+
     public void Activate()
     {
         var user = _auth.CurrentUser;
-        NickName = user?.NickName ?? "未登录";
+        NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
         AvatarUrl = user?.AvatarUrl ?? string.Empty;
 
         BabyList.Clear();
         var babies = _babyService.LoadBabyList();
         foreach (var b in babies) BabyList.Add(b);
         BabyCount = babies.Count;
+        // 宝宝数量变化时刷新派生文案
+        OnPropertyChanged(nameof(BabyCountText));
 
         // 刷新未读消息数（用于"我的"页红点显示）
         RefreshUnreadMessages();
@@ -75,6 +108,8 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     /// <summary>从后端拉取会员状态并刷新文案。会员中心关闭后由 MainShellViewModel 调用。</summary>
     public async Task RefreshMembershipStatusAsync()
     {
+        var activeText = _locale.GetString("Mine_Membership_Active", "会员");
+        var regularText = _locale.GetString("Mine_Membership_Regular", "普通用户");
         try
         {
             var status = await ServiceProvider.Instance.MembershipApiClient.GetStatusAsync();
@@ -82,12 +117,12 @@ public partial class MineViewModel : ViewModelBase, IActivatable
             DateTime? expireAt = null;
             if (!string.IsNullOrEmpty(status?.ExpireAt) && DateTime.TryParse(status.ExpireAt, out var parsed))
                 expireAt = parsed;
-            MembershipStatusText = MembershipConstants.IsActive(expireAt) ? "会员" : "普通用户";
+            MembershipStatusText = MembershipConstants.IsActive(expireAt) ? activeText : regularText;
         }
         catch
         {
             // 后端不可用时不阻塞 UI，显示本地缓存判断
-            MembershipStatusText = MembershipConstants.IsActive(_auth.CurrentUser?.MembershipExpireAt) ? "会员" : "普通用户";
+            MembershipStatusText = MembershipConstants.IsActive(_auth.CurrentUser?.MembershipExpireAt) ? activeText : regularText;
         }
     }
 

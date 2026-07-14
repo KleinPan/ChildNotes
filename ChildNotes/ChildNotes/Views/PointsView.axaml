@@ -36,7 +36,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="积分任务"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Points_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -46,10 +46,10 @@
 
                 <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,28" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="您的积分" FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource Points_YourPoints}" FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
                             <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="White"/>
-                            <TextBlock Text="分" FontSize="16" Foreground="#CCFFFFFF" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
+                            <TextBlock Text="{DynamicResource Points_Unit}" FontSize="16" Foreground="#CCFFFFFF" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
                         </StackPanel>
                         <TextBlock FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,8,0,0">
                             <Run Text="累计获得 "/><Run Text="{Binding TotalEarned}"/><Run Text=" 分 · 已使用 "/><Run Text="{Binding TotalSpent}"/><Run Text=" 分"/>
@@ -59,7 +59,7 @@
 
                 <Border Classes="weui-card" Margin="12,-16,12,8">
                     <StackPanel>
-                        <TextBlock Text="连续签到" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                        <TextBlock Text="{DynamicResource Points_Streak}" FontSize="15" FontWeight="SemiBold" Margin="0,0,0,12"/>
                         <ItemsControl ItemsSource="{Binding Timeline}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
@@ -89,7 +89,7 @@
                 </Border>
 
                 <Border Classes="section-title">
-                    <TextBlock Text="任务赚积分"/>
+                    <TextBlock Text="{DynamicResource Points_TasksEarn}"/>
                 </Border>
 
                 <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">

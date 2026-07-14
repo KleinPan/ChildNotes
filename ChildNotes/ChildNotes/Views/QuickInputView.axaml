@@ -58,7 +58,7 @@
             <!-- 输入框 -->
             <TextBox Grid.Column="0"
                     Classes="quick-input"
-                    PlaceholderText="用一句话记录，AI 帮你分类"
+                    PlaceholderText="{DynamicResource QuickInput_Placeholder}"
                     Text="{Binding InputText}" />
 
             <!-- 有内容时显示发送按钮 -->
@@ -67,9 +67,9 @@
                     Classes="send-btn"
                     Command="{Binding SendCommand}"
                     IsEnabled="{Binding !IsParsing}"
-                    ToolTip.Tip="发送"
+                    ToolTip.Tip="{DynamicResource QuickInput_Send}"
                     IsVisible="{Binding HasContent}">
-                发送
+                <TextBlock Text="{DynamicResource QuickInput_Send}"/>
             </Button>
 
             <!-- 无内容时显示 + 按钮（展开功能面板） -->
@@ -77,7 +77,7 @@
                     Margin="8,0,0,0"
                     Classes="plus-btn"
                     Command="{Binding ToggleActionsCommand}"
-                    ToolTip.Tip="更多记录类型"
+                    ToolTip.Tip="{DynamicResource QuickInput_MoreTypes}"
                     IsVisible="{Binding !HasContent}">
                 <TextBlock Text="＋" FontSize="22" FontWeight="Bold"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>

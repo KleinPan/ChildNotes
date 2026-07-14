@@ -45,6 +45,10 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += OnUiThreadUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
+        // i18n 初始化：加载持久化的语言偏好并应用到 Application.Resources。
+        // 必须在任何 ViewModel 创建之前完成（MineViewModel 构造时订阅 LanguageChanged）。
+        Services.LocaleManager.Instance.Initialize();
+
         _current = this;
         DevLogger.Log("Startup", "OnFrameworkInitializationCompleted start");
         ReleaseLogger.Info("Startup", "OnFrameworkInitializationCompleted start");

@@ -75,6 +75,9 @@
         <ContentControl Grid.Row="0" Content="{Binding InAppMessage}" IsTabStop="False"
                         IsVisible="{Binding IsInAppMessageOpen}"/>
 
+        <ContentControl Grid.Row="0" Content="{Binding LanguageSettings}" IsTabStop="False"
+                        IsVisible="{Binding IsLanguageSettingsOpen}"/>
+
         <!-- 首页底部快捷输入栏：仅在首页显示 且 未打开底部抽屉。
              内含 [输入框][发送按钮(有内容时)] [+ 按钮(无内容时)]，互斥切换。
              抽屉打开时隐藏，避免与 RecordSheet 底部抽屉视觉重叠。 -->
@@ -107,7 +110,7 @@
                         Command="{Binding SwitchTabCommand}" CommandParameter="home">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="🏠" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Classes="tab-text" Text="首页" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="{DynamicResource Tab_Home}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="1" Classes="tab-item"
@@ -115,7 +118,7 @@
                         Command="{Binding SwitchTabCommand}" CommandParameter="feeding">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="🍼" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Classes="tab-text" Text="喂养" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="{DynamicResource Tab_Feeding}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="2" Classes="tab-item"
@@ -123,7 +126,7 @@
                         Command="{Binding SwitchTabCommand}" CommandParameter="growth">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="📏" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Classes="tab-text" Text="成长" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="{DynamicResource Tab_Growth}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
                 <Button Grid.Column="3" Classes="tab-item"
@@ -131,7 +134,7 @@
                         Command="{Binding SwitchTabCommand}" CommandParameter="mine">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="2">
                         <TextBlock Text="👤" FontSize="20" HorizontalAlignment="Center"/>
-                        <TextBlock Classes="tab-text" Text="我的" HorizontalAlignment="Center"/>
+                        <TextBlock Classes="tab-text" Text="{DynamicResource Tab_Mine}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>

@@ -16,8 +16,8 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="家人管理"/>
-                <Button Grid.Column="2" Content="刷新" Classes="weui-btn mini"
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Family_Title}"/>
+                <Button Grid.Column="2" Content="{DynamicResource Family_Refresh}" Classes="weui-btn mini"
                         Command="{Binding RefreshCommand}" Margin="0,0,8,0"/>
             </Grid>
         </Border>
@@ -26,7 +26,7 @@
             <StackPanel>
 
                 <!-- 加入家庭按钮 -->
-                <Button Content="+ 通过宝宝 ID 加入家庭" Classes="weui-btn primary"
+                <Button Content="{DynamicResource Family_JoinById}" Classes="weui-btn primary"
                         Margin="12,12" HorizontalAlignment="Stretch"
                         Click="OnJoinTap"/>
 
@@ -50,14 +50,14 @@
                                             <TextBlock Text="👶" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                             <TextBlock Text="{Binding BabyName}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="我的角色" Classes="weui-btn mini"
+                                        <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="weui-btn mini"
                                                 Click="OnEditRoleTap" Tag="{Binding}"/>
                                     </Grid>
                                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
 
                                     <!-- 宝宝 ID 行：宝宝主人可复制给家人用于加入家庭 -->
                                     <Grid Margin="14,10" ColumnDefinitions="Auto,*,Auto">
-                                        <TextBlock Grid.Column="0" Text="宝宝 ID" FontSize="12"
+                                        <TextBlock Grid.Column="0" Text="{DynamicResource Family_BabyId}" FontSize="12"
                                                    Foreground="{StaticResource WeuiFg1Brush}"
                                                    VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="{Binding BabyId}" FontSize="12"
@@ -65,7 +65,7 @@
                                                    FontFamily="Consolas,Menlo,monospace"
                                                    VerticalAlignment="Center" Margin="8,0,0,0"
                                                    TextTrimming="CharacterEllipsis"/>
-                                        <Button Grid.Column="2" Content="复制" Classes="weui-btn mini"
+                                        <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="weui-btn mini"
                                                 Click="OnCopyBabyIdTap" Tag="{Binding BabyId}"/>
                                     </Grid>
                                     <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
@@ -84,11 +84,11 @@
                                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{Binding NickName}" FontSize="14" FontWeight="Medium"/>
-                                                            <TextBlock Text="（我）" FontSize="12" Foreground="{StaticResource WeuiGreenBrush}"
+                                                            <TextBlock Text="{DynamicResource Family_Me}" FontSize="12" Foreground="{StaticResource WeuiGreenBrush}"
                                                                        IsVisible="{Binding Mine}" Margin="2,0,0,0"/>
                                                             <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4"
                                                                     Padding="4,1" Margin="6,0,0,0" IsVisible="{Binding Owner}">
-                                                                <TextBlock Text="主人" FontSize="10" Foreground="White"/>
+                                                                <TextBlock Text="{DynamicResource Family_Owner}" FontSize="10" Foreground="White"/>
                                                             </Border>
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding RoleName}" FontSize="12"
@@ -114,10 +114,10 @@
             <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="12"
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
-                    <TextBlock Text="加入家庭" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
-                    <TextBlock Text="宝宝 ID" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
-                    <TextBox Text="{Binding JoinBabyId}" PlaceholderText="向宝宝主人索取 ID" Margin="0,0,0,12"/>
-                    <TextBlock Text="选择身份" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="{DynamicResource Family_JoinFamily}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="{DynamicResource Family_BabyId}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <TextBox Text="{Binding JoinBabyId}" PlaceholderText="{DynamicResource Family_JoinPlaceholder}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource Family_SelectRole}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
                     <ItemsControl ItemsSource="{Binding RoleOptions}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -136,8 +136,8 @@
                     <TextBlock Text="{Binding JoinError}" FontSize="12" Foreground="{StaticResource WeuiRedBrush}"
                                Margin="0,0,0,8" TextWrapping="Wrap"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="取消" Classes="weui-btn default" Command="{Binding CloseJoinCommand}"/>
-                        <Button Grid.Column="2" Content="确定加入" Classes="weui-btn primary" Command="{Binding ConfirmJoinCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseJoinCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="weui-btn primary" Command="{Binding ConfirmJoinCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -149,7 +149,7 @@
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
                     <TextBlock Text="{Binding RoleEditorTitle}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
-                    <TextBlock Text="选择身份" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
+                    <TextBlock Text="{DynamicResource Family_SelectRole}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6"/>
                     <ItemsControl ItemsSource="{Binding RoleOptions}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -166,8 +166,8 @@
                     <TextBlock Text="{Binding EditingRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
                                FontSize="12" Foreground="{StaticResource WeuiGreenBrush}" Margin="0,4,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="取消" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
-                        <Button Grid.Column="2" Content="保存" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

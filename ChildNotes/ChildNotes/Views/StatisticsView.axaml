@@ -48,7 +48,7 @@
         <Border Grid.Row="0" Classes="nav-bar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
-                <TextBlock Grid.Column="1" Classes="nav-title" Text="统计分析"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource Stats_Title}"/>
                 <TextBlock Grid.Column="2" Text=" " Width="40"/>
             </Grid>
         </Border>
@@ -60,7 +60,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource WeuiCardRadius}">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="统计分析" FontSize="15" FontWeight="Bold"/>
+                            <TextBlock Text="{DynamicResource Stats_Title}" FontSize="15" FontWeight="Bold"/>
                             <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
                         </StackPanel>
                         <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
@@ -122,7 +122,7 @@
                                 <controls:DateWheelPicker x:Name="StartPicker" SelectedDateChanged="OnStartDateChanged"
                                             HorizontalAlignment="Left" Padding="10,4"
                                             FontSize="12"/>
-                                <TextBlock Text="至" VerticalAlignment="Center" FontSize="12"
+                                <TextBlock Text="{DynamicResource Stats_To}" VerticalAlignment="Center" FontSize="12"
                                            Foreground="{StaticResource WeuiFg2Brush}"/>
                                 <controls:DateWheelPicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
                                             HorizontalAlignment="Left" Padding="10,4"
@@ -136,7 +136,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
                     <Grid ColumnDefinitions="*,*,*">
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="合计" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Stats_Total}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding TotalText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
@@ -144,7 +144,7 @@
                             <TextBlock Text="{Binding AverageText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="峰值" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Stats_Peak}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding MaxText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
@@ -168,7 +168,7 @@
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                             <StackPanel Grid.Column="0">
                                 <TextBlock FontSize="14" FontWeight="SemiBold">
-                                    <Run Text="{Binding CurrentTypeLabel}"/><Run Text="趋势"/>
+                                    <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Trend}"/>
                                 </TextBlock>
                                 <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg1Brush}"
                                            Text="{Binding CurrentTypeUnit}" Margin="0,2,0,0"/>
@@ -249,7 +249,7 @@
                 <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
                     <StackPanel>
                         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10">
-                            <Run Text="{Binding CurrentTypeLabel}"/><Run Text="明细"/>
+                            <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Detail}"/>
                         </TextBlock>
                         <ItemsControl ItemsSource="{Binding SummaryItems}">
                             <ItemsControl.ItemsPanel>

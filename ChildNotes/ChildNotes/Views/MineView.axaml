@@ -30,7 +30,7 @@
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="宝宝" />
+                <TextBlock Text="{DynamicResource Mine_Section_Baby}" />
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
@@ -44,10 +44,10 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="👶" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="宝宝管理" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_BabyManager}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
                                    Foreground="{StaticResource WeuiFg1Brush}"
-                                   Text="{Binding BabyCount, StringFormat=\{0\}个宝宝}" />
+                                   Text="{Binding BabyCountText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -61,7 +61,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="👨‍👩‍👧" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="家人管理" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Family}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -70,7 +70,7 @@
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="工具" />
+                <TextBlock Text="{DynamicResource Mine_Section_Tools}" />
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
@@ -89,7 +89,7 @@
                                        Text="V" />
                         </Border>
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
-                                   Text="会员中心" />
+                                   Text="{DynamicResource Mine_Membership}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
                                    Foreground="{StaticResource WeuiFg1Brush}"
                                    Text="{Binding MembershipStatusText}" />
@@ -112,10 +112,10 @@
                                        Text="析" />
                         </Border>
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
-                                   Text="宝宝喂养分析" />
+                                   Text="{DynamicResource Mine_AiAnalysis}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
                                    Foreground="{StaticResource WeuiFg1Brush}"
-                                   Text="最近一周" />
+                                   Text="{DynamicResource Mine_AiAnalysis_Sub}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -129,7 +129,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📊" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="统计分析" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Statistics}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -143,7 +143,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🎁" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="积分任务" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Points}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -152,11 +152,30 @@
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="设置" />
+                <TextBlock Text="{DynamicResource Mine_Section_Settings}" />
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
                 <StackPanel>
+                    <Grid Margin="14,12" PointerPressed="OnLanguageSettingsTap">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="🌐" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15"
+                                   Text="{DynamicResource Language_Title}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Text="{Binding LanguageDisplayText}" />
+                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Text="›" />
+                    </Grid>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
                     <Grid Margin="14,12" PointerPressed="OnAiSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -165,7 +184,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🤖" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="AI 分析设置" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_AiSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -179,7 +198,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🔔" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="提醒设置" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_ReminderSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -193,7 +212,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="☁️" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="数据同步" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_SyncSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -209,7 +228,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🔧" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="开发者选项" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_DeveloperOptions}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -224,7 +243,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📜" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="隐私政策" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_PrivacyPolicy}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -238,7 +257,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📑" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="用户协议" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_UserAgreement}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -255,7 +274,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📬" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="应用消息" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_InAppMessage}" />
                         <Border Grid.Column="2" Height="16" MinWidth="16" Padding="4,0"
                                 VerticalAlignment="Center"
                                 Background="{StaticResource WeuiRedBrush}"
@@ -277,7 +296,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="❓" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="使用帮助" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Help}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource WeuiFg2Brush}"
                                    Text="›" />
@@ -291,7 +310,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="ℹ️" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="关于" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_About}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
                                    Foreground="{StaticResource WeuiFg1Brush}"
                                    Text="{Binding AppVersion}" />
@@ -303,7 +322,7 @@
             <Button Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     Classes="weui-btn default"
                     Command="{Binding LogoutCommand}"
-                    Content="退出登录"
+                    Content="{DynamicResource Mine_Logout}"
                     Foreground="{StaticResource WeuiRedBrush}" />
 
         </StackPanel>
