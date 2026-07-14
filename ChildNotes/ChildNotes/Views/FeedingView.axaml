@@ -8,8 +8,8 @@
              xmlns:vm="using:ChildNotes.ViewModels"
              d:DesignHeight="844"
              d:DesignWidth="390"
-             x:DataType="vm:FeedingViewModel"
              x:CompileBindings="True"
+             x:DataType="vm:FeedingViewModel"
              Background="{StaticResource WeuiBg0Brush}"
              mc:Ignorable="d">
 
@@ -37,6 +37,18 @@
         -->
         <Style Selector="Button.date-nav /template/ ContentPresenter">
             <Setter Property="Padding" Value="0,0,0,3" />
+        </Style>
+        <!--  日统计项：emoji + 文案横排，用于 DayStats 区块的 6 个统计条目  -->
+        <Style Selector="StackPanel.stat-item">
+            <Setter Property="Margin" Value="0,0,12,4" />
+            <Setter Property="Orientation" Value="Horizontal" />
+            <Setter Property="Spacing" Value="6" />
+        </Style>
+        <Style Selector="TextBlock.stat-icon">
+            <Setter Property="FontSize" Value="15" />
+        </Style>
+        <Style Selector="TextBlock.stat-text">
+            <Setter Property="FontSize" Value="13" />
         </Style>
     </UserControl.Styles>
 
@@ -74,44 +86,45 @@
                 <Button Margin="0,0,0,8" Padding="0,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                         Background="#E8F9EF" BorderThickness="0"
                         Command="{Binding GoTodayCommand}"
-                        Content="回到今天" CornerRadius="0" FontSize="13" Foreground="#07C160"
+                        Content="{DynamicResource Feeding_GoToday}"
+                        CornerRadius="0" FontSize="13" Foreground="#07C160"
                         IsVisible="{Binding !IsToday}" />
 
                 <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
                     <WrapPanel Orientation="Horizontal">
-                        <StackPanel IsVisible="{Binding DayStats.FeedCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="🍼" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.FeedCount}">
+                            <TextBlock Classes="stat-icon" Text="🍼" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="喂奶" /><Run Text="{Binding DayStats.FeedCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.TotalMilk}" /><Run Text="ml" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.BreastCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="🤱" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.BreastCount}">
+                            <TextBlock Classes="stat-icon" Text="🤱" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="亲喂" /><Run Text="{Binding DayStats.BreastCount}" /><Run Text="次" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.DiaperCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="💩" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.DiaperCount}">
+                            <TextBlock Classes="stat-icon" Text="💩" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="{Binding DayStats.DiaperCount}" /><Run Text="尿布 · 便" /><Run Text="{Binding DayStats.DirtyDiaperCount}" /><Run Text=" · 尿" /><Run Text="{Binding DayStats.WetDiaperCount}" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.WaterCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="💧" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.WaterCount}">
+                            <TextBlock Classes="stat-icon" Text="💧" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="喝水" /><Run Text="{Binding DayStats.WaterCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.WaterTotalMl}" /><Run Text="ml" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.SupplementCount}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="💊" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.SupplementCount}">
+                            <TextBlock Classes="stat-icon" Text="💊" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="补给" /><Run Text="{Binding DayStats.SupplementCount}" /><Run Text="次" />
                             </TextBlock>
                         </StackPanel>
-                        <StackPanel IsVisible="{Binding DayStats.SleepTotalMin}" Margin="0,0,12,8" Orientation="Horizontal" Spacing="6">
-                            <TextBlock FontSize="15" Text="😴" />
-                            <TextBlock FontSize="13">
+                        <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.SleepTotalMin}">
+                            <TextBlock Classes="stat-icon" Text="😴" />
+                            <TextBlock Classes="stat-text">
                                 <Run Text="睡眠" /><Run Text="{Binding DayStats.SleepTotalMin}" /><Run Text="分钟" />
                             </TextBlock>
                         </StackPanel>
@@ -119,48 +132,60 @@
                 </Border>
 
                 <Border Classes="section-title">
-                    <TextBlock Text="记录列表" />
+                    <TextBlock Text="{DynamicResource Feeding_RecordList}" />
                 </Border>
 
                 <!--  类型筛选条：横向滚动 Pill 标签，选中态绿底白字  -->
                 <ScrollViewer Margin="12,0,12,8" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="all" Content="全部" />
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                CommandParameter="all"
+                                Content="{DynamicResource Feeding_FilterAll}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}}" />
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=feed}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=feed}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="feed" Content="喂奶" />
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                CommandParameter="feed"
+                                Content="{DynamicResource Feeding_FilterFeed}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=feed}" />
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=sleep}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=sleep}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="sleep" Content="睡眠" />
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                CommandParameter="sleep"
+                                Content="{DynamicResource Feeding_FilterSleep}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=sleep}" />
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=diaper}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=diaper}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="diaper" Content="尿布" />
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                CommandParameter="diaper"
+                                Content="{DynamicResource Feeding_FilterDiaper}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=diaper}" />
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=activity}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=activity}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="activity" Content="活动" />
-                        <Button Padding="14,6" CornerRadius="16" FontSize="13"
+                                CommandParameter="activity"
+                                Content="{DynamicResource Feeding_FilterActivity}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=activity}" />
+                        <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=other}"
-                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=other}"
                                 BorderThickness="0"
                                 Command="{Binding ApplyTypeFilterCommand}"
-                                CommandParameter="other" Content="其他" />
+                                CommandParameter="other"
+                                Content="{DynamicResource Feeding_FilterOther}"
+                                CornerRadius="16" FontSize="13"
+                                Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=other}" />
                     </StackPanel>
                 </ScrollViewer>
 
@@ -175,52 +200,47 @@
                             -->
                             <Panel Margin="12,4" ClipToBounds="True">
                                 <!--  底层删除按钮：对齐小程序 delete-action，红底白字  -->
-                                <Border Width="72" HorizontalAlignment="Right" Background="#FA5151"
-                                        CornerRadius="0,8,8,0"
+                                <Border Width="72" HorizontalAlignment="Right" Background="#FA5151" CornerRadius="0,8,8,0"
                                         Tag="{Binding .}"
                                         Tapped="OnDeleteTap">
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="White" FontSize="14" FontWeight="SemiBold" Text="删除" />
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="White"
+                                               Text="{DynamicResource Common_Delete}" />
                                 </Border>
                                 <!--  上层卡片：白底，8px 圆角，12px padding，弱阴影  -->
                                 <!--  用 Tapped（轻触手势）替代 PointerPressed，避免上下滑动滚动页面时误触编辑  -->
                                 <Border Padding="12" Background="White" BoxShadow="0 1 4 0 #08000000"
-                                        CornerRadius="8"
+                                        Classes.swipe-open="{Binding IsSwipeOpen}"
+                                        CornerRadius="8" PointerCaptureLost="OnCardPointerCaptureLost" PointerMoved="OnCardPointerMoved"
+                                        PointerPressed="OnCardPointerPressed" PointerReleased="OnCardPointerReleased"
                                         RenderTransform="{Binding SwipeTransform}"
                                         Tag="{Binding .}"
-                                        Tapped="OnRecordTap"
-                                        Classes.swipe-open="{Binding IsSwipeOpen}"
-                                        PointerPressed="OnCardPointerPressed"
-                                        PointerMoved="OnCardPointerMoved"
-                                        PointerReleased="OnCardPointerReleased"
-                                        PointerCaptureLost="OnCardPointerCaptureLost">
-                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto">
+                                        Tapped="OnRecordTap">
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
                                         <!--  原版 card-left: 时间在左侧  -->
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
-                                                   Foreground="#999999"
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                   FontSize="12" Foreground="#999999"
                                                    Text="{Binding TimeText}" />
                                         <!--  原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底  -->
-                                        <Border Grid.Row="0" Grid.Column="1" Width="30" Height="30" Margin="0,0,8,0"
-                                                Background="#F9F9F9" CornerRadius="8">
+                                        <Border Grid.Row="0" Grid.Column="1" Width="30" Height="30"
+                                                Margin="0,0,8,0" Background="#F9F9F9" CornerRadius="8">
                                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Text="{Binding Icon}" />
                                         </Border>
-                                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontSize="14" FontWeight="Medium"
-                                                   Foreground="#333333"
+                                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontSize="14"
+                                                   FontWeight="Medium" Foreground="#333333"
                                                    Text="{Binding TitleText}" />
-                                        <TextBlock Grid.Row="0" Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="12"
-                                                   Foreground="#999999"
+                                        <TextBlock Grid.Row="0" Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                   FontSize="12" Foreground="#999999"
                                                    IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding SubText}" />
                                         <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
-                                        <TextBlock Grid.Row="0" Grid.Column="5" Margin="0,0,0,0" VerticalAlignment="Center" FontSize="12"
-                                                   FontWeight="Medium" Foreground="#07C160"
+                                        <TextBlock Grid.Row="0" Grid.Column="5" Margin="0,0,0,0" VerticalAlignment="Center"
+                                                   FontSize="12" FontWeight="Medium" Foreground="#07C160"
                                                    IsVisible="{Binding ExtraText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding ExtraText}" />
                                         <!--  备注（对齐小程序 card-note：浅灰背景块 + 深灰文字），从标题列开始对齐  -->
-                                        <Border Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="4" Margin="0,6,0,0" Padding="8,6"
-                                                CornerRadius="6"
-                                                Background="#F7F7F7"
-                                                HorizontalAlignment="Left"
+                                        <Border Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="4" Margin="0,6,0,0"
+                                                Padding="8,6" HorizontalAlignment="Left" Background="#F7F7F7" CornerRadius="6"
                                                 IsVisible="{Binding NoteText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock FontSize="12" Foreground="#666666" Text="{Binding NoteText}" TextWrapping="Wrap" />
                                         </Border>
@@ -234,7 +254,7 @@
                 <TextBlock Margin="0,40" HorizontalAlignment="Center" FontSize="13"
                            Foreground="{StaticResource WeuiFg2Brush}"
                            IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
-                           Text="当天暂无记录" />
+                           Text="{DynamicResource Feeding_NoRecords}" />
 
             </StackPanel>
         </ScrollViewer>
@@ -245,15 +265,15 @@
             <TextBlock FontSize="13" Foreground="White" Text="{Binding ToastMessage}" />
         </Border>
 
-        <controls:DialogHost Title="确认删除"
+        <controls:DialogHost Title="{DynamicResource Feeding_DeleteConfirmTitle}"
                              CancelCommand="{Binding CancelDeleteCommand}"
-                             CancelText="取消"
+                             CancelText="{DynamicResource Common_Cancel}"
                              ConfirmCommand="{Binding ConfirmDeleteCommand}"
-                             ConfirmText="确认删除"
+                             ConfirmText="{DynamicResource Feeding_DeleteConfirmTitle}"
                              IsOpen="{Binding ShowDeleteConfirm}">
             <controls:DialogHost.MessageContent>
                 <StackPanel HorizontalAlignment="Center">
-                    <TextBlock FontSize="13" Foreground="#666" Text="确定要删除这条记录吗？" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="#666" Text="{DynamicResource Feeding_DeleteConfirmMsg}" TextAlignment="Center" />
                     <TextBlock FontSize="13" Foreground="#999" Text="{Binding DeleteItemTitle}" TextAlignment="Center" />
                 </StackPanel>
             </controls:DialogHost.MessageContent>
