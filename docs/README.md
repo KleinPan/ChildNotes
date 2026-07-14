@@ -16,7 +16,8 @@ docs/
 ├── development/
 │   ├── architecture.md
 │   ├── backend.md
-│   └── ai.md
+│   ├── ai.md
+│   └── backup.md
 ├── release/
 │   └── app-store.md
 └── archive/
