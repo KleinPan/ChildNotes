@@ -1252,6 +1252,33 @@
                             </Border>
                         </StackPanel>
 
+                        <!--  喝水表单：AmountMl + Note + Date/Time  -->
+                        <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsWater}}">
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_WaterAmount}" />
+                                    <TextBox x:Name="WaterAmountTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_WaterAmountPlaceholder}" Text="{Binding WaterForm.AmountText}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="form-section">
+                                <StackPanel>
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_NoteOptional}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_NoteGenericPlaceholder}" Text="{Binding WaterForm.Note}" />
+                                </StackPanel>
+                            </Border>
+                            <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordDate}" />
+                                    <ctrl:DateWheelPicker Padding="8,4" SelectedDate="{Binding WaterForm.DateText, Converter={x:Static v:DateTextToDateTimeOffsetConverter.Instance}}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="6,0,0,0">
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                                          SelectedTime="{Binding WaterForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
                         <TextBlock Margin="0,4" FontSize="13"
                                    Foreground="{StaticResource WeuiRedBrush}"
                                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

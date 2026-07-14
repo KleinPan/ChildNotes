@@ -31,6 +31,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
     public AbnormalFormViewModel AbnormalForm { get; } = new();
     public VaccineFormViewModel VaccineForm { get; } = new();
     public ActivityFormViewModel ActivityForm { get; } = new();
+    public WaterFormViewModel WaterForm { get; } = new();
 
     protected readonly RecordService RecordService = ServiceProvider.Instance.RecordService;
 
@@ -48,6 +49,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
         RecordType.Abnormal => AbnormalForm,
         RecordType.Vaccine => VaccineForm,
         RecordType.Activity => ActivityForm,
+        RecordType.Water => WaterForm,
         _ => null,
     };
 
@@ -65,6 +67,7 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
         RecordType.Abnormal => $"{prefix}异常",
         RecordType.Vaccine => $"{prefix}疫苗",
         RecordType.Activity => $"{prefix}活动",
+        RecordType.Water => $"{prefix}喝水",
         _ => $"{prefix}记录",
     };
 
@@ -213,6 +216,14 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                     else
                         ActivityForm.DurationText = ((r.DurationSec ?? 0) / 60).ToString();
                 }
+                break;
+            case RecordType.Water:
+                WaterForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
+                WaterForm.TimeText = time;
+                WaterForm.AmountText = r.AmountMl?.ToString() ?? string.Empty;
+                // 回填备注（从 PayloadJson 反序列化），否则编辑时备注丢失
+                var waterDto = r.GetPayload<WaterRecordDto>();
+                WaterForm.Note = waterDto?.Note ?? string.Empty;
                 break;
         }
     }

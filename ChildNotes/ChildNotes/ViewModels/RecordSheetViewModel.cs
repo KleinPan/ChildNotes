@@ -271,6 +271,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
             case RecordType.Complementary: RecordService.AddComplementary(ComplementaryForm.BuildDto()); break;
             case RecordType.Abnormal: RecordService.AddAbnormal(AbnormalForm.BuildDto()); break;
             case RecordType.Activity: RecordService.AddActivity(ActivityForm.BuildDto()); break;
+            case RecordType.Water: RecordService.AddWater(WaterForm.BuildDto()); break;
         }
     }
 
@@ -387,6 +388,13 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 existing.RecordDate = existing.RecordTime.Date;
                 // 与 AddActivity 保持一致：序列化 dto 到 PayloadJson，否则编辑后 Name/Category/Duration 丢失
                 existing.PayloadJson = JsonSerializer.Serialize(actDto);
+                break;
+            case RecordType.Water:
+                var watDto = WaterForm.BuildDto();
+                existing.AmountMl = watDto.AmountMl;
+                existing.RecordTime = ParseTime(watDto.Time, _editingDate);
+                existing.RecordDate = existing.RecordTime.Date;
+                existing.PayloadJson = JsonSerializer.Serialize(watDto);
                 break;
         }
         RecordService.Update(existing);

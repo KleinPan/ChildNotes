@@ -56,6 +56,7 @@ public partial class QuickMenuViewModel : ViewModelBase
         Actions.Add(new QuickActionItem("🌡️", "体温", RecordType.Temperature, "#FFE8E8"));
         Actions.Add(new QuickActionItem("🌙", "睡眠", RecordType.Sleep, "#E8F0FE"));
         Actions.Add(new QuickActionItem("💩", "换尿布", RecordType.Diaper, "#FFF8E1"));
+        Actions.Add(new QuickActionItem("💧", "喝水", RecordType.Water, "#E1F5FE"));
         Actions.Add(new QuickActionItem("📏", "成长", RecordType.Growth, "#E0F2F1"));
 
         RebuildPages();

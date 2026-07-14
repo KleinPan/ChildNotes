@@ -683,6 +683,8 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_Temperature"] = "体温（℃）";
         this["RS_TemperaturePlaceholder"] = "输入体温";
         this["RS_TemperatureFeverWarn"] = "⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪";
+        this["RS_WaterAmount"] = "喝水量（ml）";
+        this["RS_WaterAmountPlaceholder"] = "输入喝水量";
         this["RS_Height"] = "身高";
         this["RS_Weight"] = "体重";
         this["RS_Supplement"] = "💚 补充剂";
@@ -785,6 +787,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Form_ErrFoodDuplicate"] = "该食物已存在";
         this["Form_ErrFoodNameOrSelect"] = "请输入或选择食物名称";
         this["Form_ErrGrowthHeightWeight"] = "请至少输入身高或体重";
+        this["Form_ErrWaterAmount"] = "请输入喝水量（ml）";
         this["Form_ErrPumpAmount"] = "请输入吸奶量";
         this["Form_ErrSupplementName"] = "请输入名称";
         this["Form_ErrSupplementDuplicate"] = "该名称已存在";
@@ -1327,7 +1330,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_EndTime"] = "End time";
         this["RS_Temperature"] = "Temperature (℃)";
         this["RS_TemperaturePlaceholder"] = "Enter temperature";
-        this["RS_TemperatureFeverWarn"] = "⚠️ Temp ≥ 37.3℃ will trigger fever tracking";
+        this["RS_TemperatureFeverWarn"] = "⚠️ Temp ≥ 37.3°C. Saving will trigger fever tracking";
+        this["RS_WaterAmount"] = "Water (ml)";
+        this["RS_WaterAmountPlaceholder"] = "Enter water amount";
         this["RS_Height"] = "Height";
         this["RS_Weight"] = "Weight";
         this["RS_Supplement"] = "💚 Supplement";
@@ -1429,6 +1434,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Form_ErrFoodNameOrSelect"] = "Please enter or select food name";
         this["Form_ErrGrowthHeightWeight"] = "Please enter height or weight";
         this["Form_ErrPumpAmount"] = "Please enter pump amount";
+        this["Form_ErrWaterAmount"] = "Please enter water amount (ml)";
         this["Form_ErrSupplementName"] = "Please enter name";
         this["Form_ErrSupplementDuplicate"] = "This name already exists";
         this["Form_ErrUnitName"] = "Please enter unit";
