@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 
@@ -7,6 +8,8 @@ namespace ChildNotes.ViewModels;
 
 public partial class TemperatureFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _temperatureText = string.Empty;
     [ObservableProperty] private bool _isAbnormal;
@@ -26,7 +29,7 @@ public partial class TemperatureFormViewModel : ObservableObject, IRecordFormVie
     {
         if (!decimal.TryParse(TemperatureText, out var t) || t < 30 || t > 45)
         {
-            error = "请输入有效体温（30-45℃）";
+            error = _locale.GetString("Form_ErrTemperatureRange", "请输入有效体温（30-45℃）");
             return false;
         }
         IsAbnormal = t >= HealthConstants.FeverThreshold;

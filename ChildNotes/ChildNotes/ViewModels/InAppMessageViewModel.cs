@@ -14,6 +14,7 @@ namespace ChildNotes.ViewModels;
 public partial class InAppMessageViewModel : ViewModelBase
 {
     private readonly InAppMessageService _msgService = ServiceProvider.Instance.InAppMessageService;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     /// <summary>消息列表（按时间倒序）。</summary>
     public ObservableCollection<InAppMessage> Messages { get; } = new();
@@ -32,7 +33,7 @@ public partial class InAppMessageViewModel : ViewModelBase
 
     public InAppMessageViewModel()
     {
-        Title = "应用消息";
+        Title = _locale.GetString("Msg_Title", "应用消息");
     }
 
     /// <summary>加载消息列表。</summary>
@@ -54,7 +55,7 @@ public partial class InAppMessageViewModel : ViewModelBase
         catch (Exception ex)
         {
             DevLogger.Log("InAppMsg", $"LoadAsync failed: {ex.Message}");
-            DisplayToast("加载消息失败");
+            DisplayToast(_locale.GetString("Msg_LoadFailed", "加载消息失败"));
         }
         finally
         {
@@ -83,7 +84,7 @@ public partial class InAppMessageViewModel : ViewModelBase
         _msgService.MarkAllAsRead();
         foreach (var m in Messages) m.IsRead = true;
         UpdateUnreadStatus();
-        DisplayToast("已全部标记为已读");
+        DisplayToast(_locale.GetString("Msg_AllMarkedRead", "已全部标记为已读"));
     }
 
     /// <summary>删除指定消息。</summary>
@@ -107,7 +108,7 @@ public partial class InAppMessageViewModel : ViewModelBase
         var readCount = Messages.Count(m => m.IsRead);
         if (readCount == 0)
         {
-            DisplayToast("没有已读消息可清理");
+            DisplayToast(_locale.GetString("Msg_NoReadToClear", "没有已读消息可清理"));
             return;
         }
 
@@ -121,7 +122,7 @@ public partial class InAppMessageViewModel : ViewModelBase
 
         HasReadMessages = false;
         UpdateUnreadStatus();
-        DisplayToast($"已清理 {deleted} 条已读消息");
+        DisplayToast(string.Format(_locale.GetString("Msg_Cleared", "已清理 {0} 条已读消息"), deleted));
     }
 
     private void UpdateUnreadStatus()

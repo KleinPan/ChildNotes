@@ -14,6 +14,7 @@ public partial class BabyManagerViewModel : ViewModelBase
 {
     private readonly BabyService _babyService = ServiceProvider.Instance.BabyService;
     private readonly AppState _state = ServiceProvider.Instance.AppState;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     public ObservableCollection<Baby> BabyList { get; } = new();
 
@@ -21,7 +22,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private bool _isEditorOpen;
     [ObservableProperty] private bool _isEditing;          // true=编辑, false=新增
     [ObservableProperty] private bool _isDeleteConfirmOpen;
-    [ObservableProperty] private string _editorTitle = "添加宝宝";
+    [ObservableProperty] private string _editorTitle = LocaleManager.Instance.GetString("BabyMgr_AddTitle", "添加宝宝");
 
     // 编辑表单字段
     [ObservableProperty] private string _editingId = string.Empty;
@@ -42,6 +43,20 @@ public partial class BabyManagerViewModel : ViewModelBase
     };
 
     public event Action? BabyChanged;        // 增删改后通知外部刷新
+
+    public BabyManagerViewModel()
+    {
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 编辑器打开时刷新标题文案；关闭时由 OpenAdd/OpenEdit 重新设置
+        if (IsEditorOpen)
+            EditorTitle = IsEditing
+                ? _locale.GetString("BabyMgr_EditTitle", "编辑宝宝")
+                : _locale.GetString("BabyMgr_AddTitle", "添加宝宝");
+    }
 
     public void Load()
     {
@@ -68,7 +83,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     public void OpenAdd()
     {
         IsEditing = false;
-        EditorTitle = "添加宝宝";
+        EditorTitle = _locale.GetString("BabyMgr_AddTitle", "添加宝宝");
         EditingId = string.Empty;
         Name = string.Empty;
         Gender = "boy";
@@ -81,7 +96,7 @@ public partial class BabyManagerViewModel : ViewModelBase
     public void OpenEdit(Baby baby)
     {
         IsEditing = true;
-        EditorTitle = "编辑宝宝";
+        EditorTitle = _locale.GetString("BabyMgr_EditTitle", "编辑宝宝");
         EditingId = baby.Id;
         Name = baby.Name;
         Gender = baby.Gender;
@@ -109,12 +124,12 @@ public partial class BabyManagerViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         if (string.IsNullOrWhiteSpace(Name))
         {
-            ErrorMessage = "请输入宝宝姓名";
+            ErrorMessage = _locale.GetString("BabyMgr_ErrName", "请输入宝宝姓名");
             return;
         }
         if (BirthDate is null)
         {
-            ErrorMessage = "请选择出生日期";
+            ErrorMessage = _locale.GetString("BabyMgr_ErrBirthday", "请选择出生日期");
             return;
         }
 
@@ -159,17 +174,17 @@ public partial class BabyManagerViewModel : ViewModelBase
         var id = EditingId;
         if (string.IsNullOrWhiteSpace(id))
         {
-            DisplayToast("宝宝 ID 为空");
+            DisplayToast(_locale.GetString("BabyMgr_IdEmpty", "宝宝 ID 为空"));
             return;
         }
         var clipboard = ServiceProvider.Instance.MainView?.Clipboard;
         if (clipboard is null)
         {
-            DisplayToast("剪贴板不可用");
+            DisplayToast(_locale.GetString("BabyMgr_ClipUnavailable", "剪贴板不可用"));
             return;
         }
         await clipboard.SetTextAsync(id);
-        DisplayToast("宝宝 ID 已复制");
+        DisplayToast(_locale.GetString("BabyMgr_IdCopied", "宝宝 ID 已复制"));
     }
 
     [RelayCommand]

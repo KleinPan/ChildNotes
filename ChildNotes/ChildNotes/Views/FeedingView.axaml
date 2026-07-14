@@ -94,33 +94,23 @@
                     <WrapPanel Orientation="Horizontal">
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.FeedCount}">
                             <TextBlock Classes="stat-icon" Text="🍼" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="喂奶" /><Run Text="{Binding DayStats.FeedCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.TotalMilk}" /><Run Text="ml" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding FeedStatsText}" />
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.BreastCount}">
                             <TextBlock Classes="stat-icon" Text="🤱" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="亲喂" /><Run Text="{Binding DayStats.BreastCount}" /><Run Text="次" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding BreastStatsText}" />
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.DiaperCount}">
                             <TextBlock Classes="stat-icon" Text="💩" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="{Binding DayStats.DiaperCount}" /><Run Text="尿布 · 便" /><Run Text="{Binding DayStats.DirtyDiaperCount}" /><Run Text=" · 尿" /><Run Text="{Binding DayStats.WetDiaperCount}" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding DiaperStatsText}" />
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.WaterCount}">
                             <TextBlock Classes="stat-icon" Text="💧" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="喝水" /><Run Text="{Binding DayStats.WaterCount}" /><Run Text="次 · " /><Run Text="{Binding DayStats.WaterTotalMl}" /><Run Text="ml" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding WaterStatsText}" />
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.SupplementCount}">
                             <TextBlock Classes="stat-icon" Text="💊" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="补给" /><Run Text="{Binding DayStats.SupplementCount}" /><Run Text="次" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding SupplementStatsText}" />
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.SleepTotalMin}">
                             <TextBlock Classes="stat-icon" Text="😴" />

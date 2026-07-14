@@ -15,6 +15,7 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
 {
     private readonly ObservableCollection<DevLogger.LogEntry> _allEntries = new();
     private readonly ObservableCollection<DevLogger.LogEntry> _filtered = new();
+    private readonly LocaleManager _locale = LocaleManager.Instance;
     public ObservableCollection<DevLogger.LogEntry> Filtered => _filtered;
 
     /// <summary>是否正在导出日志（防止重复点击）。</summary>
@@ -44,7 +45,7 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
 
     public DeveloperOptionsViewModel()
     {
-        Title = "开发者选项";
+        Title = _locale.GetString("Dev_Title", "开发者选项");
         LoadSettings();
     }
 
@@ -197,7 +198,7 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
         }
         catch (Exception ex)
         {
-            DisplayToast("保存设置失败：" + ex.Message);
+            DisplayToast(string.Format(_locale.GetString("Dev_SaveFailed", "保存设置失败：{0}"), ex.Message));
         }
     }
 
@@ -216,16 +217,16 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
                 var location = OperatingSystem.IsAndroid()
                     ? $"Download/{result.FilePath}"
                     : result.FilePath;
-                DisplayToast($"已导出 {result.LineCount} 行日志到：{location}");
+                DisplayToast(string.Format(_locale.GetString("Dev_ExportOk", "已导出 {0} 行日志到：{1}"), result.LineCount, location));
             }
             else
             {
-                DisplayToast("导出失败：" + result.ErrorMessage);
+                DisplayToast(string.Format(_locale.GetString("Dev_ExportFailed", "导出失败：{0}"), result.ErrorMessage));
             }
         }
         catch (Exception ex)
         {
-            DisplayToast("导出失败：" + ex.Message);
+            DisplayToast(string.Format(_locale.GetString("Dev_ExportFailed", "导出失败：{0}"), ex.Message));
         }
         finally
         {

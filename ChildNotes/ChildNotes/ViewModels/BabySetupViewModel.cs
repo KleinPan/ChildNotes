@@ -8,6 +8,7 @@ namespace ChildNotes.ViewModels;
 public partial class BabySetupViewModel : ViewModelBase
 {
     private readonly BabyService _babyService = ServiceProvider.Instance.BabyService;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     // 字段顺序对齐小程序 baby-setup: gender / name / birthDate
     [ObservableProperty] private string _gender = "boy";
@@ -34,12 +35,12 @@ public partial class BabySetupViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         if (string.IsNullOrWhiteSpace(Name))
         {
-            ErrorMessage = "请输入宝宝姓名";
+            ErrorMessage = _locale.GetString("BabySetup_ErrName", "请输入宝宝姓名");
             return;
         }
         if (BirthDate is null)
         {
-            ErrorMessage = "请选择出生日期";
+            ErrorMessage = _locale.GetString("BabySetup_ErrBirthday", "请选择出生日期");
             return;
         }
 

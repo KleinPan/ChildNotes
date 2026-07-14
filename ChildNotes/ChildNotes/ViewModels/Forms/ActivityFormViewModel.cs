@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 public partial class ActivityFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _name = string.Empty;
     [ObservableProperty] private string _selectedCategory = "play";
@@ -20,7 +23,7 @@ public partial class ActivityFormViewModel : ObservableObject, IRecordFormViewMo
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
-            error = "请输入活动名称";
+            error = _locale.GetString("Form_ErrActivityName", "请输入活动名称");
             return false;
         }
         error = string.Empty;

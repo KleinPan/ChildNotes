@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 public partial class FeedFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _feedType = "bottle";
     [ObservableProperty] private string _amountText = string.Empty;
     [ObservableProperty] private string _leftDurationText = string.Empty;
@@ -22,7 +25,7 @@ public partial class FeedFormViewModel : ObservableObject, IRecordFormViewModel
         {
             if (!int.TryParse(LeftDurationText, out _) && !int.TryParse(RightDurationText, out _))
             {
-                error = "请输入亲喂时长";
+                error = _locale.GetString("Form_ErrBreastDuration", "请输入亲喂时长");
                 return false;
             }
         }
@@ -30,7 +33,7 @@ public partial class FeedFormViewModel : ObservableObject, IRecordFormViewModel
         {
             if (!int.TryParse(AmountText, out var amt) || amt <= 0)
             {
-                error = "请输入奶量";
+                error = _locale.GetString("Form_ErrMilkAmount", "请输入奶量");
                 return false;
             }
         }

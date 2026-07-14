@@ -15,6 +15,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
 {
     private readonly RecordService _recordService = ServiceProvider.Instance.RecordService;
     private readonly StatisticsService _statsService = ServiceProvider.Instance.StatisticsService;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private DateTime _selectedDate = DateTime.Today;
     [ObservableProperty] private string _displayDate = string.Empty;
@@ -38,7 +39,49 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
 
     public FeedingViewModel()
     {
+        // 语言切换时刷新依赖翻译的派生属性（DisplayDate 中的周几文案 + 列表中文本）
+        _locale.LanguageChanged += OnLanguageChanged;
     }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 刷新日期显示（含周几文案）
+        DisplayDate = ServiceProvider.Instance.DateTimeFormatter.FormatChineseMonthDay(SelectedDate) + " " + GetWeekday(SelectedDate);
+        // 刷新统计卡片文案
+        OnPropertyChanged(nameof(FeedStatsText));
+        OnPropertyChanged(nameof(BreastStatsText));
+        OnPropertyChanged(nameof(DiaperStatsText));
+        OnPropertyChanged(nameof(WaterStatsText));
+        OnPropertyChanged(nameof(SupplementStatsText));
+        // 重建记录列表，使 BuildText 中的中文文案重新本地化
+        _ = LoadDataAsync();
+    }
+
+    /// <summary>DayStats 变更时刷新统计卡片文案。</summary>
+    partial void OnDayStatsChanged(DayStats? value)
+    {
+        OnPropertyChanged(nameof(FeedStatsText));
+        OnPropertyChanged(nameof(BreastStatsText));
+        OnPropertyChanged(nameof(DiaperStatsText));
+        OnPropertyChanged(nameof(WaterStatsText));
+        OnPropertyChanged(nameof(SupplementStatsText));
+    }
+
+    public string FeedStatsText => DayStats is not null && DayStats.FeedCount > 0
+        ? string.Format(_locale.GetString("Feeding_StatsFeed", "喂奶{0}次 · {1}ml"), DayStats.FeedCount, DayStats.TotalMilk)
+        : string.Empty;
+    public string BreastStatsText => DayStats is not null && DayStats.BreastCount > 0
+        ? string.Format(_locale.GetString("Feeding_StatsBreast", "亲喂{0}次"), DayStats.BreastCount)
+        : string.Empty;
+    public string DiaperStatsText => DayStats is not null && DayStats.DiaperCount > 0
+        ? string.Format(_locale.GetString("Feeding_StatsDiaper", "{0}尿布 · 便{1} · 尿{2}"), DayStats.DiaperCount, DayStats.DirtyDiaperCount, DayStats.WetDiaperCount)
+        : string.Empty;
+    public string WaterStatsText => DayStats is not null && DayStats.WaterCount > 0
+        ? string.Format(_locale.GetString("Feeding_StatsWater", "喝水{0}次 · {1}ml"), DayStats.WaterCount, DayStats.WaterTotalMl)
+        : string.Empty;
+    public string SupplementStatsText => DayStats is not null && DayStats.SupplementCount > 0
+        ? string.Format(_locale.GetString("Feeding_StatsSupplement", "补给{0}次"), DayStats.SupplementCount)
+        : string.Empty;
 
     /// <summary>沿用历史 2000ms 显示时长。</summary>
     protected override int ToastDurationMs => 2000;
@@ -132,15 +175,15 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         return r.RecordTime;
     }
 
-    private static string GetWeekday(DateTime d) => d.DayOfWeek switch
+    private string GetWeekday(DateTime d) => d.DayOfWeek switch
     {
-        DayOfWeek.Monday => "周一",
-        DayOfWeek.Tuesday => "周二",
-        DayOfWeek.Wednesday => "周三",
-        DayOfWeek.Thursday => "周四",
-        DayOfWeek.Friday => "周五",
-        DayOfWeek.Saturday => "周六",
-        _ => "周日",
+        DayOfWeek.Monday => _locale.GetString("Weekday_Mon", "周一"),
+        DayOfWeek.Tuesday => _locale.GetString("Weekday_Tue", "周二"),
+        DayOfWeek.Wednesday => _locale.GetString("Weekday_Wed", "周三"),
+        DayOfWeek.Thursday => _locale.GetString("Weekday_Thu", "周四"),
+        DayOfWeek.Friday => _locale.GetString("Weekday_Fri", "周五"),
+        DayOfWeek.Saturday => _locale.GetString("Weekday_Sat", "周六"),
+        _ => _locale.GetString("Weekday_Sun", "周日"),
     };
 
     [RelayCommand]
@@ -231,7 +274,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         _recordService.Delete(_deletingRecordId);
         ShowDeleteConfirm = false;
         _ = LoadDataAsync();
-        DisplayToast("已删除记录");
+        DisplayToast(_locale.GetString("Feeding_Deleted", "已删除记录"));
     }
 }
 
@@ -293,24 +336,24 @@ public sealed partial class RecordDisplayItem : ObservableObject
         return r.RecordType switch
         {
             RecordType.Feed => r.RecordSubType == "breast"
-                ? ($"母乳亲喂 {(r.LeftDurationSec > 0 ? "左" : "")}{(r.RightDurationSec > 0 ? "右" : "")}", $"{(r.DurationSec ?? 0) / 60}分钟", "", r.GetPayload<FeedRecordDto>()?.Note ?? "")
-                : ($"瓶喂{(r.RecordSubType == "expressed" ? "(母乳)" : "")}", $"{r.AmountMl ?? 0}ml", "", r.GetPayload<FeedRecordDto>()?.Note ?? ""),
+                ? (string.Format(LocaleManager.Instance.GetString("Rec_Feed_Breast", "母乳亲喂 {0}{1}"), r.LeftDurationSec > 0 ? LocaleManager.Instance.GetString("Rec_Feed_BreastLeft", "左") : "", r.RightDurationSec > 0 ? LocaleManager.Instance.GetString("Rec_Feed_BreastRight", "右") : ""), string.Format(LocaleManager.Instance.GetString("Rec_Duration_Min", "{0}分钟"), (r.DurationSec ?? 0) / 60), "", r.GetPayload<FeedRecordDto>()?.Note ?? "")
+                : (r.RecordSubType == "expressed" ? LocaleManager.Instance.GetString("Rec_Feed_BottleExpressed", "瓶喂(母乳)") : LocaleManager.Instance.GetString("Rec_Feed_Bottle", "瓶喂"), $"{r.AmountMl ?? 0}ml", "", r.GetPayload<FeedRecordDto>()?.Note ?? ""),
             RecordType.Diaper => (r.RecordSubType switch
             {
-                "wet" => "小便",
-                "dirty" => "大便",
-                "both" => "大小便",
-                _ => "换尿布",
+                "wet" => LocaleManager.Instance.GetString("Rec_Diaper_Wet", "小便"),
+                "dirty" => LocaleManager.Instance.GetString("Rec_Diaper_Dirty", "大便"),
+                "both" => LocaleManager.Instance.GetString("Rec_Diaper_Both", "大小便"),
+                _ => LocaleManager.Instance.GetString("Rec_Diaper_Default", "换尿布"),
             }, "", "", r.GetPayload<DiaperRecordDto>()?.Consistency ?? ""),
             RecordType.Sleep => BuildSleepText(r),
-            RecordType.Temperature => ("体温", $"{r.TemperatureValue:F1}℃", "", ""),
-            RecordType.Growth => ("成长记录", $"{(r.HeightCm.HasValue ? $"身高{r.HeightCm}cm " : "")}{(r.WeightKg.HasValue ? $"体重{r.WeightKg}kg" : "")}", "", ""),
+            RecordType.Temperature => (LocaleManager.Instance.GetString("Rec_Temperature", "体温"), $"{r.TemperatureValue:F1}℃", "", ""),
+            RecordType.Growth => (LocaleManager.Instance.GetString("Rec_Growth", "成长记录"), $"{(r.HeightCm.HasValue ? string.Format(LocaleManager.Instance.GetString("Rec_GrowthHeight", "身高{0}cm "), r.HeightCm) : "")}{(r.WeightKg.HasValue ? string.Format(LocaleManager.Instance.GetString("Rec_GrowthWeight", "体重{0}kg"), r.WeightKg) : "")}", "", ""),
             RecordType.Supplement => BuildSupplementText(r),
-            RecordType.Water => ("喝水", r.AmountMl.HasValue ? $"{r.AmountMl}ml" : "", "饮水", ""),
-            RecordType.Pump => ("吸奶", $"{r.AmountMl ?? 0}ml", "", ""),
+            RecordType.Water => (LocaleManager.Instance.GetString("Rec_Water", "喝水"), r.AmountMl.HasValue ? $"{r.AmountMl}ml" : "", LocaleManager.Instance.GetString("Rec_WaterExtra", "饮水"), ""),
+            RecordType.Pump => (LocaleManager.Instance.GetString("Rec_Pump", "吸奶"), $"{r.AmountMl ?? 0}ml", "", ""),
             RecordType.Complementary => BuildComplementaryText(r),
             // 疫苗记录仅在首页"疫苗追踪"模块展示，移除 BuildText 中的 Vaccine 分支
-            RecordType.Abnormal => ("异常记录", BuildAbnormalText(r), "", ""),
+            RecordType.Abnormal => (LocaleManager.Instance.GetString("Rec_Abnormal", "异常记录"), BuildAbnormalText(r), "", ""),
             RecordType.Activity => BuildActivityText(r),
             _ => (r.RecordType, "", "", ""),
         };
@@ -329,15 +372,15 @@ public sealed partial class RecordDisplayItem : ObservableObject
         var e = FormatTimeFromPayload(dto?.EndTime);
         if (!string.IsNullOrEmpty(s))
         {
-            sub = !string.IsNullOrEmpty(e) ? $"{s} → {e}" : $"{s} 开始";
+            sub = !string.IsNullOrEmpty(e) ? string.Format(LocaleManager.Instance.GetString("Rec_SleepRange", "{0} → {1}"), s, e) : string.Format(LocaleManager.Instance.GetString("Rec_SleepStart", "{0} 开始"), s);
         }
         // 时长（绿色）
         var totalMin = (r.DurationSec ?? 0) / 60;
         if (totalMin > 0)
         {
-            extra = totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟";
+            extra = totalMin >= 60 ? string.Format(LocaleManager.Instance.GetString("Rec_Duration_Long", "共 {0}小时{1}分钟"), totalMin / 60, totalMin % 60) : string.Format(LocaleManager.Instance.GetString("Rec_Duration_Short", "共 {0}分钟"), totalMin);
         }
-        return ("睡眠", sub, extra, "");
+        return (LocaleManager.Instance.GetString("Rec_Sleep", "睡眠"), sub, extra, "");
     }
 
     /// <summary>
@@ -347,16 +390,16 @@ public sealed partial class RecordDisplayItem : ObservableObject
     private static (string Title, string Sub, string Extra, string Note) BuildActivityText(ChildRecord r)
     {
         var dto = r.GetPayload<ActivityRecordDto>();
-        var name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto.Name : "活动";
+        var name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto.Name : LocaleManager.Instance.GetString("Rec_Activity", "活动");
         string sub = "";
         var s = r.RecordTime.ToString("HH:mm");
         var e = FormatTimeFromPayload(dto?.EndTime);
         if (!string.IsNullOrEmpty(e))
-            sub = $"{s} → {e}";
+            sub = string.Format(LocaleManager.Instance.GetString("Rec_SleepRange", "{0} → {1}"), s, e);
         // 时长（绿色）
         var totalMin = (r.DurationSec ?? 0) / 60;
         string extra = totalMin > 0
-            ? (totalMin >= 60 ? $"共 {totalMin / 60}小时{totalMin % 60}分钟" : $"共 {totalMin}分钟")
+            ? (totalMin >= 60 ? string.Format(LocaleManager.Instance.GetString("Rec_Duration_Long", "共 {0}小时{1}分钟"), totalMin / 60, totalMin % 60) : string.Format(LocaleManager.Instance.GetString("Rec_Duration_Short", "共 {0}分钟"), totalMin))
             : "";
         return (name, sub, extra, "");
     }
@@ -387,10 +430,10 @@ public sealed partial class RecordDisplayItem : ObservableObject
         var name = dto?.Name;
         var title = !string.IsNullOrWhiteSpace(name)
             ? name
-            : (isMedicine ? "用药记录" : "补充剂记录");
+            : (isMedicine ? LocaleManager.Instance.GetString("Rec_Supplement_Medicine", "用药记录") : LocaleManager.Instance.GetString("Rec_Supplement_Supplement", "补充剂记录"));
         // 剂量展示：Dose + DoseUnit 拼接；兼容旧数据（Dose 含单位文本、DoseUnit 为 null）
         var sub = FormatDoseDisplay(dto?.Dose, dto?.DoseUnit);
-        var extra = isMedicine ? "用药" : "补充剂";
+        var extra = isMedicine ? LocaleManager.Instance.GetString("Rec_SupplementExtra_Medicine", "用药") : LocaleManager.Instance.GetString("Rec_SupplementExtra_Supplement", "补充剂");
         var note = !string.IsNullOrWhiteSpace(dto?.Note) ? dto!.Note! : "";
         return (title, sub, extra, note);
     }
@@ -404,7 +447,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
         if (string.IsNullOrWhiteSpace(dose)) return "";
         if (string.IsNullOrEmpty(doseUnit)) return dose!;
         // "0.5"+"包"→"半包"（更符合中文习惯）
-        if (dose == "0.5") return "半" + doseUnit;
+        if (dose == "0.5") return string.Format(LocaleManager.Instance.GetString("Rec_DoseHalf", "半{0}"), doseUnit);
         return dose + doseUnit;
     }
 
@@ -416,7 +459,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
         var dto = r.GetPayload<ComplementaryRecordDto>();
         var title = !string.IsNullOrWhiteSpace(dto?.FoodName)
             ? dto!.FoodName!
-            : "辅食";
+            : LocaleManager.Instance.GetString("Rec_Complementary", "辅食");
         var parts = new List<string>();
         if (dto?.FoodTypes.Count > 0) parts.Add(string.Join("、", dto!.FoodTypes));
         if (!string.IsNullOrWhiteSpace(dto?.Amount))
@@ -437,10 +480,10 @@ public sealed partial class RecordDisplayItem : ObservableObject
         // 子类型中文映射（发烧/腹泻/呕吐/用药由 RecordService.AddAbnormal 写入 RecordSubType）
         var subTypeText = r.RecordSubType switch
         {
-            "fever" => "发烧",
-            "diarrhea" => "腹泻",
-            "vomit" => "呕吐",
-            "medicine" => "用药",
+            "fever" => LocaleManager.Instance.GetString("Rec_Abnormal_Fever", "发烧"),
+            "diarrhea" => LocaleManager.Instance.GetString("Rec_Abnormal_Diarrhea", "腹泻"),
+            "vomit" => LocaleManager.Instance.GetString("Rec_Abnormal_Vomit", "呕吐"),
+            "medicine" => LocaleManager.Instance.GetString("Rec_Abnormal_Medicine", "用药"),
             _ => null,
         };
         if (subTypeText is not null) parts.Add(subTypeText);
@@ -455,12 +498,12 @@ public sealed partial class RecordDisplayItem : ObservableObject
         if (r.TemperatureValue.HasValue) parts.Add($"{r.TemperatureValue:F1}℃");
         if (dto is not null)
         {
-            if (dto.Respiratory.Count > 0) parts.Add("呼吸道：" + string.Join("、", dto.Respiratory));
-            if (dto.Vomit && subTypeText != "呕吐") parts.Add("呕吐");
-            if (dto.Medicine && subTypeText != "用药") parts.Add("已用药");
+            if (dto.Respiratory.Count > 0) parts.Add(string.Format(LocaleManager.Instance.GetString("Rec_Abnormal_Respiratory", "呼吸道：{0}"), string.Join("、", dto.Respiratory)));
+            if (dto.Vomit && subTypeText != LocaleManager.Instance.GetString("Rec_Abnormal_Vomit", "呕吐")) parts.Add(LocaleManager.Instance.GetString("Rec_Abnormal_Vomit", "呕吐"));
+            if (dto.Medicine && subTypeText != LocaleManager.Instance.GetString("Rec_Abnormal_Medicine", "用药")) parts.Add(LocaleManager.Instance.GetString("Rec_Abnormal_Medicated", "已用药"));
             if (!string.IsNullOrWhiteSpace(dto.Note)) parts.Add(dto.Note);
         }
 
-        return parts.Count > 0 ? string.Join(" · ", parts) : "异常记录";
+        return parts.Count > 0 ? string.Join(" · ", parts) : LocaleManager.Instance.GetString("Rec_Abnormal", "异常记录");
     }
 }

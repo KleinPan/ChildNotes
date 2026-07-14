@@ -16,6 +16,8 @@ namespace ChildNotes.ViewModels;
 public partial class FamilyViewModel : ViewModelBase
 {
     private readonly FamilyApiClient _api = ServiceProvider.Instance.FamilyApiClient;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+    private string _editingBabyName = string.Empty;
 
     /// <summary>展开后的家庭列表（每个宝宝一个家庭）。</summary>
     public ObservableCollection<BabyFamilyItem> Families { get; } = new();
@@ -25,7 +27,7 @@ public partial class FamilyViewModel : ViewModelBase
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasData;
-    [ObservableProperty] private string _emptyHint = "尚未加载";
+    [ObservableProperty] private string _emptyHint = string.Empty;
 
     // 加入家庭表单
     [ObservableProperty] private bool _isJoinOpen;
@@ -35,19 +37,35 @@ public partial class FamilyViewModel : ViewModelBase
 
     // 修改角色表单
     [ObservableProperty] private bool _isRoleEditorOpen;
-    [ObservableProperty] private string _roleEditorTitle = "我的角色";
+    [ObservableProperty] private string _roleEditorTitle = string.Empty;
     [ObservableProperty] private string _editingBabyId = string.Empty;
     [ObservableProperty] private string _editingRoleCode = "other";
 
     public FamilyViewModel()
     {
-        Title = "家人管理";
+        Title = _locale.GetString("Family_Title", "家人管理");
+        EmptyHint = _locale.GetString("Family_EmptyNotLoaded", "尚未加载");
+        RoleEditorTitle = _locale.GetString("Family_MyRole", "我的角色");
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        Title = _locale.GetString("Family_Title", "家人管理");
+        // 刷新角色编辑器标题（如果打开）
+        if (IsRoleEditorOpen)
+            RoleEditorTitle = string.Format(_locale.GetString("Family_RoleEditorTitle", "我的角色 · {0}"), _editingBabyName);
+        else
+            RoleEditorTitle = _locale.GetString("Family_MyRole", "我的角色");
+        // 刷新空状态提示（仅刷新默认未加载状态）
+        if (!IsLoading && !HasData && Families.Count == 0)
+            EmptyHint = _locale.GetString("Family_EmptyNotLoaded", "尚未加载");
     }
 
     public async Task LoadAsync()
     {
         IsLoading = true;
-        EmptyHint = "加载中…";
+        EmptyHint = _locale.GetString("Family_Loading", "加载中…");
         try
         {
             var list = await _api.ListFamiliesAsync();
@@ -55,18 +73,18 @@ public partial class FamilyViewModel : ViewModelBase
             if (list is null)
             {
                 HasData = false;
-                EmptyHint = "无法连接服务器，请先在『数据同步』中配置并启用";
+                EmptyHint = _locale.GetString("Family_EmptyNoServer", "无法连接服务器，请先在『数据同步』中配置并启用");
                 return;
             }
             foreach (var f in list) Families.Add(f);
             HasData = Families.Count > 0;
-            EmptyHint = HasData ? "" : "还没有加入任何家庭";
+            EmptyHint = HasData ? "" : _locale.GetString("Family_EmptyNoFamily", "还没有加入任何家庭");
         }
         catch (Exception ex)
         {
             DevLogger.Log("Family", ex);
             HasData = false;
-            EmptyHint = "加载失败：" + ex.Message;
+            EmptyHint = string.Format(_locale.GetString("Family_EmptyError", "加载失败：{0}"), ex.Message);
         }
         finally
         {
@@ -78,7 +96,7 @@ public partial class FamilyViewModel : ViewModelBase
     private async Task Refresh()
     {
         await LoadAsync();
-        DisplayToast("已刷新");
+        DisplayToast(_locale.GetString("Family_Refreshed", "已刷新"));
     }
 
     // ===== 加入家庭 =====
@@ -102,17 +120,17 @@ public partial class FamilyViewModel : ViewModelBase
         var babyId = JoinBabyId.Trim();
         if (string.IsNullOrEmpty(babyId))
         {
-            JoinError = "请输入宝宝 ID";
+            JoinError = _locale.GetString("Family_ErrIdEmpty", "请输入宝宝 ID");
             return;
         }
         var result = await _api.JoinFamilyAsync(babyId, JoinRoleCode);
         if (result is null)
         {
-            JoinError = "加入失败，请检查宝宝 ID 或网络";
+            JoinError = _locale.GetString("Family_ErrJoinFailed", "加入失败，请检查宝宝 ID 或网络");
             return;
         }
         IsJoinOpen = false;
-        DisplayToast($"已加入，角色：{FamilyRoles.GetRoleName(JoinRoleCode)}");
+        DisplayToast(string.Format(_locale.GetString("Family_JoinedToast", "已加入，角色：{0}"), FamilyRoles.GetRoleName(JoinRoleCode)));
         await LoadAsync();
     }
 
@@ -123,7 +141,8 @@ public partial class FamilyViewModel : ViewModelBase
         var me = family.Members.FirstOrDefault(m => m.Mine);
         EditingBabyId = family.BabyId;
         EditingRoleCode = me?.RoleCode ?? "other";
-        RoleEditorTitle = $"我的角色 · {family.BabyName}";
+        _editingBabyName = family.BabyName;
+        RoleEditorTitle = string.Format(_locale.GetString("Family_RoleEditorTitle", "我的角色 · {0}"), family.BabyName);
         IsRoleEditorOpen = true;
     }
 
@@ -138,11 +157,11 @@ public partial class FamilyViewModel : ViewModelBase
         var result = await _api.UpdateMyRoleAsync(EditingBabyId, EditingRoleCode);
         if (result is null)
         {
-            DisplayToast("保存失败");
+            DisplayToast(_locale.GetString("Family_SaveFailed", "保存失败"));
             return;
         }
         IsRoleEditorOpen = false;
-        DisplayToast($"角色已更新为：{FamilyRoles.GetRoleName(EditingRoleCode)}");
+        DisplayToast(string.Format(_locale.GetString("Family_RoleUpdated", "角色已更新为：{0}"), FamilyRoles.GetRoleName(EditingRoleCode)));
         await LoadAsync();
     }
 

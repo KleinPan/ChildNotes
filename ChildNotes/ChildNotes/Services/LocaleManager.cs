@@ -333,6 +333,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Growth_EditAddPhotoHint"] = "点击 + 添加";
         this["Growth_Uploading"] = "上传中";
         this["Growth_EditAdd"] = "编辑成长时刻";
+        this["Growth_AddTitle"] = "添加成长时刻";
+        this["Growth_PickPhotoTitle"] = "选择照片";
+        this["Growth_ErrTitle"] = "请输入标题";
+        this["Growth_ErrDateFuture"] = "日期不能晚于今天";
+        this["Growth_ErrPhotoSave"] = "图片保存失败";
 
         // ===== BabyManagerView =====
         this["BabyMgr_Title"] = "宝宝管理";
@@ -404,6 +409,10 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiAnalysis_ErrPointsShortFinal"] = "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分";
         this["AiAnalysis_Done"] = "分析完成";
         this["AiAnalysis_Canceled"] = "已取消分析";
+        this["AiAnalysis_ErrPointsDaily"] = "积分不足，请每日签到获取积分";
+        this["AiAnalysis_ErrWeeklyLimitMember"] = "本周 AI 分析次数已用完，升级会员可享 10 次/周";
+        this["AiAnalysis_ErrWeeklyLimitUpgrade"] = "本周次数已达上限，升级会员解锁更多次数";
+        this["AiAnalysis_ErrFailed"] = "分析失败：{0}";
 
         // ===== AiSettingsView =====
         this["AiSettings_Title"] = "AI 分析设置";
@@ -775,6 +784,13 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Form_ErrFoodName"] = "请输入食物名称";
         this["Form_ErrFoodDuplicate"] = "该食物已存在";
         this["Form_ErrFoodNameOrSelect"] = "请输入或选择食物名称";
+        this["Form_ErrGrowthHeightWeight"] = "请至少输入身高或体重";
+        this["Form_ErrPumpAmount"] = "请输入吸奶量";
+        this["Form_ErrSupplementName"] = "请输入名称";
+        this["Form_ErrSupplementDuplicate"] = "该名称已存在";
+        this["Form_ErrUnitName"] = "请输入单位";
+        this["Form_ErrUnitDuplicate"] = "该单位已存在";
+        this["Form_ErrSupplementNameOrSelect"] = "请输入或选择名称";
 
         // ===== Complementary default items (kept in Chinese as food names) =====
         // Note: Food names are proper nouns, kept as-is in both languages
@@ -970,6 +986,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Growth_EditAddPhotoHint"] = "Tap + to add";
         this["Growth_Uploading"] = "Uploading";
         this["Growth_EditAdd"] = "Edit moment";
+        this["Growth_AddTitle"] = "Add moment";
+        this["Growth_PickPhotoTitle"] = "Select photo";
+        this["Growth_ErrTitle"] = "Please enter a title";
+        this["Growth_ErrDateFuture"] = "Date cannot be in the future";
+        this["Growth_ErrPhotoSave"] = "Failed to save image";
 
         // ===== BabyManagerView =====
         this["BabyMgr_Title"] = "Baby Management";
@@ -1040,6 +1061,10 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiAnalysis_ErrPointsShortFinal"] = "Insufficient points, need {0}, have {1}";
         this["AiAnalysis_Done"] = "Analysis complete";
         this["AiAnalysis_Canceled"] = "Analysis canceled";
+        this["AiAnalysis_ErrPointsDaily"] = "Not enough points, check in daily to earn points";
+        this["AiAnalysis_ErrWeeklyLimitMember"] = "Weekly AI analysis limit reached, upgrade to membership for 10/week";
+        this["AiAnalysis_ErrWeeklyLimitUpgrade"] = "Weekly limit reached, upgrade membership for more";
+        this["AiAnalysis_ErrFailed"] = "Analysis failed: {0}";
 
         // ===== AiSettingsView =====
         this["AiSettings_Title"] = "AI Settings";
@@ -1402,5 +1427,12 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Form_ErrFoodName"] = "Please enter food name";
         this["Form_ErrFoodDuplicate"] = "This food already exists";
         this["Form_ErrFoodNameOrSelect"] = "Please enter or select food name";
+        this["Form_ErrGrowthHeightWeight"] = "Please enter height or weight";
+        this["Form_ErrPumpAmount"] = "Please enter pump amount";
+        this["Form_ErrSupplementName"] = "Please enter name";
+        this["Form_ErrSupplementDuplicate"] = "This name already exists";
+        this["Form_ErrUnitName"] = "Please enter unit";
+        this["Form_ErrUnitDuplicate"] = "This unit already exists";
+        this["Form_ErrSupplementNameOrSelect"] = "Please enter or select name";
     }
 }

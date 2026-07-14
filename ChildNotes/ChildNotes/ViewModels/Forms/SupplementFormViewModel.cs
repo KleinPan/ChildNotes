@@ -31,6 +31,8 @@ public partial class CommonItemViewModel : ObservableObject
 
 public partial class SupplementFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     // 系统默认剂量单位（对齐小程序 DEFAULT_DOSE_UNITS = ['ml', '粒', '包']）
     private static readonly string[] DefaultDoseUnits = { "ml", "粒", "包" };
 
@@ -196,7 +198,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         var value = CustomItem?.Trim();
         if (string.IsNullOrEmpty(value))
         {
-            ErrorMessage = "请输入名称";
+            ErrorMessage = _locale.GetString("Form_ErrSupplementName", "请输入名称");
             return;
         }
 
@@ -205,7 +207,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         var customs = SuppType == "medicine" ? CustomMedicineItems : CustomSupplementItems;
         if (defaults.Any(x => x.Name == value) || customs.Any(x => x.Name == value))
         {
-            ErrorMessage = "该名称已存在";
+            ErrorMessage = _locale.GetString("Form_ErrSupplementDuplicate", "该名称已存在");
             return;
         }
 
@@ -314,13 +316,13 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         var value = CustomUnit?.Trim();
         if (string.IsNullOrEmpty(value))
         {
-            ErrorMessage = "请输入单位";
+            ErrorMessage = _locale.GetString("Form_ErrUnitName", "请输入单位");
             return;
         }
         // 去重：默认单位和自定义单位都不能重复
         if (DefaultDoseUnitItems.Any(x => x.Name == value) || CustomDoseUnitItems.Any(x => x.Name == value))
         {
-            ErrorMessage = "该单位已存在";
+            ErrorMessage = _locale.GetString("Form_ErrUnitDuplicate", "该单位已存在");
             return;
         }
 
@@ -392,7 +394,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     {
         if (string.IsNullOrWhiteSpace(Name))
         {
-            error = "请输入或选择名称";
+            error = _locale.GetString("Form_ErrSupplementNameOrSelect", "请输入或选择名称");
             return false;
         }
         error = string.Empty;

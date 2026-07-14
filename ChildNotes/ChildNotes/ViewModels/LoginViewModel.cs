@@ -10,6 +10,7 @@ public partial class LoginViewModel : ViewModelBase
 {
     private readonly AuthService _auth = ServiceProvider.Instance.AuthService;
     private readonly Data.Repositories.SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private string _username = string.Empty;
     [ObservableProperty] private string _password = string.Empty;
@@ -80,8 +81,8 @@ public partial class LoginViewModel : ViewModelBase
                         {
                             Id = $"bonus-{result.User!.Id}",
                             UserId = result.User.Id,
-                            Title = "🎉 欢迎注册！已赠送 100 积分",
-                            Body = $"感谢注册 ChildNotes！系统已自动为您赠送 {PointsConstants.NewUserBonusPoints} 积分，可用于 AI 喂养分析等高级功能。去「积分任务」签到还能每日领取积分哦。",
+                            Title = _locale.GetString("Login_WelcomeTitle", "🎉 欢迎注册！已赠送 100 积分"),
+                            Body = string.Format(_locale.GetString("Login_WelcomeBody", "感谢注册 ChildNotes！系统已自动为您赠送 {0} 积分，可用于 AI 喂养分析等高级功能。去「积分任务」签到还能每日领取积分哦。"), PointsConstants.NewUserBonusPoints),
                             Category = "general",
                             DataJson = "{}",
                             IsRead = false,
@@ -129,7 +130,7 @@ public partial class LoginViewModel : ViewModelBase
             var detail = ex.ToString();
             if (ex.InnerException is not null)
                 detail += "\n---> " + ex.InnerException;
-            ErrorMessage = "操作失败：" + detail;
+            ErrorMessage = string.Format(_locale.GetString("Login_OperationFailed", "操作失败：{0}"), detail);
         }
     }
 
@@ -171,7 +172,7 @@ public partial class LoginViewModel : ViewModelBase
             if (!string.IsNullOrEmpty(url) && !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                                            && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
-                ErrorMessage = "服务器地址必须以 http:// 或 https:// 开头";
+                ErrorMessage = _locale.GetString("Login_ErrServerUrl", "服务器地址必须以 http:// 或 https:// 开头");
                 throw new InvalidOperationException("Invalid server url");
             }
             cfg.ServerUrl = url;

@@ -15,6 +15,9 @@ namespace ChildNotes.ViewModels.Home;
 public partial class AbnormalTrackingViewModel : ObservableObject
 {
     private readonly RecordService _recordService = ServiceProvider.Instance.RecordService;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+    private DayStats? _lastStats;
+    private List<ChildRecord> _lastAbnormalRecords = new();
 
     // ===== 异常/生病追踪状态（对齐小程序首页 fever/diarrhea/other-abnormal 三态） =====
     /// <summary>当前是否有活动异常（发烧/腹泻/其他异常任一）。</summary>
@@ -24,6 +27,18 @@ public partial class AbnormalTrackingViewModel : ObservableObject
     [ObservableProperty] private string _abnormalStatusText = string.Empty;
     [ObservableProperty] private string _abnormalSummaryText = string.Empty;
 
+    public AbnormalTrackingViewModel()
+    {
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 语言切换后用上次快照重新计算文案
+        if (_lastStats is not null || _lastAbnormalRecords.Count > 0)
+            ApplyAbnormal(_lastStats, _lastAbnormalRecords);
+    }
+
     /// <summary>
     /// 从快照数据应用异常/生病追踪状态（不再重复查询 DB）。
     /// 依据今日 DayStats 的三态标志（发烧/腹泻/其他异常），
@@ -31,6 +46,9 @@ public partial class AbnormalTrackingViewModel : ObservableObject
     /// </summary>
     public void ApplyAbnormal(DayStats? stats, List<ChildRecord> abnormalRecords)
     {
+        _lastStats = stats;
+        _lastAbnormalRecords = abnormalRecords;
+
         if (stats is null || (!stats.HasFever && !stats.HasDiarrhea && !stats.HasOtherAbnormal))
         {
             ResetAbnormal();
@@ -41,9 +59,9 @@ public partial class AbnormalTrackingViewModel : ObservableObject
         HasOtherAbnormal = stats.HasOtherAbnormal;
 
         var statusParts = new List<string>();
-        if (stats.HasFever) statusParts.Add("发烧");
-        if (stats.HasDiarrhea) statusParts.Add("腹泻");
-        if (stats.HasOtherAbnormal) statusParts.Add("其他异常");
+        if (stats.HasFever) statusParts.Add(_locale.GetString("Home_Abnormal_Fever", "发烧"));
+        if (stats.HasDiarrhea) statusParts.Add(_locale.GetString("Home_Abnormal_Diarrhea", "腹泻"));
+        if (stats.HasOtherAbnormal) statusParts.Add(_locale.GetString("Home_Abnormal_Other", "其他异常"));
         AbnormalStatusText = string.Join(" · ", statusParts);
 
         // 摘要：从已查快照中取最新一条异常记录，拼体温 + 备注/其他描述
@@ -58,9 +76,9 @@ public partial class AbnormalTrackingViewModel : ObservableObject
             if (dto is not null)
             {
                 if (dto.Respiratory.Count > 0)
-                    summaryParts.Add("呼吸道：" + string.Join("、", dto.Respiratory));
-                if (dto.Vomit) summaryParts.Add("呕吐");
-                if (dto.Medicine) summaryParts.Add("已用药");
+                    summaryParts.Add(string.Format(_locale.GetString("Home_Abnormal_Respiratory", "呼吸道：{0}"), string.Join("、", dto.Respiratory)));
+                if (dto.Vomit) summaryParts.Add(_locale.GetString("Home_Abnormal_Vomit", "呕吐"));
+                if (dto.Medicine) summaryParts.Add(_locale.GetString("Home_Abnormal_Medicated", "已用药"));
                 if (!string.IsNullOrWhiteSpace(dto.Note)) summaryParts.Add(dto.Note);
             }
             var time = ServiceProvider.Instance.DateTimeFormatter.FormatTime(latestAbnormal.RecordTime);
@@ -69,7 +87,7 @@ public partial class AbnormalTrackingViewModel : ObservableObject
         }
         else
         {
-            AbnormalSummaryText = "今日有异常记录，请关注宝宝状态";
+            AbnormalSummaryText = _locale.GetString("Home_Abnormal_Summary", "今日有异常记录，请关注宝宝状态");
         }
     }
 

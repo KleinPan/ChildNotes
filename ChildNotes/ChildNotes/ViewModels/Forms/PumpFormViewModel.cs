@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 public partial class PumpFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _leftDurationText = string.Empty;
     [ObservableProperty] private string _rightDurationText = string.Empty;
@@ -22,7 +25,7 @@ public partial class PumpFormViewModel : ObservableObject, IRecordFormViewModel
         var hasRight = int.TryParse(RightAmountText, out var ra) && ra > 0;
         if (!hasTotal && !hasLeft && !hasRight)
         {
-            error = "请输入吸奶量";
+            error = _locale.GetString("Form_ErrPumpAmount", "请输入吸奶量");
             return false;
         }
         error = string.Empty;

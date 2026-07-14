@@ -11,20 +11,44 @@ namespace ChildNotes.ViewModels.Home;
 /// </summary>
 public partial class HomeCoreViewModel : ObservableObject
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _babyName = string.Empty;
     [ObservableProperty] private string _babyAvatar = string.Empty;
     [ObservableProperty] private string _babyAgeText = string.Empty;
     [ObservableProperty] private string _growthStage = string.Empty;
     [ObservableProperty] private DayStats? _todayStats;
-    [ObservableProperty] private string _dailyTip = "记录宝宝的每一天，陪伴健康成长";
+    [ObservableProperty] private string _dailyTip;
 
     [ObservableProperty] private string _lastFeedAgoText = "--";
     [ObservableProperty] private string _lastFeedSummary = "--";
-    [ObservableProperty] private string _diaperTodayText = "0次";
-    [ObservableProperty] private string _diaperDetailText = "便0 尿0";
-    [ObservableProperty] private string _sleepTodayText = "0小时0分钟";
+    [ObservableProperty] private string _diaperTodayText;
+    [ObservableProperty] private string _diaperDetailText;
+    [ObservableProperty] private string _sleepTodayText;
     [ObservableProperty] private string _latestHeightText = "--cm";
     [ObservableProperty] private string _latestWeightText = "--kg";
+
+    public HomeCoreViewModel()
+    {
+        _dailyTip = _locale.GetString("Home_DailyTip_Default", "记录宝宝的每一天，陪伴健康成长");
+        _diaperTodayText = _locale.GetString("Home_Diaper_Zero", "0次");
+        _diaperDetailText = _locale.GetString("Home_DiaperDetail_Zero", "便0 尿0");
+        _sleepTodayText = _locale.GetString("Home_Sleep_Zero", "0小时0分钟");
+
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        DailyTip = GetDailyTip(TodayStats);
+        DiaperTodayText = _locale.GetString("Home_Diaper_Zero", "0次");
+        DiaperDetailText = _locale.GetString("Home_DiaperDetail_Zero", "便0 尿0");
+        SleepTodayText = _locale.GetString("Home_Sleep_Zero", "0小时0分钟");
+        if (BabyName == _locale.GetString("Home_NoBaby", "未添加宝宝"))
+        {
+            BabyName = _locale.GetString("Home_NoBaby", "未添加宝宝");
+        }
+    }
 
     /// <summary>应用宝宝基本信息（从 RefreshAsync 快照调用）。</summary>
     public void ApplyBabyInfo(Baby baby, string growthStage)
@@ -52,15 +76,15 @@ public partial class HomeCoreViewModel : ObservableObject
     /// <summary>重置为默认状态（无宝宝时调用）。</summary>
     public void Reset()
     {
-        BabyName = "未添加宝宝";
+        BabyName = _locale.GetString("Home_NoBaby", "未添加宝宝");
         BabyAgeText = string.Empty;
         GrowthStage = string.Empty;
         TodayStats = null;
         LastFeedAgoText = "--";
         LastFeedSummary = "--";
-        DiaperTodayText = "0次";
-        DiaperDetailText = "便0 尿0";
-        SleepTodayText = "0小时0分钟";
+        DiaperTodayText = _locale.GetString("Home_Diaper_Zero", "0次");
+        DiaperDetailText = _locale.GetString("Home_DiaperDetail_Zero", "便0 尿0");
+        SleepTodayText = _locale.GetString("Home_Sleep_Zero", "0小时0分钟");
         LatestHeightText = "--cm";
         LatestWeightText = "--kg";
     }
@@ -77,41 +101,43 @@ public partial class HomeCoreViewModel : ObservableObject
 
         var ago = DateTime.Now - lastFeed.RecordTime;
         if (ago.TotalMinutes < 60)
-            LastFeedAgoText = $"{(int)ago.TotalMinutes}分钟";
+            LastFeedAgoText = $"{(int)ago.TotalMinutes}{_locale.GetString("Home_Minutes", "分钟")}";
         else if (ago.TotalHours < 24)
-            LastFeedAgoText = $"{(int)ago.TotalHours}小时{(int)(ago.TotalMinutes % 60)}分钟";
+            LastFeedAgoText = string.Format(_locale.GetString("Home_HoursMinutes", "{0}小时{1}分钟"), (int)ago.TotalHours, (int)(ago.TotalMinutes % 60));
         else
-            LastFeedAgoText = $"{(int)ago.TotalDays}天";
+            LastFeedAgoText = string.Format(_locale.GetString("Home_Days", "{0}天"), (int)ago.TotalDays);
 
         // 从已查的当日记录中筛选喂养记录，避免重复查询
         var todayFeeds = todayRecords.Where(r => r.RecordType == RecordType.Feed).ToList();
         var feedCount = todayFeeds.Count;
         var totalMl = todayFeeds.Sum(r => r.AmountMl ?? 0);
-        LastFeedSummary = totalMl > 0 ? $"{feedCount}次 {totalMl}ml" : $"{feedCount}次";
+        LastFeedSummary = totalMl > 0
+            ? string.Format(_locale.GetString("Home_FeedCount", "{0}次 {1}ml"), feedCount, totalMl)
+            : string.Format(_locale.GetString("Home_FeedCountNoMl", "{0}次"), feedCount);
     }
 
     private void ApplyDiaper(DayStats? stats)
     {
         if (stats is null)
         {
-            DiaperTodayText = "0次";
-            DiaperDetailText = "便0 尿0";
+            DiaperTodayText = _locale.GetString("Home_Diaper_Zero", "0次");
+            DiaperDetailText = _locale.GetString("Home_DiaperDetail_Zero", "便0 尿0");
             return;
         }
-        DiaperTodayText = $"{stats.DiaperCount}次";
-        DiaperDetailText = $"便{stats.DirtyDiaperCount} 尿{stats.WetDiaperCount}";
+        DiaperTodayText = string.Format(_locale.GetString("Home_DiaperCount", "{0}次"), stats.DiaperCount);
+        DiaperDetailText = string.Format(_locale.GetString("Home_DiaperDetail", "便{0} 尿{1}"), stats.DirtyDiaperCount, stats.WetDiaperCount);
     }
 
     private void ApplySleep(DayStats? stats)
     {
         if (stats is null || stats.SleepTotalMin <= 0)
         {
-            SleepTodayText = "0小时0分钟";
+            SleepTodayText = _locale.GetString("Home_Sleep_Zero", "0小时0分钟");
             return;
         }
         var hours = stats.SleepTotalMin / 60;
         var mins = stats.SleepTotalMin % 60;
-        SleepTodayText = $"{hours}小时{mins}分钟";
+        SleepTodayText = string.Format(_locale.GetString("Home_HoursMinutes", "{0}小时{1}分钟"), hours, mins);
     }
 
     /// <summary>从快照数据应用最新生长记录（不再重复查询 DB）。</summary>
@@ -148,12 +174,12 @@ public partial class HomeCoreViewModel : ObservableObject
         return $"{years}岁{months % 12}个月{remainDays}天";
     }
 
-    private static string GetDailyTip(DayStats? stats)
+    private string GetDailyTip(DayStats? stats)
     {
-        if (stats is null) return "记录宝宝的每一天，陪伴健康成长";
-        if (stats.HasFever) return "宝宝正在发热，注意监测体温和补水";
-        if (stats.HasDiarrhea) return "宝宝有腹泻症状，注意观察和补水";
-        if (stats.FeedCount > 0 || stats.DiaperCount > 0) return "今天记录很用心，继续加油！";
-        return "今天还没有记录，点击下方快捷操作开始吧";
+        if (stats is null) return _locale.GetString("Home_DailyTip_Default", "记录宝宝的每一天，陪伴健康成长");
+        if (stats.HasFever) return _locale.GetString("Home_DailyTip_Fever", "宝宝正在发热，注意监测体温和补水");
+        if (stats.HasDiarrhea) return _locale.GetString("Home_DailyTip_Diarrhea", "宝宝有腹泻症状，注意观察和补水");
+        if (stats.FeedCount > 0 || stats.DiaperCount > 0) return _locale.GetString("Home_DailyTip_Active", "今天记录很用心，继续加油！");
+        return _locale.GetString("Home_DailyTip_Empty", "今天还没有记录，点击下方快捷操作开始吧");
     }
 }

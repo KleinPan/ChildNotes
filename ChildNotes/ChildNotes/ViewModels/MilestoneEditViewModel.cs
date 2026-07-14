@@ -66,14 +66,30 @@ public partial class MilestoneEditViewModel : ViewModelBase
     private readonly AppState _state = ServiceProvider.Instance.AppState;
     private readonly UploadService _upload = ServiceProvider.Instance.UploadService;
     private readonly SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     private const int MaxPhotos = 4;
 
     [ObservableProperty] private string _title = string.Empty;
     [ObservableProperty] private string _content = string.Empty;
     [ObservableProperty] private DateTimeOffset _recordDate = DateTimeOffset.Now;
-    [ObservableProperty] private string _sheetTitle = "添加成长时刻";
+    [ObservableProperty] private string _sheetTitle = string.Empty;
     [ObservableProperty] private bool _isVisible;
+
+    public MilestoneEditViewModel()
+    {
+        _sheetTitle = _locale.GetString("Growth_AddTitle", "添加成长时刻");
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 仅在编辑器打开时刷新标题文案，避免后台实例无谓刷新
+        if (!IsVisible) return;
+        SheetTitle = string.IsNullOrEmpty(_editingId)
+            ? _locale.GetString("Growth_AddTitle", "添加成长时刻")
+            : _locale.GetString("Growth_EditAdd", "编辑成长时刻");
+    }
 
     /// <summary>表单内编辑中的照片列表。</summary>
     public ObservableCollection<MilestonePhotoItem> Photos { get; } = new();
@@ -139,7 +155,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
         var localPath = await _upload.CompressAndSaveAsync(file);
         if (localPath is null)
         {
-            ErrorMessage = "图片保存失败";
+            ErrorMessage = _locale.GetString("Growth_ErrPhotoSave", "图片保存失败");
             return;
         }
 

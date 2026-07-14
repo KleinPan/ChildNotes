@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 
@@ -8,6 +9,8 @@ namespace ChildNotes.ViewModels;
 
 public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     // ===== 呼吸道症状（多选） =====
     public ObservableCollection<string> Respiratory { get; } = new();
 
@@ -63,14 +66,14 @@ public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewMo
             && !HasMedicine
             && string.IsNullOrWhiteSpace(TemperatureText))
         {
-            error = "请至少填写一项异常症状";
+            error = _locale.GetString("Form_ErrAbnormalEmpty", "请至少填写一项异常症状");
             return false;
         }
         if (!string.IsNullOrWhiteSpace(TemperatureText))
         {
             if (!decimal.TryParse(TemperatureText, out var t) || t < 30 || t > 45)
             {
-                error = "请输入有效体温（30-45℃）";
+                error = _locale.GetString("Form_ErrTemperatureRange", "请输入有效体温（30-45℃）");
                 return false;
             }
         }

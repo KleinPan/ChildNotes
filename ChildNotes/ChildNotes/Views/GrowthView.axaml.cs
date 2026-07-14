@@ -7,6 +7,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -66,7 +67,7 @@ public partial class GrowthView : UserControl
     }
 
     public static readonly IValueConverter IsEditingConverter = new FuncValueConverter<string, bool>(
-        s => s == "编辑成长时刻");
+        s => s == LocaleManager.Instance.GetString("Growth_EditAdd", "编辑成长时刻"));
 
     private void OnAddMilestone(object? sender, PointerPressedEventArgs e)
     {
@@ -105,11 +106,11 @@ public partial class GrowthView : UserControl
 
             var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "选择照片",
+                Title = LocaleManager.Instance.GetString("Growth_PickPhotoTitle", "选择照片"),
                 AllowMultiple = false,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("图片文件")
+                    new FilePickerFileType(LocaleManager.Instance.GetString("BabyMgr_PickImageFilter", "图片文件"))
                     {
                         Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp" },
                         MimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },

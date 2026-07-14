@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
+using ChildNotes.Services;
 using ChildNotes.ViewModels;
 
 namespace ChildNotes.Views;
@@ -27,7 +28,9 @@ public partial class MembershipView : UserControl
 
     /// <summary>会员状态文本：会员显示"会员用户"，非会员显示"普通用户"。</summary>
     public static readonly IValueConverter IsMemberTextConverter =
-        new FuncValueConverter<bool, string>(isActive => isActive ? "会员用户" : "普通用户");
+        new FuncValueConverter<bool, string>(isActive => isActive
+            ? LocaleManager.Instance.GetString("Membership_StatusMember", "会员用户")
+            : LocaleManager.Instance.GetString("Membership_StatusRegular", "普通用户"));
 
     /// <summary>分转元（如 1800 → "18.00"）。</summary>
     public static readonly IValueConverter CentsToYuanConverter =
@@ -59,9 +62,9 @@ public partial class MembershipView : UserControl
     public static readonly IValueConverter PlanTypeToNameConverter =
         new FuncValueConverter<string?, string>(planType => planType switch
         {
-            "monthly" => "月卡",
-            "quarterly" => "季卡",
-            "yearly" => "年卡",
-            _ => "未选择",
+            "monthly" => LocaleManager.Instance.GetString("Membership_PlanMonthly", "月卡"),
+            "quarterly" => LocaleManager.Instance.GetString("Membership_PlanQuarterly", "季卡"),
+            "yearly" => LocaleManager.Instance.GetString("Membership_PlanYearly", "年卡"),
+            _ => LocaleManager.Instance.GetString("Membership_PlanNone", "未选择"),
         });
 }

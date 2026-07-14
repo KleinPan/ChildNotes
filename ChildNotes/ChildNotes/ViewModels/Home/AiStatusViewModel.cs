@@ -13,9 +13,11 @@ namespace ChildNotes.ViewModels.Home;
 /// </summary>
 public partial class AiStatusViewModel : ObservableObject
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _aiStatusIcon = "☀️";
-    [ObservableProperty] private string _aiStatusTitle = "小铃铛状态良好";
-    [ObservableProperty] private string _aiStatusSubtitle = "正在快乐成长中~";
+    [ObservableProperty] private string _aiStatusTitle;
+    [ObservableProperty] private string _aiStatusSubtitle;
     [ObservableProperty] private string _aiTipText = DailyTipsCatalog.Current.DefaultTip;
 
     // 轮播提示相关：对齐小程序 good-status 组件 <swiper interval=5000> 行为
@@ -26,6 +28,17 @@ public partial class AiStatusViewModel : ObservableObject
     public AiStatusViewModel()
     {
         _tipCarouselTimer = new DispatcherTimer(TimeSpan.FromSeconds(5), DispatcherPriority.Normal, OnTipCarouselTick);
+        AiStatusTitle = string.Format(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), "小铃铛");
+        AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
+
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 默认状态时刷新标题/副标题；有宝宝数据时由宿主 RefreshAiStatus 重算
+        AiStatusTitle = string.Format(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), "小铃铛");
+        AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
     }
 
     /// <summary>根据今日统计刷新 AI 状态（从 RefreshAsync 快照调用）。</summary>
@@ -35,12 +48,13 @@ public partial class AiStatusViewModel : ObservableObject
         var cfg = DailyTipsCatalog.Current;
         // 标题拼接对齐小程序 good-status/index.wxml 第 10 行 babyName + '状态良好'
         var name = string.IsNullOrWhiteSpace(babyName) ? cfg.NoBabyTitle : babyName;
+        var noBabyTitle = _locale.GetString("Home_Ai_NoBabyTitle", "未添加宝宝");
 
         if (stats is null)
         {
             AiStatusIcon = "☀️";
-            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = "正在快乐成长中~";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), name, noBabyTitle);
+            AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
             SetStaticTip(cfg.DefaultTip);
             return;
         }
@@ -48,36 +62,36 @@ public partial class AiStatusViewModel : ObservableObject
         if (stats.HasFever)
         {
             AiStatusIcon = "🌡️";
-            AiStatusTitle = FormatTitle(cfg.FeverTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = $"当前体温{stats.LatestTemperature?.ToString("F1")}℃";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_FeverTitle", "{0}体温偏高"), name, noBabyTitle);
+            AiStatusSubtitle = string.Format(_locale.GetString("Home_Ai_SubtitleFever", "当前体温{0}℃"), stats.LatestTemperature?.ToString("F1") ?? string.Empty);
             SetStaticTip(cfg.FeverTip);
         }
         else if (stats.HasDiarrhea)
         {
             AiStatusIcon = "⚠️";
-            AiStatusTitle = FormatTitle(cfg.DiarrheaTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = "今日有腹泻记录";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_DiarrheaTitle", "{0}肠胃需呵护"), name, noBabyTitle);
+            AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleDiarrhea", "今日有腹泻记录");
             SetStaticTip(cfg.DiarrheaTip);
         }
         else if (stats.FeedCount >= 6 && stats.SleepTotalMin >= 480)
         {
             AiStatusIcon = "😊";
-            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = "吃得好睡得香~";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), name, noBabyTitle);
+            AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGreat", "吃得好睡得香~");
             StartTipCarousel(cfg.DailyTips);
         }
         else if (stats.FeedCount == 0 && stats.DiaperCount == 0)
         {
             AiStatusIcon = "📝";
-            AiStatusTitle = FormatTitle(cfg.NoRecordTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = "点击下方快捷按钮开始吧";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_NoRecordTitle", "{0}今天还没记录"), name, noBabyTitle);
+            AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleNoRecord", "点击下方快捷按钮开始吧");
             SetStaticTip(cfg.DefaultTip);
         }
         else
         {
             AiStatusIcon = "☀️";
-            AiStatusTitle = FormatTitle(cfg.GoodTitleTemplate, name, cfg.NoBabyTitle);
-            AiStatusSubtitle = "正在快乐成长中~";
+            AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), name, noBabyTitle);
+            AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
             StartTipCarousel(cfg.DailyTips);
         }
     }
@@ -86,8 +100,8 @@ public partial class AiStatusViewModel : ObservableObject
     public void Reset()
     {
         AiStatusIcon = "☀️";
-        AiStatusTitle = "小铃铛状态良好";
-        AiStatusSubtitle = "正在快乐成长中~";
+        AiStatusTitle = string.Format(_locale.GetString("Home_Ai_GoodTitle", "{0}状态良好"), "小铃铛");
+        AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
         SetStaticTip(DailyTipsCatalog.Current.DefaultTip);
     }
 

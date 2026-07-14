@@ -12,6 +12,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
     private readonly AiAnalysisService _aiService = ServiceProvider.Instance.AiAnalysisService;
     private readonly PointsService _pointsService = ServiceProvider.Instance.PointsService;
     private readonly AppState _state = ServiceProvider.Instance.AppState;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private string _babyName = string.Empty;
     // 使用 DateTime? 而非 DateTimeOffset? —— Avalonia 12 的 CalendarDatePicker.SelectedDate
@@ -20,11 +21,11 @@ public partial class AiAnalysisViewModel : ViewModelBase
     // 因偏移量导致失败，抛出 "could not convert ... to System.DateTime" 错误。
     [ObservableProperty] private DateTime? _startDate;
     [ObservableProperty] private DateTime? _endDate;
-    [ObservableProperty] private string _rangeTip = "请选择连续 7 天作为分析区间";
+    [ObservableProperty] private string _rangeTip = string.Empty;
     [ObservableProperty] private bool _rangeValid;
     [ObservableProperty] private bool _canGenerate = true;
     [ObservableProperty] private bool _generating;
-    [ObservableProperty] private string _generateButtonText = "生成新的分析";
+    [ObservableProperty] private string _generateButtonText = string.Empty;
     [ObservableProperty] private bool _showDetail;
     [ObservableProperty] private string _detailText = string.Empty;
     [ObservableProperty] private string _detailRangeLabel = string.Empty;
@@ -68,6 +69,22 @@ public partial class AiAnalysisViewModel : ViewModelBase
     /// <summary>请求跳转到会员中心（AI 次数用尽时，由 MainShellViewModel 订阅）。</summary>
     public event Action? MembershipRequired;
 
+    public AiAnalysisViewModel()
+    {
+        RangeTip = _locale.GetString("AiAnalysis_RangeTipDefault", "请选择连续 7 天作为分析区间");
+        GenerateButtonText = _locale.GetString("AiAnalysis_GenerateNew", "生成新的分析");
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 仅刷新非生成态的文案；生成中保持"正在分析..."不变
+        if (!Generating)
+        {
+            UpdateRangeTip();
+        }
+    }
+
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
@@ -109,7 +126,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         PointsSufficient = CurrentPoints >= AnalysisCost;
         InsufficientTip = PointsSufficient
             ? string.Empty
-            : $"积分不足，需 {AnalysisCost} 积分，当前 {CurrentPoints} 积分（每日签到可获取积分）";
+            : string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFull", "积分不足，需 {0} 积分，当前 {1} 积分（每日签到可获取积分）"), AnalysisCost, CurrentPoints);
     }
 
     /// <summary>从全量记录中加载下一批到 ObservableCollection（懒加载）。</summary>
@@ -148,7 +165,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         ErrorMessage = string.Empty;
         if (StartDate is null || EndDate is null)
         {
-            RangeTip = "请选择连续 7 天作为分析区间";
+            RangeTip = _locale.GetString("AiAnalysis_RangeTipDefault", "请选择连续 7 天作为分析区间");
             RangeValid = false;
             CanGenerate = false;
             return;
@@ -160,22 +177,24 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
         if (days < 7)
         {
-            RangeTip = "分析区间不能少于 7 天";
+            RangeTip = _locale.GetString("AiAnalysis_RangeTooShort", "分析区间不能少于 7 天");
             RangeValid = false;
             CanGenerate = false;
         }
         else if (days > 7)
         {
-            RangeTip = "分析区间不能超过 7 天";
+            RangeTip = _locale.GetString("AiAnalysis_RangeTooLong", "分析区间不能超过 7 天");
             RangeValid = false;
             CanGenerate = false;
         }
         else
         {
-            RangeTip = "将分析该连续 7 天内的记录";
+            RangeTip = _locale.GetString("AiAnalysis_RangeOk", "将分析该连续 7 天内的记录");
             RangeValid = true;
             CanGenerate = !_aiService.HasRangeAnalysis(start, end);
-            GenerateButtonText = CanGenerate ? "生成新的分析" : "该区间已分析";
+            GenerateButtonText = CanGenerate
+                ? _locale.GetString("AiAnalysis_GenerateNew", "生成新的分析")
+                : _locale.GetString("AiAnalysis_AlreadyAnalyzed", "该区间已分析");
         }
     }
 
@@ -187,7 +206,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         var config = _aiService.GetLlmConfig();
         if (!config.Enabled)
         {
-            DisplayToast("请先在设置中启用大模型");
+            DisplayToast(_locale.GetString("AiAnalysis_ErrEnableAi", "请先在设置中启用大模型"));
             ConfigRequired?.Invoke();
             return;
         }
@@ -196,7 +215,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         if (config.NoteSource == "server" && !PointsSufficient)
         {
             ErrorMessage = InsufficientTip;
-            DisplayToast($"积分不足，需 {AnalysisCost} 积分，当前 {CurrentPoints} 积分");
+            DisplayToast(string.Format(_locale.GetString("AiAnalysis_ErrPointsShort", "积分不足，需 {0} 积分，当前 {1} 积分"), AnalysisCost, CurrentPoints));
             return;
         }
 
@@ -206,7 +225,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         _generateCts = new CancellationTokenSource();
 
         Generating = true;
-        GenerateButtonText = "正在分析...";
+        GenerateButtonText = _locale.GetString("AiAnalysis_Analyzing", "正在分析...");
         ErrorMessage = string.Empty;
 
         try
@@ -232,11 +251,11 @@ public partial class AiAnalysisViewModel : ViewModelBase
             DetailCreatedLabel = record.CreatedAtLabel;
             DetailQualityTip = record.DataQualityTip;
             UpdateRangeTip();
-            DisplayToast("分析完成");
+            DisplayToast(_locale.GetString("AiAnalysis_Done", "分析完成"));
         }
         catch (OperationCanceledException)
         {
-            DisplayToast("已取消分析");
+            DisplayToast(_locale.GetString("AiAnalysis_Canceled", "已取消分析"));
         }
         catch (AiAnalysisApiException ex)
         {
@@ -246,31 +265,33 @@ public partial class AiAnalysisViewModel : ViewModelBase
                 var dashboard = await Task.Run(() => _pointsService.GetDashboard());
                 CurrentPoints = dashboard.Points;
                 RefreshPointsSufficiency();
-                ErrorMessage = $"积分不足，本次分析需 {AnalysisCost} 积分，当前余额 {CurrentPoints} 积分";
-                DisplayToast("积分不足，请每日签到获取积分");
+                ErrorMessage = string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFinal", "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分"), AnalysisCost, CurrentPoints);
+                DisplayToast(_locale.GetString("AiAnalysis_ErrPointsDaily", "积分不足，请每日签到获取积分"));
             }
             // AI 分析次数用尽（本周）：提示并跳转会员中心
             else if (ex.IsAiLimitExceeded)
             {
-                ErrorMessage = "本周 AI 分析次数已用完，升级会员可享 10 次/周";
-                DisplayToast("本周次数已达上限，升级会员解锁更多次数");
+                ErrorMessage = _locale.GetString("AiAnalysis_ErrWeeklyLimitMember", "本周 AI 分析次数已用完，升级会员可享 10 次/周");
+                DisplayToast(_locale.GetString("AiAnalysis_ErrWeeklyLimitUpgrade", "本周次数已达上限，升级会员解锁更多次数"));
                 MembershipRequired?.Invoke();
             }
             else
             {
                 ErrorMessage = ex.Message;
-                DisplayToast("分析失败：" + ex.Message);
+                DisplayToast(string.Format(_locale.GetString("AiAnalysis_ErrFailed", "分析失败：{0}"), ex.Message));
             }
         }
         catch (Exception ex)
         {
             ErrorMessage = ex.Message;
-            DisplayToast("分析失败：" + ex.Message);
+            DisplayToast(string.Format(_locale.GetString("AiAnalysis_ErrFailed", "分析失败：{0}"), ex.Message));
         }
         finally
         {
             Generating = false;
-            GenerateButtonText = CanGenerate ? "生成新的分析" : "该区间已分析";
+            GenerateButtonText = CanGenerate
+                ? _locale.GetString("AiAnalysis_GenerateNew", "生成新的分析")
+                : _locale.GetString("AiAnalysis_AlreadyAnalyzed", "该区间已分析");
             _generateCts?.Dispose();
             _generateCts = null;
         }

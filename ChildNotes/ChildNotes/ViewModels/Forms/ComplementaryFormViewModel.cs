@@ -5,12 +5,15 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     // 辅食食量单位（对齐小程序 AMOUNT_UNITS = ['克', '个', '勺', '碗']，固定不可自定义）
     private static readonly string[] DefaultAmountUnits = { "克", "个", "勺", "碗" };
 
@@ -199,14 +202,14 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         var value = CustomFood?.Trim();
         if (string.IsNullOrEmpty(value))
         {
-            ErrorMessage = "请输入食物名称";
+            ErrorMessage = _locale.GetString("Form_ErrFoodName", "请输入食物名称");
             return;
         }
 
         // 去重：默认项和自定义项都不能重复
         if (DefaultFoodItems.Any(x => x.Name == value) || CustomFoodItems.Any(x => x.Name == value))
         {
-            ErrorMessage = "该食物已存在";
+            ErrorMessage = _locale.GetString("Form_ErrFoodDuplicate", "该食物已存在");
             return;
         }
 
@@ -257,7 +260,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
     {
         if (string.IsNullOrWhiteSpace(FoodName))
         {
-            error = "请输入或选择食物名称";
+            error = _locale.GetString("Form_ErrFoodNameOrSelect", "请输入或选择食物名称");
             return false;
         }
         error = string.Empty;

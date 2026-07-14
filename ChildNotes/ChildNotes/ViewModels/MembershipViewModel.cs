@@ -20,6 +20,7 @@ namespace ChildNotes.ViewModels;
 public partial class MembershipViewModel : ViewModelBase
 {
     private readonly MembershipApiClient _api = ServiceProvider.Instance.MembershipApiClient;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private bool _isActive;
     [ObservableProperty] private string _expireAtText = string.Empty;
@@ -120,14 +121,14 @@ public partial class MembershipViewModel : ViewModelBase
             var resp = await _api.CreateOrderAsync(SelectedPlanType, channel);
             if (resp is null)
             {
-                DisplayToast("创建订单失败，请检查网络");
+                DisplayToast(_locale.GetString("Membership_ErrCreateOrder", "创建订单失败，请检查网络"));
                 return;
             }
 
             if (string.IsNullOrEmpty(resp.PayParams))
             {
                 // Mock 模式：后端直接标记为已支付，轮询确认
-                DisplayToast("支付成功（Mock 模式）");
+                DisplayToast(_locale.GetString("Membership_PaySuccessMock", "支付成功（Mock 模式）"));
                 await PollOrderStatusAsync(resp.OrderNo);
             }
             else
@@ -141,7 +142,7 @@ public partial class MembershipViewModel : ViewModelBase
         catch (Exception ex)
         {
             DevLogger.Log("Membership", "Pay failed: " + ex);
-            DisplayToast("支付失败：" + ex.Message);
+            DisplayToast(string.Format(_locale.GetString("Membership_PayFailed", "支付失败：{0}"), ex.Message));
         }
         finally
         {
@@ -167,18 +168,18 @@ public partial class MembershipViewModel : ViewModelBase
             {
                 if (status.Membership is not null)
                     ApplyStatus(status.Membership);
-                DisplayToast("会员开通成功！");
+                DisplayToast(_locale.GetString("Membership_SubscribeOk", "会员开通成功！"));
                 PaymentSucceeded?.Invoke();
                 return;
             }
             if (status.Status == MembershipConstants.OrderStatusClosed)
             {
-                DisplayToast("订单已关闭");
+                DisplayToast(_locale.GetString("Membership_OrderClosed", "订单已关闭"));
                 return;
             }
         }
         // 超时未确认，提示用户稍后查看
-        DisplayToast("支付结果确认中，请稍后查看会员状态");
+        DisplayToast(_locale.GetString("Membership_PayConfirming", "支付结果确认中，请稍后查看会员状态"));
     }
 
     /// <summary>

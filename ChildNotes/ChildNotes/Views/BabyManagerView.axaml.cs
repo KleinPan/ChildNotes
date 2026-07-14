@@ -197,11 +197,11 @@ public partial class BabyManagerView : UserControl
 
             var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "选择头像",
+                Title = LocaleManager.Instance.GetString("BabyMgr_PickAvatarTitle", "选择头像"),
                 AllowMultiple = false,
                 FileTypeFilter = new[]
                 {
-                    new FilePickerFileType("图片文件")
+                    new FilePickerFileType(LocaleManager.Instance.GetString("BabyMgr_PickImageFilter", "图片文件"))
                     {
                         Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp" },
                         MimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },

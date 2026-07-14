@@ -1,11 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using ChildNotes.Infrastructure;
+using ChildNotes.Services;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.ViewModels;
 
 public partial class GrowthFormViewModel : ObservableObject, IRecordFormViewModel
 {
+    private readonly LocaleManager _locale = LocaleManager.Instance;
+
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _heightText = string.Empty;
     [ObservableProperty] private string _weightText = string.Empty;
@@ -18,7 +21,7 @@ public partial class GrowthFormViewModel : ObservableObject, IRecordFormViewMode
         var hasW = decimal.TryParse(WeightText, out _);
         if (!hasH && !hasW)
         {
-            error = "请至少输入身高或体重";
+            error = _locale.GetString("Form_ErrGrowthHeightWeight", "请至少输入身高或体重");
             return false;
         }
         error = string.Empty;
