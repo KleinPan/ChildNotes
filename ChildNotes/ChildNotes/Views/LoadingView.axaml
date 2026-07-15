@@ -4,15 +4,14 @@
              Background="{StaticResource WeuiBg0Brush}">
 
     <Grid>
-        <!-- 育儿小知识卡片（居中作为主视觉，系统启动屏已显示图标，此处不重复） -->
+        <!-- 育儿小知识卡片（居中，立即可见不依赖动画） -->
         <Border x:Name="TipBorder"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 Margin="24,0,24,120"
                 Background="{StaticResource WeuiBg2Brush}"
                 CornerRadius="{StaticResource WeuiCardRadius}"
                 Padding="20,16"
-                MaxWidth="340"
-                Opacity="0">
+                MaxWidth="340">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10" HorizontalAlignment="Center">
                     <TextBlock Text="💡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
@@ -34,7 +33,6 @@
                      IsIndeterminate="True"
                      Foreground="{StaticResource WeuiGreenBrush}"
                      Background="{StaticResource WeuiBg1Brush}"
-                     Opacity="0"
                      CornerRadius="1.5"/>
     </Grid>
 </UserControl>

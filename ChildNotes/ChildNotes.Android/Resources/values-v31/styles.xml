@@ -8,5 +8,10 @@
     <item name="android:windowActionBar">false</item>
     <item name="android:windowBackground">@drawable/splash_screen</item>
     <item name="android:windowNoTitle">true</item>
+    <!-- Android 12+ SplashScreen API：指定背景色与 windowBackground 一致，
+         避免系统在 windowBackground 之后插入默认黑底导致黑屏闪烁。
+         不配置 windowSplashScreenAnimatedIcon，无图标动画。 -->
+    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+    <item name="android:windowSplashScreenAnimationDuration">0</item>
   </style>
 </resources>
