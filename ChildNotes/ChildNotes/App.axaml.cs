@@ -163,7 +163,10 @@ public partial class App : Application
     /// 先显示 LoadingView 作为视觉过渡（避免系统启动屏到应用首帧的空白突兀），
     /// 然后在后台线程执行 ServiceProvider 静态构造 + DB 初始化 + 会话恢复，
     /// 完成后切回 UI 线程进入登录页或主界面。
+    /// 保证 LoadingView 至少显示 MinimumLoadingMs，避免动画一闪而过。
     /// </summary>
+    private const int MinimumLoadingMs = 800;
+
     private void ContinueStartupAfterPrivacy()
     {
         // 先显示 LoadingView（UI 线程立即返回，用户看到应用首帧）
@@ -181,10 +184,19 @@ public partial class App : Application
 
         // 后台线程执行初始化（ServiceProvider 静态构造 + DB + 会话恢复）
         // 避免阻塞 UI 线程，用户看到 loading 动画而不是卡在系统启动屏
+        var initStart = Stopwatch.GetTimestamp();
         _ = Task.Run(() =>
         {
             var restored = TryRestoreSession();
-            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored})");
+            var initElapsed = Stopwatch.GetElapsedTime(initStart);
+            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored}, init={initElapsed.TotalMilliseconds}ms)");
+
+            // 保证 LoadingView 至少显示 MinimumLoadingMs，避免动画一闪而过
+            var remaining = MinimumLoadingMs - (int)initElapsed.TotalMilliseconds;
+            if (remaining > 0)
+            {
+                System.Threading.Thread.Sleep(remaining);
+            }
 
             Dispatcher.UIThread.Post(() =>
             {
