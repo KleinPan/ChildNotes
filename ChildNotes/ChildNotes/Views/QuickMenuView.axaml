@@ -58,19 +58,20 @@
             IsVisible="{Binding IsMenuOpen}">
         <StackPanel Spacing="0">
             <!-- Carousel：每页一个 UniformGrid 4×2，支持左右滑动 -->
-            <!-- 自定义 PointerEvent 处理滑动手势（空白区域也响应），PageSlide 提供切换动画 -->
+            <!-- IsSwipeEnabled 启用内置滑动手势；透明背景确保空白区域也能命中 -->
             <Carousel x:Name="MenuCarousel"
                       ItemsSource="{Binding Pages}"
                       SelectedIndex="{Binding CurrentPage, Mode=TwoWay}"
                       HorizontalAlignment="Stretch"
                       Background="Transparent"
+                      IsSwipeEnabled="True"
                       IsTabStop="False"
                       PageTransition="{StaticResource MenuPageSlide}">
                 <Carousel.ItemTemplate>
                     <!-- Carousel 每个 Item 是 List<QuickActionItem>（一页数据），
                          用 ItemsControl 嵌套渲染单页内的 8 个功能按钮。 -->
                     <DataTemplate>
-                        <ItemsControl ItemsSource="{Binding}">
+                        <ItemsControl ItemsSource="{Binding}" Background="Transparent">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <UniformGrid Columns="4" Rows="2"/>
