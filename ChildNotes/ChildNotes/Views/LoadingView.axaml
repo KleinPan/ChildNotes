@@ -4,43 +4,25 @@
              Background="{StaticResource WeuiBg0Brush}">
 
     <Grid>
-        <!-- 顶部 logo 区（与 LoginView 顶部样式一致，视觉延续） -->
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,80">
-            <Border x:Name="LogoBorder" Width="84" Height="84" CornerRadius="42"
-                    Background="{StaticResource WeuiGreenBrush}"
-                    HorizontalAlignment="Center" Margin="0,0,0,16"
-                    Opacity="0"
-                    RenderTransformOrigin="0.5,0.5">
-                <Border.RenderTransform>
-                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
-                </Border.RenderTransform>
-                <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
-            <TextBlock x:Name="TitleText" Text="成长记录" FontSize="18" FontWeight="Bold"
-                       HorizontalAlignment="Center" Opacity="0"/>
-            <TextBlock x:Name="SubtitleText" Text="记录宝宝成长的每一天" FontSize="13"
-                       Foreground="{StaticResource WeuiFg1Brush}"
-                       HorizontalAlignment="Center" Margin="0,6,0,0" Opacity="0"/>
-        </StackPanel>
-
-        <!-- 育儿小知识区（Logo 下方，进度条上方） -->
+        <!-- 育儿小知识卡片（居中作为主视觉，系统启动屏已显示图标，此处不重复） -->
         <Border x:Name="TipBorder"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                Margin="24,200,24,0"
+                Margin="24,0,24,120"
                 Background="{StaticResource WeuiBg2Brush}"
                 CornerRadius="{StaticResource WeuiCardRadius}"
-                Padding="16,12"
-                MaxWidth="320"
+                Padding="20,16"
+                MaxWidth="340"
                 Opacity="0">
             <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <TextBlock Text="💡" FontSize="14" Margin="0,0,6,0"/>
-                    <TextBlock Text="育儿小知识" FontSize="12" FontWeight="Bold"
-                               Foreground="{StaticResource WeuiGreenBrush}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" HorizontalAlignment="Center">
+                    <TextBlock Text="💡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="育儿小知识" FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock x:Name="TipText" Text="" FontSize="13"
+                <TextBlock x:Name="TipText" Text="" FontSize="14"
                            Foreground="{StaticResource WeuiFg0Brush}"
-                           TextWrapping="Wrap" LineHeight="20"/>
+                           TextWrapping="Wrap" LineHeight="22"
+                           TextAlignment="Center" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
 
