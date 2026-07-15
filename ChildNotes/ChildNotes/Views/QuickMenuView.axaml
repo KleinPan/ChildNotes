@@ -11,6 +11,11 @@
              Background="{StaticResource WeuiBg2Brush}"
              mc:Ignorable="d">
 
+    <UserControl.Resources>
+        <!-- 页面切换动画：水平滑动，250ms，对齐微信风格的分页过渡 -->
+        <PageSlide x:Key="MenuPageSlide" Duration="0:0:0.25" Orientation="Horizontal"/>
+    </UserControl.Resources>
+
     <UserControl.Styles>
         <!-- 功能面板项：圆形图标 + 文字标签，对齐微信风格 -->
         <Style Selector="Button.action-item">
@@ -53,12 +58,14 @@
             IsVisible="{Binding IsMenuOpen}">
         <StackPanel Spacing="0">
             <!-- Carousel：每页一个 UniformGrid 4×2，支持左右滑动 -->
-            <!-- IsSwipeEnabled 启用触摸与鼠标滑动手势切换页面（对齐微信风格） -->
-            <Carousel ItemsSource="{Binding Pages}"
+            <!-- 自定义 PointerEvent 处理滑动手势（空白区域也响应），PageSlide 提供切换动画 -->
+            <Carousel x:Name="MenuCarousel"
+                      ItemsSource="{Binding Pages}"
                       SelectedIndex="{Binding CurrentPage, Mode=TwoWay}"
                       HorizontalAlignment="Stretch"
-                      IsSwipeEnabled="True"
-                      IsTabStop="False">
+                      Background="Transparent"
+                      IsTabStop="False"
+                      PageTransition="{StaticResource MenuPageSlide}">
                 <Carousel.ItemTemplate>
                     <!-- Carousel 每个 Item 是 List<QuickActionItem>（一页数据），
                          用 ItemsControl 嵌套渲染单页内的 8 个功能按钮。 -->
