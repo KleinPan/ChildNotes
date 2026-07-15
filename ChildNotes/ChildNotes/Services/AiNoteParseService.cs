@@ -333,8 +333,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
                 recordService.AddSupplement(new ChildNotes.Shared.Dtos.SupplementRecordDto
                 {
                     Type = string.IsNullOrEmpty(r.RecordSubType) ? "medicine" : r.RecordSubType,
-                    // 名称：优先用 AI/规则返回的 Name，缺失时回退到 Note，最后回退到"AI 识别"
-                    Name = r.Name ?? r.Note ?? "AI 识别",
+                    // 名称：优先匹配用户标签库（自定义+自带），补全完整药剂名；缺失时回退到 Note，最后回退到"AI 识别"
+                    Name = ResolveSupplementName(r.Name, r.RecordSubType) ?? r.Note ?? "AI 识别",
                     // 剂量：优先用结构化 Dose（数值文本），其次用 Amount(ml) 构造
                     Dose = r.Dose ?? (r.Amount.HasValue ? r.Amount.Value.ToString() : null),
                     // 单位：优先用 AI 返回的 DoseUnit；Amount 回退时单位为 ml
@@ -469,5 +469,77 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         if (string.IsNullOrEmpty(unit)) return dose;
         if (dose == "0.5") return "半" + unit;
         return dose + unit;
+    }
+
+    /// <summary>
+    /// 系统默认补充剂标签（与 SupplementFormViewModel.SupplementCommonItems 一致）。
+    /// </summary>
+    private static readonly string[] DefaultSupplementNames = { "维生素D", "益生菌", "DHA", "钙剂", "铁剂" };
+
+    /// <summary>
+    /// 系统默认用药标签（与 SupplementFormViewModel.MedicineCommonItems 一致）。
+    /// </summary>
+    private static readonly string[] DefaultMedicineNames = { "泰诺林", "布洛芬", "美林", "蒙脱石散", "口服补液盐" };
+
+    /// <summary>
+    /// 将 AI/规则解析返回的补给名称匹配到用户标签库（自定义标签 + 自带标签），返回完整药剂名。
+    /// 匹配优先级：
+    /// 1. 精确匹配（忽略大小写、去空格）
+    /// 2. 包含匹配（AI 名称是某标签的子串，或某标签是 AI 名称的子串）
+    /// 3. 同类型标签优先（supplement/medicine），找不到再跨类型找
+    /// 匹配不到则返回原始名称（null 时返回 null）。
+    /// </summary>
+    private static string? ResolveSupplementName(string? aiName, string? subType)
+    {
+        if (string.IsNullOrWhiteSpace(aiName)) return aiName;
+        var raw = aiName.Trim();
+
+        // 收集候选标签：同类型在前，跨类型在后
+        var userId = ServiceProvider.Instance.AppState.UserId;
+        var repo = ServiceProvider.Instance.SupplementItemRepository;
+        var isMedicine = subType == "medicine";
+
+        // 自定义标签（同类型）
+        var customSameType = new List<string>();
+        if (!string.IsNullOrEmpty(userId))
+        {
+            customSameType = repo.GetByUser(userId, isMedicine ? "medicine" : "supplement")
+                .Select(x => x.Name).ToList();
+        }
+        // 自定义标签（跨类型）
+        var customCrossType = new List<string>();
+        if (!string.IsNullOrEmpty(userId))
+        {
+            customCrossType = repo.GetByUser(userId, isMedicine ? "supplement" : "medicine")
+                .Select(x => x.Name).ToList();
+        }
+        // 自带标签（同类型在前）
+        var defaultSameType = isMedicine ? DefaultMedicineNames : DefaultSupplementNames;
+        var defaultCrossType = isMedicine ? DefaultSupplementNames : DefaultMedicineNames;
+
+        // 候选列表：同类型自定义 → 同类型自带 → 跨类型自定义 → 跨类型自带
+        var candidates = customSameType
+            .Concat(defaultSameType)
+            .Concat(customCrossType)
+            .Concat(defaultCrossType)
+            .Distinct()
+            .ToList();
+
+        // 1. 精确匹配（忽略大小写）
+        var exact = candidates.FirstOrDefault(c =>
+            string.Equals(c, raw, StringComparison.OrdinalIgnoreCase));
+        if (exact is not null) return exact;
+
+        // 2. 包含匹配：AI 名称是某标签的子串（如"维D"匹配"维生素D"），或反过来
+        // 优先选最长的匹配项（更具体）
+        var contains = candidates
+            .Where(c => c.Contains(raw, StringComparison.OrdinalIgnoreCase)
+                     || raw.Contains(c, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(c => c.Length)
+            .FirstOrDefault();
+        if (contains is not null) return contains;
+
+        // 匹配不到，返回原始名称
+        return raw;
     }
 }
