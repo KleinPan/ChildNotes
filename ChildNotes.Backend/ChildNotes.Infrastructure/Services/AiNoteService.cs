@@ -193,6 +193,11 @@ public partial class AiNoteService : IAiNoteService
                 var normalized = AiNoteRuleParser.NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
                 it.Time = AiNoteRuleParser.NormalizeAmbiguousTime(normalized, text);
             }
+            // 补给用药：用常见药品/补充剂标签库补全完整药剂名
+            if (it.RecordType == RecordType.Supplement)
+            {
+                it.Name = AiNoteRuleParser.ResolveSupplementName(it.Name, it.RecordSubType);
+            }
         }
 
         _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Text={Text}",

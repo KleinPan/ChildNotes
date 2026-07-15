@@ -472,74 +472,25 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     }
 
     /// <summary>
-    /// 系统默认补充剂标签（与 SupplementFormViewModel.SupplementCommonItems 一致）。
-    /// </summary>
-    private static readonly string[] DefaultSupplementNames = { "维生素D", "益生菌", "DHA", "钙剂", "铁剂" };
-
-    /// <summary>
-    /// 系统默认用药标签（与 SupplementFormViewModel.MedicineCommonItems 一致）。
-    /// </summary>
-    private static readonly string[] DefaultMedicineNames = { "泰诺林", "布洛芬", "美林", "蒙脱石散", "口服补液盐" };
-
-    /// <summary>
     /// 将 AI/规则解析返回的补给名称匹配到用户标签库（自定义标签 + 自带标签），返回完整药剂名。
-    /// 匹配优先级：
-    /// 1. 精确匹配（忽略大小写、去空格）
-    /// 2. 包含匹配（AI 名称是某标签的子串，或某标签是 AI 名称的子串）
-    /// 3. 同类型标签优先（supplement/medicine），找不到再跨类型找
-    /// 匹配不到则返回原始名称（null 时返回 null）。
+    /// 委托给共享层 AiNoteRuleParser.ResolveSupplementName，并传入前端用户自定义标签作为额外候选。
     /// </summary>
     private static string? ResolveSupplementName(string? aiName, string? subType)
     {
-        if (string.IsNullOrWhiteSpace(aiName)) return aiName;
-        var raw = aiName.Trim();
-
-        // 收集候选标签：同类型在前，跨类型在后
+        // 收集用户自定义标签（同类型在前，跨类型在后）作为额外候选
         var userId = ServiceProvider.Instance.AppState.UserId;
         var repo = ServiceProvider.Instance.SupplementItemRepository;
         var isMedicine = subType == "medicine";
-
-        // 自定义标签（同类型）
-        var customSameType = new List<string>();
+        List<string> extraCandidates = new();
         if (!string.IsNullOrEmpty(userId))
         {
-            customSameType = repo.GetByUser(userId, isMedicine ? "medicine" : "supplement")
-                .Select(x => x.Name).ToList();
+            extraCandidates = repo.GetByUser(userId, isMedicine ? "medicine" : "supplement")
+                .Select(x => x.Name)
+                .Concat(repo.GetByUser(userId, isMedicine ? "supplement" : "medicine")
+                    .Select(x => x.Name))
+                .Distinct()
+                .ToList();
         }
-        // 自定义标签（跨类型）
-        var customCrossType = new List<string>();
-        if (!string.IsNullOrEmpty(userId))
-        {
-            customCrossType = repo.GetByUser(userId, isMedicine ? "supplement" : "medicine")
-                .Select(x => x.Name).ToList();
-        }
-        // 自带标签（同类型在前）
-        var defaultSameType = isMedicine ? DefaultMedicineNames : DefaultSupplementNames;
-        var defaultCrossType = isMedicine ? DefaultSupplementNames : DefaultMedicineNames;
-
-        // 候选列表：同类型自定义 → 同类型自带 → 跨类型自定义 → 跨类型自带
-        var candidates = customSameType
-            .Concat(defaultSameType)
-            .Concat(customCrossType)
-            .Concat(defaultCrossType)
-            .Distinct()
-            .ToList();
-
-        // 1. 精确匹配（忽略大小写）
-        var exact = candidates.FirstOrDefault(c =>
-            string.Equals(c, raw, StringComparison.OrdinalIgnoreCase));
-        if (exact is not null) return exact;
-
-        // 2. 包含匹配：AI 名称是某标签的子串（如"维D"匹配"维生素D"），或反过来
-        // 优先选最长的匹配项（更具体）
-        var contains = candidates
-            .Where(c => c.Contains(raw, StringComparison.OrdinalIgnoreCase)
-                     || raw.Contains(c, StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(c => c.Length)
-            .FirstOrDefault();
-        if (contains is not null) return contains;
-
-        // 匹配不到，返回原始名称
-        return raw;
+        return AiNoteRuleParser.ResolveSupplementName(aiName, subType, extraCandidates);
     }
 }

@@ -824,4 +824,61 @@ public static class AiNoteRuleParser
     }
 
     #endregion
+
+    #region 补给用药名称补全
+
+    /// <summary>
+    /// 系统默认补充剂标签（与前端 SupplementFormViewModel.SupplementCommonItems 一致）。
+    /// 前后端共享，确保 server/local 两种解析路径返回的名称规范一致。
+    /// </summary>
+    public static readonly string[] DefaultSupplementNames = { "维生素D", "益生菌", "DHA", "钙剂", "铁剂" };
+
+    /// <summary>
+    /// 系统默认用药标签（与前端 SupplementFormViewModel.MedicineCommonItems 一致）。
+    /// </summary>
+    public static readonly string[] DefaultMedicineNames = { "泰诺林", "布洛芬", "美林", "蒙脱石散", "口服补液盐" };
+
+    /// <summary>
+    /// 将 AI/规则解析返回的补给名称匹配到标签库，返回完整药剂名。
+    /// 匹配优先级：精确匹配 → 包含匹配（取最长项）。
+    /// 候选标签：同类型默认标签优先，跨类型默认标签兜底；前端可传入用户自定义标签作为额外候选。
+    /// 匹配不到则返回原始名称。
+    /// </summary>
+    /// <param name="aiName">AI/规则解析返回的名称</param>
+    /// <param name="subType">子类型 medicine/supplement</param>
+    /// <param name="extraCandidates">额外候选标签（前端传入用户自定义标签），同类型在前</param>
+    public static string? ResolveSupplementName(string? aiName, string? subType, IEnumerable<string>? extraCandidates = null)
+    {
+        if (string.IsNullOrWhiteSpace(aiName)) return aiName;
+        var raw = aiName.Trim();
+
+        var isMedicine = subType == "medicine";
+        var defaultSameType = isMedicine ? DefaultMedicineNames : DefaultSupplementNames;
+        var defaultCrossType = isMedicine ? DefaultSupplementNames : DefaultMedicineNames;
+
+        // 候选列表：同类型默认 → 跨类型默认 → 额外候选（前端自定义标签）
+        var candidates = defaultSameType
+            .Concat(defaultCrossType)
+            .Concat(extraCandidates ?? Array.Empty<string>())
+            .Distinct()
+            .ToList();
+
+        // 1. 精确匹配（忽略大小写）
+        var exact = candidates.FirstOrDefault(c =>
+            string.Equals(c, raw, StringComparison.OrdinalIgnoreCase));
+        if (exact is not null) return exact;
+
+        // 2. 包含匹配：AI 名称是某标签的子串（如"维D"匹配"维生素D"），或反过来
+        // 优先选最长的匹配项（更具体）
+        var contains = candidates
+            .Where(c => c.Contains(raw, StringComparison.OrdinalIgnoreCase)
+                     || raw.Contains(c, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(c => c.Length)
+            .FirstOrDefault();
+        if (contains is not null) return contains;
+
+        return raw;
+    }
+
+    #endregion
 }
