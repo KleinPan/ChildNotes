@@ -839,9 +839,51 @@ public static class AiNoteRuleParser
     public static readonly string[] DefaultMedicineNames = { "泰诺林", "布洛芬", "美林", "蒙脱石散", "口服补液盐" };
 
     /// <summary>
+    /// 常见补充剂/营养品知识库（用于 AI 解析时名称补全，比表单默认标签更全）。
+    /// 含婴儿常见营养补充剂的商品名/通用名/别名，匹配时取最长匹配项。
+    /// </summary>
+    public static readonly string[] CommonSupplementKnowledge = DefaultSupplementNames.Concat(new[]
+    {
+        "维生素AD", "伊可新", "星鲨", "维生素A", "维生素D3",
+        "维生素K1", "复合维生素", "鱼肝油",
+        "乳酸菌", "双歧杆菌", "枯草杆菌二联活菌", "妈咪爱",
+        "藻油DHA", "ARA",
+        "碳酸钙", "乳酸钙", "葡萄糖酸钙", "维生素D钙",
+        "葡萄糖酸亚铁", "蛋白琥珀酸铁", "右旋糖酐铁",
+        "葡萄糖酸锌", "甘草锌",
+    }).ToArray();
+
+    /// <summary>
+    /// 常见药品知识库（用于 AI 解析时名称补全，比表单默认标签更全）。
+    /// 含婴儿常见用药的商品名/通用名/别名，匹配时取最长匹配项。
+    /// </summary>
+    public static readonly string[] CommonMedicineKnowledge = DefaultMedicineNames.Concat(new[]
+    {
+        // 退热镇痛
+        "对乙酰氨基酚", "对乙酰氨基酚滴剂", "对乙酰氨基酚口服混悬液",
+        "布洛芬混悬液", "布洛芬滴剂", "小儿布洛芬",
+        "小儿氨酚黄那敏颗粒",
+        // 止泻/胃肠
+        "蒙脱石散", "思密达", "口服补液盐III", "口服补液盐III散",
+        "枯草杆菌二联活菌颗粒", "布拉氏酵母菌", "醒脾养儿颗粒",
+        // 止咳化痰
+        "小儿止咳糖浆", "氨溴索", "盐酸氨溴索口服溶液", "易坦静",
+        "小儿肺热咳喘口服液", "小儿化痰止咳颗粒",
+        // 抗过敏
+        "西替利嗪", "氯雷他定", "地氯雷他定",
+        // 外用/皮肤
+        "炉甘石洗剂", "氧化锌软膏", "红霉素软膏", "百多邦", "莫匹罗星软膏",
+        // 中成药
+        "宝泰康颗粒", "小儿七星茶颗粒", "保婴丹", "猴枣散",
+        // 其他
+        "生理盐水喷鼻剂", "海盐水喷雾",
+    }).ToArray();
+
+    /// <summary>
     /// 将 AI/规则解析返回的补给名称匹配到标签库，返回完整药剂名。
     /// 匹配优先级：精确匹配 → 包含匹配（取最长项）。
-    /// 候选标签：同类型默认标签优先，跨类型默认标签兜底；前端可传入用户自定义标签作为额外候选。
+    /// 候选标签：同类型知识库优先（含表单默认标签 + 扩充知识库），跨类型知识库兜底；
+    /// 前端可传入用户自定义标签作为额外候选（优先级最高）。
     /// 匹配不到则返回原始名称。
     /// </summary>
     /// <param name="aiName">AI/规则解析返回的名称</param>
@@ -853,13 +895,13 @@ public static class AiNoteRuleParser
         var raw = aiName.Trim();
 
         var isMedicine = subType == "medicine";
-        var defaultSameType = isMedicine ? DefaultMedicineNames : DefaultSupplementNames;
-        var defaultCrossType = isMedicine ? DefaultSupplementNames : DefaultMedicineNames;
+        var knowledgeSameType = isMedicine ? CommonMedicineKnowledge : CommonSupplementKnowledge;
+        var knowledgeCrossType = isMedicine ? CommonSupplementKnowledge : CommonMedicineKnowledge;
 
-        // 候选列表：同类型默认 → 跨类型默认 → 额外候选（前端自定义标签）
-        var candidates = defaultSameType
-            .Concat(defaultCrossType)
-            .Concat(extraCandidates ?? Array.Empty<string>())
+        // 候选列表：额外候选（前端自定义，优先） → 同类型知识库 → 跨类型知识库
+        var candidates = (extraCandidates ?? Array.Empty<string>())
+            .Concat(knowledgeSameType)
+            .Concat(knowledgeCrossType)
             .Distinct()
             .ToList();
 
