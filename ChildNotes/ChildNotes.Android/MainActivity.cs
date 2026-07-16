@@ -45,14 +45,12 @@ public class MainActivity : AvaloniaMainActivity
         // IKeepOnScreenCondition 是接口不是委托，需显式实现
         splashScreen.SetKeepOnScreenCondition(new KeepOnScreenCondition(this));
 
-        // ★ 必须在 base.OnCreate 之前订阅 FirstFrameReady：
-        // base.OnCreate 内部会触发 Avalonia 初始化 → App.OnFrameworkInitializationCompleted
-        // → FirstFrameReady?.Invoke()。如果在 base.OnCreate 之后订阅，事件已触发完，
-        // 回调永远不会被调用，_isAvaloniaReady 永远为 false，系统启动屏永不消失。
-        if (Avalonia.Application.Current is ChildNotes.App app)
-        {
-            app.FirstFrameReady += OnAvaloniaFirstFrameReady;
-        }
+        // ★ 不订阅 FirstFrameReady 事件：
+        // App.OnFrameworkInitializationCompleted（含 FirstFrameReady?.Invoke()）在
+        // Android.App.Application.OnCreate（进程级）中触发，早于 MainActivity.OnCreate。
+        // 在此处订阅必然太晚，回调永远不会被调用。
+        // 改为在 OnCreate 末尾直接置 _isAvaloniaReady=true，setKeepOnScreenCondition 下次
+        // 求值返回 false，系统启动屏消失。不引入人为延迟，启动尽可能快。
 
         base.OnCreate(savedInstanceState);
 
@@ -100,16 +98,15 @@ public class MainActivity : AvaloniaMainActivity
                 // 登录页无弹层，不注册；进入主界面后由事件驱动注册
             }
         }
-    }
 
-    /// <summary>
-    /// Avalonia 首帧就绪回调：设置 _isAvaloniaReady=true，setKeepOnScreenCondition 下次求值时返回 false，
-    /// 系统启动屏消失，直接显示 Avalonia 渲染的 LoadingView/隐私协议视图。
-    /// </summary>
-    private void OnAvaloniaFirstFrameReady()
-    {
+        // ★ 释放系统启动屏：
+        // App.OnFrameworkInitializationCompleted（含 LoadingView 设置）已在进程级
+        // Application.OnCreate 中执行完毕，AvaloniaView 现在已具备首帧内容。
+        // 此时直接置为 true，setKeepOnScreenCondition 下次求值返回 false，
+        // 系统启动屏消失，立即显示 AvaloniaView 渲染的 LoadingView/隐私协议视图。
+        // 不引入人为延迟，启动尽可能快。
         _isAvaloniaReady = true;
-        Log.Info("ChildNotes", "[Startup] Avalonia first frame ready, releasing splash screen");
+        Log.Info("ChildNotes", "[Startup] MainActivity.OnCreate done, releasing splash screen");
     }
 
     /// <summary>
@@ -245,7 +242,6 @@ public class MainActivity : AvaloniaMainActivity
         if (Avalonia.Application.Current is ChildNotes.App app)
         {
             app.InterceptBackChanged -= OnInterceptBackChanged;
-            app.FirstFrameReady -= OnAvaloniaFirstFrameReady;
         }
         base.OnDestroy();
     }
