@@ -45,13 +45,16 @@ public class MainActivity : AvaloniaMainActivity
         // IKeepOnScreenCondition 是接口不是委托，需显式实现
         splashScreen.SetKeepOnScreenCondition(new KeepOnScreenCondition(this));
 
-        base.OnCreate(savedInstanceState);
-
-        // 订阅 Avalonia 首帧就绪事件，收到后释放系统启动屏
+        // ★ 必须在 base.OnCreate 之前订阅 FirstFrameReady：
+        // base.OnCreate 内部会触发 Avalonia 初始化 → App.OnFrameworkInitializationCompleted
+        // → FirstFrameReady?.Invoke()。如果在 base.OnCreate 之后订阅，事件已触发完，
+        // 回调永远不会被调用，_isAvaloniaReady 永远为 false，系统启动屏永不消失。
         if (Avalonia.Application.Current is ChildNotes.App app)
         {
             app.FirstFrameReady += OnAvaloniaFirstFrameReady;
         }
+
+        base.OnCreate(savedInstanceState);
 
         // 捕获 Java/ART 层未处理异常（如 Avalonia.Android 无障碍回调中抛出的异常）。
         // .NET 的 AppDomain.UnhandledException 只能捕获托管异常，Java 层异常会直接走 AndroidRuntime
