@@ -600,7 +600,7 @@ public partial class RecordSheetView : UserControl
     private void SwitchCategory(string c) { if (DataContext is RecordSheetViewModel vm) vm.ActivityForm.SelectCategory(c); }
 
     // ===== 疫苗相关 =====
-    private void OnVaccineDoseClick(object sender, RoutedEventArgs e)
+    private void OnVaccineDoseClick(object sender, PointerPressedEventArgs e)
     {
         if (sender is Button btn && btn.DataContext is VaccinePlanView plan && DataContext is RecordSheetViewModel vm)
         {
@@ -649,7 +649,7 @@ public partial class RecordSheetView : UserControl
         }
     }
 
-    private void OnVaccineToggleCustomForm(object sender, RoutedEventArgs e)
+    private void OnVaccineToggleCustomForm(object sender, PointerPressedEventArgs e)
     {
         if (DataContext is RecordSheetViewModel vm)
         {
