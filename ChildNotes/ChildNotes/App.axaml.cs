@@ -180,13 +180,18 @@ public partial class App : Application
         DevLogger.Log("Startup", "LoadingView shown, starting async init");
 
         // 后台线程执行初始化（ServiceProvider 静态构造 + DB + 会话恢复）
-        // 不人为延迟：初始化多快就多快完成，LoadingView 只是初始化期间的视觉占位
+        // ★ 最小显示时长 1.5 秒：系统启动屏（.NET 冷启动 2-5s）只能放图标不能放文字，
+        // 育儿提示只能在这里显示。若初始化快于 1.5s，等到 1.5s 再切走，确保用户能读完提示；
+        // 若初始化更慢，按实际时间切走，不额外延迟。
+        const int minLoadingMs = 1500;
         var initStart = Stopwatch.GetTimestamp();
         _ = Task.Run(() =>
         {
             var restored = TryRestoreSession();
             var initElapsed = Stopwatch.GetElapsedTime(initStart);
-            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored}, init={initElapsed.TotalMilliseconds}ms)");
+            var waitMs = Math.Max(0, minLoadingMs - (int)initElapsed.TotalMilliseconds);
+            if (waitMs > 0) Thread.Sleep(waitMs);
+            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored}, init={initElapsed.TotalMilliseconds}ms, waited={waitMs}ms)");
 
             Dispatcher.UIThread.Post(() =>
             {
