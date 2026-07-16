@@ -7,6 +7,7 @@ using Android.Util;
 using Android.Views;
 using Android.Window;
 using AndroidX.Core.App;
+using AndroidX.Core.SplashScreen;
 using AndroidX.Core.View;
 using Avalonia;
 using Avalonia.Android;
@@ -16,7 +17,8 @@ namespace ChildNotes.Android;
 
 [Activity(
     Label = "宝宝日记",
-    Theme = "@style/MyTheme.NoActionBar",
+    // 启动时用 Splash 主题，installSplashScreen 后切到 postSplashScreenTheme
+    Theme = "@style/MyTheme.Splash",
     Icon = "@drawable/Icon",
     MainLauncher = true,
     // windowSoftInputMode=adjustResize 在 AndroidManifest.xml 中设置（C# 枚举绑定在 .NET 10 Android 变化频繁，XML 更稳定）
@@ -26,9 +28,30 @@ public class MainActivity : AvaloniaMainActivity
     private const string StateKeyTab = "current_tab";
     private IOnBackInvokedCallback? _backCallback;
 
+    /// <summary>
+    /// 标记 Avalonia 首帧是否就绪。false 时系统启动屏保持显示，true 时启动屏消失。
+    /// 在 Avalonia OnFrameworkInitializationCompleted 完成后设为 true。
+    /// </summary>
+    private volatile bool _isAvaloniaReady;
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // 必须在 base.OnCreate 之前安装 SplashScreen，否则不生效
+        // 用完全限定名避免命名冲突（IDE 可能将 SplashScreen 误解析为其他类型）
+        var splashScreen = AndroidX.Core.SplashScreen.SplashScreen.InstallSplashScreen(this);
+
+        // 延长系统启动屏显示，直到 Avalonia 首帧就绪
+        // 解决 Android 12+ 系统启动屏 1 秒超时后黑屏（.NET 冷启动需 2-5 秒）
+        // IKeepOnScreenCondition 是接口不是委托，需显式实现
+        splashScreen.SetKeepOnScreenCondition(new KeepOnScreenCondition(this));
+
         base.OnCreate(savedInstanceState);
+
+        // 订阅 Avalonia 首帧就绪事件，收到后释放系统启动屏
+        if (Avalonia.Application.Current is ChildNotes.App app)
+        {
+            app.FirstFrameReady += OnAvaloniaFirstFrameReady;
+        }
 
         // 捕获 Java/ART 层未处理异常（如 Avalonia.Android 无障碍回调中抛出的异常）。
         // .NET 的 AppDomain.UnhandledException 只能捕获托管异常，Java 层异常会直接走 AndroidRuntime
@@ -68,16 +91,26 @@ public class MainActivity : AvaloniaMainActivity
         {
             _backCallback = new BackInvokedCallback(this);
             // 订阅 App 的拦截状态变化，动态注册/注销回调
-            if (Avalonia.Application.Current is ChildNotes.App app)
+            if (Avalonia.Application.Current is ChildNotes.App app2)
             {
-                app.InterceptBackChanged += OnInterceptBackChanged;
+                app2.InterceptBackChanged += OnInterceptBackChanged;
                 // 登录页无弹层，不注册；进入主界面后由事件驱动注册
             }
         }
     }
 
     /// <summary>
-    /// App 层拦截状态变化：true 时注册 OnBackInvokedCallback 拦截返回手势，
+    /// Avalonia 首帧就绪回调：设置 _isAvaloniaReady=true，setKeepOnScreenCondition 下次求值时返回 false，
+    /// 系统启动屏消失，直接显示 Avalonia 渲染的 LoadingView/隐私协议视图。
+    /// </summary>
+    private void OnAvaloniaFirstFrameReady()
+    {
+        _isAvaloniaReady = true;
+        Log.Info("ChildNotes", "[Startup] Avalonia first frame ready, releasing splash screen");
+    }
+
+    /// <summary>
+    /// 应用层拦截状态变化：true 时注册 OnBackInvokedCallback 拦截返回手势，
     /// false 时注销回调，恢复系统预测式返回动画。
     /// </summary>
     private void OnInterceptBackChanged(bool shouldIntercept)
@@ -205,10 +238,11 @@ public class MainActivity : AvaloniaMainActivity
     protected override void OnDestroy()
     {
         KeyboardHeightService.StopObserving();
-        // 取消订阅拦截状态变化事件，避免 Activity 销毁后回调悬空
+        // 取消订阅事件，避免 Activity 销毁后回调悬空
         if (Avalonia.Application.Current is ChildNotes.App app)
         {
             app.InterceptBackChanged -= OnInterceptBackChanged;
+            app.FirstFrameReady -= OnAvaloniaFirstFrameReady;
         }
         base.OnDestroy();
     }
@@ -286,5 +320,17 @@ public class MainActivity : AvaloniaMainActivity
             // 兜底：回调已注册但无弹层可关（状态变化事件尚未触发注销），主动退出
             _owner.Finish();
         }
+    }
+
+    /// <summary>
+    /// SplashScreen.IKeepOnScreenCondition 实现：返回 true 时系统启动屏保持显示。
+    /// C# 绑定中 IKeepOnScreenCondition 是 SplashScreen 类的嵌套接口（不是委托），不能直接用 lambda。
+    /// </summary>
+    private sealed class KeepOnScreenCondition : Java.Lang.Object, AndroidX.Core.SplashScreen.SplashScreen.IKeepOnScreenCondition
+    {
+        private readonly MainActivity _owner;
+        public KeepOnScreenCondition(MainActivity owner) => _owner = owner;
+
+        public bool ShouldKeepOnScreen() => !_owner._isAvaloniaReady;
     }
 }

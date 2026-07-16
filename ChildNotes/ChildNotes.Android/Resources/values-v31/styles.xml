@@ -4,14 +4,18 @@
   <style name="MyTheme">
   </style>
 
+  <!-- Android 12+ SplashScreen 主题：和 values/ 中一致，兼容库会自动用系统 API。
+       windowSplashScreenBackground 与 windowBackground 保持同色，消除黑屏闪烁。 -->
+  <style name="MyTheme.Splash" parent="Theme.SplashScreen">
+    <item name="windowSplashScreenBackground">@color/splash_background</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/icon</item>
+    <item name="windowSplashScreenAnimationDuration">0</item>
+    <item name="postSplashScreenTheme">@style/MyTheme.NoActionBar</item>
+  </style>
+
   <style name="MyTheme.NoActionBar" parent="@style/Theme.AppCompat.NoActionBar">
     <item name="android:windowActionBar">false</item>
     <item name="android:windowBackground">@drawable/splash_screen</item>
     <item name="android:windowNoTitle">true</item>
-    <!-- Android 12+ SplashScreen API：指定背景色与 windowBackground 一致，
-         避免系统在 windowBackground 之后插入默认黑底导致黑屏闪烁。
-         不配置 windowSplashScreenAnimatedIcon，无图标动画。 -->
-    <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-    <item name="android:windowSplashScreenAnimationDuration">0</item>
   </style>
 </resources>

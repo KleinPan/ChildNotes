@@ -20,6 +20,8 @@
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageVersion Include="Semi.Avalonia" Version="12.0.3" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <!-- AndroidX SplashScreen 兼容库：Android 12+ 延长系统启动屏显示直到 Avalonia 首帧就绪，消除黑屏空窗期 -->
+    <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.17" />
     <!-- Serilog：Release 日志系统（文件滚动 + 异步写入 + 分级）。DevLogger 仍为 Debug 阶段主路径。 -->
     <PackageVersion Include="Serilog" Version="4.3.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />

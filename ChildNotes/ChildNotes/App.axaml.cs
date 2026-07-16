@@ -107,6 +107,11 @@ public partial class App : Application
         sw.Stop();
         DevLogger.Log("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
         ReleaseLogger.Info("Startup", $"OnFrameworkInitializationCompleted end: total={sw.ElapsedMilliseconds}ms");
+
+        // 通知 Android 端释放系统启动屏：Avalonia 首帧内容已设置（LoadingView 或隐私协议视图）
+        // setKeepOnScreenCondition 收到后返回 false，系统启动屏消失，直接显示应用内容
+        FirstFrameReady?.Invoke();
+
         base.OnFrameworkInitializationCompleted();
     }
 
@@ -415,6 +420,12 @@ public partial class App : Application
     /// Android 端订阅此事件，在 true 时注册 OnBackInvokedCallback，false 时注销。
     /// </summary>
     public event Action<bool>? InterceptBackChanged;
+
+    /// <summary>
+    /// 首帧就绪事件：LoadingView 设置到容器后触发，标志着 Avalonia 已准备好渲染首帧。
+    /// Android 端订阅此事件，收到后释放系统启动屏（setKeepOnScreenCondition 返回 false）。
+    /// </summary>
+    public event Action? FirstFrameReady;
 
     /// <summary>转发 shell VM 的拦截状态变化到 App 级事件，供 Android 端订阅。</summary>
     private void OnInterceptBackChanged(bool shouldIntercept)
