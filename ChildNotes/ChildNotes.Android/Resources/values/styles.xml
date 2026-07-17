@@ -7,6 +7,7 @@
   <!-- SplashScreen 主题：Android 12+ 用系统 SplashScreen API，11 及以下用 windowBackground 兜底。
        postSplashScreenTheme 指向正式主题，启动屏消失后切换。 -->
   <style name="MyTheme.Splash" parent="Theme.SplashScreen">
+    <!-- 奶油色背景，与 Avalonia LoadingView 的 #FFF8E7 保持一致，实现启动屏到 LoadingView 的无缝过渡。 -->
     <item name="windowSplashScreenBackground">@color/splash_background</item>
     <item name="windowSplashScreenAnimatedIcon">@drawable/icon</item>
     <item name="windowSplashScreenAnimationDuration">0</item>

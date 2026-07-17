@@ -1,38 +1,58 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ChildNotes.Views.LoadingView"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="#FFF8E7">
 
     <Grid>
-        <!-- 育儿小知识卡片（居中，立即可见不依赖动画） -->
-        <Border x:Name="TipBorder"
-                HorizontalAlignment="Center" VerticalAlignment="Center"
-                Margin="24,0,24,120"
-                Background="{StaticResource WeuiBg2Brush}"
-                CornerRadius="{StaticResource WeuiCardRadius}"
-                Padding="20,16"
-                MaxWidth="340">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10" HorizontalAlignment="Center">
-                    <TextBlock Text="💡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="育儿小知识" FontSize="13" FontWeight="Bold"
-                               Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"/>
-                </StackPanel>
-                <TextBlock x:Name="TipText" Text="" FontSize="14"
-                           Foreground="{StaticResource WeuiFg0Brush}"
-                           TextWrapping="Wrap" LineHeight="22"
-                           TextAlignment="Center" HorizontalAlignment="Center"/>
-            </StackPanel>
-        </Border>
+        <!-- 顶部主视觉：宝宝插画 -->
+        <Image Source="avares://ChildNotes/Assets/Images/splash_baby.png"
+               HorizontalAlignment="Center" VerticalAlignment="Top"
+               Margin="0,120,0,0"
+               Width="240" Height="320"
+               Stretch="Uniform"/>
 
-        <!-- 底部 indeterminate 进度条（Avalonia 内置循环动画） -->
-        <ProgressBar x:Name="ProgressBar"
-                     HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                     Margin="0,0,0,80"
-                     Width="120" Height="3"
-                     IsIndeterminate="True"
-                     Foreground="{StaticResource WeuiGreenBrush}"
-                     Background="{StaticResource WeuiBg1Brush}"
-                     CornerRadius="1.5"/>
+        <!-- 品牌文案：紧跟插画下方 -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,460,0,0" Spacing="8">
+            <TextBlock Text="宝宝日记"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="#5D4037"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="每一次成长，都值得被记录。"
+                       FontSize="14"
+                       Foreground="#8D6E63"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- 底部区域：育儿提示 + 进度条 + 装饰花草 -->
+        <Grid VerticalAlignment="Bottom">
+            <!-- 底部花草装饰 -->
+            <Image Source="avares://ChildNotes/Assets/Images/splash_bottom.png"
+                   VerticalAlignment="Bottom"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Stretch"
+                   Height="220"
+                   Opacity="0.85"/>
+
+            <!-- 育儿提示 + 进度条，浮在花草上方 -->
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                        Margin="24,0,24,48" Spacing="16">
+                <TextBlock x:Name="TipText"
+                           Text=""
+                           FontSize="13"
+                           Foreground="#5D4037"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           MaxWidth="320"
+                           LineHeight="20"/>
+                <ProgressBar x:Name="ProgressBar"
+                             HorizontalAlignment="Center"
+                             Width="120" Height="3"
+                             IsIndeterminate="True"
+                             Foreground="#00C875"
+                             Background="#E8FFF4"
+                             CornerRadius="1.5"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </UserControl>

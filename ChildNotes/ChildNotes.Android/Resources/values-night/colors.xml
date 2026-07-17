@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <!-- 深色模式也用白色背景，与 LoadingView 背景一致，避免启动屏→LoadingView 闪烁。
-       LoadingView 内部卡片/文字会根据 Avalonia 主题自动适配深色模式。 -->
-  <color name="splash_background">#FFFFFF</color>
+  <!-- 深色模式也用奶油色背景，与 LoadingView 背景 #FFF8E7 一致，避免启动屏→LoadingView 闪烁。
+       LoadingView 内部文字/插画已按暖色调设计，在深色模式下仍可辨识。 -->
+  <color name="splash_background">#FFF8E7</color>
 </resources>
