@@ -64,6 +64,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" />
+    <!-- 通过 Properties 元数据将 DevBuild 传递给主项目，确保 CI 用 Release+DevBuild=true 构建 dev 版 APK 时，
+         主项目也能注入 DEV_BUILD 编译常量（#if DEV_BUILD 包裹的代码才会被编译进去）。
+         不传递的话，命令行 -p:DevBuild=true 只作用于入口 Android 项目，子项目仍是正式版行为。 -->
+    <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" Properties="DevBuild=$(DevBuild)" />
   </ItemGroup>
 </Project>

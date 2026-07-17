@@ -250,11 +250,14 @@ jobs:
 
           echo "=== 构建开发版 APK（dev）==="
 
-          # ★★★ 清理 prod 构建的 obj 缓存，避免 JNI 桥接类 CRC 哈希不匹配
-          # DevBuild=true 改变编译常量导致 Java 类名 CRC 不同，复用 obj 缓存会触发
-          # UnsatisfiedLinkError: No implementation found for n_onCreate() → 启动即闪退
-          rm -rf ChildNotes.Android/obj ChildNotes/obj
-          echo "::notice::Cleaned obj cache before dev build"
+          # ★★★ 清理 prod 构建的 obj/bin 缓存，避免增量构建复用 prod 产物
+          # 1. obj 缓存：DevBuild=true 改变编译常量导致 Java 类名 CRC 不同，复用会触发
+          #    UnsatisfiedLinkError: No implementation found for n_onCreate() → 启动即闪退
+          # 2. bin 缓存：prod 构建生成的 AndroidManifest.xml（包名 com.babydiary.app）若未被清理，
+          #    dev 构建的增量判断可能复用该 manifest，导致 dev APK 包名不是 com.babydiary.app.dev
+          #    （v0.6.9 曾出现此问题：dev APK 实际为正式版包名，安装后与正式版冲突而非共存）
+          rm -rf ChildNotes.Android/obj ChildNotes.Android/bin ChildNotes/obj ChildNotes/bin
+          echo "::notice::Cleaned obj+bin cache before dev build"
 
           # DevBuild=true 注入 DEV_BUILD 编译常量 + 切换 ApplicationId 为 com.babydiary.app.dev
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
@@ -270,6 +273,20 @@ jobs:
             -p:DevBuild=true \
             "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-dev
+
+          # ★★★ 验证 dev APK 包名：确保 DevBuild=true 生效，ApplicationId 为 com.babydiary.app.dev
+          # 若包名不是 .dev，说明 DevBuild 属性未正确传递，dev APK 会与正式版冲突（非共存）
+          DEV_APK_FILE=$(find ../artifacts/android-dev -name '*.apk' | head -1)
+          if [ -n "$DEV_APK_FILE" ]; then
+            # 用 unzip 读取 AndroidManifest.xml，grep 搜索包名字符串（二进制 XML 中 UTF-16LE 编码）
+            DEV_PKG=$(unzip -p "$DEV_APK_FILE" AndroidManifest.xml | strings -e l | grep -o 'com.babydiary.app[a-z.]*' | head -1)
+            echo "dev APK package: $DEV_PKG"
+            if [[ "$DEV_PKG" != "com.babydiary.app.dev" ]]; then
+              echo "::error::dev APK 包名异常：期望 com.babydiary.app.dev，实际 $DEV_PKG。DevBuild=true 未生效，dev APK 将与正式版冲突而非共存。"
+              exit 1
+            fi
+            echo "::notice::dev APK 包名验证通过：com.babydiary.app.dev"
+          fi
 
       - name: Collect and sign Android APK
         if: matrix.target == 'android'

@@ -39,6 +39,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" />
+    <!-- 通过 Properties 元数据将 DevBuild 传递给主项目，与 Android 项目保持一致的传递机制。
+         Desktop 主要用 Debug 配置本地调试（主项目自身也设 DevBuild=true），此处为一致性和未来 Release+DevBuild 场景。 -->
+    <ProjectReference Include="..\ChildNotes\ChildNotes.csproj" Properties="DevBuild=$(DevBuild)" />
   </ItemGroup>
 </Project>
