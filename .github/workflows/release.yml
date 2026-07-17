@@ -240,9 +240,12 @@ jobs:
           VERSION_CODE="${{ steps.version.outputs.version_code }}"
 
           echo "=== 构建正式版 APK（prod）==="
+          # -m:1 禁用 MSBuild 多节点并行，避免 .NET 10 SDK 10.0.302+ 并行构建时
+          # 多节点争抢写 ChildNotes.Shared.deps.json 触发 IOException（v0.6.11 曾出现）
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
+            -m:1 \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:SourceRevisionId= \
@@ -271,6 +274,7 @@ jobs:
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
+            -m:1 \
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:SourceRevisionId= \
