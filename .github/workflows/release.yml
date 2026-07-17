@@ -194,9 +194,14 @@ jobs:
         shell: bash
         working-directory: ChildNotes
         run: |
-          # 清理上一次构建的 obj 目录，避免 R8/D8 因缓存损坏而崩溃
-          rm -rf ChildNotes.Android/obj
-          echo "::notice::Android build cache cleaned"
+          # 清理所有相关项目的 bin/obj 目录，避免：
+          # 1. R8/D8 因缓存损坏而崩溃
+          # 2. GenerateDepsFile 任务写入 deps.json 时文件锁冲突（MSB4018 IOException）
+          #    （上一次 CI 构建的残留文件可能仍被进程占用）
+          rm -rf ChildNotes.Android/obj ChildNotes.Android/bin \
+                 ChildNotes/obj ChildNotes/bin \
+                 ../ChildNotes.Shared/obj ../ChildNotes.Shared/bin
+          echo "::notice::Android build cache cleaned (bin+obj for all projects)"
 
       - name: Build Android app
         if: matrix.target == 'android'
