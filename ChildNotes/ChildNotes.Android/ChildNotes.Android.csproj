@@ -5,15 +5,14 @@
     <!-- .NET 10 for Android 最低支持 API 24（Android 7.0），设为 23 会触发 XA1022 警告 -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <Nullable>enable</Nullable>
-    <!-- ApplicationId 固定为 com.babydiary.app，dev 版通过 ApplicationIdSuffix 追加 .dev 后缀。
-         ★ 使用 ApplicationIdSuffix 而非条件 ApplicationId 的原因：
-           .NET Android SDK 内部 target 会基于 ApplicationId 派生多个属性（Manifest 文件名、
-           R.java 包名等），命令行 -p:ApplicationId=... 可能被 SDK 内部逻辑覆盖或截断
-           （v0.6.11/v0.6.12 均出现 dev 包名变成 com.babydiary.app. 的问题）。
-           ApplicationIdSuffix 是 Android Gradle/Ant 官方支持的机制，SDK 会正确处理
-           "base id + suffix" 的拼接，不会截断。 -->
+    <!-- ApplicationId：默认正式版包名。
+         ★ dev 构建时由 CI 通过 sed 临时替换为 com.babydiary.app.dev，构建后 git checkout 还原。
+         不使用条件属性/命令行 -p:/ApplicationIdSuffix 的原因：
+           - 条件 ApplicationId：.NET Android SDK 内部 target 会重新求值并覆盖（v0.6.11 失效）
+           - -p:ApplicationId=... 命令行传参：被 SDK 内部逻辑截断成 com.babydiary.app.（v0.6.12 失效）
+           - ApplicationIdSuffix：是 Android Gradle 的概念，.NET Android MSBuild 不支持（v0.6.14 失效）
+         sed 直接改写 csproj 文件是唯一可靠的方式，构建后用 git checkout 还原。 -->
     <ApplicationId>com.babydiary.app</ApplicationId>
-    <ApplicationIdSuffix Condition="'$(DevBuild)' == 'true'">.dev</ApplicationIdSuffix>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
     <!-- .NET 10 Android SDK 在 Release 下默认启用 RunAOTCompilation，但要求 PublishTrimmed=true。

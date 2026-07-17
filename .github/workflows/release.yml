@@ -273,9 +273,13 @@ jobs:
           rm -rf ChildNotes.Android/obj ChildNotes.Android/bin ChildNotes/obj ChildNotes/bin
           echo "::notice::Cleaned obj+bin cache before dev build"
 
-          # DevBuild=true 注入 DEV_BUILD 编译常量 + 通过 ApplicationIdSuffix 追加 .dev 后缀
-          # ★ 不再用 -p:ApplicationId=... 覆盖（.NET Android SDK 内部 target 可能截断），
-          #   改用 csproj 中的 ApplicationIdSuffix=.dev，由 SDK 正确拼接 base+suffix。
+          # DevBuild=true 注入 DEV_BUILD 编译常量
+          # ★ 包名切换：用 sed 临时修改 csproj 中的 ApplicationId 为 com.babydiary.app.dev
+          #   不用条件属性/命令行 -p:/ApplicationIdSuffix 的原因见 csproj 注释。
+          #   构建后用 git checkout 还原 csproj，避免污染工作区。
+          sed -i 's|<ApplicationId>com.babydiary.app</ApplicationId>|<ApplicationId>com.babydiary.app.dev</ApplicationId>|' ChildNotes.Android/ChildNotes.Android.csproj
+          echo "::notice::Temporarily set ApplicationId to com.babydiary.app.dev for dev build"
+
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
@@ -291,6 +295,10 @@ jobs:
             -p:DevBuild=true \
             "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-dev
+
+          # 还原 csproj 临时修改
+          git checkout ChildNotes.Android/ChildNotes.Android.csproj
+          echo "::notice::Restored ChildNotes.Android.csproj after dev build"
 
           # ★★★ 验证 dev APK 包名：确保 DevBuild=true 生效，ApplicationId 为 com.babydiary.app.dev
           # 若包名不是 .dev，说明 DevBuild 属性未正确传递，dev APK 会与正式版冲突（非共存）
