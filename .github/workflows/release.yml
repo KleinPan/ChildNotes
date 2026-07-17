@@ -265,6 +265,9 @@ jobs:
           echo "::notice::Cleaned obj+bin cache before dev build"
 
           # DevBuild=true 注入 DEV_BUILD 编译常量 + 切换 ApplicationId 为 com.babydiary.app.dev
+          # ★ 显式传 -p:ApplicationId=com.babydiary.app.dev：因 .NET Android SDK 内部 target
+          #   可能重新求值 ApplicationId 导致 csproj 条件属性失效（v0.6.11 曾出现 dev APK
+          #   包名变成 com.babydiary.app. 的问题）。命令行 -p: 优先级最高，确保覆盖。
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
@@ -276,6 +279,7 @@ jobs:
             -p:ApplicationDisplayVersion=$VERSION \
             -p:ApplicationVersion=$VERSION_CODE \
             -p:DevBuild=true \
+            -p:ApplicationId=com.babydiary.app.dev \
             "${SIGN_ARGS[@]}" \
             -o ../artifacts/android-dev
 

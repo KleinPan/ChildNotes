@@ -7,7 +7,11 @@
     <Nullable>enable</Nullable>
     <!-- ApplicationId 根据 DevBuild 区分：
          - DevBuild=true：com.babydiary.app.dev（开发版，可与正式版共存）
-         - 默认（正式版）：com.babydiary.app -->
+         - 默认（正式版）：com.babydiary.app
+         ★ CI dev 构建时通过命令行 -p:ApplicationId=com.babydiary.app.dev 显式覆盖，
+           不依赖 csproj 条件属性。因 .NET Android SDK 内部 target 可能重新求值
+           ApplicationId 导致条件属性失效（v0.6.11 曾出现此问题，dev APK 包名变成
+           com.babydiary.app.）。csproj 中的条件属性仅作为本地构建的默认值。 -->
     <ApplicationId Condition="'$(DevBuild)' == 'true'">com.babydiary.app.dev</ApplicationId>
     <ApplicationId Condition="'$(DevBuild)' != 'true'">com.babydiary.app</ApplicationId>
     <AndroidPackageFormat>apk</AndroidPackageFormat>
