@@ -107,12 +107,16 @@ jobs:
         working-directory: ChildNotes
         run: |
           # Avalonia 桌面端，按 RID 发布为自包含可执行文件
+          # -m:1 禁用多节点并行，避免 VBCSCompiler 后台进程锁住 obj/*.dll（CS2012）
+          # -p:UseSharedCompilation=false 禁用 VBCSCompiler 共享编译服务器，彻底消除文件锁
           dotnet publish ChildNotes.Desktop/ChildNotes.Desktop.csproj `
             -c Release `
             -r win-x64 `
             --self-contained true `
+            -m:1 `
             -p:PublishSingleFile=false `
             -p:PublishTrimmed=false `
+            -p:UseSharedCompilation=false `
             -p:Version=${{ steps.version.outputs.version }} `
             -o ../artifacts/windows
 
@@ -242,6 +246,7 @@ jobs:
           echo "=== 构建正式版 APK（prod）==="
           # -m:1 禁用 MSBuild 多节点并行，避免 .NET 10 SDK 10.0.302+ 并行构建时
           # 多节点争抢写 ChildNotes.Shared.deps.json 触发 IOException（v0.6.11 曾出现）
+          # -p:UseSharedCompilation=false 禁用 VBCSCompiler 共享编译服务器，避免文件锁
           dotnet publish ChildNotes.Android/ChildNotes.Android.csproj \
             -c Release \
             -f net10.0-android \
@@ -249,6 +254,7 @@ jobs:
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:SourceRevisionId= \
+            -p:UseSharedCompilation=false \
             -p:Version=$VERSION \
             -p:InformationalVersion=$VERSION \
             -p:ApplicationDisplayVersion=$VERSION \
@@ -277,6 +283,7 @@ jobs:
             -p:AndroidPackageFormat=apk \
             -p:PublishTrimmed=false \
             -p:SourceRevisionId= \
+            -p:UseSharedCompilation=false \
             -p:Version=$VERSION \
             -p:InformationalVersion=$VERSION \
             -p:ApplicationDisplayVersion=$VERSION \
