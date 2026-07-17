@@ -246,16 +246,11 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
     private static (string dateText, string timeText) SplitDateAndTime(string s, DateTime fallbackDate)
     {
         if (string.IsNullOrEmpty(s)) return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(fallbackDate), "00:00");
-        var space = s.IndexOf(' ');
-        if (space >= 0 && s.Length >= space + 6)
-        {
-            var datePart = s[..space];
-            var timePart = s[(space + 1)..];
-            // 日期转本地格式
-            if (DateTime.TryParse(datePart, out var d))
-                return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(d), timePart);
-        }
-        // 旧数据 "HH:mm" 格式
+        // 兼容多种格式：ISO "O"（带 T 和时区）、"yyyy-MM-dd HH:mm"、"yyyy-MM-ddTHH:mm:ss" 等
+        if (DateTime.TryParse(s, out var full))
+            return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(full),
+                    ServiceProvider.Instance.DateTimeFormatter.FormatTime(full));
+        // 旧数据 "HH:mm" 格式：日期部分用 fallbackDate
         return (ServiceProvider.Instance.DateTimeFormatter.FormatDate(fallbackDate), s);
     }
 }
