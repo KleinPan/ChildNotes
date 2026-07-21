@@ -109,14 +109,24 @@ public partial class QuickInputViewModel : ViewModelBase
             // 后端只解析不落库，前端统一写本地库。
             // 本地写入后会触发 SyncTrigger.NotifyWrite → 增量推送到后端
             int saved = 0;
+            int idx = 0;
             foreach (var item in items)
             {
-                if (string.IsNullOrEmpty(item.RecordType)) continue;
+                idx++;
+                if (string.IsNullOrEmpty(item.RecordType))
+                {
+                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条跳过：RecordType 为空", DevLogger.Level.Warn);
+                    continue;
+                }
+                DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}/{items.Count}条开始写入 type={item.RecordType} sub={item.RecordSubType ?? "-"}");
                 AiNoteParseService.SaveLocally(item, text, _recordService);
                 saved++;
+                DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条写入完成 累计 saved={saved}");
             }
+            DevLogger.Log("QuickInput", $"[AI-LOG] 全部写入结束 items={items.Count} saved={saved}");
             if (saved == 0)
             {
+                DevLogger.Log("QuickInput", "[AI-LOG] saved=0，提示解析失败", DevLogger.Level.Warn);
                 DisplayToast("解析失败，请稍后重试");
                 return;
             }
@@ -144,7 +154,7 @@ public partial class QuickInputViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            DevLogger.Log("QuickInput", "[AI-LOG] 保存失败：" + ex.Message, DevLogger.Level.Error);
+            DevLogger.Log("QuickInput", "[AI-LOG] 保存失败：" + ex.GetType().Name + " | " + ex.Message + "\n" + ex.StackTrace, DevLogger.Level.Error);
             DisplayToast("保存失败");
         }
         finally

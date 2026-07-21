@@ -267,6 +267,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     public static void SaveLocally(AiNoteParseItem r, string originalText, RecordService recordService)
     {
         var time = string.IsNullOrEmpty(r.Time) ? DateTime.Now.ToString("O") : AiNoteRuleParser.NormalizeTime(r.Time);
+        // [AI-LOG] 落库前打印完整数据：类型/子类型/时间/关键字段/payload JSON，便于追踪解析结果与数据库写入
+        LogSavePreview(r, originalText, time);
         switch (r.RecordType)
         {
             case RecordType.Feed:
@@ -399,6 +401,25 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
                 });
                 break;
         }
+        // [AI-LOG] 落库成功后打印类型摘要，确认写入完成
+        DevLogger.Log("AiNote", $"[AI-LOG] 已写入本地库 type={r.RecordType} sub={r.RecordSubType ?? "-"} time={time}");
+    }
+
+    /// <summary>
+    /// [AI-LOG] 打印解析结果即将落库的完整数据，便于追踪"AI 返回了什么 → 写入了什么"。
+    /// 包含：原始输入、归一化后时间、AI 返回字段、序列化 payload JSON。
+    /// </summary>
+    private static void LogSavePreview(AiNoteParseItem r, string originalText, string normalizedTime)
+    {
+        var payloadJson = JsonSerializer.Serialize(r, new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        });
+        DevLogger.Log("AiNote",
+            $"[AI-LOG] 落库预览 type={r.RecordType} sub={r.RecordSubType ?? "-"} time={normalizedTime} " +
+            $"amount={r.Amount?.ToString() ?? "null"} duration={r.Duration?.ToString() ?? "null"} " +
+            $"temp={r.Temperature?.ToString() ?? "null"} name={r.Name ?? "-"} dose={r.Dose ?? "-"} " +
+            $"foodName={r.FoodName ?? "-"} note={r.Note ?? "-"} | 原文={originalText} | payload={payloadJson}");
     }
 
     // ===== Toast 显示格式化 =====
