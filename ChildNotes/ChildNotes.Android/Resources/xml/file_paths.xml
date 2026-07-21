@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 路径配置：声明可被 content:// URI 暴露的私有目录路径。
+  用于日志导出分享（ACTION_SEND）和后续可能的文件分享场景。
+
+  external-files-path = Context.GetExternalFilesDir(null) → /storage/emulated/0/Android/data/{pkg}/files/
+  files-path = Context.GetFilesDir() → /data/data/{pkg}/files/
+  cache-path = Context.GetCacheDir() → /data/data/{pkg}/cache/
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="external_files" path="." />
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
+</paths>

@@ -213,11 +213,9 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
             var result = await AppLogExportService.ExportAsync(_filtered);
             if (result.Success)
             {
-                // Android 端路径为相对展示路径（Download/xxx.txt），桌面端为绝对路径
-                var location = OperatingSystem.IsAndroid()
-                    ? $"Download/{result.FilePath}"
-                    : result.FilePath;
-                DisplayToast(string.Format(_locale.GetString("Dev_ExportOk", "已导出 {0} 行日志到：{1}"), result.LineCount, location));
+                // Android 端会同时弹出系统分享面板（用户可保存到下载/发微信/发邮件），FilePath 仅是文件名；
+                // 桌面端 FilePath 是绝对路径
+                DisplayToast(string.Format(_locale.GetString("Dev_ExportOk", "已导出 {0} 行日志到：{1}"), result.LineCount, result.FilePath));
             }
             else
             {

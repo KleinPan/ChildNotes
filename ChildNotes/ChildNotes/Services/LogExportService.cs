@@ -8,7 +8,8 @@ namespace ChildNotes.Services;
 /// - DevLogger.Entries：应用内调试日志环形缓冲区（DevLogger 已移除 [Conditional("DEBUG")]，Debug/Release 均写入）。
 /// - ReleaseLogger 文件日志：用于闪退后的问题定位。
 /// 跨平台兼容：
-/// - Android：直接写公共存储根目录下的 Aiji 文件夹（/storage/emulated/0/Aiji/，需 WRITE_EXTERNAL_STORAGE，已由 manifest 声明）。
+/// - Android：写 App 私有外部目录（Context.GetExternalFilesDir，无需权限）+ FileProvider 弹系统分享面板
+///   （用户可选"保存到文件"/"发微信"/"发邮件"等）。targetSdk=36 强制 Scoped Storage，不能直接写公共目录。
 /// - 桌面端 (Windows/macOS/Linux)：写入 SpecialFolder.MyDocuments/ChildNotes/logs。
 /// </summary>
 public static class LogExportService
@@ -89,12 +90,14 @@ public static class LogExportService
 
     /// <summary>
     /// 按平台写入文件。供 AppLogExportService 复用。
+    /// Android：写 App 私有目录 + 弹系统分享面板（用户可保存到下载/发微信/发邮件）。
+    /// 桌面端：写入"我的文档/ChildNotes/logs"。
     /// </summary>
     internal static async Task<string> WriteFileAsync(string fileName, string content)
     {
         if (OperatingSystem.IsAndroid())
         {
-            return await WriteToAndroidDownloadAsync(fileName, content);
+            return await WriteToAndroidAndShareAsync(fileName, content);
         }
 
         // 桌面端：写入"我的文档/ChildNotes/logs"
@@ -108,60 +111,29 @@ public static class LogExportService
     }
 
     /// <summary>
-    /// Android 平台写入公共 Aiji 目录（/storage/emulated/0/Aiji/）。
-    /// 通过直接文件路径写入，需 WRITE_EXTERNAL_STORAGE 权限（已由 manifest 声明）。
+    /// Android 平台：写 App 私有外部目录 + 通过 FileProvider 弹系统分享面板。
+    ///
+    /// 背景：targetSdk=36 强制 Scoped Storage，直接写 /storage/emulated/0/Aiji 会被拒绝
+    /// （AndroidManifest 未声明 WRITE_EXTERNAL_STORAGE，且即使声明了 targetSdk=36 也不允许）。
+    /// 改为写 Context.GetExternalFilesDir(null)（私有目录，无需权限）+ FileProvider 分享。
+    ///
+    /// 通过反射调用 ChildNotes.Android.Services.AndroidLogShareService，避免主项目直接引用 Android 项目。
     /// </summary>
-    private static async Task<string> WriteToAndroidDownloadAsync(string fileName, string content)
+    private static async Task<string> WriteToAndroidAndShareAsync(string fileName, string content)
     {
-        // 直接写公共存储根目录下的 Aiji 文件夹
-        var dir = "/storage/emulated/0/Aiji";
-        Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, fileName);
-        await File.WriteAllTextAsync(path, content);
+        // 反射调用 AndroidLogShareService.WriteAndShareAsync(string, string)
+        var serviceType = Type.GetType("ChildNotes.Android.Services.AndroidLogShareService, ChildNotes.Android");
+        if (serviceType is null)
+            throw new InvalidOperationException("AndroidLogShareService 类型未找到（应在 ChildNotes.Android 项目中）");
 
-        // 通知 MediaScanner 扫描新文件，使其在文件管理器中立即可见
-        TryNotifyMediaScanner(path);
-        return path;
-    }
+        var method = serviceType.GetMethod("WriteAndShareAsync", new[] { typeof(string), typeof(string) });
+        if (method is null)
+            throw new InvalidOperationException("AndroidLogShareService.WriteAndShareAsync 方法未找到");
 
-    /// <summary>通知 MediaScanner 扫描文件（使文件在文件管理器中立即可见）。</summary>
-    private static void TryNotifyMediaScanner(string path)
-    {
-        try
-        {
-            var appType = Type.GetType("Android.App.Application, Mono.Android");
-            if (appType is null) return;
-            var context = appType.GetProperty("Context")?.GetValue(null);
-            if (context is null) return;
-
-            // 从 Java.IO.File 构造 Uri
-            var fileType = Type.GetType("Java.IO.File, Mono.Android");
-            if (fileType is null) return;
-            var file = Activator.CreateInstance(fileType, path);
-
-            // Uri.FromFile(file)
-            var uriType = Type.GetType("Android.Net.Uri, Mono.Android");
-            if (uriType is null) return;
-            var fromFileMethod = uriType.GetMethod("FromFile");
-            var uri = fromFileMethod?.Invoke(null, new[] { file });
-            if (uri is null) return;
-
-            // Intent(ActionMediaScannerScanFile, uri)
-            var intentType = Type.GetType("Android.Content.Intent, Mono.Android");
-            if (intentType is null) return;
-            var actionMediaScannerScanFile = intentType.GetField("ActionMediaScannerScanFile")?.GetValue(null)
-                as string;
-            if (string.IsNullOrEmpty(actionMediaScannerScanFile)) return;
-
-            var intent = Activator.CreateInstance(intentType, actionMediaScannerScanFile, uri);
-            // context.SendBroadcast(intent)
-            context.GetType().GetMethod("SendBroadcast", new[] { intentType })
-                ?.Invoke(context, new[] { intent });
-        }
-        catch
-        {
-            // 扫描通知失败不影响文件已写入的事实
-        }
+        var task = (Task<string>?)method.Invoke(null, new object[] { fileName, content });
+        if (task is null)
+            throw new InvalidOperationException("AndroidLogShareService.WriteAndShareAsync 返回 null");
+        return await task;
     }
 
     private static string GetAppVersion()

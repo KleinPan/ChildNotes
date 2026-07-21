@@ -32,5 +32,20 @@
 			android:name="com.CompanyName.ChildNotes.MainActivity"
 			android:windowSoftInputMode="adjustResize"
 			android:exported="true" />
+		<!--
+			FileProvider：用于安全地通过 content:// URI 分享 App 私有目录里的文件。
+			Android 7+ 禁止 file:// URI 跨进程传递（FileUriExposedException），
+			必须用 FileProvider 暴露。authority 格式 = {包名}.fileprovider，与代码中保持一致。
+			grantUriPermissions=true 允许 Intent 临时授权给接收方。
+		-->
+		<provider
+			android:name="androidx.core.content.FileProvider"
+			android:authorities="${applicationId}.fileprovider"
+			android:exported="false"
+			android:grantUriPermissions="true">
+			<meta-data
+				android:name="android.support.FILE_PROVIDER_PATHS"
+				android:resource="@xml/file_paths" />
+		</provider>
 	</application>
 </manifest>
