@@ -48,7 +48,7 @@
                 <ProgressBar x:Name="ProgressBar"
                              HorizontalAlignment="Center"
                              Width="120" Height="3"
-                             IsIndeterminate="True"
+                             Minimum="0" Maximum="100" Value="0"
                              Foreground="#00C875"
                              Background="#E8FFF4"
                              CornerRadius="1.5"/>

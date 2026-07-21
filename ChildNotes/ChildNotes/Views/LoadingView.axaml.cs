@@ -1,19 +1,47 @@
+using System;
+using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Styling;
 using ChildNotes.Data;
 
 namespace ChildNotes.Views;
 
 /// <summary>
-/// 启动 loading 视图：显示育儿小知识 + 进度条。
-/// 系统启动屏已显示应用图标，此处不重复，专注于展示有价值的育儿知识。
-/// 育儿知识在构造函数即设置，立即可见不依赖动画，无论显示多久都能看到内容。
+/// 启动 loading 视图：显示品牌插画、文案、育儿小知识 + 一次性进度条。
+/// 进度条从 0 走到 100 后停止，不循环，与 App.axaml.cs 中最小显示时长 1.5s 对齐。
+/// 育儿知识在构造函数即设置，立即可见不依赖动画。
 /// </summary>
 public partial class LoadingView : UserControl
 {
     public LoadingView()
     {
         InitializeComponent();
-        // 构造时立即设置育儿小知识，不依赖 Loaded 事件
         TipText.Text = ParentingTips.GetRandomTip();
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // 进度条 1.5 秒内从 0 走到 100，到达终点后保持（FillMode.Forward），不循环。
+        // 该时长与 App.axaml.cs 中 LoadingView 最小显示时长一致。
+        var animation = new Animation
+        {
+            Duration = TimeSpan.FromMilliseconds(1500),
+            FillMode = FillMode.Forward,
+            Children =
+            {
+                new KeyFrame
+                {
+                    Cue = new Cue(0d),
+                    Setters = { new Setter(ProgressBar.ValueProperty, 0d) }
+                },
+                new KeyFrame
+                {
+                    Cue = new Cue(1d),
+                    Setters = { new Setter(ProgressBar.ValueProperty, 100d) }
+                }
+            }
+        };
+        animation.RunAsync(ProgressBar);
     }
 }
