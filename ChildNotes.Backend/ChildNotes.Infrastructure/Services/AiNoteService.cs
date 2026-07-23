@@ -60,8 +60,8 @@ public partial class AiNoteService : IAiNoteService
 - name: supplement 专用，药品/营养品名称（如"宝泰康颗粒"、"伊可新"、"维D"），不含剂量
 - dose: supplement 专用，剂量数值文本（如"0.5"、"1"、"5"），不含单位
 - doseUnit: supplement 专用，剂量单位（如"包"、"粒"、"ml"、"滴"），与 dose 分开
-- foodName: complementary 专用，食物名称（如"南瓜泥"、"蛋黄"、"米粉"）
-- foodTypes: complementary 专用，食材类型数组（如["蔬菜","水果","主食","肉蛋"]）
+- foodName: complementary 专用，食物名称（如"南瓜泥"、"蛋黄"、"米粉"）。若一顿饭含多种食材，用顿号连接全部食材（如"米粉、肝粉、肉泥、核桃油、香蕉"），不要拆成多条
+- foodTypes: complementary 专用，食材类型数组（如["蔬菜","水果","主食","肉蛋"]），可含多种类型
 - amountText: complementary 专用，食量数值文本（如"20"、"半碗"）
 - amountUnit: complementary 专用，食量单位（如"克"、"个"、"勺"、"碗"），与 amountText 分开
 - note: 备注信息（如性状、颜色、补充说明；supplement 不要把 name/dose 塞进 note；diaper 的大便颜色/性状如"黄绿色"、"稀"、"糊状"放 note）
@@ -71,7 +71,9 @@ public partial class AiNoteService : IAiNoteService
 输出要求：
 1. 输出一个 JSON 数组 [...]，每个元素是一个记录对象。
 2. 若输入只描述一件事，仍输出单元素数组 [{...}]。
-3. 若输入描述多件事（用逗号、连词分隔），每件事对应数组中的一个元素。
+3. 若输入描述多件事（用逗号、连词分隔且每件事是不同类型的事件），每件事对应数组中的一个元素。
+   注意：同一事件的多个细节不拆分，如"11点吃米粉，肝粉，肉泥，核桃油，香蕉"是一顿辅食（5 种食材），
+   应输出 1 条 complementary 记录，foodName="米粉、肝粉、肉泥、核桃油、香蕉"，不要拆成 5 条。
 4. 只输出 JSON 数组，不要任何额外文字、解释或 Markdown 代码块。
 5. 数值字段使用数字类型，不要加引号。
 6. 模糊不清的输入也要尽力给出最可能的类型，confidence 相应降低。
@@ -104,6 +106,9 @@ public partial class AiNoteService : IAiNoteService
 
 输入"吃了南瓜泥20克"应输出：
 [{"recordType":"complementary","foodName":"南瓜泥","foodTypes":["蔬菜"],"amountText":"20","amountUnit":"克","summary":"辅食 南瓜泥 20克","confidence":0.9}]
+
+输入"11点吃米粉，肝粉，肉泥，核桃油，香蕉"应输出：
+[{"recordType":"complementary","foodName":"米粉、肝粉、肉泥、核桃油、香蕉","foodTypes":["主食","肉蛋","水果"],"time":"11:00","summary":"辅食 米粉等5种","confidence":0.9}]
 
 输入"10点到11点做游戏"应输出：
 [{"recordType":"activity","recordSubType":"play","time":"10:00","startTime":"10:00","endTime":"11:00","duration":60,"summary":"游戏 10:00-11:00","confidence":0.9}]

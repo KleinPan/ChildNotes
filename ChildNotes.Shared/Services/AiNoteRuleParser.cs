@@ -40,7 +40,27 @@ public static class AiNoteRuleParser
 
     // ===== 辅食关键词/单位 =====
 
-    private static readonly string[] CompFoodKeywords = { "泥", "粥", "米粉", "面条", "辅食", "蛋黄", "肉泥", "果泥" };
+    private static readonly string[] CompFoodKeywords = { "泥", "粥", "米粉", "面条", "辅食", "蛋黄", "肉泥", "果泥", "肝粉", "核桃油", "油", "香蕉", "苹果", "梨", "南瓜", "红薯", "土豆", "胡萝卜", "西兰花", "猪肉", "牛肉", "鸡肉", "鱼肉", "虾", "蛋黄", "蛋白" };
+
+    /// <summary>判断文本是否含辅食关键词。</summary>
+    private static bool ContainsComplementaryFood(string text)
+        => CompFoodKeywords.Any(text.Contains);
+
+    /// <summary>
+    /// 判断文本是否含其他事件关键词（奶/睡/尿/便/体温/体重/药/水/洗澡等）。
+    /// 用于辅食多食材场景预判断：若同时含其他事件，则不能简单按辅食整句处理。
+    /// </summary>
+    private static bool ContainsOtherEventKeyword(string text)
+    {
+        var otherKeywords = new[]
+        {
+            "奶", "睡", "尿", "便", "屎", "体温", "烧", "咳嗽", "吐",
+            "药", "水", "洗澡", "洗", "量", "秤", "重", "高",
+            "AD", "ad", "维", "益生菌", "DHA", "钙", "铁", "锌",
+            "亲喂", "瓶喂", "泵", "吸", "游戏", "玩",
+        };
+        return otherKeywords.Any(text.Contains);
+    }
 
     // ===== 异常关键词 =====
 
@@ -54,6 +74,15 @@ public static class AiNoteRuleParser
     /// </summary>
     public static List<AiNoteParseItem> ParseMulti(string text, DateTime? now = null)
     {
+        // 辅食多食材场景预判断：含辅食关键词 + 含逗号 + 不含其他事件关键词（奶/睡/尿/便/体温/药等）
+        // 此时逗号分隔的是食材列表而非多件事，不切分，直接整句解析成 1 条 complementary
+        if (ContainsComplementaryFood(text) && text.Contains('，') && !ContainsOtherEventKeyword(text))
+        {
+            var compItem = Parse(text, now);
+            if (compItem.RecordType == RecordType.Complementary)
+                return new List<AiNoteParseItem> { compItem };
+        }
+
         var segments = NoteSplitter.Split(text);
         if (segments.Count == 0)
             return new List<AiNoteParseItem> { Parse(text, now) };
@@ -410,10 +439,23 @@ public static class AiNoteRuleParser
             amountText = amountMatch.Groups[1].Value;
             amountUnit = amountMatch.Groups[2].Value == "g" ? "克" : amountMatch.Groups[2].Value;
         }
-        // 提取食物名称：去掉数量/单位/动词后的剩余文本
+        // 提取食物名称：去掉时间/数量/单位/动词后的剩余文本
         var foodName = Regex.Replace(text, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "")
-            .Replace("吃了", "").Replace("吃", "").Replace("辅食", "").Trim();
+            .Replace("吃了", "").Replace("吃", "").Replace("辅食", "")
+            // 去掉时间表达：完整时段词优先，单字时间词在后（避免误伤食材名）
+            .Replace("昨天", "").Replace("今天", "")
+            .Replace("早上", "").Replace("早晨", "")
+            .Replace("中午", "")
+            .Replace("下午", "").Replace("傍晚", "")
+            .Replace("晚上", "").Replace("夜里", "").Replace("夜间", "").Replace("凌晨", "")
+            // 单字时间词：用正则去掉，只匹配数字后的"点/分/时"或独立出现的"早/夜"
+            ;
+        foodName = Regex.Replace(foodName, @"\d+[点分时]", "");
+        foodName = Regex.Replace(foodName, @"^[早夜午]", "");
+        foodName = foodName.Trim('，', '、', ' ', '：', ':');
         if (string.IsNullOrWhiteSpace(foodName)) foodName = "辅食";
+        // 统一逗号为顿号（食材列表场景）
+        foodName = foodName.Replace(',', '、').Replace('，', '、');
         item = new AiNoteParseItem
         {
             RecordType = RecordType.Complementary,
