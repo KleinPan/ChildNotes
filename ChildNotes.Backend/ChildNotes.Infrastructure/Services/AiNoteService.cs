@@ -80,9 +80,15 @@ public partial class AiNoteService : IAiNoteService
 输入"11点半睡到12点40，吃了130奶粉，喝10ml水"应输出：
 [
   {"recordType":"sleep","time":"23:30","startTime":"23:30","endTime":"00:40","duration":70,"summary":"睡眠70分钟","confidence":0.9},
-  {"recordType":"feed","recordSubType":"bottle","amount":130,"time":null,"summary":"瓶喂130ml","confidence":0.9},
-  {"recordType":"water","amount":10,"time":null,"summary":"喝水10ml","confidence":0.8}
+  {"recordType":"feed","recordSubType":"bottle","amount":130,"time":"23:30","summary":"瓶喂130ml","confidence":0.9},
+  {"recordType":"water","amount":10,"time":"23:30","summary":"喝水10ml","confidence":0.8}
 ]
+输入"昨天早上8点20吃了70，大便一次"应输出：
+[
+  {"recordType":"feed","recordSubType":"bottle","amount":70,"time":"2026-07-22 08:20","summary":"瓶喂70ml","confidence":0.9},
+  {"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","time":"2026-07-22 08:20","summary":"换尿布 大便","confidence":0.9}
+]
+（注：同一次输入中的多条记录，若用户只提到一个时间，所有记录都应使用该时间，不要把后续记录的 time 置为 null）
 
 输入"拉了大便"应输出：
 [{"recordType":"diaper","diaperType":"dirty","recordSubType":"dirty","note":null,"summary":"换尿布 大便","confidence":0.9}]
@@ -178,20 +184,26 @@ public partial class AiNoteService : IAiNoteService
             }
         }
 
-        // 时间未提供则使用当前时间（对每个 Item 应用）
+        // 时间后处理（对每个 Item 应用）：
+        // 1. 有 time 则归一化 + 对 12 小时制无时段词时间做"取最近过去时刻"
+        // 2. 无 time 则继承同批次前一条记录的 time（同一输入中多记录共享上下文时间）
+        // 3. 前面所有记录都无 time 时兜底为当前时间
         // 并对 LLM 返回的 12 小时制无时段词时间做"取最近过去时刻"后处理
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        string? lastTime = null; // 同批次已处理的最后一条非空 time（归一化后）
         foreach (var it in items)
         {
             if (string.IsNullOrEmpty(it.Time))
             {
-                it.Time = now;
+                // 继承前一条记录的时间；若前面也无时间则用当前时间兜底
+                it.Time = lastTime ?? now;
             }
             else
             {
                 // 先归一化，再对无时段词的 12 小时制时间做后处理
                 var normalized = AiNoteRuleParser.NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
                 it.Time = AiNoteRuleParser.NormalizeAmbiguousTime(normalized, text);
+                lastTime = it.Time;
             }
             // 补给用药：用常见药品/补充剂标签库补全完整药剂名
             if (it.RecordType == RecordType.Supplement)

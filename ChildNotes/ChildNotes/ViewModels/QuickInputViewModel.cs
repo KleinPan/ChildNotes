@@ -110,6 +110,7 @@ public partial class QuickInputViewModel : ViewModelBase
             // 本地写入后会触发 SyncTrigger.NotifyWrite → 增量推送到后端
             int saved = 0;
             int idx = 0;
+            string? lastTime = null; // 同批次已处理的最后一条非空 time，用于继承给后续无 time 的记录
             foreach (var item in items)
             {
                 idx++;
@@ -117,6 +118,17 @@ public partial class QuickInputViewModel : ViewModelBase
                 {
                     DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条跳过：RecordType 为空", DevLogger.Level.Warn);
                     continue;
+                }
+                // 同一批次多条记录时，若当前记录无 time 则继承前一条的 time
+                // （server 路径后端已处理；此处覆盖 local LLM / 规则降级路径）
+                if (string.IsNullOrEmpty(item.Time) && !string.IsNullOrEmpty(lastTime))
+                {
+                    item.Time = lastTime;
+                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条继承前一条 time={lastTime}");
+                }
+                else if (!string.IsNullOrEmpty(item.Time))
+                {
+                    lastTime = item.Time;
                 }
                 DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}/{items.Count}条开始写入 type={item.RecordType} sub={item.RecordSubType ?? "-"}");
                 AiNoteParseService.SaveLocally(item, text, _recordService);
