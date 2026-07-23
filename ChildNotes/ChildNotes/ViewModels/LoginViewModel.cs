@@ -106,14 +106,17 @@ public partial class LoginViewModel : ViewModelBase
 #if DEV_BUILD
                 // 开发版 APK：自动激活永不过期会员（后端需开启 EnableDevAutoActivate）
                 // fire-and-forget：失败静默忽略，不影响登录流程
+                DevLogger.Log("Login", "[DevActivate] DEV_BUILD 已定义，准备激活会员");
                 _ = Task.Run(async () =>
                 {
                     try
                     {
+                        // 给同步配置写入一点时间（SyncConfigRepository 可能在登录回调里才写入 token）
+                        await Task.Delay(500);
                         var ok = await ServiceProvider.Instance.MembershipApiClient.DevActivatePermanentAsync();
-                        DevLogger.Log("Login", $"Dev auto-activate membership: {(ok ? "success" : "skipped/failed")}");
+                        DevLogger.Log("Login", $"[DevActivate] 结果：{(ok ? "success" : "skipped/failed")}");
                     }
-                    catch (Exception exDev) { DevLogger.Log("Login", "Dev auto-activate failed: " + exDev.Message); }
+                    catch (Exception exDev) { DevLogger.Log("Login", "[DevActivate] 异常：" + exDev.GetType().Name + ": " + exDev.Message, DevLogger.Level.Error); }
                 });
 #endif
             }

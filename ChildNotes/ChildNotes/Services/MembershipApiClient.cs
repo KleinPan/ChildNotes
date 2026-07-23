@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using ChildNotes.Data.Repositories;
+using ChildNotes.Infrastructure;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.Services;
@@ -53,11 +54,26 @@ public sealed class MembershipApiClient : BaseApiClient
     {
         try
         {
+            var cfg = _cfgRepo.Get();
+            DevLogger.Log("Membership", $"[DevActivate] 开始：ServerUrl={cfg.ServerUrl ?? "(空)"}, Token长度={cfg.Token?.Length ?? 0}");
+            if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
+            {
+                DevLogger.Log("Membership", "[DevActivate] 跳过：ServerUrl 未配置", DevLogger.Level.Warn);
+                return false;
+            }
             using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/membership/dev/activate", null, ct);
-            return resp is { IsSuccessStatusCode: true };
+            if (resp is null)
+            {
+                DevLogger.Log("Membership", "[DevActivate] 失败：SendAsync 返回 null（token 未配置/自动登录失败/网络异常）", DevLogger.Level.Warn);
+                return false;
+            }
+            var body = resp.IsSuccessStatusCode ? "(成功)" : await resp.Content.ReadAsStringAsync(ct);
+            DevLogger.Log("Membership", $"[DevActivate] 完成：StatusCode={resp.StatusCode}, Body={body}");
+            return resp.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            DevLogger.Log("Membership", $"[DevActivate] 异常：{ex.GetType().Name}: {ex.Message}", DevLogger.Level.Error);
             return false;
         }
     }
