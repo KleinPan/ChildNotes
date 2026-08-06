@@ -41,3 +41,4 @@ appsettings.Local.json
 # ===== Node（如有前端构建）=====
 node_modules/
 dist/
+/publish/backend
