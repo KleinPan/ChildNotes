@@ -321,13 +321,33 @@ public static class AiNoteRuleParser
         return true;
     }
 
+    /// <summary>
+    /// 提取离"水"字最近的 ml 量，避免复合句（如"90ml奶粉和20ml水"）中取到喂奶的量。
+    /// </summary>
+    private static int? ExtractMlAmountNearestToWater(string text)
+    {
+        if (!text.Contains("水")) return null;
+        var waterIndex = text.IndexOf("水");
+        var matches = MlAmountRegex.Matches(text);
+        if (matches.Count == 0) return null;
+        Match? bestMatch = null;
+        int bestDist = int.MaxValue;
+        foreach (Match m in matches)
+        {
+            int dist = Math.Abs(m.Index - waterIndex);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestMatch = m;
+            }
+        }
+        return bestMatch is not null && int.TryParse(bestMatch.Groups[1].Value, out var ml) ? ml : null;
+    }
+
     /// <summary>解析喝水记录。</summary>
     private static AiNoteParseItem ParseWater(string text, DateTime? now = null)
     {
-        int? amountMl = null;
-        var mlMatch = MlAmountRegex.Match(text);
-        if (mlMatch.Success && int.TryParse(mlMatch.Groups[1].Value, out var ml))
-            amountMl = ml;
+        int? amountMl = ExtractMlAmountNearestToWater(text);
 
         return new AiNoteParseItem
         {
@@ -540,8 +560,9 @@ public static class AiNoteRuleParser
             || text.Contains("药丸") || text.Contains("吃药") || text.Contains("服药"))
             return true;
 
-        // 营养补充关键词
-        if (text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
+        // 营养补充关键词（"维生素"覆盖"维生素AD/ad/A/D3"等变体；"AD"独立检测以防单独使用）
+        if (text.Contains("维生素") || text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
+            || text.Contains("DHA") || text.Contains("AD") || text.Contains("ad")
             || text.Contains("益生菌") || text.Contains("鱼肝油") || text.Contains("钙剂")
             || text.Contains("补钙") || text.Contains("补铁") || text.Contains("补锌"))
             return true;
@@ -559,8 +580,9 @@ public static class AiNoteRuleParser
     private static AiNoteParseItem ParseSupplement(string text, DateTime? now = null)
     {
         // 区分 medicine / nutrition
-        // nutrition：营养补充剂（维D/益生菌等；喝水已由 ParseWater 提前处理）
-        bool isNutrition = text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
+        // nutrition：营养补充剂（维生素/维D/益生菌等；喝水已由 ParseWater 提前处理）
+        bool isNutrition = text.Contains("维生素") || text.Contains("维D") || text.Contains("维D3") || text.Contains("D3")
+            || text.Contains("DHA") || text.Contains("AD") || text.Contains("ad")
             || text.Contains("益生菌") || text.Contains("鱼肝油") || text.Contains("钙剂")
             || text.Contains("补钙") || text.Contains("补铁") || text.Contains("补锌");
         string sub = isNutrition ? "nutrition" : "medicine";

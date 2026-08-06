@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "mcp_ssh-server": {
+      "command": "node",
+      "args": [
+        "dist/index.js"
+      ],
+      "cwd": "C:\\Users\\59902081\\.trae-cn\\mcp\\ssh-mcp-server",
+      "env": {
+        "SSH_HOST": "47.83.255.132",
+        "SSH_PORT": "22",
+        "SSH_USER": "root",
+        "SSH_PRIVATE_KEY": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW\nQyNTUxOQAAACAPLOaakPpd5E3GT9XmMtSnys7Wsmhzr9iQd6Tcunc6TAAAAKDsXfLY7F3y\n2AAAAAtzc2gtZWQyNTUxOQAAACAPLOaakPpd5E3GT9XmMtSnys7Wsmhzr9iQd6Tcunc6TA\nAAAED4qUwB7ywRM6xcFaEGtcp7J/TVLXMXtTiS0npU4EI6LA8s5pqQ+l3kTcZP1eYy1KfK\nztayaHOv2JB3pNy6dzpMAAAAGldlbkJvLlBhbkBsdXhzaGFyZS1pY3QuY29tAQID\n-----END OPENSSH PRIVATE KEY-----"
+      }
+    }
+  }
+}

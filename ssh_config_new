@@ -1,0 +1,16 @@
+HOST 192.168.30.43
+Port 29418
+User 59902081
+
+Host github.com
+  HostName ssh.github.com
+  User git
+  Port 443
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+
+Host 47.83.255.132
+  HostName 47.83.255.132
+  User root
+  IdentityFile ~/.ssh/childnotes_backup_id
+  IdentitiesOnly yes

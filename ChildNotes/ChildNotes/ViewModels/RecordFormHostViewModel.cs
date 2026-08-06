@@ -106,6 +106,15 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 DiaperForm.SelectType(r.RecordSubType ?? "wet");
                 DiaperForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 DiaperForm.TimeText = time;
+                // 回填颜色/性状/异常标记（从 PayloadJson 反序列化），否则 AI 记的大便备注在编辑时丢失
+                var diaperDto = r.GetPayload<DiaperRecordDto>();
+                if (diaperDto is not null)
+                {
+                    DiaperForm.SelectedUrineColor = diaperDto.UrineColor ?? string.Empty;
+                    DiaperForm.SelectedStoolColor = diaperDto.Color ?? string.Empty;
+                    DiaperForm.SelectedConsistency = diaperDto.Consistency ?? string.Empty;
+                    DiaperForm.Abnormal = diaperDto.Abnormal;
+                }
                 break;
             case RecordType.Sleep:
                 // StartTime/EndTime 存储格式为 "yyyy-MM-dd HH:mm"，回填时拆分为日期和时分给 UI
@@ -134,7 +143,8 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
             case RecordType.Temperature:
                 TemperatureForm.DateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(r.RecordTime);
                 TemperatureForm.TemperatureText = r.TemperatureValue?.ToString("F1") ?? string.Empty;
-                TemperatureForm.Note = string.Empty;
+                // 回填备注（从 PayloadJson 反序列化），否则 AI 记的备注在编辑时丢失
+                TemperatureForm.Note = r.GetPayload<TemperatureRecordDto>()?.Note ?? string.Empty;
                 TemperatureForm.TimeText = time;
                 break;
             case RecordType.Growth:
@@ -164,6 +174,8 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 PumpForm.LeftDurationText = (r.LeftDurationSec / 60)?.ToString() ?? string.Empty;
                 PumpForm.RightDurationText = (r.RightDurationSec / 60)?.ToString() ?? string.Empty;
                 PumpForm.TotalAmountText = r.AmountMl?.ToString() ?? string.Empty;
+                // 回填备注（从 PayloadJson 反序列化），否则 AI 记的备注在编辑时丢失
+                PumpForm.Note = r.GetPayload<PumpRecordDto>()?.Note ?? string.Empty;
                 PumpForm.TimeText = time;
                 break;
             case RecordType.Complementary:
