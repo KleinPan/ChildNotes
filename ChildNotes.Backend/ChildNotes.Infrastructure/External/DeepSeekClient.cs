@@ -50,8 +50,8 @@ public class DeepSeekClient
             temperature = _opt.Temperature,
             max_tokens = _opt.MaxTokens,
             stream = false,
-            thinking = new { type = _opt.ThinkingEnabled ? "enabled" : "disabled",
-                             reasoning_effort = _opt.ReasoningEffort },
+            thinking = _opt.ThinkingEnabled ? new { type = "enabled",
+                             reasoning_effort = _opt.ReasoningEffort } : null,
         };
 
         // 请求摘要：模型 + 用户输入前 60 字（脱敏长输入）
