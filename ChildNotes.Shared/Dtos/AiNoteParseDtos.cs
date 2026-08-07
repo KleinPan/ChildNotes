@@ -6,6 +6,13 @@ namespace ChildNotes.Shared.Dtos;
 public class AiNoteParseRequest
 {
     public string Text { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否强制走 AI 解析（跳过规则优先的快速路径）。
+    /// 默认 false：规则置信度高时直接返回（0ms），低置信度才调 AI。
+    /// 用户主动要求"重新识别"等场景可传 true 强制走 AI。
+    /// </summary>
+    public bool ForceAi { get; set; } = false;
 }
 
 /// <summary>

@@ -13,7 +13,14 @@ namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// AI 智能记服务：将自然语言文本解析为一条或多条结构化育儿记录。
-/// 优先调用 DeepSeek 进行语义解析；失败时降级到基于规则的正则解析，保证可用性。
+///
+/// 解析策略（规则优先 + 智能升级）：
+/// 1. 先用规则解析（0ms，覆盖 90% 常见输入：喂奶/睡眠/尿布/体温等）
+/// 2. 规则置信度高（所有条目 ≥ 0.6）→ 直接返回
+/// 3. 规则置信度低（有任一条目 &lt; 0.6）→ 调 AI 解析（1-3秒）
+/// 4. AI 失败 → 用规则结果兜底（置信度下调到 0.4）
+/// 5. ForceAi=true → 跳过规则直接走 AI
+///
 /// 支持复合语句切分（如"睡了一觉，喝了奶，换了尿布"→3条记录）。
 /// 注意：本服务仅做解析，不落库；调用方需自行持久化。
 ///
@@ -162,8 +169,8 @@ public partial class AiNoteService : IAiNoteService
             throw new BusinessException("记录文本过长（最多 500 字）", 400);
 
         // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
-        _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse 文本={Text}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), text);
+        _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ForceAi={ForceAi} 文本={Text}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ForceAi, text);
 
         // 每日次数限制检查（非会员 10 次/天，会员 100 次/天）
         var uid = _current.RequireUserId();
@@ -172,20 +179,38 @@ public partial class AiNoteService : IAiNoteService
         if (used >= limit)
             throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
 
+        // ===== 规则优先 + 智能升级 =====
+        // 1. 先用规则解析（0ms）
+        // 2. 规则所有条目置信度 >= 0.6 且非 ForceAi → 直接返回（快速路径）
+        // 3. 否则调 AI 解析（1-3秒）；AI 失败则用规则结果兜底
+        var ruleItems = AiNoteRuleParser.ParseMulti(text);
+        var ruleHighConfidence = ruleItems.All(it => it.Confidence >= RuleFastPathThreshold);
+
         List<AiNoteParseItem> items;
-        try
+        if (!req.ForceAi && ruleHighConfidence)
         {
-            items = await ParseByAiAsync(text, ct);
+            // 快速路径：规则置信度足够高，直接返回，不调 AI
+            _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf} Text={Text}",
+                ruleItems.Count, ruleItems.Min(it => it.Confidence), text);
+            items = ruleItems;
         }
-        catch (Exception ex)
+        else
         {
-            // 降级到规则解析：保证可用性，置信度下调
-            _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底。Text={Text}", text);
-            items = AiNoteRuleParser.ParseMulti(text);
-            foreach (var it in items)
+            // 慢速路径：规则置信度不足或强制 AI，调 AI 解析
+            try
             {
-                it.Confidence = 0.4;
-                it.Source = ParseSource.Rule;
+                items = await ParseByAiAsync(text, ct);
+            }
+            catch (Exception ex)
+            {
+                // AI 失败：用规则结果兜底，置信度下调
+                _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底。Text={Text}", text);
+                items = ruleItems;
+                foreach (var it in items)
+                {
+                    it.Confidence = 0.4;
+                    it.Source = ParseSource.Rule;
+                }
             }
         }
 
@@ -217,10 +242,11 @@ public partial class AiNoteService : IAiNoteService
             }
         }
 
-        _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Text={Text}",
+        _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Source={Source} Text={Text}",
             items.Count,
             items.FirstOrDefault()?.RecordType ?? "-",
             items.FirstOrDefault()?.RecordSubType ?? "-",
+            items.FirstOrDefault()?.Source ?? "-",
             text);
 
         // 解析成功后增加今日使用次数（best-effort，统计失败不阻塞解析）
@@ -228,6 +254,13 @@ public partial class AiNoteService : IAiNoteService
 
         return new AiNoteParseBatchResponse { Items = items };
     }
+
+    /// <summary>
+    /// 规则快速路径的置信度阈值：所有条目 confidence ≥ 此值时跳过 AI 直接返回。
+    /// 设为 0.6：覆盖喂奶/睡眠/尿布/体温等高置信度类型（规则解析器对这些类型的默认置信度）。
+    /// 辅食/补给/异常等低置信度类型（0.5）会触发 AI 升级。
+    /// </summary>
+    private const double RuleFastPathThreshold = 0.6;
 
     private async Task<List<AiNoteParseItem>> ParseByAiAsync(string text, CancellationToken ct)
     {
