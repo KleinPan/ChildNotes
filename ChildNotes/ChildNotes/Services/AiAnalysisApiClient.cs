@@ -39,7 +39,10 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     {
         var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
         var body = Serialize(new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") });
-        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, path, body, ct);
+        // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
+        // 导致后端业务错误（积分不足/次数上限/日期非法等）的 msg/code 丢失，
+        // 最终统一抛"后端服务不可用"，掩盖真实错误。
+        using var resp = await SendWithErrorAsync(_cfgRepo, HttpMethod.Post, path, body, ct);
         if (resp is null)
             throw new AiAnalysisApiException("后端服务不可用，请检查同步服务器配置或网络连接", null);
         if (!resp.IsSuccessStatusCode)

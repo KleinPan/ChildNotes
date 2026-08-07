@@ -156,11 +156,52 @@ public abstract class BaseApiClient
     protected static async Task<HttpResponseMessage?> SendWithTokenAsync(
         SyncConfigRepository cfgRepo, string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct)
-        => await SendCoreAsync(cfgRepo, serverUrl, token, method, path, body, ct);
+        => await SendCoreAsync(cfgRepo, serverUrl, token, method, path, body, ct, swallowNonSuccess: true);
+
+    /// <summary>
+    /// 与 <see cref="SendAsync"/> 行为一致（token 自动登录、401 重试），但非 2xx 响应
+    /// 会返回 <see cref="HttpResponseMessage"/> 而非 null，供调用方读取后端业务错误体
+    /// （<c>{state,msg,data}</c> 信封中的 msg/code）。
+    /// 仅以下情况返回 null：server 未配置、token 缺失且自动登录失败、网络异常、401 重试仍失败。
+    /// </summary>
+    protected async Task<HttpResponseMessage?> SendWithErrorAsync(
+        SyncConfigRepository cfgRepo,
+        HttpMethod method, string path, string? body, CancellationToken ct)
+    {
+        var cfg = cfgRepo.Get();
+        if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
+        {
+            DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
+            return null;
+        }
+        var token = cfg.Token;
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            token = await TryLoginAsync(cfgRepo, cfg, ct);
+            if (string.IsNullOrEmpty(token))
+            {
+                DevLogger.Log(GetType().Name, $"{method} {path}: token 未配置且自动登录失败");
+                return null;
+            }
+        }
+        var resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, token, method, path, body, ct, swallowNonSuccess: false);
+        // 401 时 SendCoreAsync 已清空 token，这里再尝试重新登录重试一次，
+        // 覆盖"token 在 DB 中已过期、但本地缓存还在用旧值"的场景。
+        if (resp is null && string.IsNullOrEmpty(cfgRepo.Get().Token))
+        {
+            var newToken = await TryLoginAsync(cfgRepo, cfg, ct);
+            if (!string.IsNullOrEmpty(newToken))
+            {
+                resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, newToken, method, path, body, ct, swallowNonSuccess: false);
+            }
+        }
+        return resp;
+    }
 
     private static async Task<HttpResponseMessage?> SendCoreAsync(
         SyncConfigRepository cfgRepo, string serverUrl, string token,
-        HttpMethod method, string path, string? body, CancellationToken ct)
+        HttpMethod method, string path, string? body, CancellationToken ct,
+        bool swallowNonSuccess)
     {
         var url = serverUrl.TrimEnd('/') + path;
         using var req = new HttpRequestMessage(method, url);
@@ -178,9 +219,16 @@ public abstract class BaseApiClient
             }
             if (!resp.IsSuccessStatusCode)
             {
-                var text = await resp.Content.ReadAsStringAsync(ct);
-                DevLogger.Log("ApiClient", $"{method} {path} fail: {(int)resp.StatusCode} {text}");
-                return null;
+                // swallowNonSuccess=true: 旧逻辑，记日志后吞掉错误返回 null
+                // swallowNonSuccess=false: 保留响应对象，让调用方读取业务错误体（msg/code）
+                if (swallowNonSuccess)
+                {
+                    var text = await resp.Content.ReadAsStringAsync(ct);
+                    DevLogger.Log("ApiClient", $"{method} {path} fail: {(int)resp.StatusCode} {text}");
+                    resp.Dispose();
+                    return null;
+                }
+                DevLogger.Log("ApiClient", $"{method} {path} fail (保留响应): {(int)resp.StatusCode}");
             }
             return resp;
         }
