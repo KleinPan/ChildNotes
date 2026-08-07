@@ -161,14 +161,15 @@ public static class AiNoteRuleParser
         {
             int? amount = int.TryParse(feedMlMatch.Groups[1].Value, out var a) ? a : null;
             var unit = feedMlMatch.Groups[2].Value; // ml / 毫升 / 奶粉 / 奶 / 母乳
-            var hasExplicitUnit = unit is "ml" or "毫升" or "mL";
+            // 所有单位词（含"奶粉/母乳/奶"）都视为显式单位，置信度 0.6，避免触发 AI 升级
+            var hasExplicitUnit = unit is "ml" or "毫升" or "mL" or "奶粉" or "母乳" or "奶";
             return new AiNoteParseItem
             {
                 RecordType = RecordType.Feed,
                 RecordSubType = FeedType.Bottle,
                 Amount = amount,
                 Time = ExtractTime(text, now),
-                Summary = "瓶喂 " + amount + (hasExplicitUnit ? "ml" : ""),
+                Summary = "瓶喂 " + amount + (unit is "ml" or "毫升" or "mL" ? "ml" : ""),
                 Confidence = hasExplicitUnit ? 0.6 : 0.5,
                 Source = ParseSource.Rule,
             };
