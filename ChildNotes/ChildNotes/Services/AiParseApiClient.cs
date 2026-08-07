@@ -17,9 +17,9 @@ public sealed class AiParseApiClient : BaseApiClient
     public AiParseApiClient(SyncConfigRepository cfgRepo) => _cfgRepo = cfgRepo;
 
     /// <summary>调用后端解析接口；后端不可达或返回错误时返回 null。</summary>
-    public async Task<AiNoteParseBatchResponse?> ParseAsync(string text, CancellationToken ct = default)
+    public async Task<AiNoteParseBatchResponse?> ParseAsync(string text, bool forceAi = false, CancellationToken ct = default)
     {
-        var body = Serialize(new { Text = text });
+        var body = Serialize(new { Text = text, ForceAi = forceAi });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/smart-analysis/parse-note", body, ct);
         return resp is null ? null : await ReadDataAsync<AiNoteParseBatchResponse>(resp, ct);
     }
@@ -28,10 +28,12 @@ public sealed class AiParseApiClient : BaseApiClient
     /// 调用后端解析接口，失败时抛出带错误码的异常（而非返回 null）。
     /// 供需要区分"AI 次数用尽"等业务错误的调用方使用。
     /// </summary>
-    public async Task<AiNoteParseBatchResponse> ParseWithErrorsAsync(string text, CancellationToken ct = default)
+    public async Task<AiNoteParseBatchResponse> ParseWithErrorsAsync(string text, bool forceAi = false, CancellationToken ct = default)
     {
-        var body = Serialize(new { Text = text });
-        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/smart-analysis/parse-note", body, ct);
+        var body = Serialize(new { Text = text, ForceAi = forceAi });
+        // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
+        // 导致后端业务错误（AI 次数用尽等）的 msg/code 丢失，最终统一抛"后端服务不可用"。
+        using var resp = await SendWithErrorAsync(_cfgRepo, HttpMethod.Post, "/api/smart-analysis/parse-note", body, ct);
         if (resp is null)
             throw new AiNoteApiException("后端服务不可用，请检查同步服务器配置或网络连接", null);
         if (!resp.IsSuccessStatusCode)

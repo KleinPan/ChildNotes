@@ -156,7 +156,7 @@ public abstract class BaseApiClient
     protected static async Task<HttpResponseMessage?> SendWithTokenAsync(
         SyncConfigRepository cfgRepo, string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct)
-        => await SendCoreAsync(cfgRepo, serverUrl, token, method, path, body, ct, swallowNonSuccess: true);
+        => await SendCoreAsync(cfgRepo, serverUrl, token, method, path, body, ct);
 
     /// <summary>
     /// 与 <see cref="SendAsync"/> 行为一致（token 自动登录、401 重试），但非 2xx 响应
@@ -201,7 +201,7 @@ public abstract class BaseApiClient
     private static async Task<HttpResponseMessage?> SendCoreAsync(
         SyncConfigRepository cfgRepo, string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct,
-        bool swallowNonSuccess)
+        bool swallowNonSuccess = true)
     {
         var url = serverUrl.TrimEnd('/') + path;
         using var req = new HttpRequestMessage(method, url);
