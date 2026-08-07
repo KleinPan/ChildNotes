@@ -4,14 +4,34 @@
 
 - 代理端口 `127.0.0.1:10808` 同时承载 SOCKS5 与 HTTP/HTTPS 两种协议（v2rayN 默认配置）。
 - 访问 GitHub 等外网资源时需通过代理。
-- **git 已在全局配置中指定 SOCKS5**（`git config --global http.proxy socks5://127.0.0.1:10808`），**无需额外设置环境变量**。
+- **git 代理在本地仓库配置中指定 SOCKS5**（`.git/config` 中 `http.proxy = socks5://127.0.0.1:10808`），**无需额外设置环境变量，也无需配置全局 gitconfig**。
+  - 全局 `C:\Users\59902081\.gitconfig` 不含代理配置；本仓库代理仅作用于本仓库，避免影响其他仓库。
+  - **禁止**修改全局 gitconfig 的代理配置（Sandbox 也会拦截 `~/.gitconfig` 写入）；如需调整，改 `.git/config`。
   - 如确需设置环境变量，须与 git 配置一致，使用 `socks5://` 前缀：
     - `$env:ALL_PROXY="socks5://127.0.0.1:10808"`（推荐，同时覆盖 http/https）
     - 或分别设置：`$env:HTTP_PROXY="socks5://127.0.0.1:10808"` 与 `$env:HTTPS_PROXY="socks5://127.0.0.1:10808"`
+- **协议前缀必须是 `socks5://`**，**禁止**写成 `http://127.0.0.1:10808`。
+  - 实测：`.git/config` 中 `http.proxy = http://127.0.0.1:10808` 会导致 `fatal: unable to access ... Send failure: Bad access`，改为 `socks5://` 后正常。
 - **禁止**混用协议前缀（如 `HTTP_PROXY=http://...` 与 git 的 `socks5://` 共存），会导致 schannel SSL/TLS 握手失败。
-- 若推送时遇到 `schannel: failed to receive handshake, SSL/TLS connection failed`，先检查环境变量是否覆盖了 git 的代理配置：
-  - `$env:HTTP_PROXY` / `$env:HTTPS_PROXY` 为空时，git 自动使用自身配置的 `socks5://`。
+- 若推送时遇到 `schannel: failed to receive handshake, SSL/TLS connection failed` 或 `Send failure: Bad access`，先检查：
+  - `.git/config` 中 `http.proxy` 是否为 `socks5://127.0.0.1:10808`（不是 `http://`）。
+  - 环境变量是否覆盖了 git 的代理配置：`$env:HTTP_PROXY` / `$env:HTTPS_PROXY` 为空时，git 自动使用 `.git/config` 的 `socks5://`。
   - 清除覆盖：`Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY, Env:ALL_PROXY -ErrorAction SilentlyContinue`
+  - 单次命令临时覆盖代理（不修改配置文件）：`git -c http.proxy=socks5://127.0.0.1:10808 -c https.proxy=socks5://127.0.0.1:10808 <command>`
+
+### GitHub HTTPS 认证方案（绕过 GCM）
+
+- **问题**：GitCredentialManager（GCM）走 .NET `ServicePointManager`，**不支持 socks5 代理**，push/fetch 需要认证时会报 `ServicePointManager 不支持具有 socks5 方案的代理` 并弹出浏览器授权。
+- **方案**：在 `.git/config` 的 `remote "origin".url` 中嵌入 token，格式 `https://<token>@github.com/<owner>/<repo>.git`，git 会直接用 URL 中的凭据，**不调用 GCM**，从而走 git 自身的 socks5 代理。
+- **当前配置**（`.git/config`）：
+  ```
+  [remote "origin"]
+      url = https://<token>@github.com/KleinPan/ChildNotes.git
+  ```
+- **token 失效后**：用户生成新 token 后，用 `git remote set-url origin https://<new-token>@github.com/KleinPan/ChildNotes.git` 更新；或直接编辑 `.git/config`。
+- **禁止**依赖 GCM 浏览器授权流程（socks5 环境下不可用）。
+- **禁止**把 token 写入项目规则、文档、提交到仓库；token 仅存在于本地 `.git/config`（不入版本控制）。
+- 验证连通性：`git fetch origin master`（应秒级返回，不弹窗）。
 
 ## Build Commands
 
@@ -22,11 +42,10 @@
 
 - **禁止** `git push --force` / `--force-with-lease` 到 master/main，除非用户明确要求。
 - 遇 non-fast-forward 优先 `git pull --rebase`，不要强制覆盖。
-- **远端为 GitHub**（`https://github.com/KleinPan/ChildNotes.git`），**从不是 Gerrit**；代理走 `127.0.0.1:10808`（SOCKS5/HTTP 同端口），git 已在全局配置代理，无需额外环境变量。
-- **推送必须带显式 refspec**：`git push origin master:master`、`git push origin refs/tags/vX.Y.Z:refs/tags/vX.Y.Z`。
-  - 原因：全局 `C:\Users\59902081\.gitconfig` 存在误配 `remote.origin.push = refs/heads/*:refs/for/*`（Gerrit 风格），本仓库无法用 `--unset` 抵消（multi-value 合并），裸 `git push origin master` 会被重定向到 `refs/for/master` 而被拒。
-  - **禁止**尝试 `git config --global --unset remote.origin.push`（会影响其他仓库，且属于修改全局 git config，违反安全规则）；用显式 refspec 绕过即可。
-  - Tag 不受 `refs/heads/*` refspec 影响，但为保险仍用显式 refspec。
+- **远端为 GitHub**（`https://github.com/KleinPan/ChildNotes.git`），代理走 `127.0.0.1:10808`（SOCKS5），认证用 token-in-URL（见上文"GitHub HTTPS 认证方案"）。
+- 推送分支：`git push origin master:master`（带显式 refspec，稳妥）。
+- 推送 tag：`git push origin refs/tags/vX.Y.Z:refs/tags/vX.Y.Z`。
+- 全局 `C:\Users\59902081\.gitconfig` 不含 `remote.origin.push` 误配（早期规则提到的 Gerrit 风格误配已不存在），裸 `git push origin master` 也可用，但仍推荐显式 refspec。
 
 ## 提交粒度与 Tag 策略（重要）
 
