@@ -19,19 +19,24 @@
   - 清除覆盖：`Remove-Item Env:HTTP_PROXY, Env:HTTPS_PROXY, Env:ALL_PROXY -ErrorAction SilentlyContinue`
   - 单次命令临时覆盖代理（不修改配置文件）：`git -c http.proxy=socks5://127.0.0.1:10808 -c https.proxy=socks5://127.0.0.1:10808 <command>`
 
-### GitHub HTTPS 认证方案（绕过 GCM）
+### GitHub HTTPS 认证方案（禁用 GCM，用 token-in-URL）
 
-- **问题**：GitCredentialManager（GCM）走 .NET `ServicePointManager`，**不支持 socks5 代理**，push/fetch 需要认证时会报 `ServicePointManager 不支持具有 socks5 方案的代理` 并弹出浏览器授权。
-- **方案**：在 `.git/config` 的 `remote "origin".url` 中嵌入 token，格式 `https://<token>@github.com/<owner>/<repo>.git`，git 会直接用 URL 中的凭据，**不调用 GCM**，从而走 git 自身的 socks5 代理。
+- **GCM 是什么**：GitCredentialManager，微软出的独立凭据管理程序，git 需要账号密码时调用它存取 Windows 凭据管理器。正常环境很好用，**但在 socks5 代理下它走 .NET `ServicePointManager` 不支持 socks5，会卡死或报 `ServicePointManager 不支持具有 socks5 方案的代理`**，并反复弹浏览器授权。
+- **方案**：彻底禁用 GCM + 在 `remote "origin".url` 嵌入 token，git 直接用 URL 凭据，走自身 socks5 代理，不调用任何外部凭据程序。
 - **当前配置**（`.git/config`）：
   ```
+  [http]
+      proxy = socks5://127.0.0.1:10808
+  [credential]
+      helper =                          # 空值，清空全局继承的 GCM helper 链
   [remote "origin"]
       url = https://<token>@github.com/KleinPan/ChildNotes.git
   ```
+- **为什么 `helper =` 空值能禁用 GCM**：全局 `~/.gitconfig` 有 `[credential] helper = manager`，会被本仓库继承。本地 `.git/config` 写 `helper =`（空值）会清空 helper 链，git 就不会调用 GCM。这是只改本地、不动全局的禁用方式。
 - **token 失效后**：用户生成新 token 后，用 `git remote set-url origin https://<new-token>@github.com/KleinPan/ChildNotes.git` 更新；或直接编辑 `.git/config`。
 - **禁止**依赖 GCM 浏览器授权流程（socks5 环境下不可用）。
 - **禁止**把 token 写入项目规则、文档、提交到仓库；token 仅存在于本地 `.git/config`（不入版本控制）。
-- 验证连通性：`git fetch origin master`（应秒级返回，不弹窗）。
+- 验证连通性：`git push origin master:master` 或 `git fetch origin master`（应秒级返回，不弹窗、不卡死）。
 
 ## Build Commands
 
