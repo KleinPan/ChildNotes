@@ -675,13 +675,17 @@ public static class AiNoteRuleParser
         s = TimeRegex.Replace(s, "");
         // 去掉时段词（"早上/早晨/上午/中午/下午/傍晚/晚上/夜里/夜间/半夜"）
         s = Regex.Replace(s, @"早上|早晨|上午|中午|下午|傍晚|晚上|夜里|夜间|半夜|今早|今晚|昨日|明天", "");
+        // 去掉时间整点词（"8点整"的"整"字残留）
+        s = Regex.Replace(s, @"整", "");
         // 去掉剂量
         s = Regex.Replace(s, @"半包|半粒|半滴|\d+(?:\.\d+)?\s*(?:ml|毫升|包|粒|滴|片|丸)", "");
         // 去掉动作词
         s = Regex.Replace(s, @"喝了|喝了|吃了|服用|服了|喝|吃|服", "");
         // 去掉常见停用词
         s = Regex.Replace(s, @"的|了|一点|一些", "");
-        s = s.Trim(' ', '，', ',', '。');
+        // 去掉所有标点（含中间的逗号，避免"整，D3"这种残留）
+        s = Regex.Replace(s, @"[,，。、；;！!]", "");
+        s = s.Trim(' ');
         return string.IsNullOrWhiteSpace(s) ? null : s;
     }
 

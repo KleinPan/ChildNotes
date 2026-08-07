@@ -9,4 +9,9 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!-- 禁用 Avalonia 构建期遥测任务（AvaloniaStatsTask）：
+       sandbox 拦截写入 C:\Users\...\AppData\Local\AvaloniaUI\BuildServices\buildtasks.log，
+       导致 Avalonia.BuildServices.targets 的 AvaloniaStats target 抛 UnauthorizedAccessException。
+       通过将 Condition 改为 false 让 target 不执行。 -->
+  <Target Name="AvaloniaStats" Condition="false" BeforeTargets="CoreCompile" />
 </Project>

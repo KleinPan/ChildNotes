@@ -162,6 +162,9 @@ public abstract partial class RecordFormHostViewModel : ViewModelBase
                 if (suppDto is not null)
                 {
                     SupplementForm.Name = suppDto.Name ?? string.Empty;
+                    // 同步标签选中状态：Name 设置后需手动触发标签列表的 IsSelected 匹配
+                    // 否则编辑详情时标签全部未选中，用户看不到当前记录用的是哪个标签
+                    SupplementForm.SelectItemsByName(suppDto.Name);
                     SupplementForm.Dose = suppDto.Dose ?? string.Empty;
                     // 回填单位选中（旧数据 DoseUnit 可能为 null，保持默认选中）
                     SupplementForm.SelectDoseUnitByName(suppDto.DoseUnit);

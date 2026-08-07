@@ -309,6 +309,29 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         DoseUnit = unit;
     }
 
+    /// <summary>
+    /// 编辑回填时按名称选中标签（用于外部设置 Name 后同步 UI 选中状态）。
+    /// 支持多选：Name 可能是"维生素D3、DHA"这种合并格式。
+    /// 若名称不在标签列表中，不自动添加自定义项（保持 Name 文本不变，UI 显示但不选中任何标签）。
+    /// </summary>
+    public void SelectItemsByName(string? name)
+    {
+        // 清空所有选中
+        foreach (var item in CurrentAllItems) item.IsSelected = false;
+        if (string.IsNullOrEmpty(name)) return;
+
+        // 按分隔符切分（支持中英文逗号、顿号）
+        var names = name.Split(new[] { '、', ',', '，' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(n => n.Trim())
+                        .Where(n => !string.IsNullOrEmpty(n))
+                        .ToList();
+        foreach (var n in names)
+        {
+            var match = CurrentAllItems.FirstOrDefault(x => x.Name == n);
+            if (match is not null) match.IsSelected = true;
+        }
+    }
+
     /// <summary>添加自定义剂量单位：校验去重 → 写入DB → 加入集合 → 自动选中。</summary>
     public void AddCustomUnit()
     {
