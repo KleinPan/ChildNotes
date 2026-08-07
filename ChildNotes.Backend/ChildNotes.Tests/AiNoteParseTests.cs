@@ -64,6 +64,10 @@ public class AiNoteParseTests
     [InlineData("吃了40奶", RecordType.Feed, FeedType.Bottle, 40)]
     [InlineData("喝了50母乳", RecordType.Feed, FeedType.Bottle, 50)]
     [InlineData("60奶粉", RecordType.Feed, FeedType.Bottle, 60)]
+    // 纯数字省略单位（育儿语境"喝+数字"默认指奶量 ml）
+    [InlineData("喝了110", RecordType.Feed, FeedType.Bottle, 110)]
+    [InlineData("3点喝了90", RecordType.Feed, FeedType.Bottle, 90)]
+    [InlineData("喝100", RecordType.Feed, FeedType.Bottle, 100)]
     public void RuleParse_FeedBottle_DetectsAmount(string text, string expectedType, string expectedSub, int expectedAmount)
     {
         var svc = NewServiceWithFailingAi();

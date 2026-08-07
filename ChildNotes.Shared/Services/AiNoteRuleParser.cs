@@ -17,6 +17,14 @@ public static class AiNoteRuleParser
     private static readonly Regex FeedAmountRegex =
         new(@"(\d+)(?:\s*多)?\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
 
+    /// <summary>
+    /// 纯数字喂奶：用户省略单位（如"喝了110"、"3点喝了90"）。
+    /// 育儿语境下"喝+数字"默认指奶量 ml。限 2-3 位（10-999）避免误匹配。
+    /// 否定前瞻排除紧跟其他单位词的情况（虽带单位的已由 FeedAmountRegex 先匹配，此处保险）。
+    /// </summary>
+    private static readonly Regex FeedBareAmountRegex =
+        new(@"喝[了]?\s*(\d{2,3})(?!\s*(?:ml|毫升|mL|克|g|个|勺|碗|包|粒|滴|片|丸|度|℃))", RegexOptions.Compiled);
+
     private static readonly Regex BreastRegex =
         new(@"(?:左|left)\s*(\d+)\s*(?:分|min|分钟)?.*?(?:右|right)\s*(\d+)\s*(?:分|min|分钟)?", RegexOptions.Compiled);
 
@@ -162,6 +170,24 @@ public static class AiNoteRuleParser
                 Time = ExtractTime(text, now),
                 Summary = "瓶喂 " + amount + (hasExplicitUnit ? "ml" : ""),
                 Confidence = hasExplicitUnit ? 0.6 : 0.5,
+                Source = ParseSource.Rule,
+            };
+        }
+
+        // 1b) 纯数字喂奶：用户省略单位（如"喝了110"、"3点喝了90"）
+        // 育儿语境下"喝+数字"默认指奶量 ml，按瓶喂配方奶处理
+        var feedBareMatch = FeedBareAmountRegex.Match(text);
+        if (feedBareMatch.Success)
+        {
+            int? amount = int.TryParse(feedBareMatch.Groups[1].Value, out var a) ? a : null;
+            return new AiNoteParseItem
+            {
+                RecordType = RecordType.Feed,
+                RecordSubType = FeedType.Bottle,
+                Amount = amount,
+                Time = ExtractTime(text, now),
+                Summary = "瓶喂 " + amount + "ml",
+                Confidence = 0.5, // 省略单位推断，置信度略低于显式单位
                 Source = ParseSource.Rule,
             };
         }
