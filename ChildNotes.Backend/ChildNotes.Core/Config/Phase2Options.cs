@@ -9,6 +9,20 @@ public class DeepSeekOptions
     public int MaxTokens { get; set; } = 2500;
     public bool ThinkingEnabled { get; set; } = false;
     public string ReasoningEffort { get; set; } = "high";
+
+    /// <summary>
+    /// 备用 LLM 配置（可选）。主用调用失败（网络异常/非 2xx/超时）时自动降级到此项。
+    /// 留空（或 ApiKey 为空）则禁用降级。Temperature/MaxTokens/ThinkingEnabled 等参数沿用主配置。
+    /// </summary>
+    public DeepSeekFallbackOptions? Fallback { get; set; }
+}
+
+/// <summary>备用 LLM 端点配置（仅端点级参数，生成参数沿用主配置）。</summary>
+public class DeepSeekFallbackOptions
+{
+    public string BaseUrl { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string Model { get; set; } = string.Empty;
 }
 
 public class OssOptions

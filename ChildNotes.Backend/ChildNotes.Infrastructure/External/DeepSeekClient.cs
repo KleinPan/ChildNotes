@@ -13,6 +13,7 @@ namespace ChildNotes.Infrastructure.External;
 /// DeepSeek OpenAI 兼容 API 客户端。
 /// 请求体遵循 OpenAI Chat Completions 格式（messages + temperature + response_format）。
 /// 内置 LLM 调用埋点：记录请求摘要、响应摘要、状态、耗时、错误信息到 ILogger。
+/// 支持主备双端点降级：主用调用失败（网络异常/非 2xx/超时）时自动切换到 Fallback 配置。
 /// </summary>
 public class DeepSeekClient
 {
@@ -25,13 +26,9 @@ public class DeepSeekClient
         _http = http;
         _opt = opt.Value;
         _logger = logger;
-        _http.BaseAddress = new Uri(_opt.BaseUrl.TrimEnd('/') + "/");
+        // HttpClient 的 BaseAddress/Authorization 在每次调用前动态设置（支持主备双端点），
+        // 不在构造函数写死，避免切换备用端点时残留主用配置。
         _http.Timeout = TimeSpan.FromSeconds(120);
-        if (!string.IsNullOrEmpty(_opt.ApiKey))
-        {
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _opt.ApiKey);
-        }
     }
 
     public virtual async Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)
@@ -39,9 +36,31 @@ public class DeepSeekClient
         if (string.IsNullOrEmpty(_opt.ApiKey))
             throw new InvalidOperationException("DeepSeek API key is not configured");
 
+        // 主用端点
+        try
+        {
+            return await CallEndpointAsync(_opt.BaseUrl, _opt.ApiKey, _opt.Model, systemPrompt, userMessage, ct);
+        }
+        catch (Exception ex) when (_opt.Fallback is { } fb && !string.IsNullOrEmpty(fb.ApiKey) && !ct.IsCancellationRequested)
+        {
+            // 主用失败且配置了备用端点：降级重试。取消异常不降级（用户主动取消）。
+            _logger.LogWarning("[AI-LOG] 主用 LLM 调用失败，降级到备用端点 model={Model} err={Err}",
+                fb.Model, TruncateForLog(ex.Message, 200));
+            return await CallEndpointAsync(fb.BaseUrl, fb.ApiKey, fb.Model, systemPrompt, userMessage, ct);
+        }
+    }
+
+    /// <summary>调用指定端点（主用/备用共用逻辑）。</summary>
+    private async Task<(string text, string model)> CallEndpointAsync(
+        string baseUrl, string apiKey, string model, string systemPrompt, string userMessage, CancellationToken ct)
+    {
+        // 每次调用前重置 HttpClient 的 BaseAddress/Authorization（主备端点切换关键）
+        _http.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
         var body = new
         {
-            model = _opt.Model,
+            model = model,
             messages = new[]
             {
                 new { role = "system", content = systemPrompt },
@@ -55,7 +74,7 @@ public class DeepSeekClient
         };
 
         // 请求摘要：模型 + 用户输入前 60 字（脱敏长输入）
-        var reqSummary = $"model={_opt.Model}, input=\"{TruncateForLog(userMessage, 60)}\"";
+        var reqSummary = $"model={model}, input=\"{TruncateForLog(userMessage, 60)}\"";
         var sw = Stopwatch.StartNew();
         HttpResponseMessage? resp = null;
         string? errBody = null;
@@ -77,14 +96,14 @@ public class DeepSeekClient
             // 先读响应为字符串再解析：解析失败时可打印原文便于诊断（如网关返回 HTML 首页）
             var rawBody = await resp.Content.ReadAsStringAsync(ct);
             string text;
-            string model;
+            string respModel;
             try
             {
                 using var doc = JsonDocument.Parse(rawBody);
                 var root = doc.RootElement;
                 text = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString()
                     ?? throw new InvalidOperationException("DeepSeek response content is empty");
-                model = root.TryGetProperty("model", out var m) ? m.GetString() ?? _opt.Model : _opt.Model;
+                respModel = root.TryGetProperty("model", out var m) ? m.GetString() ?? model : model;
             }
             catch (JsonException jex)
             {
@@ -96,7 +115,7 @@ public class DeepSeekClient
             sw.Stop();
             _logger.LogInformation("[AI-LOG] DeepSeek 调用成功 {Ms}ms req={Req} respLen={Len} respPreview={Preview}",
                 sw.ElapsedMilliseconds, reqSummary, text.Length, TruncateForLog(text, 200));
-            return (text.Trim(), model);
+            return (text.Trim(), respModel);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
