@@ -926,7 +926,7 @@ public static class AiNoteRuleParser
     /// 系统默认补充剂标签（与前端 SupplementFormViewModel.SupplementCommonItems 一致）。
     /// 前后端共享，确保 server/local 两种解析路径返回的名称规范一致。
     /// </summary>
-    public static readonly string[] DefaultSupplementNames = { "维生素D", "益生菌", "DHA", "钙剂", "铁剂" };
+    public static readonly string[] DefaultSupplementNames = { "维生素D", "维生素D3", "益生菌", "DHA", "钙剂", "铁剂" };
 
     /// <summary>
     /// 系统默认用药标签（与前端 SupplementFormViewModel.MedicineCommonItems 一致）。
