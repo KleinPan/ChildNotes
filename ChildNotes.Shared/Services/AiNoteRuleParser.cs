@@ -37,11 +37,13 @@ public static class AiNoteRuleParser
     private static readonly Regex GrowthRegex =
         new(@"(?:身高|高)\s*(\d+(?:\.\d+)?)\s*(?:cm|厘米)?.*(?:体重|重)\s*(\d+(?:\.\d+)?)\s*(?:kg|公斤|斤)?", RegexOptions.Compiled);
 
+    // 时间正则：支持阿拉伯数字（1-23）和中文数字（一/两/三.../十/十一.../二十三）。
+    // 修复"凌晨一点"、"两点半"、"十点了"等中文数字时间无法识别导致落库为当前时间的 bug。
     private static readonly Regex TimeRegex =
-        new(@"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{1,2})?", RegexOptions.Compiled);
+        new(@"(\d{1,2}|[零一二两三四五六七八九十]|十[零一二三四五六七八九]|二十[零一二三四五六七八九]?)\s*(?:点|:|：)\s*(半|\d{1,2}|[零一二两三四五六七八九十])?", RegexOptions.Compiled);
 
     private static readonly Regex SleepRangeRegex =
-        new(@"(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})\s*睡到\s*(\d{1,2})\s*(?:点|:|：)\s*(半|\d{0,2})", RegexOptions.Compiled);
+        new(@"(\d{1,2}|[零一二两三四五六七八九十]|十[零一二三四五六七八九]|二十[零一二三四五六七八九]?)\s*(?:点|:|：)\s*(半|\d{0,2}|[零一二两三四五六七八九十]?)\s*睡到\s*(\d{1,2}|[零一二两三四五六七八九十]|十[零一二三四五六七八九]|二十[零一二三四五六七八九]?)\s*(?:点|:|：)\s*(半|\d{0,2}|[零一二两三四五六七八九十]?)", RegexOptions.Compiled);
 
     private static readonly Regex MlAmountRegex =
         new(@"(\d+)\s*(?:ml|毫升|mL)", RegexOptions.Compiled);
@@ -704,7 +706,7 @@ public static class AiNoteRuleParser
         var m = TimeRegex.Match(text);
         if (m.Success)
         {
-            var hh = int.TryParse(m.Groups[1].Value, out var h) ? h : -1;
+            var hh = ParseHourGroup(m.Groups[1]);
             var mm = ParseMinuteGroup(m.Groups[2]);
             if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
 
@@ -766,9 +768,11 @@ public static class AiNoteRuleParser
     {
         var m = SleepRangeRegex.Match(text);
         if (!m.Success) return null;
-        if (!int.TryParse(m.Groups[1].Value, out var sh)) return null;
+        var sh = ParseHourGroup(m.Groups[1]);
+        if (sh < 0) return null;
         var sm = ParseMinuteGroup(m.Groups[2]);
-        if (!int.TryParse(m.Groups[3].Value, out var eh)) return null;
+        var eh = ParseHourGroup(m.Groups[3]);
+        if (eh < 0) return null;
         var em = ParseMinuteGroup(m.Groups[4]);
 
         // 处理 12 小时制（含晚上/下午等修饰词则 +12）
@@ -794,9 +798,9 @@ public static class AiNoteRuleParser
     {
         var m = SleepRangeRegex.Match(text);
         if (!m.Success) return (null, null);
-        if (!int.TryParse(m.Groups[1].Value, out var sh)) return (null, null);
+        var sh = ParseHourGroup(m.Groups[1]);
         var sm = ParseMinuteGroup(m.Groups[2]);
-        if (!int.TryParse(m.Groups[3].Value, out var eh)) return (null, null);
+        var eh = ParseHourGroup(m.Groups[3]);
         var em = ParseMinuteGroup(m.Groups[4]);
 
         if (sh < 0 || sh > 23 || sm < 0 || sm > 59) return (null, null);
@@ -804,14 +808,58 @@ public static class AiNoteRuleParser
         return ($"{sh:D2}:{sm:D2}", $"{eh:D2}:{em:D2}");
     }
 
-    /// <summary>解析分钟分组："半"=30, 空=0, 数字=本身。</summary>
+    /// <summary>解析分钟分组："半"=30, 空=0, 数字/中文数字=本身。</summary>
     internal static int ParseMinuteGroup(System.Text.RegularExpressions.Group g)
     {
         if (!g.Success) return 0;
         var v = g.Value;
         if (string.IsNullOrEmpty(v)) return 0;
         if (v == "半") return 30;
-        return int.TryParse(v, out var n) ? n : 0;
+        return TryParseCnOrArabic(v, out var n) ? n : 0;
+    }
+
+    /// <summary>
+    /// 解析小时分组：支持阿拉伯数字和中文数字（一/两/三.../十/十一.../二十三）。
+    /// 失败返回 -1。
+    /// </summary>
+    internal static int ParseHourGroup(System.Text.RegularExpressions.Group g)
+    {
+        if (!g.Success) return -1;
+        return TryParseCnOrArabic(g.Value, out var n) ? n : -1;
+    }
+
+    /// <summary>
+    /// 尝试解析阿拉伯数字或中文数字为 int。
+    /// 支持：0-23、零/一/两/二/三.../十/十一.../二十三。
+    /// "两" 视为 2（口语习惯）。
+    /// </summary>
+    private static bool TryParseCnOrArabic(string s, out int value)
+    {
+        value = 0;
+        if (string.IsNullOrEmpty(s)) return false;
+        // 阿拉伯数字优先
+        if (int.TryParse(s, out value)) return true;
+        // 中文数字单字
+        var single = new Dictionary<string, int>
+        {
+            ["零"] = 0, ["一"] = 1, ["二"] = 2, ["两"] = 2, ["三"] = 3, ["四"] = 4,
+            ["五"] = 5, ["六"] = 6, ["七"] = 7, ["八"] = 8, ["九"] = 9, ["十"] = 10,
+        };
+        if (single.TryGetValue(s, out value)) return true;
+        // "十X" = 10 + X（如 十一=11, 十二=12）
+        if (s.Length == 2 && s[0] == '十' && single.TryGetValue(s[1].ToString(), out var x))
+        {
+            value = 10 + x;
+            return true;
+        }
+        // "二十X" = 20 + X（如 二十一=21, 二十三=23）；"二十"=20
+        if (s.Length == 3 && s.StartsWith("二十") && single.TryGetValue(s[2].ToString(), out var y))
+        {
+            value = 20 + y;
+            return true;
+        }
+        if (s == "二十") { value = 20; return true; }
+        return false;
     }
 
     #endregion
@@ -828,11 +876,12 @@ public static class AiNoteRuleParser
     {
         // 优先尝试解析为完整日期时间（ISO 格式等）
         if (DateTime.TryParse(time, out var dt)) return dt.ToString(format);
-        // 尝试解析中文时间格式（如"11点半"、"8:30"）
+        // 尝试解析中文时间格式（如"11点半"、"8:30"、"一点半"）
         var m = TimeRegex.Match(time);
         if (m.Success)
         {
-            var hh = int.TryParse(m.Groups[1].Value, out var h) ? h : DateTime.Now.Hour;
+            var hh = ParseHourGroup(m.Groups[1]);
+            if (hh < 0) hh = DateTime.Now.Hour;
             var mm = ParseMinuteGroup(m.Groups[2]);
             var baseTime = DateTime.Today.Add(new TimeSpan(hh, mm, 0));
             return baseTime.ToString(format);
@@ -862,8 +911,9 @@ public static class AiNoteRuleParser
 
         // 从原始输入提取用户实际说的小时数，判断是否为 24 小时制表述（13~23点）
         var timeMatch = TimeRegex.Match(originalText);
-        if (timeMatch.Success && int.TryParse(timeMatch.Groups[1].Value, out var userHh))
+        if (timeMatch.Success)
         {
+            var userHh = ParseHourGroup(timeMatch.Groups[1]);
             // 用户显式说了 13~23 点（24 小时制），不干预
             if (userHh >= 13 && userHh <= 23) return llmTime;
         }
