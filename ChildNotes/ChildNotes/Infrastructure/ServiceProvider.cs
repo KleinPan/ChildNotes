@@ -37,6 +37,7 @@ public sealed class ServiceProvider
     public AiParseApiClient AiParseApiClient { get; }
     public AiAnalysisApiClient AiAnalysisApiClient { get; }
     public MembershipApiClient MembershipApiClient { get; }
+    public PointsApiClient PointsApiClient { get; }
     public IDateTimeFormatter DateTimeFormatter { get; }
     public Data.Repositories.InAppMessageRepository InAppMessageRepository { get; }
     public Services.InAppMessageService InAppMessageService { get; }
@@ -96,6 +97,7 @@ public sealed class ServiceProvider
         LlmClient = new LlmClient();
         AiAnalysisApiClient = new AiAnalysisApiClient(SyncConfigRepository);
         MembershipApiClient = new MembershipApiClient(SyncConfigRepository);
+        PointsApiClient = new PointsApiClient(SyncConfigRepository);
         AiAnalysisService = new AiAnalysisService(AiAnalysisRepository, RecordService, BabyService, AppState, LlmClient, AiAnalysisApiClient);
 
         NetworkMonitor = new NetworkMonitor();

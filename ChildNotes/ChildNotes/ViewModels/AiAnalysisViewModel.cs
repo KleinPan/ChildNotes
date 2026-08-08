@@ -11,6 +11,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 {
     private readonly AiAnalysisService _aiService = ServiceProvider.Instance.AiAnalysisService;
     private readonly PointsService _pointsService = ServiceProvider.Instance.PointsService;
+    private readonly PointsApiClient _pointsApi = ServiceProvider.Instance.PointsApiClient;
     private readonly AppState _state = ServiceProvider.Instance.AppState;
     private readonly LocaleManager _locale = LocaleManager.Instance;
 
@@ -100,12 +101,22 @@ public partial class AiAnalysisViewModel : ViewModelBase
         UpdateRangeTip();
 
         // 并行加载积分余额、分析成本、历史记录
-        var pointsTask = Task.Run(() => _pointsService.GetDashboard());
+        var localPointsTask = Task.Run(() => _pointsService.GetDashboard());
         var costTask = _aiService.GetAnalysisCostAsync();
         var serverRecordsTask = _aiService.ListRecordsFromServerAsync();
 
-        var dashboard = await pointsTask;
-        CurrentPoints = dashboard.Points;
+        // server 模式下从后端实时获取权威积分余额，避免本地 SQLite 与后端 PostgreSQL 不一致
+        // （本地签到只写 SQLite 不调后端 API，后端积分可能为 0 或偏低，导致扣分时报"积分不足"）
+        var config = _aiService.GetLlmConfig();
+        long? serverPoints = null;
+        if (config.NoteSource == "server")
+        {
+            serverPoints = await _pointsApi.GetPointsAsync();
+        }
+
+        var dashboard = await localPointsTask;
+        // 后端积分优先；后端不可用时回退到本地 SQLite
+        CurrentPoints = (int)(serverPoints ?? dashboard.Points);
 
         AnalysisCost = await costTask;
         RefreshPointsSufficiency();
@@ -234,8 +245,17 @@ public partial class AiAnalysisViewModel : ViewModelBase
             // 生成后刷新积分余额（server 模式扣了积分）
             if (config.NoteSource == "server")
             {
-                var dashboard = await Task.Run(() => _pointsService.GetDashboard());
-                CurrentPoints = dashboard.Points;
+                // 优先从后端拉取最新积分（权威值），失败回退到本地 SQLite
+                var serverPoints = await _pointsApi.GetPointsAsync();
+                if (serverPoints.HasValue)
+                {
+                    CurrentPoints = (int)serverPoints.Value;
+                }
+                else
+                {
+                    var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+                    CurrentPoints = dashboard.Points;
+                }
                 RefreshPointsSufficiency();
             }
             // 生成后刷新记录列表：server 模式从后端拉取，local 模式从本地 DB 读取
@@ -262,8 +282,17 @@ public partial class AiAnalysisViewModel : ViewModelBase
             // 积分不足：刷新余额并提示充值
             if (ex.IsInsufficientPoints)
             {
-                var dashboard = await Task.Run(() => _pointsService.GetDashboard());
-                CurrentPoints = dashboard.Points;
+                // 优先从后端拉取最新积分（后端扣分失败但返回 INSUFFICIENT_POINTS，说明本地显示的积分与后端不一致）
+                var serverPoints = await _pointsApi.GetPointsAsync();
+                if (serverPoints.HasValue)
+                {
+                    CurrentPoints = (int)serverPoints.Value;
+                }
+                else
+                {
+                    var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+                    CurrentPoints = dashboard.Points;
+                }
                 RefreshPointsSufficiency();
                 ErrorMessage = string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFinal", "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分"), AnalysisCost, CurrentPoints);
                 DisplayToast(_locale.GetString("AiAnalysis_ErrPointsDaily", "积分不足，请每日签到获取积分"));
