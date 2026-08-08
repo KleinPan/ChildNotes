@@ -42,3 +42,5 @@ appsettings.Local.json
 node_modules/
 dist/
 /publish/backend
+publish-backend/
+publish/
