@@ -1,7 +1,7 @@
 # UI 样式对齐设计规范 — 实施进度
 
 > 跟踪首页样式与 [design-tokens.md](design-tokens.md) 规范的对齐进度。
-> 最近一次更新: 2026-08-10
+> 最近一次更新: 2026-08-10 23:00 (路径 B 完成)
 
 ## 目标
 
@@ -20,8 +20,15 @@
 | **P2-A 硬编码颜色清单** | ✅ 完成 | 7f959c2 | 282 处分布/分类 |
 | **P2 路径 A: White 批量清理(75 处)** | ✅ 完成 | 18070fc | 21 文件 White → SurfaceCardBrush |
 | **P2 路径 A: 4 色值批量清理(27 处)** | ✅ 完成 | 6640991 / bcf7b5b | WeuiGreen/Orange/Red/SurfaceCard 同色零变更 |
-| **P2 主体清理(剩 196 处)** | ⏸ **阻塞** | — | **路径 A 已清空,余项需走路径 B (改外观)** |
-| P0 WeUIColors 色值迁移 | ⏸ 待定 | — | 等同路径 B |
+| **P2 路径 B 试点: HomeView (25 处)** | ✅ 完成 | 6c96449 | A/B 截图验证 |
+| **P2 路径 B 推进: FeedingView (14 处)** | ✅ 完成 | be339cb | |
+| **P2 路径 B 推进: BabySetupView (11 处)** | ✅ 完成 | bce6f7a | |
+| **P2 路径 B 推进: BabyManager + Family (11 处)** | ✅ 完成 | cbd954b | 新增 MaskLightBrush / BrandPrimaryAlpha10Brush |
+| **P2 路径 B 推进: 14 个小文件 (34 处)** | ✅ 完成 | 34b4603 | |
+| **P2 路径 B 推进: GrowthView (11 处)** | ✅ 完成 | 8ec57ae | 保留咖啡主题色系 |
+| **P2 路径 B 推进: RecordSheetView (40 处)** | ✅ 完成 | 00811b0 | 保留疫苗业务色 |
+| P0 WeUIColors 色值迁移 | ⏸ 待定 | — | 业务色尚需业务方补充 |
+| 业务色统一 (积分金/疫苗/危险红) | ⏸ 待业务方 | — | DesignTokens 未定义 |
 
 ## 已落地的规范 Token (DesignTokens.axaml)
 
@@ -151,16 +158,48 @@ P2 硬编码颜色清理与 P0 WeUIColors 色值迁移是**同一个根因**: �
 
 **累计 102 处零外观变更清理**(原 282 处的 36.2%)。
 
-**剩余 196 处全部为"色值与现有 Token 不一致"**:
+**路径 B 实际执行结果** (2026-08-10 23:00):
 
-- 文字三档 `#1A1A1A/#333333/#666666/#888888/#999999` (约 30 处)
-- 浅灰底 `#F5F5F5/#F0F0F0/#F9F9F9` (约 45 处)
-- 品牌强调态 `#E8F9EF/#FFF7F1/#E8F5FF/#FFE7D6` (约 25 处)
-- 业务色 `#0A84FF/#E86F24/#0675B8/#E67E22/#FFAB91` (约 20 处)
-- 遮罩/阴影 `#CC000000/#88000000/#80000000/#A0000000` (约 35 处)
-- 其他零散 (约 40 处)
+| 页面 | 处数 | Commit | 备注 |
+|---|---|---|---|
+| HomeView (试点) | 25 | 6c96449 | A/B 截图验证,MCP 实测通过 |
+| FeedingView | 14 | be339cb | |
+| BabySetupView | 11 | bce6f7a | |
+| BabyManager + Family | 11 | cbd954b | 新增 MaskLightBrush / BrandPrimaryAlpha10Brush |
+| 14 个小文件 (AiSettings/QuickInput/QuickMenu/Mine/InAppMessage/Language/Sync/Reminder/Help/DeveloperOptions/PrivacyConsent/Points/Statistics/Membership/AiAnalysis) | 34 | 34b4603 | |
+| GrowthView | 11 | 8ec57ae | 保留咖啡主题色系 |
+| RecordSheetView | 40 | 00811b0 | 保留疫苗业务色 |
 
-**关键结论**: 路径 A 已基本清空,继续推进只能走路径 B (新增 Token 改外观)。
+**累计 146 处路径 B 迁移**(覆盖 19 个 .axaml 文件)。
+
+**新增 Token** (DesignTokens.axaml):
+
+| Token | 值 | 用途 |
+|---|---|---|
+| GrowthBlueLightBrush | #E0F2FE | 增长按钮浅蓝底/边 |
+| FeedingOrangeLightBrush | #FFF3E0 | 喂奶按钮浅橙底/边 |
+| MedicineRedLightBrush | #FED7D7 | 异常卡浅红边/底 |
+| BrandPrimaryAlpha14Brush | #1400C875 | 品牌主色 14% alpha |
+| BrandPrimaryAlpha10Brush | #1A00C875 | 品牌主色 10% alpha |
+| MaskBrush | #CC000000 | 80% 黑遮罩(Toast 浮层) |
+| MaskLightBrush | #80000000 | 50% 黑遮罩(弹层背景) |
+| TextPlaceholderBrush | #9CA3AF | 文字弱色/placeholder |
+
+**业务色保留** (DesignTokens 未定义,待业务方补充):
+
+- 会员/积分金色: #FFB84D / #E67E22 / #FFF0E0 / #FFF7ED
+- 疫苗业务色: #EDF1F7 / #9EE6C1 / #FFFBE8 / #F4D35E / #FFBF9B / #EEF8FF / #BFE8FF / #0675B8
+- 危险红: #D32F2F
+- 半透白: #CCFFFFFF / #E6FFFFFF / #80FFFFFF / #A0000000
+- 阴影参数: #0A000000 / #20000000 / #15000000 / #40000000
+- 特殊遮罩: #A0000000 (62.5% 遮罩,全屏预览)
+- 咖啡主题色 (GrowthView 专属): #5D4037 / #8D6E63 / #A1887F / #6D4C41 / #2D1810 / #FFCC80 / #FFAB91 / #7E9B8E / #D0D0D0 / #DDDDDD
+- 启动页品牌色 (LoadingView 专属): #FFF8E7 / #5D4037 / #8D6E63
+- 业务色 (MineView 会员金): #FFB84D
+
+**关键结论**: 路径 B 推进顺利,**19 个页面 146 处全部完成**,
+业务色 75+ 处因 DesignTokens 未定义保留。
+P0 色值迁移需要业务方确认是否统一品牌色系(从 WeUI #07C160 → DesignTokens #00C875)。
 
 ## 验证手段
 
