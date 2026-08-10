@@ -36,6 +36,15 @@ public partial class PointsViewModel : ViewModelBase
         var dashboard = await Task.Run(() => _pointsService.GetDashboard());
         ApplyDashboard(dashboard);
 
+        // 加载任务列表前先触发一次同步，确保本地最新记录（如刚记录的喂奶/尿布）已推送到后端。
+        // 后端任务完成判定查的是 PostgreSQL 的 ChildRecords，若未同步则任务状态会显示"未完成"。
+        // 同步是异步的，不阻塞 UI；同步失败或超时也不影响后续任务列表加载（降级为后端当前状态）。
+        try
+        {
+            await Task.Run(() => ServiceProvider.Instance.SyncTrigger.RunNowAsync());
+        }
+        catch { /* 同步失败不阻塞任务列表加载 */ }
+
         // 任务列表优先从后端加载（含完成/领取状态，支持领取）；
         // 后端不可达时回退到本地 dashboard.Tasks（仅展示，不可领取）。
         var serverTasks = await _pointsApi.GetTasksAsync();
