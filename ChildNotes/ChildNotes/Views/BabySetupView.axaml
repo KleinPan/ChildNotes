@@ -14,8 +14,8 @@
                 Margin="20,30" MaxWidth="360">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                    <GradientStop Offset="0" Color="#E8F9EF"/>
-                    <GradientStop Offset="0.4" Color="#F5F5F5"/>
+                    <GradientStop Offset="0" Color="{StaticResource Color.Brand.PrimaryLight}"/>
+                    <GradientStop Offset="0.4" Color="{StaticResource Color.Surface.Disabled}"/>
                 </LinearGradientBrush>
             </Border.Background>
             <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12" Padding="20,30"
@@ -42,7 +42,7 @@
                                 Click="OnGirlTap"/>
                     </StackPanel>
 
-                    <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                    <Border BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1"/>
 
                     <!-- 姓名 -->
                     <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -52,7 +52,7 @@
                                  VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
                     </StackPanel>
 
-                    <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                    <Border BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1"/>
 
                     <!-- 出生日期 -->
                     <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -62,7 +62,7 @@
                                             HorizontalAlignment="Stretch" FontSize="15"/>
                     </StackPanel>
 
-                    <Border BorderBrush="#F0F0F0" BorderThickness="0,1"/>
+                    <Border BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1"/>
 
                     <!-- 错误提示 -->
                     <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
@@ -76,7 +76,7 @@
 
                     <!-- 跳过 -->
                     <Button Content="{DynamicResource BabySetup_Later}" Background="Transparent" BorderThickness="0" CornerRadius="6"
-                            Foreground="#BBBBBB" FontSize="14" Margin="0,4,0,0" MinHeight="40" Padding="20,8"
+                            Foreground="{StaticResource TextPlaceholderBrush}" FontSize="14" Margin="0,4,0,0" MinHeight="40" Padding="20,8"
                             Command="{Binding SkipCommand}" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
@@ -88,23 +88,23 @@
             <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="MinHeight" Value="40"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
         <Style Selector="Button.gender-btn.active">
-            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.gender-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
         </Style>
         <Style Selector="Button.gender-btn.active:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
         </Style>
     </UserControl.Styles>
 </UserControl>
