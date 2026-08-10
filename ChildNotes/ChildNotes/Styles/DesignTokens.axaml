@@ -87,6 +87,11 @@
     <SolidColorBrush x:Key="AIPrimaryBrush" Color="{StaticResource Color.AI.Primary}" />
     <SolidColorBrush x:Key="AIBackgroundBrush" Color="{StaticResource Color.AI.Background}" />
 
+    <!-- ============ Color / Mask (遮罩层) ============ -->
+    <!-- design-tokens.md 未规定, 临时值 80% 黑 (Material Design Dialog scrim) -->
+    <Color x:Key="Color.Mask.Default">#CC000000</Color>
+    <SolidColorBrush x:Key="MaskBrush" Color="{StaticResource Color.Mask.Default}" />
+
     <!-- ============ Spacing (基础单位 4px) ============ -->
     <x:Double x:Key="Spacing.XS">4</x:Double>
     <x:Double x:Key="Spacing.SM">8</x:Double>

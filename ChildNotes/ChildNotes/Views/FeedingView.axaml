@@ -25,7 +25,7 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.date-nav:disabled">
-            <Setter Property="Foreground" Value="#BDBDBD" />
+            <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}" />
         </Style>
         <Style Selector="Button.date-nav:disabled /template/ ContentPresenter">
             <Setter Property="Background" Value="Transparent" />
@@ -57,7 +57,7 @@
             <StackPanel>
 
                 <!--  原版 date-bar: 白底，底部 1px 边框  -->
-                <Border Margin="0,0,0,8" Padding="12,12" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0"
+                <Border Margin="0,0,0,8" Padding="12,12" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}"
                         BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto,*">
                         <!--  原版 date-nav: 72rpx≈36px 圆形，48rpx≈24px 绿色箭头，font-weight:300，flex 居中  -->
@@ -69,7 +69,7 @@
                         <!--  原版 date-display: padding 0 20rpx，提供箭头与日期的间距  -->
                         <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center" Orientation="Horizontal"
                                     Spacing="6">
-                            <TextBlock VerticalAlignment="Center" FontSize="17" FontWeight="Bold" Foreground="#333333"
+                            <TextBlock VerticalAlignment="Center" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"
                                        Text="{Binding DisplayDate}" />
                             <TextBlock VerticalAlignment="Center" FontSize="12" Opacity="0.5" Text="📅" />
                         </StackPanel>
@@ -84,7 +84,7 @@
 
                 <!--  原版 today-btn: 浅绿底，绿色文字  -->
                 <Button Margin="0,0,0,8" Padding="0,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Background="#E8F9EF" BorderThickness="0"
+                        Background="{StaticResource BrandPrimaryLightBrush}" BorderThickness="0"
                         Command="{Binding GoTodayCommand}"
                         Content="{DynamicResource Feeding_GoToday}"
                         CornerRadius="0" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}"
@@ -209,18 +209,18 @@
                                     <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
                                         <!--  原版 card-left: 时间在左侧  -->
                                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                   FontSize="12" Foreground="#999999"
+                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
                                                    Text="{Binding TimeText}" />
                                         <!--  原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底  -->
                                         <Border Grid.Row="0" Grid.Column="1" Width="30" Height="30"
-                                                Margin="0,0,8,0" Background="#F9F9F9" CornerRadius="8">
+                                                Margin="0,0,8,0" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8">
                                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Text="{Binding Icon}" />
                                         </Border>
                                         <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontSize="14"
-                                                   FontWeight="Medium" Foreground="#333333"
+                                                   FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"
                                                    Text="{Binding TitleText}" />
                                         <TextBlock Grid.Row="0" Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                   FontSize="12" Foreground="#999999"
+                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
                                                    IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding SubText}" />
                                         <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
@@ -230,9 +230,9 @@
                                                    Text="{Binding ExtraText}" />
                                         <!--  备注（对齐小程序 card-note：浅灰背景块 + 深灰文字），从标题列开始对齐  -->
                                         <Border Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="4" Margin="0,6,0,0"
-                                                Padding="8,6" HorizontalAlignment="Left" Background="#F7F7F7" CornerRadius="6"
+                                                Padding="8,6" HorizontalAlignment="Left" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6"
                                                 IsVisible="{Binding NoteText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                            <TextBlock FontSize="12" Foreground="#666666" Text="{Binding NoteText}" TextWrapping="Wrap" />
+                                            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding NoteText}" TextWrapping="Wrap" />
                                         </Border>
                                     </Grid>
                                 </Border>
@@ -250,7 +250,7 @@
         </ScrollViewer>
 
         <Border Margin="0,0,0,80" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                Background="#CC000000" CornerRadius="8"
+                Background="{StaticResource MaskBrush}" CornerRadius="8"
                 IsVisible="{Binding ShowToast}">
             <TextBlock FontSize="13" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" />
         </Border>
