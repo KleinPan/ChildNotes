@@ -38,11 +38,11 @@ public partial class MainShellView : UserControl
     {
         base.OnDataContextChanged(e);
         DevLogger.Log("Shell", $"MainShellView.OnDataContextChanged: type={DataContext?.GetType().Name}");
-        if (DataContext is MainShellViewModel vm)
-        {
-            vm.ActivateHome();
-            DevLogger.Log("Shell", "MainShellView.OnDataContextChanged: ActivateHome done");
-        }
+        // 不在此处调用 vm.ActivateHome()：
+        // EnterMainShell/OnLoginSucceeded 已在创建 View 前调用 ActivateHomeAfterLogin()
+        // （含 Home.Activate()），此处再调会导致 Home.Activate 被触发两次，
+        // 造成 RefreshAsync 重复触发（虽有 2 秒防抖兜底，但仍浪费一次 Activate 开销）。
+        // DataContext 只在 new MainShellView 时设置一次，运行时不会重新设置，无需此处兜底。
     }
 
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)

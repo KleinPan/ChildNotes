@@ -138,13 +138,14 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         // UI 线程：属性赋值与集合更新（被取消则静默跳过）
         try
         {
-            // 后台线程：一次性查询所有需要的数据（可被后续 RefreshAsync 取消）
-            var snapshot = await Task.Run(() =>
+            // ===== 阶段 1：首屏必需数据（宝宝信息 + 今日记录 + 统计 + 上次喂奶 + 身高体重）=====
+            // 这些数据驱动 Core 卡片（宝宝名/今日统计/上次喂奶/身高体重）和 AI 状态卡片，
+            // 是用户首屏立刻可见的内容，必须尽快查询并 Apply。
+            var phase1 = await Task.Run(() =>
             {
                 ct.ThrowIfCancellationRequested();
                 // 去重复查询：启动时 TryRestoreSession 已调用 BabyService.LoadBabyList()
                 // 填充了 AppState.BabyList。此处优先复用缓存，仅在缓存为空时才重新加载。
-                // 原实现无条件 LoadBabyList() 导致启动时全表扫两次。
                 IReadOnlyList<Baby> babyList = appState.BabyList.Count > 0
                     ? appState.BabyList
                     : _babyService.LoadBabyList();
@@ -153,48 +154,56 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
                 ct.ThrowIfCancellationRequested();
                 if (baby is null)
                     return (Baby: (Baby?)null, TodayRecords: new List<ChildRecord>(),
-                            LatestFeed: (ChildRecord?)null, VaccineRecords: new List<ChildRecord>(),
-                            GrowthRecords: new List<ChildRecord>(),
-                            AbnormalRecords: new List<ChildRecord>(), Stats: (DayStats?)null);
+                            LatestFeed: (ChildRecord?)null, GrowthRecords: new List<ChildRecord>(),
+                            Stats: (DayStats?)null);
 
                 var todayRecords = _recordService.GetByDate(DateTime.Today);
                 var stats = _statsService.GetDayStats(DateTime.Today, todayRecords);
                 var latestFeed = _recordService.GetLatest(RecordType.Feed);
-                var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
                 var growthRecords = _recordService.GetByType(RecordType.Growth, 1);
-                var abnormalRecords = _recordService.GetByType(RecordType.Abnormal, 1);
                 return (Baby: (Baby?)baby, TodayRecords: todayRecords,
-                        LatestFeed: latestFeed, VaccineRecords: vaccineRecords,
-                        GrowthRecords: growthRecords,
-                        AbnormalRecords: abnormalRecords, Stats: (DayStats?)stats);
+                        LatestFeed: latestFeed, GrowthRecords: growthRecords, Stats: (DayStats?)stats);
             }, ct);
 
-            appState.CurrentBaby = snapshot.Baby;
-            DevLogger.Log("Home", $"RefreshAsync: baby={(snapshot.Baby is null ? "null" : snapshot.Baby.Name)}, db={sw.ElapsedMilliseconds}ms");
+            appState.CurrentBaby = phase1.Baby;
+            var tPhase1 = sw.ElapsedMilliseconds;
+            DevLogger.Log("Home", $"RefreshAsync phase1: baby={(phase1.Baby is null ? "null" : phase1.Baby.Name)}, db={tPhase1}ms");
 
-            if (snapshot.Baby is null)
+            if (phase1.Baby is null)
             {
                 Core.Reset();
                 VaccineTracking.Reset();
                 AbnormalTracking.ApplyAbnormal(null, new List<ChildRecord>());
                 AiStatus.Reset();
+                s_lastRefreshCompletedUtc = DateTime.UtcNow;
                 return;
             }
 
-            Core.ApplyBabyInfo(snapshot.Baby, _babyService.GetGrowthStageText());
-            Core.ApplyTodayStats(snapshot.Stats, snapshot.LatestFeed, snapshot.TodayRecords, snapshot.GrowthRecords);
-            AiStatus.RefreshAiStatus(snapshot.Stats, Core.BabyName);
+            // 阶段 1 Apply：立即更新首屏可见的 Core 卡片 + AI 状态
+            Core.ApplyBabyInfo(phase1.Baby, _babyService.GetGrowthStageText());
+            Core.ApplyTodayStats(phase1.Stats, phase1.LatestFeed, phase1.TodayRecords, phase1.GrowthRecords);
+            AiStatus.RefreshAiStatus(phase1.Stats, Core.BabyName);
 
-            var tVac = sw.ElapsedMilliseconds;
-            var birthDate = snapshot.Baby.BirthDate;
+            // ===== 阶段 2：非首屏数据（疫苗记录 + 异常记录）=====
+            // 这两个卡片由 IsInitialLayoutDone（100ms 后）控制显示，数据可以稍晚填充。
+            // 不阻塞阶段 1 的 UI 更新，后台继续查询。
+            var birthDate = phase1.Baby.BirthDate;
             var today = DateTime.Today;
-            VaccineTracking.ApplyVaccines(snapshot.VaccineRecords, birthDate, today);
-            var tAbn = sw.ElapsedMilliseconds;
-            AbnormalTracking.ApplyAbnormal(snapshot.Stats, snapshot.AbnormalRecords);
+            var phase2 = await Task.Run(() =>
+            {
+                ct.ThrowIfCancellationRequested();
+                var vaccineRecords = _recordService.GetByType(RecordType.Vaccine, 100);
+                var abnormalRecords = _recordService.GetByType(RecordType.Abnormal, 1);
+                return (VaccineRecords: vaccineRecords, AbnormalRecords: abnormalRecords);
+            }, ct);
+
+            var tPhase2 = sw.ElapsedMilliseconds;
+            VaccineTracking.ApplyVaccines(phase2.VaccineRecords, birthDate, today);
+            AbnormalTracking.ApplyAbnormal(phase1.Stats, phase2.AbnormalRecords);
 
             sw.Stop();
             s_lastRefreshCompletedUtc = DateTime.UtcNow; // 记录完成时间，用于最小间隔防抖
-            DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | vaccines={tAbn - tVac}ms abnormal={sw.ElapsedMilliseconds - tAbn}ms");
+            DevLogger.Log("Home", $"RefreshAsync(total) | total={sw.ElapsedMilliseconds}ms | phase1={tPhase1}ms phase2={tPhase2 - tPhase1}ms");
         }
         catch (OperationCanceledException)
         {
