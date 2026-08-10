@@ -23,7 +23,7 @@
             <Setter Property="BoxShadow" Value="0 2 10 0 #0A000000" />
         </Style>
         <Style Selector="Border.growth-card-add">
-            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="14,12" />
             <Setter Property="BorderBrush" Value="#DDDDDD" />
@@ -80,7 +80,7 @@
         <!--  照片删除按钮：圆形半透明黑底白字（对齐小程序 .g-photo-del）。
               覆盖 Button 默认主题，避免出现边框/默认背景。  -->
         <Style Selector="Button.photo-del-btn">
-            <Setter Property="Background" Value="#80000000" />
+            <Setter Property="Background" Value="{StaticResource MaskLightBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="11" />
             <Setter Property="Padding" Value="0" />
@@ -95,13 +95,13 @@
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.photo-del-btn:pressed /template/ ContentPresenter">
-            <Setter Property="Background" Value="#CC000000" />
+            <Setter Property="Background" Value="{StaticResource MaskBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
 
         <!--  照片添加按钮：虚线边框浅灰底（对齐小程序 .g-photo-add）  -->
         <Style Selector="Button.photo-add-btn">
-            <Setter Property="Background" Value="#FAFAFA" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
             <Setter Property="BorderBrush" Value="#D0D0D0" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
@@ -112,7 +112,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.photo-add-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#F0F0F0" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="#CCC" />
         </Style>
     </UserControl.Styles>
@@ -144,7 +144,7 @@
                                                 <TextBlock Classes="growth-date" Text="{Binding DateText}" />
                                             </Border>
                                         </Grid>
-                                        <Border Padding="10,8" Background="#F5F5F5" CornerRadius="4" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <Border Padding="10,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="4" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Classes="growth-content" Text="{Binding Content}" />
                                         </Border>
                                         <!--  照片缩略图网格（最多 4 张，本地路径同步加载，远程 URL 异步加载）  -->
@@ -156,7 +156,7 @@
                                             </ItemsControl.ItemsPanel>
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:MilestoneThumbItem">
-                                                    <Border Width="72" Height="72" Margin="0,0,6,6" Background="#F0F0F0"
+                                                    <Border Width="72" Height="72" Margin="0,0,6,6" Background="{StaticResource SurfaceDisabledBrush}"
                                                             CornerRadius="6" ClipToBounds="True"
                                                             PointerPressed="OnPhotoTap">
                                                         <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
@@ -230,13 +230,13 @@
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditTitle}" />
-                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="#F5F5F5" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
+                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
                                          Text="{Binding MilestoneEdit.Title}" />
                             </StackPanel>
                             <StackPanel>
                                 <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditContentLabel}" />
                                 <TextBox Height="100" Padding="12,8" VerticalContentAlignment="Top" AcceptsReturn="True"
-                                         Background="#F5F5F5" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
+                                         Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
                                          Text="{Binding MilestoneEdit.Content}"
                                          TextWrapping="Wrap" />
                             </StackPanel>
@@ -264,7 +264,7 @@
                                                         <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
                                                     </Border>
                                                     <!--  上传中指示器  -->
-                                                    <Border Background="#80000000" CornerRadius="6" IsVisible="{Binding IsUploading}">
+                                                    <Border Background="{StaticResource MaskLightBrush}" CornerRadius="6" IsVisible="{Binding IsUploading}">
                                                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
                                                                    FontSize="10" Foreground="{StaticResource SurfaceCardBrush}" Text="{DynamicResource Growth_Uploading}" />
                                                     </Border>
@@ -309,7 +309,7 @@
         </Panel>
 
         <!--  全屏图片预览弹窗（点击缩略图触发）  -->
-        <Panel IsVisible="{Binding IsPreviewOpen}" Background="#CC000000"
+        <Panel IsVisible="{Binding IsPreviewOpen}" Background="{StaticResource MaskBrush}"
                PointerPressed="OnPreviewBackgroundTap">
             <Grid>
                 <Image Source="{Binding PreviewCurrentBitmap}"
