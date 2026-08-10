@@ -47,6 +47,34 @@ public sealed class PointsApiClient : BaseApiClient
     }
 
     /// <summary>
+    /// 调后端签到 API（POST /api/points/sign-in），返回签到后的最新积分余额。
+    /// 后端签到是幂等的（今日已签到返回 ALREADY_SIGNED_IN 错误码）。
+    /// 失败（网络错误等）返回 null，调用方回退到本地签到。
+    /// </summary>
+    public async Task<SignInResult?> SignInAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            using var resp = await SendWithErrorAsync(_cfgRepo, HttpMethod.Post, "/api/points/sign-in", null, ct);
+            if (resp is null) return null;
+            if (!resp.IsSuccessStatusCode)
+            {
+                var (msg, code) = await ReadErrorAsync(resp, ct);
+                // ALREADY_SIGNED_IN 不算错误，返回 null 让调用方走本地回退（本地已签到会被跳过）
+                if (code == "ALREADY_SIGNED_IN") return new SignInResult { AlreadySignedIn = true };
+                throw new PointsApiException(msg, code);
+            }
+            var dto = await ReadDataAsync<SignInResult>(resp, ct);
+            return dto;
+        }
+        catch (PointsApiException) { throw; }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 领取日常任务奖励。成功返回领取结果；失败（任务未完成/已领取/网络错误）抛 <see cref="PointsApiException"/>。
     /// </summary>
     public async Task<ClaimTaskResult> ClaimTaskAsync(string taskKey, CancellationToken ct = default)
@@ -103,6 +131,16 @@ public sealed class ClaimTaskResult
     public int AwardedPoints { get; set; }
     public long Points { get; set; }
     public long TotalEarned { get; set; }
+}
+
+/// <summary>后端签到结果（对应 PointsDashboardResponse 的 data 字段）。</summary>
+public sealed class SignInResult
+{
+    public long Points { get; set; }
+    public long TotalEarned { get; set; }
+    public long TotalSpent { get; set; }
+    /// <summary>今日已签到（后端返回 ALREADY_SIGNED_IN 时为 true）。</summary>
+    public bool AlreadySignedIn { get; set; }
 }
 
 /// <summary>积分 API 业务异常：携带后端返回的错误码。</summary>

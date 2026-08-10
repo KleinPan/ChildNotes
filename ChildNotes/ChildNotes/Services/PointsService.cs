@@ -88,6 +88,16 @@ public sealed class PointsService
         return GetDashboard();
     }
 
+    /// <summary>
+    /// 用后端权威积分数据覆盖本地 SQLite（签到/任务领取等场景调用）。
+    /// 避免本地积分与后端不一致导致 AI 分析时后端扣分失败。
+    /// </summary>
+    public void SyncPointsFromServer(long points, long totalEarned, long totalSpent)
+    {
+        _repo.SetPoints(_state.UserId, points);
+        // total_earned/total_spent 同步可选，暂不处理避免引入复杂度
+    }
+
     private List<TaskItem> GetTasks()
     {
         var tasks = new List<TaskItem>

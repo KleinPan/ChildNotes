@@ -76,23 +76,45 @@ public partial class PointsViewModel : ViewModelBase
         foreach (var item in dashboard.Timeline) Timeline.Add(item);
     }
 
-    /// <summary>修复：原 SignIn 同步调 _pointsService.SignIn 阻塞 UI，改为后台线程执行。</summary>
+    /// <summary>
+    /// 签到：优先调后端 API（确保后端 PostgreSQL 积分同步，避免 AI 分析时后端积分不足）；
+    /// 后端不可用或未配置时回退到本地签到（仅写本地 SQLite）。
+    /// </summary>
     [RelayCommand]
     private async Task SignIn()
     {
         if (Signing || TodaySigned) return;
         Signing = true;
-        var dashboard = await Task.Run(() => _pointsService.SignIn());
-        Points = dashboard.Points;
-        TotalEarned = dashboard.TotalEarned;
-        TodaySigned = dashboard.TodaySigned;
-        ContinuousDays = dashboard.ContinuousDays;
+
+        // 先尝试后端签到（权威数据源）
+        var serverResult = await _pointsApi.SignInAsync();
+        if (serverResult is not null && !serverResult.AlreadySignedIn)
+        {
+            // 后端签到成功：用后端返回的积分覆盖本地 SQLite，确保本地显示与后端一致
+            await Task.Run(() => _pointsService.SyncPointsFromServer(serverResult.Points, serverResult.TotalEarned, serverResult.TotalSpent));
+            // 刷新本地 dashboard 获取签到时间线等信息
+            var dashboard = await Task.Run(() => _pointsService.GetDashboard());
+            ApplyDashboard(dashboard);
+            TodaySigned = true;
+            ContinuousDays = dashboard.ContinuousDays;
+            SignButtonText = "今日已签到";
+            DisplayToast($"签到成功 +{dashboard.TodayRewardPoints}分");
+            Signing = false;
+            return;
+        }
+
+        // 后端不可用 / 已签到 / 未配置：回退到本地签到
+        var localDashboard = await Task.Run(() => _pointsService.SignIn());
+        Points = localDashboard.Points;
+        TotalEarned = localDashboard.TotalEarned;
+        TodaySigned = localDashboard.TodaySigned;
+        ContinuousDays = localDashboard.ContinuousDays;
         SignButtonText = "今日已签到";
 
         Timeline.Clear();
-        foreach (var item in dashboard.Timeline) Timeline.Add(item);
+        foreach (var item in localDashboard.Timeline) Timeline.Add(item);
 
-        DisplayToast($"签到成功 +{dashboard.TodayRewardPoints}分");
+        DisplayToast($"签到成功 +{localDashboard.TodayRewardPoints}分");
         Signing = false;
     }
 

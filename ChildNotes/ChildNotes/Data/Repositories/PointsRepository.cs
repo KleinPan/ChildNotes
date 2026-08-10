@@ -97,6 +97,21 @@ public sealed class PointsRepository : BaseRepository
                 .Add("@uid", userId));
     }
 
+    /// <summary>
+    /// 直接覆盖积分余额为指定值（用于后端权威积分同步到本地）。
+    /// 不调整 total_earned/total_spent，只同步当前余额。
+    /// </summary>
+    public void SetPoints(string userId, long points)
+    {
+        GetOrCreate(userId);
+        ExecuteNonQuery(
+            "UPDATE user_points SET points=@p, updated_at=@t WHERE user_id=@uid",
+            cmd => cmd
+                .Add("@p", points)
+                .AddUtc("@t", DateTime.UtcNow)
+                .Add("@uid", userId));
+    }
+
     public SignInRecord? GetSignIn(string userId, DateTime date)
         => QueryFirstOrDefault(
             "SELECT id, user_id, sign_date, continuous_days, reward, created_at FROM sign_in_record WHERE user_id=@uid AND sign_date=@d",
