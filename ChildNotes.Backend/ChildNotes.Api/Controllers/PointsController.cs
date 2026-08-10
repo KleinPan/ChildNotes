@@ -57,4 +57,17 @@ public class PointsController : AppBaseController
     [HttpGet("invite-records")]
     public async Task<List<InviteRecordDto>> InviteRecords(CancellationToken ct)
         => await _invite.GetInviteRecordsAsync(ct);
+
+    /// <summary>获取任务列表（含完成/领取状态）。前端任务赚积分页面用。</summary>
+    [HttpGet("tasks")]
+    public async Task<List<TaskTemplateDto>> Tasks(CancellationToken ct)
+        => await _points.GetTasksAsync(ct);
+
+    /// <summary>
+    /// 领取日常任务奖励。任务未完成或已领取返回 400 + 业务错误码。
+    /// 成功返回本次奖励积分和最新余额。
+    /// </summary>
+    [HttpPost("tasks/{taskKey}/claim")]
+    public async Task<ClaimTaskResponse> ClaimTask(string taskKey, CancellationToken ct)
+        => await _points.ClaimTaskAsync(taskKey, ct);
 }

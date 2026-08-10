@@ -91,4 +91,19 @@ public class TaskTemplateDto
     public string Description { get; set; } = string.Empty;
     public int Points { get; set; }
     public string Action { get; set; } = "share";
+    /// <summary>任务是否已完成（达成条件但尚未领取奖励）。用于日常任务（记录/喂奶/尿布/成长）。</summary>
+    public bool IsCompleted { get; set; }
+    /// <summary>任务奖励是否已领取。已领取则不可再次领取。邀请等任务完成即入账，此值为 true。</summary>
+    public bool IsClaimed { get; set; }
+}
+
+/// <summary>领取任务奖励响应。</summary>
+public class ClaimTaskResponse
+{
+    /// <summary>本次领取的积分数量。</summary>
+    public int AwardedPoints { get; set; }
+    /// <summary>领取后的最新积分余额。</summary>
+    public long Points { get; set; }
+    /// <summary>领取后的最新累计获得积分。</summary>
+    public long TotalEarned { get; set; }
 }

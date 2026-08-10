@@ -101,7 +101,23 @@
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>
                                         <TextBlock Text="{Binding Desc}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Background="#E8F9EF" CornerRadius="12" Padding="10,4" VerticalAlignment="Center">
+                                    <!-- 已领取：显示"已领取"灰色标签 -->
+                                    <Border Grid.Column="1" Background="#F0F0F0" CornerRadius="12" Padding="10,4"
+                                            VerticalAlignment="Center" IsVisible="{Binding IsClaimed}">
+                                        <TextBlock Text="已领取" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                    </Border>
+                                    <!-- 可领取：显示"领取"按钮 -->
+                                    <Button Grid.Column="1" Content="领取"
+                                            Classes="weui-btn primary" CornerRadius="14" Padding="14,4"
+                                            FontSize="13" VerticalAlignment="Center"
+                                            IsVisible="{Binding CanClaim}"
+                                            IsEnabled="{Binding !Claiming}"
+                                            Command="{Binding ClaimCommand}"
+                                            CommandParameter="{Binding}"/>
+                                    <!-- 未完成且未领取：显示奖励数值标签 -->
+                                    <Border Grid.Column="1" Background="#E8F9EF" CornerRadius="12" Padding="10,4"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding ShowRewardLabel}">
                                         <TextBlock Text="{Binding RewardText}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" FontWeight="SemiBold"/>
                                     </Border>
                                 </Grid>

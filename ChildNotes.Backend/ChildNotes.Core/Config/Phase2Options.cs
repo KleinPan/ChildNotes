@@ -70,6 +70,15 @@ public static class PointsConstants
     {
         return SignInBonusRewards.TryGetValue(cycleDay, out var bonus) ? bonus : BaseSignInReward;
     }
+
+    /// <summary>日常任务奖励积分（每日/每周重置，需手动领取）。</summary>
+    public static readonly IReadOnlyDictionary<string, int> DailyTaskRewards = new Dictionary<string, int>
+    {
+        { "daily_record", 5 },   // 每日记录：记录一条宝宝数据
+        { "daily_feed", 3 },      // 喂奶打卡：记录一次喂奶
+        { "daily_diaper", 2 },    // 换尿布打卡：记录一次换尿布
+        { "weekly_growth", 20 },  // 每周成长：记录一次身高体重
+    };
 }
 
 /// <summary>
