@@ -20,7 +20,9 @@ public sealed class BabyRepository : BaseRepository
 
     public string Insert(Baby baby)
     {
-        baby.Id = Guid.NewGuid().ToString("N");
+        // 宝宝 ID 用户可见（用于加入家庭），截取 GUID 前 8 位缩短显示。
+        // 16^8=42 亿组合，用户量远小于此，冲突概率可忽略；后期用户上来再加后端唯一性校验。
+        baby.Id = Guid.NewGuid().ToString("N")[..8];
         ExecuteNonQuery(
             @"INSERT INTO baby (id, user_id, name, avatar, gender, birth_date, created_at, updated_at)
               VALUES (@i, @u, @n, @a, @g, @b, @c, @c)",

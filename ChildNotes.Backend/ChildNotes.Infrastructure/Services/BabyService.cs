@@ -55,7 +55,9 @@ public class BabyService : IBabyService
         var uid = _current.RequireUserId();
         var baby = new Baby
         {
-            Id = Guid.NewGuid().ToString("N"),
+            // 宝宝 ID 用户可见（用于加入家庭），截取 GUID 前 8 位缩短显示。
+            // 16^8=42 亿组合，用户量远小于此，冲突概率可忽略；后期用户上来再加唯一性校验。
+            Id = Guid.NewGuid().ToString("N")[..8],
             UserId = uid,
             Name = string.IsNullOrWhiteSpace(req.Name) ? "宝宝" : req.Name,
             Avatar = req.Avatar ?? string.Empty,
