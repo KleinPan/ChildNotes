@@ -975,8 +975,9 @@ public static class AiNoteRuleParser
     /// <summary>
     /// 系统默认补充剂标签（与前端 SupplementFormViewModel.SupplementCommonItems 一致）。
     /// 前后端共享，确保 server/local 两种解析路径返回的名称规范一致。
+    /// 维D类统一为"维生素D3"，"维生素D"/"维D"/"维D3"作为别名由 NormalizeSupplementAlias 归一。
     /// </summary>
-    public static readonly string[] DefaultSupplementNames = { "维生素D", "维生素D3", "益生菌", "DHA", "钙剂", "铁剂" };
+    public static readonly string[] DefaultSupplementNames = { "维生素D3", "益生菌", "DHA", "钙剂", "铁剂" };
 
     /// <summary>
     /// 系统默认用药标签（与前端 SupplementFormViewModel.MedicineCommonItems 一致）。
@@ -984,12 +985,25 @@ public static class AiNoteRuleParser
     public static readonly string[] DefaultMedicineNames = { "泰诺林", "布洛芬", "美林", "蒙脱石散", "口服补液盐" };
 
     /// <summary>
+    /// 维D类补充剂的别名归一映射（输入 → 规范名）。
+    /// 仅列维D相关别名，避免误伤"维生素AD"/"维生素A"等不同物质。
+    /// 在 ResolveSupplementName 入口先做精确归一，再走候选匹配。
+    /// </summary>
+    private static readonly Dictionary<string, string> SupplementAliasMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["维生素D"] = "维生素D3",
+        ["维D"] = "维生素D3",
+        ["维D3"] = "维生素D3",
+        ["维生素D3"] = "维生素D3",
+    };
+
+    /// <summary>
     /// 常见补充剂/营养品知识库（用于 AI 解析时名称补全，比表单默认标签更全）。
     /// 仅含药品通用名/通用类别名，不含品牌名（如伊可新、星鲨、妈咪爱等）。
     /// </summary>
     public static readonly string[] CommonSupplementKnowledge = DefaultSupplementNames.Concat(new[]
     {
-        "维生素AD", "维生素A", "维生素D3",
+        "维生素AD", "维生素A",
         "维生素K1", "复合维生素", "鱼肝油",
         "乳酸菌", "双歧杆菌", "枯草杆菌二联活菌",
         "藻油DHA", "ARA",
@@ -1039,6 +1053,11 @@ public static class AiNoteRuleParser
         if (string.IsNullOrWhiteSpace(aiName)) return aiName;
         var raw = aiName.Trim();
 
+        // 维D类别名归一："维生素D"/"维D"/"维D3" → "维生素D3"
+        // 放在候选匹配前，确保所有路径返回统一名称，避免"维D"被包含匹配到"维生素D"等旧值
+        if (SupplementAliasMap.TryGetValue(raw, out var normalized))
+            return normalized;
+
         var isMedicine = subType == "medicine";
         var knowledgeSameType = isMedicine ? CommonMedicineKnowledge : CommonSupplementKnowledge;
         var knowledgeCrossType = isMedicine ? CommonSupplementKnowledge : CommonMedicineKnowledge;
@@ -1055,7 +1074,7 @@ public static class AiNoteRuleParser
             string.Equals(c, raw, StringComparison.OrdinalIgnoreCase));
         if (exact is not null) return exact;
 
-        // 2. 包含匹配：AI 名称是某标签的子串（如"维D"匹配"维生素D"），或反过来
+        // 2. 包含匹配：AI 名称是某标签的子串（如"维D3"匹配"维生素D3"），或反过来
         // 优先选最长的匹配项（更具体）
         var contains = candidates
             .Where(c => c.Contains(raw, StringComparison.OrdinalIgnoreCase)

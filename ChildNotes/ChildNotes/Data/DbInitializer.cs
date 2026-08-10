@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using ChildNotes.Infrastructure;
 using Microsoft.Data.Sqlite;
 
@@ -9,8 +10,9 @@ public static class DbInitializer
     /// 当前 DB schema 版本号，配合 PRAGMA user_version 使用。
     /// 新增表/列/索引时递增此版本号，已迁移到该版本的 DB 启动时跳过全部 DDL。
     /// v1→v2：新增 reminder_config 表。
+    /// v2→v3：数据归一 — 维D类补充剂名称统一为"维生素D3"（child_record.payload_json + user_supplement_item.name）。
     /// </summary>
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -316,6 +318,16 @@ INSERT OR IGNORE INTO reminder_config (id, feed_reminder_enabled, feed_interval_
 VALUES (1, 1, 3, 1, 4);
 ");
 
+        // ===== v3 数据归一：维D类补充剂名称统一为"维生素D3" =====
+        // 仅在从 v2 升级到 v3 时执行（新库 user_version=0 → 3 也会走一遍，新库无数据无副作用）。
+        // 作用对象：
+        //   1) child_record.payload_json 中 record_type='supplement' 记录的 Name 字段
+        //      （Name 可能是合并格式如"维生素D、DHA"，按分隔符切分后逐项归一再 join）
+        //   2) user_supplement_item.name 中 type='supplement' 的自定义项
+        // 别名映射：维生素D / 维D / 维D3 → 维生素D3
+        // 注意：不处理"维生素AD"/"维生素A"等不同物质（无别名映射条目）。
+        NormalizeVitaminDNames(conn);
+
         // 全部 DDL 执行完成，写入 schema 版本号，后续启动跳过 DDL
         SetUserVersion(conn, CurrentSchemaVersion);
         DevLogger.Log("DB", $"DbInitializer.Initialize done (user_version set to {CurrentSchemaVersion})");
@@ -348,6 +360,136 @@ VALUES (1, 1, 3, 1, 4);
     private static void ClearRunningSyncLog(SqliteConnection conn)
     {
         conn.ExecuteNonQuery("UPDATE sync_log SET status='failed', message=COALESCE(message,'') || '（上次未完成，已重置）' WHERE status='running';");
+    }
+
+    /// <summary>
+    /// v3 数据归一：将维D类补充剂名称统一为"维生素D3"。
+    /// 别名 → 规范名：维生素D / 维D / 维D3 → 维生素D3。
+    /// 处理对象：
+    ///   1) child_record.payload_json（record_type='supplement'）的 Name 字段
+    ///      — Name 可能是合并格式（如"维生素D、DHA"），按分隔符切分后逐项归一再 join
+    ///   2) user_supplement_item.name（type='supplement'）
+    /// 使用 JsonNode 解析 payload_json，避免 SQL REPLACE 误伤"维生素AD"/"维生素A"等子串。
+    /// 幂等：已是"维生素D3"的记录不会被修改（归一后值与原值相同，UPDATE 写入相同值）。
+    /// </summary>
+    private static void NormalizeVitaminDNames(SqliteConnection conn)
+    {
+        // 别名 → 规范名（与 AiNoteRuleParser.SupplementAliasMap 保持一致）
+        // 不含"维生素AD"/"维生素A"等不同物质
+        var aliasMap = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["维生素D"] = "维生素D3",
+            ["维D"] = "维生素D3",
+            ["维D3"] = "维生素D3",
+        };
+        var separators = new[] { '、', ',', '，' };
+
+        // 1) 归一 child_record.payload_json 中 supplement 记录的 Name 字段
+        var rows = new List<(string id, string payload)>();
+        using (var selectCmd = conn.CreateCommand())
+        {
+            selectCmd.CommandText = "SELECT id, payload_json FROM child_record WHERE record_type='supplement' AND payload_json IS NOT NULL;";
+            using var r = selectCmd.ExecuteReader();
+            while (r.Read())
+            {
+                rows.Add((r.GetString(0), r.GetString(1)));
+            }
+        }
+
+        int updatedRecords = 0;
+        using var updateCmd = conn.CreateCommand();
+        updateCmd.CommandText = "UPDATE child_record SET payload_json=@pj, updated_at=@t WHERE id=@id;";
+        var pjParam = updateCmd.Parameters.Add("@pj", SqliteType.Text);
+        var tParam = updateCmd.Parameters.Add("@t", SqliteType.Text);
+        var idParam = updateCmd.Parameters.Add("@id", SqliteType.Text);
+        var nowUtc = DateTime.UtcNow.ToString("o");
+
+        foreach (var (id, payload) in rows)
+        {
+            JsonNode? node;
+            try { node = JsonNode.Parse(payload); }
+            catch { continue; } // JSON 解析失败跳过，不破坏原数据
+            if (node is null) continue;
+
+            var nameNode = node["name"];
+            if (nameNode is null) continue;
+            var nameValue = nameNode.GetValue<string?>();
+            if (string.IsNullOrEmpty(nameValue)) continue;
+
+            // 按分隔符切分，逐项归一，再 join
+            var parts = nameValue.Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                                 .Select(p => p.Trim())
+                                 .ToList();
+            bool changed = false;
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (aliasMap.TryGetValue(parts[i], out var normalized))
+                {
+                    parts[i] = normalized;
+                    changed = true;
+                }
+            }
+            if (!changed) continue;
+
+            var newName = string.Join("、", parts);
+            node["name"] = newName;
+            var newPayload = node.ToJsonString();
+
+            pjParam.Value = newPayload;
+            tParam.Value = nowUtc;
+            idParam.Value = id;
+            updateCmd.ExecuteNonQuery();
+            updatedRecords++;
+        }
+
+        // 2) 归一 user_supplement_item.name（type='supplement'）
+        //    name 字段是单个名称（不支持合并格式），直接精确匹配别名
+        var itemRows = new List<(string id, string name)>();
+        using (var selectItemCmd = conn.CreateCommand())
+        {
+            selectItemCmd.CommandText = "SELECT id, name FROM user_supplement_item WHERE type='supplement';";
+            using var r = selectItemCmd.ExecuteReader();
+            while (r.Read())
+            {
+                itemRows.Add((r.GetString(0), r.GetString(1)));
+            }
+        }
+
+        int updatedItems = 0;
+        int deletedDuplicates = 0;
+        using var updateItemCmd = conn.CreateCommand();
+        updateItemCmd.CommandText = "UPDATE user_supplement_item SET name=@n WHERE id=@id;";
+        var nParam = updateItemCmd.Parameters.Add("@n", SqliteType.Text);
+        var itemIdParam = updateItemCmd.Parameters.Add("@id", SqliteType.Text);
+        using var deleteItemCmd = conn.CreateCommand();
+        deleteItemCmd.CommandText = "DELETE FROM user_supplement_item WHERE id=@id;";
+        var delIdParam = deleteItemCmd.Parameters.Add("@id", SqliteType.Text);
+
+        foreach (var (id, name) in itemRows)
+        {
+            if (!aliasMap.TryGetValue(name, out var normalized)) continue;
+            nParam.Value = normalized;
+            itemIdParam.Value = id;
+            try
+            {
+                updateItemCmd.ExecuteNonQuery();
+                updatedItems++;
+            }
+            catch (SqliteException)
+            {
+                // UNIQUE 约束冲突：该用户已有"维生素D3"项，删除冗余的旧"维生素D"行
+                delIdParam.Value = id;
+                deleteItemCmd.ExecuteNonQuery();
+                deletedDuplicates++;
+            }
+        }
+
+        // 归一后可能产生重复的 user_supplement_item（如某用户原有"维生素D"和"维生素D3"两项），
+        // 因 (user_id, type, name) UNIQUE 约束，UPDATE 会失败。处理策略：删除冗余行，保留已存在的"维生素D3"项。
+        if (updatedRecords > 0 || updatedItems > 0 || deletedDuplicates > 0)
+        {
+            DevLogger.Log("DB", $"NormalizeVitaminDNames: {updatedRecords} child_record, {updatedItems} user_supplement_item updated, {deletedDuplicates} duplicates deleted");
+        }
     }
 
     /// <summary>

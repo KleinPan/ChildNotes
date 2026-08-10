@@ -39,7 +39,7 @@ public sealed class AiNoteParseService
 - feed 子类型: bottle/breast/expressed
 - diaper: 换尿布（含大小便相关表述，如"大便/便便/拉屎/拉了/臭臭/粑粑/拉臭/尿尿/嘘嘘"均归此类型）
 - diaper 子类型(diaperType): wet/dirty/both/dry
-- supplement: 用药/营养补充（维D、益生菌、药品等；不含喝水）；子类型: medicine/nutrition
+- supplement: 用药/营养补充（维D3、益生菌、药品等；不含喝水）；子类型: medicine/nutrition
 - water: 喝水（独立类型，amount=水量ml）
 - activity 子类型: play/outdoor/exercise
 
@@ -103,7 +103,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 
 关键规则：
 - "喝奶/吃奶/喂奶" → feed；"喝水/喝10ml水" → water（amount=水量ml）
-- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=数值如"0.5"，doseUnit=单位如"包"）；"维D/益生菌" → supplement/nutrition
+- "吃药/吃半包XX颗粒" → supplement/medicine（name=药品名，dose=数值如"0.5"，doseUnit=单位如"包"）；"维D3/益生菌" → supplement/nutrition
 - "大便/便便/拉屎/拉了/臭臭/粑粑/拉臭" → diaper/dirty；"尿尿/嘘嘘/尿了" → diaper/wet；"又尿又拉" → diaper/both
 - 时间"11点半"=11:30，"半"在分钟位表示30分
 - 12 小时制时间解析（重要，取最近的过去时刻）：

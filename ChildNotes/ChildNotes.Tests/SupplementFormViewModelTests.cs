@@ -63,7 +63,7 @@ public class SupplementFormViewModelTests
     {
         var vm = new SupplementFormViewModel();
         vm.SupplementCommonItems[0].IsSelected = true;
-        Assert.Equal("维生素D", vm.Name);
+        Assert.Equal("维生素D3", vm.Name);
         vm.SwitchType("medicine");
         Assert.Equal(string.Empty, vm.Name);
     }
@@ -96,13 +96,13 @@ public class SupplementFormViewModelTests
     }
 
     /// <summary>
-    /// 补充剂默认项应为 5 项（对齐小程序 DEFAULT_SUPPLEMENTS）
+    /// 补充剂默认项应为 5 项（统一为维生素D3，对齐规范名）
     /// </summary>
     [Fact]
     public void SupplementCommonItems_ShouldHave5Defaults()
     {
         var vm = new SupplementFormViewModel();
-        var expected = new[] { "维生素D", "益生菌", "DHA", "钙剂", "铁剂" };
+        var expected = new[] { "维生素D3", "益生菌", "DHA", "钙剂", "铁剂" };
         Assert.Equal(expected, vm.SupplementCommonItems.Select(x => x.Name).ToArray());
     }
 
@@ -153,10 +153,10 @@ public class SupplementFormViewModelTests
     {
         var vm = new SupplementFormViewModel();
         vm.SupplementCommonItems[0].IsSelected = true;
-        Assert.Equal("维生素D", vm.Name);
+        Assert.Equal("维生素D3", vm.Name);
 
         vm.SupplementCommonItems[2].IsSelected = true;
-        Assert.Equal("维生素D、DHA", vm.Name);
+        Assert.Equal("维生素D3、DHA", vm.Name);
 
         // 取消勾选应同步移除
         vm.SupplementCommonItems[0].IsSelected = false;
@@ -191,16 +191,16 @@ public class SupplementFormViewModelTests
     public void SelectDefaultAndAddCustom_Name_ShouldMergeAndValidate()
     {
         var vm = new SupplementFormViewModel();
-        vm.SupplementCommonItems[0].IsSelected = true;   // 维生素D
+        vm.SupplementCommonItems[0].IsSelected = true;   // 维生素D3
         vm.CustomItem = "鱼肝油";
         vm.AddCustomItem();
 
-        Assert.Equal("维生素D、鱼肝油", vm.Name);
+        Assert.Equal("维生素D3、鱼肝油", vm.Name);
         Assert.True(vm.Validate(out var error));
         Assert.Equal(string.Empty, error);
 
         var dto = vm.BuildDto();
-        Assert.Equal("维生素D、鱼肝油", dto.Name);
+        Assert.Equal("维生素D3、鱼肝油", dto.Name);
     }
 
     /// <summary>
@@ -223,7 +223,7 @@ public class SupplementFormViewModelTests
     public void AddCustomItem_DuplicateWithDefault_ShouldFail()
     {
         var vm = new SupplementFormViewModel();
-        vm.CustomItem = "维生素D";  // 与默认项同名
+        vm.CustomItem = "维生素D3";  // 与默认项同名
         vm.AddCustomItem();
 
         Assert.Equal("该名称已存在", vm.ErrorMessage);

@@ -59,10 +59,9 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     /// <summary>当前可选单位列表（默认 + 自定义），供 UI 绑定</summary>
     public ObservableCollection<CommonItemViewModel> AllDoseUnitItems { get; } = new();
 
-    /// <summary>系统默认补充剂项（6项，对齐小程序 DEFAULT_SUPPLEMENTS + 维生素D3）</summary>
+    /// <summary>系统默认补充剂项（5项，统一使用"维生素D3"作为维D类补充剂的规范名）</summary>
     public ObservableCollection<CommonItemViewModel> SupplementCommonItems { get; } = new(new[]
     {
-        new CommonItemViewModel("维生素D"),
         new CommonItemViewModel("维生素D3"),
         new CommonItemViewModel("益生菌"),
         new CommonItemViewModel("DHA"),
