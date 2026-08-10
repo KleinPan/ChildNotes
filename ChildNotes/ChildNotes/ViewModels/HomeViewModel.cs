@@ -34,6 +34,10 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
 
     public HomeViewModel()
     {
+        // ★ 启动埋点 P0：测量 HomeViewModel 构造耗时（含 4 个子 VM 创建 + 事件订阅）
+        var ctorSw = System.Diagnostics.Stopwatch.StartNew();
+        DevLogger.Log("Startup", "HomeViewModel ctor start");
+
         Core = new HomeCoreViewModel();
         VaccineTracking = new VaccineTrackingViewModel();
         AbnormalTracking = new AbnormalTrackingViewModel();
@@ -48,6 +52,9 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
         ForwardPropertyChanged(AiStatus);
         ForwardPropertyChanged(VaccineTracking);
         ForwardPropertyChanged(AbnormalTracking);
+
+        ctorSw.Stop();
+        DevLogger.Log("Startup", $"HomeViewModel ctor done: {ctorSw.ElapsedMilliseconds}ms");
     }
 
     /// <summary>

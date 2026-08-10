@@ -36,6 +36,12 @@ public class MainActivity : AvaloniaMainActivity
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // ★ 启动埋点 P0：记录 Android Activity 入口时间（用户点击图标 → 此处）
+        // 用于测量 .NET Runtime 初始化 + Avalonia native 库加载 + Application.OnCreate 的总耗时
+        // 此处 DevLogger 尚未初始化，用 Android logcat 直接输出
+        var onCreateSw = System.Diagnostics.Stopwatch.StartNew();
+        Log.Info("ChildNotes", "[Startup] MainActivity.OnCreate start");
+
         // 必须在 base.OnCreate 之前安装 SplashScreen，否则不生效
         // 用完全限定名避免命名冲突（IDE 可能将 SplashScreen 误解析为其他类型）
         var splashScreen = AndroidX.Core.SplashScreen.SplashScreen.InstallSplashScreen(this);
@@ -106,7 +112,8 @@ public class MainActivity : AvaloniaMainActivity
         // 系统启动屏消失，立即显示 AvaloniaView 渲染的 LoadingView/隐私协议视图。
         // 不引入人为延迟，启动尽可能快。
         _isAvaloniaReady = true;
-        Log.Info("ChildNotes", "[Startup] MainActivity.OnCreate done, releasing splash screen");
+        onCreateSw.Stop();
+        Log.Info("ChildNotes", $"[Startup] MainActivity.OnCreate done: {onCreateSw.ElapsedMilliseconds}ms (splash released)");
     }
 
     /// <summary>

@@ -339,6 +339,11 @@ public partial class MainShellViewModel : ViewModelBase
 
     public MainShellViewModel()
     {
+        // ★ 启动埋点 P0：测量 MainShellViewModel 构造耗时（含立即创建的 4 个 VM）
+        // 懒加载改造后此处仅创建 Home/RecordSheet/QuickMenu/QuickInput，其余 VM 懒加载
+        var ctorSw = System.Diagnostics.Stopwatch.StartNew();
+        DevLogger.Log("Startup", "MainShellViewModel ctor start");
+
         // ===== 启动必需：立即创建 =====
         // Home：构造完成后立即 ActivateHomeAfterLogin() 会调用 Home.Activate()，必须立即可用
         Home = new HomeViewModel();
@@ -379,6 +384,9 @@ public partial class MainShellViewModel : ViewModelBase
         // 构造完成，开启返回拦截状态通知并初始化基线
         _lastInterceptBack = ShouldInterceptBack;
         _isNotifyingBack = true;
+
+        ctorSw.Stop();
+        DevLogger.Log("Startup", $"MainShellViewModel ctor done: {ctorSw.ElapsedMilliseconds}ms");
     }
 
     [RelayCommand]
