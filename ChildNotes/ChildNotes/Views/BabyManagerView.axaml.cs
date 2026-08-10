@@ -229,10 +229,11 @@ public partial class BabyManagerView : UserControl
 
     /// <summary>
     /// 复制当前编辑宝宝的 ID 到剪贴板：主人可发送给家人用于加入家庭。
+    /// 通过 TopLevel.GetTopLevel 从按钮控件获取 TopLevel，桌面/Android 通用。
     /// </summary>
     private async void OnCopyEditingIdTap(object? sender, RoutedEventArgs e)
     {
-        if (Vm is { } vm) await vm.CopyEditingIdAsync();
+        if (Vm is { } vm) await vm.CopyEditingIdAsync(TopLevel.GetTopLevel(sender as Visual));
     }
 }
 

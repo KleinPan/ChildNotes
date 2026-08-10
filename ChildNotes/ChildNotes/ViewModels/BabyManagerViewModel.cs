@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -168,8 +169,9 @@ public partial class BabyManagerViewModel : ViewModelBase
     /// <summary>
     /// 复制当前编辑/删除上下文中宝宝的 ID（EditingId 字段）到系统剪贴板。
     /// 宝宝主人可发送给家人，家人凭此 ID 在「家人管理」中加入家庭。
+    /// 由 View 通过 TopLevel.GetTopLevel(sender) 获取 TopLevel 并传入，桌面/Android 通用。
     /// </summary>
-    public async Task CopyEditingIdAsync()
+    public async Task CopyEditingIdAsync(TopLevel? topLevel)
     {
         var id = EditingId;
         if (string.IsNullOrWhiteSpace(id))
@@ -177,7 +179,7 @@ public partial class BabyManagerViewModel : ViewModelBase
             DisplayToast(_locale.GetString("BabyMgr_IdEmpty", "宝宝 ID 为空"));
             return;
         }
-        var clipboard = ServiceProvider.Instance.MainView?.Clipboard;
+        var clipboard = topLevel?.Clipboard;
         if (clipboard is null)
         {
             DisplayToast(_locale.GetString("BabyMgr_ClipUnavailable", "剪贴板不可用"));

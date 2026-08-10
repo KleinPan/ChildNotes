@@ -38,10 +38,11 @@ public partial class FamilyView : UserControl
 
     /// <summary>
     /// 复制宝宝 ID 到剪贴板：宝宝主人可发送给家人，家人凭此 ID 加入家庭。
+    /// 通过 TopLevel.GetTopLevel 从按钮控件获取 TopLevel，桌面/Android 通用。
     /// </summary>
     private async void OnCopyBabyIdTap(object? sender, RoutedEventArgs e)
     {
-        if (sender is Control { Tag: string babyId } && DataContext is FamilyViewModel vm)
-            await vm.CopyBabyIdAsync(babyId);
+        if (sender is Control { Tag: string babyId } control && DataContext is FamilyViewModel vm)
+            await vm.CopyBabyIdAsync(babyId, TopLevel.GetTopLevel(control));
     }
 }

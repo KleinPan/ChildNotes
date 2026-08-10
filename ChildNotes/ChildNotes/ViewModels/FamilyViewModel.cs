@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -171,16 +172,17 @@ public partial class FamilyViewModel : ViewModelBase
 
     /// <summary>
     /// 复制指定宝宝 ID 到系统剪贴板，并提示用户。
-    /// 通过 TopLevel 代理获取 Clipboard，避免 ViewModel 直接依赖 Avalonia 控件。
+    /// 由 View 通过 TopLevel.GetTopLevel(sender) 获取 TopLevel 并传入，
+    /// 桌面端和 Android 端通用（Android 端 RootContainer 是 UserControl，ServiceProvider.MainView 未赋值）。
     /// </summary>
-    public async Task CopyBabyIdAsync(string babyId)
+    public async Task CopyBabyIdAsync(string babyId, TopLevel? topLevel)
     {
         if (string.IsNullOrWhiteSpace(babyId))
         {
             DisplayToast("宝宝 ID 为空");
             return;
         }
-        var clipboard = ServiceProvider.Instance.MainView?.Clipboard;
+        var clipboard = topLevel?.Clipboard;
         if (clipboard is null)
         {
             DisplayToast("剪贴板不可用");
