@@ -82,6 +82,18 @@ public sealed class ServiceProvider
         AppState = new AppState();
         UserRepository = new UserRepository(DbFactory);
         var babyRepo = new BabyRepository(DbFactory);
+        // 一次性迁移：把旧 32 位 baby.id 截短为 8 位，必须在同步前执行。
+        // 幂等：已是 8 位的记录不受影响。详见 BabyRepository.MigrateShortBabyIds。
+        try
+        {
+            var migrated = babyRepo.MigrateShortBabyIds();
+            if (migrated > 0)
+                DevLogger.Log("DI", $"BabyId migrated: {migrated} 条");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("DI", $"BabyId 迁移失败: {ex.Message}");
+        }
         var recordRepo = new RecordRepository(DbFactory);
         SessionRepository = new SessionRepository(DbFactory);
         AuthService = new AuthService(UserRepository, SessionRepository, AppState, SyncConfigRepository);
