@@ -110,7 +110,7 @@
         </ScrollViewer>
 
         <!-- 加入家庭弹窗 -->
-        <Border Grid.RowSpan="2" Background="#88000000" IsVisible="{Binding IsJoinOpen}">
+        <Border Grid.RowSpan="2" Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsJoinOpen}">
             <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="12"
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
@@ -144,7 +144,7 @@
         </Border>
 
         <!-- 修改角色弹窗 -->
-        <Border Grid.RowSpan="2" Background="#88000000" IsVisible="{Binding IsRoleEditorOpen}">
+        <Border Grid.RowSpan="2" Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsRoleEditorOpen}">
             <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="12"
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
@@ -175,7 +175,7 @@
 
         <!-- Toast -->
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
             <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>

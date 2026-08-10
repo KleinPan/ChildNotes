@@ -9,7 +9,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.BabyManagerView"
              x:DataType="vm:BabyManagerViewModel"
-             Background="#80000000">
+             Background="{StaticResource MaskLightBrush}">
 
     <UserControl.Styles>
         <!-- 抽屉动画由 code-behind 用 Animation KeyFrame API 驱动，无需 XAML Transitions -->
@@ -18,23 +18,23 @@
             <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="MinHeight" Value="40"/>
-            <Setter Property="Background" Value="#F5F5F5"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
         <Style Selector="Button.gender-btn.active">
-            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.gender-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
         </Style>
         <Style Selector="Button.gender-btn.active:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#E8F9EF"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -72,7 +72,7 @@
                                     <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="14,12"
                                             PointerPressed="OnBabyItemTapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="#E8F9EF" VerticalAlignment="Center" ClipToBounds="True">
+                                            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrandPrimaryLightBrush}" VerticalAlignment="Center" ClipToBounds="True">
                                                 <Panel>
                                                     <!-- 有头像时显示图片 -->
                                                     <Image Source="{Binding Avatar, Converter={x:Static v:AppConverters.AvatarPathToBitmap}}"
@@ -87,7 +87,7 @@
                                                 <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
                                                 <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
                                             </StackPanel>
-                                            <Border Grid.Column="2" Background="#1A07C160" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
+                                            <Border Grid.Column="2" Background="{StaticResource BrandPrimaryAlpha10Brush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
                                                     IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
                                                 <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"/>
                                             </Border>
@@ -101,7 +101,7 @@
                 </ScrollViewer>
 
                 <!-- 底部添加按钮 -->
-                <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Padding="16,12">
+                <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0" Padding="16,12">
                     <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary" CornerRadius="24"
                             HorizontalAlignment="Stretch" MinHeight="48"
                             Click="OnAddTapped"/>
