@@ -43,8 +43,9 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 积分行 -->
-                <Border Background="#FFF7E8" CornerRadius="8" Margin="12,8,12,0" Padding="14,10">
+                <!-- 积分行 (仅在非详情页显示) -->
+                <Border Background="#FFF7E8" CornerRadius="8" Margin="12,8,12,0" Padding="14,10"
+                        IsVisible="{Binding !ShowDetail}">
                     <StackPanel>
                         <!-- 第一行：余额 + 消耗 + 签到按钮 -->
                         <Grid ColumnDefinitions="*,Auto">
@@ -146,20 +147,29 @@
                 <!-- 详情视图 -->
                 <Panel IsVisible="{Binding ShowDetail}">
                     <StackPanel>
-                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8,12,0" Padding="14">
-                            <StackPanel>
-                                <TextBlock Text="{Binding DetailRangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"/>
-                                <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成于 \{0\}}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,3,0,0"/>
-                                <TextBlock Text="{Binding DetailQualityTip}" FontSize="11" Foreground="{StaticResource WeuiOrangeBrush}" Margin="0,3,0,0"
-                                           IsVisible="{Binding DetailQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                            </StackPanel>
+                        <!-- 详情头：始终可见，提供快速"收起"按钮 + 点击空白处折叠 -->
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8,12,0" Padding="14,12"
+                                PointerPressed="OnDetailHeaderTap">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding DetailRangeLabel}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource WeuiFg0Brush}"/>
+                                    <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成于 \{0\}}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding DetailQualityTip}" FontSize="11" Foreground="{StaticResource WeuiOrangeBrush}" Margin="0,2,0,0"
+                                               IsVisible="{Binding DetailQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="⌃" FontSize="18" Padding="8,2" MinWidth="32"
+                                        Background="Transparent" BorderThickness="0" Foreground="{StaticResource WeuiFg1Brush}"
+                                        ToolTip.Tip="收起返回" Command="{Binding BackToListCommand}"
+                                        VerticalAlignment="Top"/>
+                            </Grid>
                         </Border>
 
-                        <!-- 分析正文：占据主要空间 -->
+                        <!-- 分析正文 -->
                         <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8" Padding="16,18">
                             <TextBlock Text="{Binding DetailText}" FontSize="14" TextWrapping="Wrap" LineHeight="24"/>
                         </Border>
 
+                        <!-- 底部"返回列表"按钮（保留，兼容习惯用户） -->
                         <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="weui-btn default" CornerRadius="6" Padding="0,11"
                                 Command="{Binding BackToListCommand}" Margin="12,6,12,8" HorizontalAlignment="Stretch"/>
                     </StackPanel>

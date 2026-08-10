@@ -21,6 +21,17 @@ public partial class AiAnalysisView : UserControl
         }
     }
 
+    /// <summary>
+    /// 详情头点击：点击除"收起按钮"之外的区域也折叠返回列表。
+    /// </summary>
+    private void OnDetailHeaderTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is AiAnalysisViewModel vm && vm.BackToListCommand.CanExecute(null))
+        {
+            vm.BackToListCommand.Execute(null);
+        }
+    }
+
     private static AiAnalysisRecord? FindRecord(AiAnalysisViewModel vm, string id)
     {
         foreach (var r in vm.Records)
