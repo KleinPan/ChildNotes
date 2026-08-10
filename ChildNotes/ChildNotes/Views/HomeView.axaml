@@ -56,9 +56,9 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Padding" Value="14,5" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="#F5F5F5" />
-            <Setter Property="Foreground" Value="#999999" />
-            <Setter Property="BorderBrush" Value="#E0E0E0" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  追踪卡片头部胶囊按钮：对齐小程序端 v-btn / at-btn 基线（蓝色强调）  -->

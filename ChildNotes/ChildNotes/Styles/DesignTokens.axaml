@@ -1,0 +1,122 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    x:Class="ChildNotes.Styles.DesignTokens">
+
+    <!-- ==================================================================
+         ChildNotes Design Tokens
+         来源: docs/design/design-tokens.md
+         规范: 禁止硬编码颜色 / 重复定义间距 / 优先复用组件
+         命名: <category>.<role>.<variant?> 与 design-tokens.md 一一对应
+         ================================================================== -->
+
+    <!-- ============ Color / Brand ============ -->
+    <Color x:Key="Color.Brand.Primary">#00C875</Color>
+    <Color x:Key="Color.Brand.PrimaryLight">#E8FFF4</Color>
+    <Color x:Key="Color.Brand.PrimaryDark">#00A85A</Color>
+
+    <!-- ============ Color / Secondary 业务色 ============ -->
+    <Color x:Key="Color.Growth.Blue">#3B82F6</Color>
+    <Color x:Key="Color.Feeding.Orange">#FF9F43</Color>
+    <Color x:Key="Color.Sleep.Purple">#8B7CF6</Color>
+    <Color x:Key="Color.Medicine.Red">#F56565</Color>
+    <Color x:Key="Color.Vaccine.Yellow">#F6C344</Color>
+
+    <!-- ============ Color / Surface ============ -->
+    <Color x:Key="Color.Surface.Background">#F5F6F8</Color>
+    <Color x:Key="Color.Surface.Card">#FFFFFF</Color>
+    <Color x:Key="Color.Surface.Disabled">#F3F4F6</Color>
+
+    <!-- ============ Color / Text ============ -->
+    <Color x:Key="Color.Text.Primary">#1F2937</Color>
+    <Color x:Key="Color.Text.Secondary">#6B7280</Color>
+    <Color x:Key="Color.Text.Placeholder">#9CA3AF</Color>
+    <Color x:Key="Color.Text.Success">#16A34A</Color>
+    <Color x:Key="Color.Text.Warning">#D97706</Color>
+    <Color x:Key="Color.Text.Error">#DC2626</Color>
+
+    <!-- ============ Color / Semantic ============ -->
+    <Color x:Key="Color.Semantic.Success">#16A34A</Color>
+    <Color x:Key="Color.Semantic.Warning">#D97706</Color>
+    <Color x:Key="Color.Semantic.Error">#DC2626</Color>
+    <Color x:Key="Color.Semantic.Info">#3B82F6</Color>
+
+    <!-- ============ Color / AI ============ -->
+    <Color x:Key="Color.AI.Primary">#7C5CFF</Color>
+    <Color x:Key="Color.AI.Background">#F0FFF0</Color>
+
+    <!-- ============ Color / Brushes (供控件直接引用) ============ -->
+    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource Color.Brand.Primary}" />
+    <SolidColorBrush x:Key="BrandPrimaryLightBrush" Color="{StaticResource Color.Brand.PrimaryLight}" />
+    <SolidColorBrush x:Key="BrandPrimaryDarkBrush" Color="{StaticResource Color.Brand.PrimaryDark}" />
+
+    <SolidColorBrush x:Key="GrowthBlueBrush" Color="{StaticResource Color.Growth.Blue}" />
+    <SolidColorBrush x:Key="FeedingOrangeBrush" Color="{StaticResource Color.Feeding.Orange}" />
+    <SolidColorBrush x:Key="SleepPurpleBrush" Color="{StaticResource Color.Sleep.Purple}" />
+    <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
+    <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
+
+    <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource Color.Surface.Background}" />
+    <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource Color.Surface.Card}" />
+    <SolidColorBrush x:Key="SurfaceDisabledBrush" Color="{StaticResource Color.Surface.Disabled}" />
+
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource Color.Text.Primary}" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource Color.Text.Secondary}" />
+    <SolidColorBrush x:Key="TextPlaceholderBrush" Color="{StaticResource Color.Text.Placeholder}" />
+    <SolidColorBrush x:Key="TextSuccessBrush" Color="{StaticResource Color.Text.Success}" />
+    <SolidColorBrush x:Key="TextWarningBrush" Color="{StaticResource Color.Text.Warning}" />
+    <SolidColorBrush x:Key="TextErrorBrush" Color="{StaticResource Color.Text.Error}" />
+
+    <SolidColorBrush x:Key="SemanticSuccessBrush" Color="{StaticResource Color.Semantic.Success}" />
+    <SolidColorBrush x:Key="SemanticWarningBrush" Color="{StaticResource Color.Semantic.Warning}" />
+    <SolidColorBrush x:Key="SemanticErrorBrush" Color="{StaticResource Color.Semantic.Error}" />
+    <SolidColorBrush x:Key="SemanticInfoBrush" Color="{StaticResource Color.Semantic.Info}" />
+
+    <SolidColorBrush x:Key="AIPrimaryBrush" Color="{StaticResource Color.AI.Primary}" />
+    <SolidColorBrush x:Key="AIBackgroundBrush" Color="{StaticResource Color.AI.Background}" />
+
+    <!-- ============ Spacing (基础单位 4px) ============ -->
+    <x:Double x:Key="Spacing.XS">4</x:Double>
+    <x:Double x:Key="Spacing.SM">8</x:Double>
+    <x:Double x:Key="Spacing.MD">12</x:Double>
+    <x:Double x:Key="Spacing.LG">16</x:Double>
+    <x:Double x:Key="Spacing.LG2">20</x:Double>
+    <x:Double x:Key="Spacing.XL">24</x:Double>
+    <x:Double x:Key="Spacing.XXL">32</x:Double>
+    <x:Double x:Key="Spacing.3XL">40</x:Double>
+    <x:Double x:Key="Spacing.4XL">48</x:Double>
+
+    <Thickness x:Key="Spacing.PageMargin">16,0,16,0</Thickness>
+    <Thickness x:Key="Spacing.CardMargin">16,12,16,12</Thickness>
+    <Thickness x:Key="Spacing.SectionSpacing">0,24,0,0</Thickness>
+
+    <!-- ============ Radius (圆角体现亲和感) ============ -->
+    <CornerRadius x:Key="Radius.Small">8</CornerRadius>
+    <CornerRadius x:Key="Radius.Medium">16</CornerRadius>
+    <CornerRadius x:Key="Radius.Large">24</CornerRadius>
+    <CornerRadius x:Key="Radius.PrimaryButton">24</CornerRadius>
+    <CornerRadius x:Key="Radius.SecondaryButton">8</CornerRadius>
+
+    <!-- ============ Typography / FontSize ============ -->
+    <x:Double x:Key="FontSize.LargeTitle">24</x:Double>
+    <x:Double x:Key="FontSize.SectionTitle">20</x:Double>
+    <x:Double x:Key="FontSize.CardTitle">17</x:Double>
+    <x:Double x:Key="FontSize.Body">16</x:Double>
+    <x:Double x:Key="FontSize.Caption">14</x:Double>
+    <x:Double x:Key="FontSize.Label">13</x:Double>
+    <x:Double x:Key="FontSize.Minor">12</x:Double>
+    <x:Double x:Key="FontSize.Button">16</x:Double>
+
+    <!-- ============ Typography / FontWeight (Avalonia 用 FontWeight 枚举字符串) ============ -->
+    <!-- 使用 FontWeights.Normal/Medium/Bold 资源 key,值类型为 Avalonia.Media.FontWeight -->
+    <!-- 控件用 FontWeight="{StaticResource FontWeight.Medium}" 引用 -->
+
+    <!-- ============ Component / Button ============ -->
+    <x:Double x:Key="Button.Primary.Height">48</x:Double>
+    <x:Double x:Key="Button.Primary.MinHeight">48</x:Double>
+    <x:Double x:Key="Button.Secondary.Height">44</x:Double>
+
+    <!-- ============ Motion / Duration (毫秒) ============ -->
+    <x:Double x:Key="Motion.Duration.Fast">80</x:Double>
+    <x:Double x:Key="Motion.Duration.Normal">200</x:Double>
+    <x:Double x:Key="Motion.Duration.Slow">400</x:Double>
+</ResourceDictionary>
