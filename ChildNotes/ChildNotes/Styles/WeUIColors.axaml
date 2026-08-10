@@ -45,16 +45,17 @@
     <SolidColorBrush x:Key="QuickCompBgBrush" Color="#FFF3E0" />
     <SolidColorBrush x:Key="QuickGrowthBgBrush" Color="#E0F2F1" />
 
-    <!-- 原版统计区底色 -->
-    <SolidColorBrush x:Key="StatsAreaBgBrush" Color="#F9FAFB" />
+    <!-- 统计区底色对齐 design-tokens color.surface.background=#F5F6F8 -->
+    <SolidColorBrush x:Key="StatsAreaBgBrush" Color="#F5F6F8" />
     <SolidColorBrush x:Key="StatsSplitBrush" Color="#E8E8E8" />
 
-    <!-- 原版 AI 状态卡渐变背景（近似单色） -->
+    <!-- AI 状态卡背景：保持温和浅绿，后续 color.ai.* Token 定义后迁移 -->
     <SolidColorBrush x:Key="AiStatusBgBrush" Color="#F0FFF0" />
 
     <!-- 原版头像渐变（近似单色，绿主色） -->
     <SolidColorBrush x:Key="AvatarGradientBrush" Color="#07C160" />
 
-    <CornerRadius x:Key="WeuiCardRadius">8</CornerRadius>
-    <CornerRadius x:Key="WeuiBtnRadius">6</CornerRadius>
+    <!-- 圆角对齐 design-tokens: radius.medium=16(卡片), Primary Button=24(pill) -->
+    <CornerRadius x:Key="WeuiCardRadius">16</CornerRadius>
+    <CornerRadius x:Key="WeuiBtnRadius">24</CornerRadius>
 </ResourceDictionary>

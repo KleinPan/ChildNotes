@@ -17,17 +17,21 @@
     <UserControl.Styles>
         <Style Selector="Border.baby-card">
             <Setter Property="Background" Value="White" />
-            <Setter Property="CornerRadius" Value="10" />
+            <!--  圆角对齐 design-tokens radius.medium=16  -->
+            <Setter Property="CornerRadius" Value="16" />
             <Setter Property="Padding" Value="16,16,14,10" />
-            <Setter Property="Margin" Value="12,12,12,0" />
-            <!--  原版阴影: 0 2rpx 16rpx rgba(0,0,0,0.04)  -->
-            <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000" />
+            <!--  页面水平边距对齐 design-tokens spacing.lg=16  -->
+            <Setter Property="Margin" Value="16,12,16,0" />
+            <!--  阴影对齐 design-tokens shadow.card: Y:2/Blur:8/8%  -->
+            <Setter Property="BoxShadow" Value="0 2 8 0 #14000000" />
         </Style>
         <Style Selector="Border.stats-area">
-            <!--  原版 bs-stats: #f9fafb 底色，14rpx 圆角  -->
+            <!--  底色对齐 design-tokens color.surface.background=#F5F6F8  -->
             <Setter Property="Background" Value="{StaticResource StatsAreaBgBrush}" />
-            <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Margin" Value="10,12,10,12" />
+            <!--  圆角对齐 design-tokens radius.medium=16  -->
+            <Setter Property="CornerRadius" Value="16" />
+            <!--  页面水平边距对齐 design-tokens spacing.lg=16  -->
+            <Setter Property="Margin" Value="16,12,16,12" />
             <Setter Property="Padding" Value="10" />
         </Style>
         <Style Selector="Border.mini-card-row">
@@ -35,10 +39,13 @@
         </Style>
         <Style Selector="Border.ai-status-card">
             <Setter Property="Background" Value="{StaticResource AiStatusBgBrush}" />
-            <Setter Property="CornerRadius" Value="10" />
+            <!--  圆角对齐 design-tokens radius.medium=16  -->
+            <Setter Property="CornerRadius" Value="16" />
             <Setter Property="Padding" Value="14" />
-            <Setter Property="Margin" Value="12,8" />
-            <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000" />
+            <!--  页面水平边距对齐 design-tokens spacing.lg=16  -->
+            <Setter Property="Margin" Value="16,8" />
+            <!--  阴影对齐 design-tokens shadow.card: Y:2/Blur:8/8%  -->
+            <Setter Property="BoxShadow" Value="0 2 8 0 #14000000" />
         </Style>
         <Style Selector="Border.section-header">
             <Setter Property="Margin" Value="12,12,12,4" />
@@ -87,7 +94,8 @@
                                 </Panel>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                <TextBlock FontSize="19" FontWeight="Bold" Foreground="#1A1A1A" Text="{Binding BabyName}" />
+                                <!--  字号/字重对齐 design-tokens font.size.cardTitle=16-18sp Medium  -->
+                                <TextBlock FontSize="17" FontWeight="Medium" Foreground="#1A1A1A" Text="{Binding BabyName}" />
                                 <Border Padding="9,3" HorizontalAlignment="Left" Background="#07C16014" CornerRadius="12">
                                     <TextBlock FontSize="12" FontWeight="Medium" Foreground="#07C160" Text="{Binding BabyAgeText}" />
                                 </Border>
@@ -131,10 +139,10 @@
                                             Background="{StaticResource FeedAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_LastFeed}" />
+                                        <TextBlock FontSize="11" Foreground="#888888" Text="{DynamicResource Home_LastFeed}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding LastFeedAgoText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{Binding LastFeedSummary}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#999999" Text="{Binding LastFeedSummary}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -147,10 +155,10 @@
                                             Background="{StaticResource DiaperAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_Diaper}" />
+                                        <TextBlock FontSize="11" Foreground="#888888" Text="{DynamicResource Home_Diaper}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding DiaperTodayText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{Binding DiaperDetailText}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#999999" Text="{Binding DiaperDetailText}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -166,10 +174,10 @@
                                             Background="{StaticResource SleepAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_SleepToday}" />
+                                        <TextBlock FontSize="11" Foreground="#888888" Text="{DynamicResource Home_SleepToday}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding SleepTodayText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="{DynamicResource Home_SleepCount}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#999999" Text="{DynamicResource Home_SleepCount}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -182,10 +190,10 @@
                                             Background="{StaticResource GrowthAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="10" Foreground="#888888" Text="{DynamicResource Home_HeightWeight}" />
+                                        <TextBlock FontSize="11" Foreground="#888888" Text="{DynamicResource Home_HeightWeight}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding LatestHeightText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="10" Foreground="#999999" Text="/" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="#999999" Text="/" />
                                             <TextBlock FontSize="12" FontWeight="Bold" Foreground="#333333" Text="{Binding LatestWeightText}" />
                                         </StackPanel>
                                     </StackPanel>
@@ -258,7 +266,7 @@
                                     <Border Margin="0,4,0,0" Padding="10,8" Background="{StaticResource WeuiBg1Brush}" CornerRadius="6">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <Border Grid.Column="0" Padding="6,2" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4">
-                                                <TextBlock FontSize="10" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding Category, Mode=OneTime}" />
+                                                <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding Category, Mode=OneTime}" />
                                             </Border>
                                             <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13"
                                                        Text="{Binding Name, Mode=OneTime}" />
