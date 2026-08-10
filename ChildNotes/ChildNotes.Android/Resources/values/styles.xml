@@ -9,7 +9,11 @@
   <style name="MyTheme.Splash" parent="Theme.SplashScreen">
     <!-- 奶油色背景，与 Avalonia LoadingView 的 #FFF8E7 保持一致，实现启动屏到 LoadingView 的无缝过渡。 -->
     <item name="windowSplashScreenBackground">@color/splash_background</item>
-    <item name="windowSplashScreenAnimatedIcon">@drawable/icon</item>
+    <!-- 启动屏专用图标：透明背景的笔记本+爱心+脚印。原 @drawable/icon 带粉橙渐变背景，
+         在奶油色背景上显示会有明显的方形粉色块突兀感。icon_splash.png 是 AI 抠图后的透明版本。 -->
+    <item name="windowSplashScreenAnimatedIcon">@drawable/icon_splash</item>
+    <!-- 透明背景：让系统不再绘制圆形 icon_background 遮罩，笔记本边缘自然融入奶油色背景。 -->
+    <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
     <item name="windowSplashScreenAnimationDuration">0</item>
     <item name="postSplashScreenTheme">@style/MyTheme.NoActionBar</item>
   </style>

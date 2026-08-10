@@ -8,7 +8,8 @@
        windowSplashScreenBackground 与 windowBackground 保持同色，消除黑屏闪烁。 -->
   <style name="MyTheme.Splash" parent="Theme.SplashScreen">
     <item name="windowSplashScreenBackground">@color/splash_background</item>
-    <item name="windowSplashScreenAnimatedIcon">@drawable/icon</item>
+    <item name="windowSplashScreenAnimatedIcon">@drawable/icon_splash</item>
+    <item name="windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
     <item name="windowSplashScreenAnimationDuration">0</item>
     <item name="postSplashScreenTheme">@style/MyTheme.NoActionBar</item>
   </style>
