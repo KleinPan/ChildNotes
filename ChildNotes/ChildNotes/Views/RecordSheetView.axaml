@@ -37,7 +37,7 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.type-tab.active TextBlock">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="Border.type-card">
@@ -67,7 +67,7 @@
         </Style>
         <!--  自定义项（白底 + 绿色描边）  -->
         <Style Selector="Border.supp-chip.custom">
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderBrush" Value="#07C160" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
@@ -80,7 +80,7 @@
             <Setter Property="BorderBrush" Value="#07C160" />
         </Style>
         <Style Selector="Border.supp-chip.active TextBlock">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="TextBox.form-input">
@@ -154,7 +154,7 @@
             <Setter Property="Height" Value="10" />
             <Setter Property="CornerRadius" Value="5" />
             <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
-            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.vf-segment">
@@ -173,7 +173,7 @@
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.vf-segment.active TextBlock">
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <Style Selector="Button.vf-mark">
@@ -182,7 +182,7 @@
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.vf-skip">
@@ -190,7 +190,7 @@
             <Setter Property="FontSize" Value="11" />
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="Foreground" Value="#FA9D3B" />
             <Setter Property="BorderBrush" Value="#FA9D3B" />
             <Setter Property="BorderThickness" Value="1" />
@@ -201,7 +201,7 @@
             <Setter Property="FontSize" Value="11" />
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="Foreground" Value="{StaticResource WeuiBlueBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource WeuiBlueBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -212,7 +212,7 @@
             <Setter Property="FontSize" Value="11" />
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}" />
             <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -461,7 +461,7 @@
                                                    Foreground="{StaticResource WeuiFg1Brush}"
                                                    Text="{DynamicResource RS_Height}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                            <TextBox x:Name="GrowthHeightTextBox" Width="80" HorizontalContentAlignment="Center" Background="White"
+                                            <TextBox x:Name="GrowthHeightTextBox" Width="80" HorizontalContentAlignment="Center" Background="{StaticResource SurfaceCardBrush}"
                                                      CornerRadius="8" FontSize="22" FontWeight="Bold" PlaceholderText="0"
                                                      Text="{Binding GrowthForm.HeightText}" />
                                             <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
@@ -478,7 +478,7 @@
                                                    Foreground="{StaticResource WeuiFg1Brush}"
                                                    Text="{DynamicResource RS_Weight}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                            <TextBox Width="80" HorizontalContentAlignment="Center" Background="White" CornerRadius="8"
+                                            <TextBox Width="80" HorizontalContentAlignment="Center" Background="{StaticResource SurfaceCardBrush}" CornerRadius="8"
                                                      FontSize="22" FontWeight="Bold" PlaceholderText="0"
                                                      Text="{Binding GrowthForm.WeightText}" />
                                             <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
@@ -550,7 +550,7 @@
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomCommand}"
-                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="White" />
+                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
                                     <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
                                                IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -590,7 +590,7 @@
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomUnitCommand}"
-                                                Content="{DynamicResource RS_AddCustomBtn}" CornerRadius="8" Foreground="White"
+                                                Content="{DynamicResource RS_AddCustomBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}"
                                                 IsVisible="{Binding SupplementForm.ShowCustomUnitInput}" />
                                     </Grid>
                                     <Button Margin="0,6,0,0"
@@ -719,7 +719,7 @@
                                                 Background="{StaticResource WeuiGreenBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding ComplementaryForm.AddCustomCommand}"
-                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="White" />
+                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
                                     <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
                                                IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"

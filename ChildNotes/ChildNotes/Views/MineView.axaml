@@ -19,7 +19,7 @@
                     <Border Grid.Column="0" Width="56" Height="56"
                             Background="{StaticResource AvatarGradientBrush}"
                             CornerRadius="28">
-                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="White"
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource SurfaceCardBrush}"
                                    Text="👤" />
                     </Border>
                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
@@ -85,7 +85,7 @@
                         <Border Grid.Column="0" Width="24" Height="24"
                                 Background="#FFB84D"
                                 CornerRadius="6">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="White"
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="V" />
                         </Border>
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
@@ -108,7 +108,7 @@
                         <Border Grid.Column="0" Width="24" Height="24"
                                 Background="{StaticResource WeuiBlueBrush}"
                                 CornerRadius="6">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="White"
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="析" />
                         </Border>
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"

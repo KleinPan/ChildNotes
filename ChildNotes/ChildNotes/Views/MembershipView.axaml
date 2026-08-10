@@ -43,7 +43,7 @@
                         <!-- AI 记次数（今日） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
                             <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
-                            <TextBlock FontSize="22" FontWeight="Bold" Foreground="White" Margin="8,0,0,0">
+                            <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiNoteRemainingToday}"/>
                                 <Run Text=" / "/>
                                 <Run Text="{Binding AiNoteDailyLimit}"/>
@@ -53,7 +53,7 @@
                         <!-- AI 分析次数（本周） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
                             <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
-                            <TextBlock FontSize="22" FontWeight="Bold" Foreground="White" Margin="8,0,0,0">
+                            <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiAnalysisRemainingThisWeek}"/>
                                 <Run Text=" / "/>
                                 <Run Text="{Binding AiAnalysisWeeklyLimit}"/>
@@ -144,7 +144,7 @@
                                             <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold"/>
                                             <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
                                                     IsVisible="{Binding IsRecommended}">
-                                                <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="11" Foreground="White"/>
+                                                <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"/>
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
@@ -168,7 +168,7 @@
                                                 <Binding Path="$parent[ItemsControl].DataContext.SelectedPlanType"/>
                                             </MultiBinding>
                                         </Border.IsVisible>
-                                        <TextBlock Text="✓" Foreground="White" FontSize="16" FontWeight="Bold"
+                                        <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="16" FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </Grid>
@@ -195,7 +195,7 @@
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>
 </UserControl>

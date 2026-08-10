@@ -18,7 +18,7 @@
                     <GradientStop Offset="0.4" Color="#F5F5F5"/>
                 </LinearGradientBrush>
             </Border.Background>
-            <Border Background="White" CornerRadius="12" Padding="20,30"
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12" Padding="20,30"
                     BoxShadow="0 4 20 0 #15000000">
                 <StackPanel Spacing="16">
 

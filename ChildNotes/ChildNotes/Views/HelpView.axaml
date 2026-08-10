@@ -28,7 +28,7 @@
                         Background="{StaticResource WeuiBlueBrush}"
                         CornerRadius="{StaticResource WeuiCardRadius}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
-                        <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="White"
+                        <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"
                                    HorizontalAlignment="Center"/>
                         <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="13" Foreground="#E6FFFFFF"
                                    HorizontalAlignment="Center"/>

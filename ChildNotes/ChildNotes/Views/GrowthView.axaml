@@ -64,7 +64,7 @@
             <Setter Property="Height" Value="14" />
             <Setter Property="CornerRadius" Value="7" />
             <Setter Property="Background" Value="#FFAB91" />
-            <Setter Property="BorderBrush" Value="White" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="3" />
             <Setter Property="BoxShadow" Value="0 1 4 0 #20000000" />
         </Style>
@@ -72,7 +72,7 @@
             <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="14" />
             <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Background" Value="White" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderBrush" Value="#CCC" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
@@ -86,7 +86,7 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
@@ -132,7 +132,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:MilestoneDisplayItem">
                             <Grid Margin="16,0,16,20" ColumnDefinitions="32,*">
-                                <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="White" DotBorderThickness="3" DotBrush="#FFAB91"
+                                <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="{StaticResource SurfaceCardBrush}" DotBorderThickness="3" DotBrush="#FFAB91"
                                                        DotSize="14" DotTopMargin="10" HalfSpacing="10" LineBrush="#FFAB91"
                                                        LineWidth="2" />
                                 <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card" PointerPressed="OnMilestoneTap"
@@ -172,7 +172,7 @@
                 </ItemsControl>
 
                 <Grid Margin="16,0,16,40" ColumnDefinitions="32,*">
-                    <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="#CCC" DotBorderThickness="2" DotBrush="White"
+                    <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="#CCC" DotBorderThickness="2" DotBrush="{StaticResource SurfaceCardBrush}"
                                            DotSize="14" DotTopMargin="10" HalfSpacing="20" LineBrush="#EEE"
                                            LineWidth="2" />
                     <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card-add" PointerPressed="OnAddMilestone">
@@ -266,7 +266,7 @@
                                                     <!--  上传中指示器  -->
                                                     <Border Background="#80000000" CornerRadius="6" IsVisible="{Binding IsUploading}">
                                                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   FontSize="10" Foreground="White" Text="{DynamicResource Growth_Uploading}" />
+                                                                   FontSize="10" Foreground="{StaticResource SurfaceCardBrush}" Text="{DynamicResource Growth_Uploading}" />
                                                     </Border>
                                                     <!--  删除按钮（右上角内侧，对齐小程序 top:4rpx right:4rpx）  -->
                                                 <Button Width="22" Height="22" Margin="0,3,3,0"
@@ -337,7 +337,7 @@
                 <Border Margin="0,0,0,24" Padding="12,6"
                         HorizontalAlignment="Center" VerticalAlignment="Bottom"
                         Background="#80000000" CornerRadius="12">
-                    <TextBlock Foreground="White" FontSize="13"
+                    <TextBlock Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                Text="{Binding PreviewCountText}" />
                 </Border>
             </Grid>

@@ -11,7 +11,7 @@
 
     <UserControl.Styles>
         <Style Selector="Border.record-card">
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="14"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
@@ -38,7 +38,7 @@
                 <!-- 顶部 Banner：紧凑型 -->
                 <Border Background="{StaticResource WeuiGreenBrush}" Padding="20,16" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="宝宝喂养分析" FontSize="17" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                        <TextBlock Text="宝宝喂养分析" FontSize="17" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
@@ -64,7 +64,7 @@
                     <StackPanel>
 
                         <!-- 日期选择器 + 说明合为一行 -->
-                        <Border Background="White" CornerRadius="8" Margin="12,8" Padding="14">
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8" Padding="14">
                             <StackPanel>
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,6">
                                     <Run Text="选择连续 7 天范围生成 AI 分析"/>
@@ -146,7 +146,7 @@
                 <!-- 详情视图 -->
                 <Panel IsVisible="{Binding ShowDetail}">
                     <StackPanel>
-                        <Border Background="White" CornerRadius="8" Margin="12,8,12,0" Padding="14">
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8,12,0" Padding="14">
                             <StackPanel>
                                 <TextBlock Text="{Binding DetailRangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"/>
                                 <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成于 \{0\}}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,3,0,0"/>
@@ -156,7 +156,7 @@
                         </Border>
 
                         <!-- 分析正文：占据主要空间 -->
-                        <Border Background="White" CornerRadius="8" Margin="12,8" Padding="16,18">
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8" Padding="16,18">
                             <TextBlock Text="{Binding DetailText}" FontSize="14" TextWrapping="Wrap" LineHeight="24"/>
                         </Border>
 
@@ -170,7 +170,7 @@
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
 
     </Grid>

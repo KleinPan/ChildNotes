@@ -85,14 +85,14 @@
         <!-- 加载中提示 -->
         <Border Grid.Row="1" Background="#80000000" IsVisible="{Binding IsLoading}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TextBlock Text="{DynamicResource Common_Loading}" Foreground="White" FontSize="14"
+            <TextBlock Text="{DynamicResource Common_Loading}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="14"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
 
         <!-- Toast 浮层 -->
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,24"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                        TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>

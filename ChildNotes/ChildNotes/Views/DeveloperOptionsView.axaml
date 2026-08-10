@@ -46,7 +46,7 @@
         <Style Selector="Button.lvl-btn.selected">
             <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="FontWeight" Value="Medium"/>
         </Style>
 
@@ -117,7 +117,7 @@
         <!-- 级别徽章文字 -->
         <Style Selector="Border.log-badge TextBlock">
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -260,7 +260,7 @@
                 Margin="16,0,16,16"
                 Background="#CC000000" CornerRadius="8" Padding="20,10"
                 IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White"
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}"
                        FontSize="13" TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>

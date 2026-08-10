@@ -26,7 +26,7 @@
             <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
         </Style>
         <Style Selector="Border.timeline-item.signed TextBlock">
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -48,7 +48,7 @@
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="{DynamicResource Points_YourPoints}" FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="White"/>
+                            <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"/>
                             <TextBlock Text="{DynamicResource Points_Unit}" FontSize="16" Foreground="#CCFFFFFF" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
                         </StackPanel>
                         <TextBlock FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,8,0,0">
@@ -131,7 +131,7 @@
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>
 </UserControl>

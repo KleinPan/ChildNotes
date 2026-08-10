@@ -10,7 +10,7 @@
 
     <!-- 隐私协议弹窗：模态遮罩 + 居中白底卡片，覆盖在整个应用之上 -->
     <Panel>
-        <Border Background="White" CornerRadius="16" Padding="24,20"
+        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="16" Padding="24,20"
                 MaxWidth="340" MaxHeight="520"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
                 BoxShadow="0 4 24 0 #40000000">

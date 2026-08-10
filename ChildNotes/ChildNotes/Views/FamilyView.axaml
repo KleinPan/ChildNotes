@@ -78,7 +78,7 @@
                                                     <Border Grid.Column="0" Width="36" Height="36" CornerRadius="18"
                                                             Background="{StaticResource AvatarGradientBrush}"
                                                             VerticalAlignment="Center">
-                                                        <TextBlock Text="👤" FontSize="18" Foreground="White"
+                                                        <TextBlock Text="👤" FontSize="18" Foreground="{StaticResource SurfaceCardBrush}"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
                                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
@@ -88,7 +88,7 @@
                                                                        IsVisible="{Binding Mine}" Margin="2,0,0,0"/>
                                                             <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4"
                                                                     Padding="4,1" Margin="6,0,0,0" IsVisible="{Binding Owner}">
-                                                                <TextBlock Text="{DynamicResource Family_Owner}" FontSize="10" Foreground="White"/>
+                                                                <TextBlock Text="{DynamicResource Family_Owner}" FontSize="10" Foreground="{StaticResource SurfaceCardBrush}"/>
                                                             </Border>
                                                         </StackPanel>
                                                         <TextBlock Text="{Binding RoleName}" FontSize="12"
@@ -176,7 +176,7 @@
         <!-- Toast -->
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>
 </UserControl>

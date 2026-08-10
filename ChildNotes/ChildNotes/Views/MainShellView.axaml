@@ -98,7 +98,7 @@
                 RenderTransform="none"
                 IsVisible="{Binding QuickInput.ShowToast}"
                 ZIndex="100">
-            <TextBlock FontSize="13" Foreground="White"
+            <TextBlock FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
                        Text="{Binding QuickInput.ToastMessage}"
                        TextWrapping="Wrap" MaxWidth="340" />
         </Border>

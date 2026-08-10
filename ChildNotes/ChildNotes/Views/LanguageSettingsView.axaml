@@ -44,7 +44,7 @@
                                 <Border.Background>
                                     <SolidColorBrush Color="#07C160"/>
                                 </Border.Background>
-                                <TextBlock Text="✓" Foreground="White" FontSize="13"
+                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -63,7 +63,7 @@
                                 <Border.Background>
                                     <SolidColorBrush Color="#07C160"/>
                                 </Border.Background>
-                                <TextBlock Text="✓" Foreground="White" FontSize="13"
+                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>

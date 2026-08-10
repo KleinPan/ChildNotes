@@ -119,7 +119,7 @@
                                                 <Border Grid.Column="1" Padding="6,2" CornerRadius="4"
                                                         Background="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusBrushConverter}}">
                                                     <TextBlock Text="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusTextConverter}}"
-                                                               FontSize="11" Foreground="White"/>
+                                                               FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"/>
                                                 </Border>
                                             </Grid>
                                             <TextBlock Text="{Binding DataVolume}" FontSize="12"
@@ -160,7 +160,7 @@
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="White" FontSize="13"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>
 </UserControl>

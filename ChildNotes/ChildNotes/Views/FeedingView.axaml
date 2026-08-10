@@ -57,7 +57,7 @@
             <StackPanel>
 
                 <!--  原版 date-bar: 白底，底部 1px 边框  -->
-                <Border Margin="0,0,0,8" Padding="12,12" Background="White" BorderBrush="#F0F0F0"
+                <Border Margin="0,0,0,8" Padding="12,12" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0"
                         BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto,*">
                         <!--  原版 date-nav: 72rpx≈36px 圆形，48rpx≈24px 绿色箭头，font-weight:300，flex 居中  -->
@@ -194,12 +194,12 @@
                                         Tag="{Binding .}"
                                         Tapped="OnDeleteTap">
                                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
-                                               Foreground="White"
+                                               Foreground="{StaticResource SurfaceCardBrush}"
                                                Text="{DynamicResource Common_Delete}" />
                                 </Border>
                                 <!--  上层卡片：白底，8px 圆角，12px padding，弱阴影  -->
                                 <!--  用 Tapped（轻触手势）替代 PointerPressed，避免上下滑动滚动页面时误触编辑  -->
-                                <Border Padding="12" Background="White" BoxShadow="0 1 4 0 #08000000"
+                                <Border Padding="12" Background="{StaticResource SurfaceCardBrush}" BoxShadow="0 1 4 0 #08000000"
                                         Classes.swipe-open="{Binding IsSwipeOpen}"
                                         CornerRadius="8" PointerCaptureLost="OnCardPointerCaptureLost" PointerMoved="OnCardPointerMoved"
                                         PointerPressed="OnCardPointerPressed" PointerReleased="OnCardPointerReleased"
@@ -252,7 +252,7 @@
         <Border Margin="0,0,0,80" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                 Background="#CC000000" CornerRadius="8"
                 IsVisible="{Binding ShowToast}">
-            <TextBlock FontSize="13" Foreground="White" Text="{Binding ToastMessage}" />
+            <TextBlock FontSize="13" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" />
         </Border>
 
         <controls:DialogHost Title="{DynamicResource Feeding_DeleteConfirmTitle}"

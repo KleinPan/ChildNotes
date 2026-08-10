@@ -101,7 +101,7 @@
                 </ScrollViewer>
 
                 <!-- 底部添加按钮 -->
-                <Border Grid.Row="2" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Padding="16,12">
+                <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0" Padding="16,12">
                     <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary" CornerRadius="24"
                             HorizontalAlignment="Stretch" MinHeight="48"
                             Click="OnAddTapped"/>
@@ -112,7 +112,7 @@
         <!-- 编辑/添加表单（统一为：标题栏 ✕ 关闭 + 底部 保存按钮，与 RecordSheetView 一致） -->
         <!-- 抽屉动画：mask 淡入淡出 + panel 从底部滑入，由 code-behind 控制 open class -->
         <Border x:Name="EditorSheet" Classes="drawer-mask" IsVisible="{Binding IsEditorOpen}">
-            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="White" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
+            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">

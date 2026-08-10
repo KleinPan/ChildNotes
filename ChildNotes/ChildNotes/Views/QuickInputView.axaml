@@ -33,7 +33,7 @@
             <Setter Property="Padding" Value="12,0" />
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Medium" />
@@ -45,7 +45,7 @@
             <Setter Property="Height" Value="36" />
             <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
-            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -53,7 +53,7 @@
     </UserControl.Styles>
 
     <!-- 键盘上推由 MainShellView 通过 Row=0 Margin 控制，此处无需特殊布局 -->
-    <Border Padding="12,8,12,8" Background="White" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
+    <Border Padding="12,8,12,8" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
         <Grid ColumnDefinitions="*,Auto">
             <!-- 输入框 -->
             <TextBox Grid.Column="0"
