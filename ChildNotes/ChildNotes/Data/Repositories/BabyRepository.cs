@@ -1,5 +1,4 @@
 using Microsoft.Data.Sqlite;
-using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
@@ -144,82 +143,4 @@ public sealed class BabyRepository : BaseRepository
         DeviceId = r.IsDBNull(9) ? null : r.GetString(9),
         SyncedAt = r.IsDBNull(10) ? null : DateTimeExtensions.ParseDb(r.GetString(10)).ToLocalTime(),
     };
-
-    /// <summary>
-    /// 一次性迁移：将长度 >8 的 baby.id 截短为前 8 位，并级联更新所有关联表的 baby_id。
-    /// 用于把旧的 32 位 GUID 缩短为 8 位短码。迁移幂等：已是 8 位的记录不会被处理。
-    /// 注意：必须在同步前执行，否则 ID 不一致会导致同步重复和孤儿记录。
-    /// </summary>
-    /// <returns>实际迁移的 baby 数量。</returns>
-    public int MigrateShortBabyIds()
-    {
-        using var conn = OpenConnection();
-        using var tx = conn.BeginTransaction();
-
-        // 1. 查出所有需要迁移的 baby（id 长度 >8）
-        var toMigrate = new List<(string oldId, string newId)>();
-        using (var readCmd = conn.CreateCommand())
-        {
-            readCmd.Transaction = tx;
-            readCmd.CommandText = "SELECT id FROM baby WHERE length(id) > 8";
-            using var r = readCmd.ExecuteReader();
-            while (r.Read())
-            {
-                var oldId = r.GetString(0);
-                var newId = oldId[..8];
-                // 检测截短后是否与已有 ID 冲突（8 位短码已存在且不是当前记录）
-                toMigrate.Add((oldId, newId));
-            }
-        }
-
-        if (toMigrate.Count == 0)
-        {
-            tx.Commit();
-            return 0;
-        }
-
-        // 冲突检测：截短后的新 ID 若已存在于 baby 表（且不是源 ID），跳过该条并记日志
-        var validMigrations = new List<(string oldId, string newId)>();
-        foreach (var (oldId, newId) in toMigrate)
-        {
-            using var checkCmd = conn.CreateCommand();
-            checkCmd.Transaction = tx;
-            checkCmd.CommandText = "SELECT COUNT(*) FROM baby WHERE id = @new AND id != @old";
-            checkCmd.Add("@new", newId).Add("@old", oldId);
-            var count = (long)checkCmd.ExecuteScalar()!;
-            if (count > 0)
-            {
-                DevLogger.Log("Migrate", $"MigrateShortBabyIds: 跳过 {oldId} → {newId}（目标 ID 已存在，冲突）");
-                continue;
-            }
-            validMigrations.Add((oldId, newId));
-        }
-
-        // 2. 逐条迁移：更新 baby 主键 + 所有关联表的 baby_id
-        foreach (var (oldId, newId) in validMigrations)
-        {
-            DevLogger.Log("Migrate", $"MigrateShortBabyIds: {oldId} → {newId}");
-            // baby 主键
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = "UPDATE baby SET id=@new WHERE id=@old";
-                cmd.Add("@new", newId).Add("@old", oldId);
-                cmd.ExecuteNonQuery();
-            }
-            // 关联表 baby_id
-            foreach (var table in new[] { "baby_member", "child_record", "milestone", "ai_analysis_record" })
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.Transaction = tx;
-                cmd.CommandText = $"UPDATE {table} SET baby_id=@new WHERE baby_id=@old";
-                cmd.Add("@new", newId).Add("@old", oldId);
-                cmd.ExecuteNonQuery();
-            }
-        }
-
-        tx.Commit();
-        DevLogger.Log("Migrate", $"MigrateShortBabyIds: 迁移完成，共 {validMigrations.Count} 条");
-        return validMigrations.Count;
-    }
 }
