@@ -1,6 +1,12 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ChildNotes.Controls.RootContainer"
-             Background="Transparent">
+             Background="#FFF8E7">
+    <!--
+        奶油色背景（与 LoadingView / 系统启动屏 splash_background 一致）。
+        原 Transparent 会在子视图切换（LoadingView → MainShellView）时透传根窗口黑色背景，
+        造成约 300ms 黑屏（MainShellView 挂到树后到首帧渲染完成之间）。
+        设为不透明奶油色后，子视图未完成渲染时仍显示奶油色，消除黑屏闪烁。
+    -->
     <ContentControl x:Name="ContentHost"/>
 </UserControl>
