@@ -135,7 +135,13 @@ public partial class HomeViewModel : ViewModelBase, IActivatable
             var snapshot = await Task.Run(() =>
             {
                 ct.ThrowIfCancellationRequested();
-                var baby = _babyService.LoadBabyList().FirstOrDefault(b => b.Id == currentBabyId)
+                // 去重复查询：启动时 TryRestoreSession 已调用 BabyService.LoadBabyList()
+                // 填充了 AppState.BabyList。此处优先复用缓存，仅在缓存为空时才重新加载。
+                // 原实现无条件 LoadBabyList() 导致启动时全表扫两次。
+                IReadOnlyList<Baby> babyList = appState.BabyList.Count > 0
+                    ? appState.BabyList
+                    : _babyService.LoadBabyList();
+                var baby = babyList.FirstOrDefault(b => b.Id == currentBabyId)
                            ?? appState.CurrentBaby;
                 ct.ThrowIfCancellationRequested();
                 if (baby is null)

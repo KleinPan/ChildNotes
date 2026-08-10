@@ -22,11 +22,11 @@ public partial class LoadingView : UserControl
 
     private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        // 进度条 1.5 秒内从 0 走到 100，到达终点后保持（FillMode.Forward），不循环。
-        // 该时长与 App.axaml.cs 中 LoadingView 最小显示时长一致。
+        // 进度条 500ms 内从 0 走到 100，到达终点后保持（FillMode.Forward），不循环。
+        // 该时长与 App.axaml.cs 中 LoadingView 最小显示时长一致（启动优化：1.5s → 500ms）。
         var animation = new Animation
         {
-            Duration = TimeSpan.FromMilliseconds(1500),
+            Duration = TimeSpan.FromMilliseconds(500),
             FillMode = FillMode.Forward,
             Children =
             {

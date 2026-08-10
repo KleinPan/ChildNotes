@@ -180,10 +180,11 @@ public partial class App : Application
         DevLogger.Log("Startup", "LoadingView shown, starting async init");
 
         // 后台线程执行初始化（ServiceProvider 静态构造 + DB + 会话恢复）
-        // ★ 最小显示时长 1.5 秒：系统启动屏（.NET 冷启动 2-5s）只能放图标不能放文字，
-        // 育儿提示只能在这里显示。若初始化快于 1.5s，等到 1.5s 再切走，确保用户能读完提示；
-        // 若初始化更慢，按实际时间切走，不额外延迟。
-        const int minLoadingMs = 1500;
+        // ★ 最小显示时长 500ms：系统启动屏（.NET 冷启动 2-5s）只能放图标不能放文字，
+        // 育儿提示只能在这里显示。初始化快于 500ms 时等到 500ms 再切走，让用户瞥见提示；
+        // 初始化更慢则按实际时间切走，不额外延迟。
+        // 原 1.5s 过长，导致 500ms 完成初始化后仍空等 1s，拖慢启动感知。
+        const int minLoadingMs = 500;
         var initStart = Stopwatch.GetTimestamp();
         _ = Task.Run(() =>
         {
