@@ -48,7 +48,7 @@
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.type-card.active">
-            <Setter Property="Background" Value="#E8F9EF" />
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
         </Style>
         <!--  补给 Chip：默认项（灰底）  -->
@@ -56,14 +56,14 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="10,5" />
             <Setter Property="Margin" Value="0,0,4,4" />
-            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Cursor" Value="Hand" />
         </Style>
         <Style Selector="Border.supp-chip TextBlock">
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="#666666" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
         </Style>
         <!--  自定义项（白底 + 绿色描边）  -->
         <Style Selector="Border.supp-chip.custom">
@@ -85,15 +85,15 @@
         </Style>
         <Style Selector="TextBox.form-input">
             <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="Padding" Value="12,8" />
         </Style>
         <!--  疫苗时间轴样式  -->
         <Style Selector="Border.vf-entry">
-            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="14,12" />
-            <Setter Property="BorderBrush" Value="#E5E7EB" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Margin" Value="0,0,0,12" />
         </Style>
@@ -112,20 +112,20 @@
             <Setter Property="HorizontalAlignment" Value="Stretch" />
         </Style>
         <Style Selector="Border.vf-card.done">
-            <Setter Property="Background" Value="#EDFDF5" />
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
             <Setter Property="BorderBrush" Value="#9EE6C1" />
         </Style>
         <Style Selector="Border.vf-card.skipped">
-            <Setter Property="Background" Value="#F7F8FA" />
-            <Setter Property="BorderBrush" Value="#D0D5DD" />
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDisabledBrush}" />
         </Style>
         <Style Selector="Border.vf-card.replaced">
-            <Setter Property="Background" Value="#ECFDF3" />
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
             <Setter Property="BorderBrush" Value="#9EE6C1" />
         </Style>
         <!--  已到期：橘红色系  -->
         <Style Selector="Border.vf-card.overdue">
-            <Setter Property="Background" Value="#FFF4ED" />
+            <Setter Property="Background" Value="{StaticResource FeedingOrangeLightBrush}" />
             <Setter Property="BorderBrush" Value="#FFBF9B" />
         </Style>
         <!--  即将要打：淡黄色系  -->
@@ -222,17 +222,17 @@
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Padding" Value="12,6" />
             <Setter Property="Margin" Value="0,0,8,8" />
-            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.abn-chip.active">
-            <Setter Property="Background" Value="#FFF3E0" />
+            <Setter Property="Background" Value="{StaticResource FeedingOrangeLightBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource WeuiOrangeBrush}" />
         </Style>
         <Style Selector="Border.abn-chip TextBlock">
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="#333333" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         </Style>
         <Style Selector="Border.abn-chip.active TextBlock">
             <Setter Property="Foreground" Value="#E67E22" />
@@ -242,21 +242,21 @@
         <Style Selector="Border.abn-chip-danger">
             <Setter Property="CornerRadius" Value="14" />
             <Setter Property="Padding" Value="12,8" />
-            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.abn-chip-danger.active">
-            <Setter Property="Background" Value="#FFEBEE" />
-            <Setter Property="BorderBrush" Value="#E74C3C" />
+            <Setter Property="Background" Value="{StaticResource MedicineRedLightBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource MedicineRedBrush}" />
         </Style>
         <Style Selector="Border.abn-chip-danger TextBlock">
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="#333333" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.abn-chip-danger.active TextBlock">
-            <Setter Property="Foreground" Value="#E74C3C" />
+            <Setter Property="Foreground" Value="{StaticResource MedicineRedBrush}" />
             <Setter Property="FontWeight" Value="Medium" />
         </Style>
     </UserControl.Styles>
@@ -336,7 +336,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Background="#F5F5F5" CornerRadius="8" FontSize="14" SelectedTime="{Binding FeedForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
+                                    <ctrl:TimeWheelPicker Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14" SelectedTime="{Binding FeedForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
                             <Border Classes="form-section">
@@ -391,7 +391,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding DiaperForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -405,7 +405,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_StartTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SleepForm.StartTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -416,7 +416,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_EndTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SleepForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -429,7 +429,7 @@
                                     <TextBox x:Name="TemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperaturePlaceholder}" Text="{Binding TemperatureForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
-                            <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
+                            <Border Padding="10" Background="{StaticResource MedicineRedLightBrush}" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding TemperatureForm.IsFeverWarning}">
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverWarn}" />
                             </Border>
@@ -446,7 +446,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding TemperatureForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -454,7 +454,7 @@
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsGrowth}}">
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
-                                <Border Grid.Column="0" Padding="0,16" Background="#F9F9F9" CornerRadius="12">
+                                <Border Grid.Column="0" Padding="0,16" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="📏" />
                                         <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
@@ -495,7 +495,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding GrowthForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -619,7 +619,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding SupplementForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -627,7 +627,7 @@
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsPump}}">
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
-                                <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
+                                <Border Grid.Column="0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12">
                                     <StackPanel>
                                         <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftDurationLabel}" />
                                         <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftDurationText}" />
@@ -642,7 +642,7 @@
                                 </Border>
                             </Grid>
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
-                                <Border Grid.Column="0" Padding="12,10" Background="#F9F9F9" CornerRadius="12">
+                                <Border Grid.Column="0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12">
                                     <StackPanel>
                                         <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftMilkAmount}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftAmountText}" />
@@ -675,7 +675,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding PumpForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -804,7 +804,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ComplementaryForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -818,7 +818,7 @@
                                     <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperatureFeverHint}" Text="{Binding AbnormalForm.TemperatureText}" />
                                 </StackPanel>
                             </Border>
-                            <Border Padding="10" Background="#FFF0F0" Classes="form-section" CornerRadius="8"
+                            <Border Padding="10" Background="{StaticResource MedicineRedLightBrush}" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding AbnormalForm.IsFeverWarning}">
                                 <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverMonitor}" />
                             </Border>
@@ -900,7 +900,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding AbnormalForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -1011,7 +1011,7 @@
                                         CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_TimeAxis}" />
                                 </Border>
-                                <Border Grid.Column="2" Padding="8,6" Background="#FFF7ED" CornerRadius="6">
+                                <Border Grid.Column="2" Padding="8,6" Background="{StaticResource FeedingOrangeLightBrush}" CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#B45309"
                                                Text="{DynamicResource RS_PaidVaccine}" />
                                 </Border>
@@ -1081,7 +1081,7 @@
                                                                                    IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding DoneTime}" />
                                                                         <!--  跳过时间  -->
-                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#B0B0B0"
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource TextPlaceholderBrush}"
                                                                                    IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding SkippedTime}" />
                                                                         <!--  已打：改时间 / 取消  -->
@@ -1109,7 +1109,7 @@
 
                                                 <!--  中：时间轴节点（固定 60px 宽度，竖线在这里）  -->
                                                 <Panel Grid.Column="1" Width="60">
-                                                    <ctrl:TimelineAxisItem HorizontalAlignment="Center" DotSize="0" HalfSpacing="6" LineBrush="#E5E7EB"
+                                                    <ctrl:TimelineAxisItem HorizontalAlignment="Center" DotSize="0" HalfSpacing="6" LineBrush="{StaticResource SurfaceDisabledBrush}"
                                                                            LineWidth="2" />
                                                     <StackPanel Margin="0,0,0,0" HorizontalAlignment="Center" Spacing="2">
                                                         <Border Classes="vf-dot" />
@@ -1166,7 +1166,7 @@
                                                                                    IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding DoneTime}" />
                                                                         <!--  跳过时间  -->
-                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#B0B0B0"
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource TextPlaceholderBrush}"
                                                                                    IsVisible="{Binding SkippedTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding SkippedTime}" />
                                                                         <!--  已打：改时间 / 取消  -->
@@ -1230,17 +1230,17 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_StartTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ActivityForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
                             <Grid Margin="0,0,0,8" ColumnDefinitions="3*,2*">
                                 <StackPanel Grid.Column="0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_EndTimeOptional}" />
-                                    <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="#AAAAAA" Text="{DynamicResource RS_EndTimeHint}" />
+                                    <TextBlock Margin="0,2,0,0" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Text="{DynamicResource RS_EndTimeHint}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding ActivityForm.EndTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -1273,7 +1273,7 @@
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Margin="6,0,0,0">
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_RecordTime}" />
-                                    <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                                    <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                           SelectedTime="{Binding WaterForm.TimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                                 </StackPanel>
                             </Grid>
@@ -1313,7 +1313,7 @@
                     <Border Classes="form-section">
                         <StackPanel>
                             <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccineTime}" />
-                            <ctrl:TimeWheelPicker Padding="8,4" Background="#F5F5F5" CornerRadius="8" FontSize="14"
+                            <ctrl:TimeWheelPicker Padding="8,4" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8" FontSize="14"
                                                   SelectedTime="{Binding VaccineForm.RecordTimeText, Converter={x:Static v:TimeTextToTimeSpanConverter.Instance}}" />
                         </StackPanel>
                     </Border>
