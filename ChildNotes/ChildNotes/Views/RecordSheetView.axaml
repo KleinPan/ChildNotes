@@ -68,16 +68,16 @@
         <!--  自定义项（白底 + 绿色描边）  -->
         <Style Selector="Border.supp-chip.custom">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="BorderBrush" Value="#07C160" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.supp-chip.custom TextBlock">
-            <Setter Property="Foreground" Value="#07C160" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />
         </Style>
         <!--  选中态（绿底白字）  -->
         <Style Selector="Border.supp-chip.active">
-            <Setter Property="Background" Value="#07C160" />
-            <Setter Property="BorderBrush" Value="#07C160" />
+            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
         </Style>
         <Style Selector="Border.supp-chip.active TextBlock">
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
@@ -106,7 +106,7 @@
                 默认：白色背景 + 浅灰边框（与小程序 vf-time-dose 基础样式一致）
                 对应"将来要打"的默认状态
             -->
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderBrush" Value="#EDF1F7" />
             <!--  确保卡片不超出 Grid 列宽  -->
             <Setter Property="HorizontalAlignment" Value="Stretch" />
@@ -142,7 +142,7 @@
             小程序 vf-time-dose 无单独 pending 样式，默认即为此效果
         -->
         <Style Selector="Border.vf-card.pending">
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderBrush" Value="#EDF1F7" />
         </Style>
         <Style Selector="Panel.vf-axis">
@@ -191,8 +191,8 @@
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="Foreground" Value="#FA9D3B" />
-            <Setter Property="BorderBrush" Value="#FA9D3B" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiOrangeBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiOrangeBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  改时间按钮：蓝色边框风格，与 vf-skip 对称  -->
@@ -228,7 +228,7 @@
         </Style>
         <Style Selector="Border.abn-chip.active">
             <Setter Property="Background" Value="#FFF3E0" />
-            <Setter Property="BorderBrush" Value="#FA9D3B" />
+            <Setter Property="BorderBrush" Value="{StaticResource WeuiOrangeBrush}" />
         </Style>
         <Style Selector="Border.abn-chip TextBlock">
             <Setter Property="FontSize" Value="13" />
@@ -552,7 +552,7 @@
                                                 Command="{Binding SupplementForm.AddCustomCommand}"
                                                 Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
-                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource WeuiRedBrush}"
                                                IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                Text="{Binding SupplementForm.ErrorMessage}" />
                                 </StackPanel>
@@ -596,13 +596,13 @@
                                     <Button Margin="0,6,0,0"
                                             HorizontalAlignment="Left"
                                             Background="Transparent"
-                                            BorderBrush="#07C160"
+                                            BorderBrush="{StaticResource WeuiGreenBrush}"
                                             BorderThickness="1"
                                             Command="{Binding SupplementForm.ToggleCustomUnitInputCommand}"
                                             Content="{DynamicResource RS_AddCustom}"
                                             CornerRadius="8"
                                             FontSize="12"
-                                            Foreground="#07C160"
+                                            Foreground="{StaticResource WeuiGreenBrush}"
                                             Padding="10,4" />
                                 </StackPanel>
                             </Border>
@@ -721,7 +721,7 @@
                                                 Command="{Binding ComplementaryForm.AddCustomCommand}"
                                                 Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
-                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="#FA5151"
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource WeuiRedBrush}"
                                                IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                Text="{Binding ComplementaryForm.ErrorMessage}" />
                                 </StackPanel>
@@ -992,7 +992,7 @@
                                             <Run Text="{Binding VaccineForm.SelectedPlan.RecommendedDateText}" />
                                         </TextBlock>
                                     </StackPanel>
-                                    <Border Grid.Column="1" Padding="8,3" VerticalAlignment="Center" Background="#FFFFFF"
+                                    <Border Grid.Column="1" Padding="8,3" VerticalAlignment="Center" Background="{StaticResource SurfaceCardBrush}"
                                             CornerRadius="6">
                                         <TextBlock FontSize="11" Foreground="#0675B8" Text="{Binding VaccineForm.SelectedPlan.StatusText}" />
                                     </Border>

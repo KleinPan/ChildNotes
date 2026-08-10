@@ -15,7 +15,7 @@
     <UserControl.Styles>
         <!--  日记卡片：成长记录条目（冷调灰绿色系，与暖橘色时间轴形成视觉层次）  -->
         <Style Selector="Border.growth-card">
-            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="14,12" />
             <Setter Property="BorderBrush" Value="#7E9B8E" />
@@ -45,7 +45,7 @@
         </Style>
         <Style Selector="TextBlock.growth-date">
             <Setter Property="FontSize" Value="11" />
-            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="HorizontalAlignment" Value="Right" />

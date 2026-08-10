@@ -97,7 +97,7 @@
                                 <!--  字号/字重对齐 design-tokens font.size.cardTitle=16-18sp Medium  -->
                                 <TextBlock FontSize="17" FontWeight="Medium" Foreground="#1A1A1A" Text="{Binding BabyName}" />
                                 <Border Padding="9,3" HorizontalAlignment="Left" Background="#07C16014" CornerRadius="12">
-                                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="#07C160" Text="{Binding BabyAgeText}" />
+                                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="{StaticResource WeuiGreenBrush}" Text="{Binding BabyAgeText}" />
                                 </Border>
                             </StackPanel>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
@@ -323,9 +323,9 @@
                                     <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#FFCDD2" Classes="tracker-btn-outline"
                                             Command="{Binding QuickRecordCommand}"
                                             CommandParameter="abnormal" Content="{DynamicResource Home_ContinueRecord}" FontSize="11" Foreground="#C62828" />
-                                    <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#07C160" Classes="tracker-btn-outline"
+                                    <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource WeuiGreenBrush}" Classes="tracker-btn-outline"
                                             Command="{Binding MarkAbnormalResolvedCommand}"
-                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="#07C160"
+                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"
                                             IsVisible="{Binding HasOtherAbnormal}" />
                                 </StackPanel>
                             </StackPanel>

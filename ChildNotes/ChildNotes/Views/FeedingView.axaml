@@ -20,7 +20,7 @@
             并清除 Avalonia 默认 disabled overlay，避免变灰蒙蒙的难看效果
         -->
         <Style Selector="Button.date-nav">
-            <Setter Property="Foreground" Value="#07C160" />
+            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
@@ -87,7 +87,7 @@
                         Background="#E8F9EF" BorderThickness="0"
                         Command="{Binding GoTodayCommand}"
                         Content="{DynamicResource Feeding_GoToday}"
-                        CornerRadius="0" FontSize="13" Foreground="#07C160"
+                        CornerRadius="0" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}"
                         IsVisible="{Binding !IsToday}" />
 
                 <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -190,7 +190,7 @@
                             -->
                             <Panel Margin="12,4" ClipToBounds="True">
                                 <!--  底层删除按钮：对齐小程序 delete-action，红底白字  -->
-                                <Border Width="72" HorizontalAlignment="Right" Background="#FA5151" CornerRadius="0,8,8,0"
+                                <Border Width="72" HorizontalAlignment="Right" Background="{StaticResource WeuiRedBrush}" CornerRadius="0,8,8,0"
                                         Tag="{Binding .}"
                                         Tapped="OnDeleteTap">
                                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
@@ -225,7 +225,7 @@
                                                    Text="{Binding SubText}" />
                                         <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
                                         <TextBlock Grid.Row="0" Grid.Column="5" Margin="0,0,0,0" VerticalAlignment="Center"
-                                                   FontSize="12" FontWeight="Medium" Foreground="#07C160"
+                                                   FontSize="12" FontWeight="Medium" Foreground="{StaticResource WeuiGreenBrush}"
                                                    IsVisible="{Binding ExtraText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding ExtraText}" />
                                         <!--  备注（对齐小程序 card-note：浅灰背景块 + 深灰文字），从标题列开始对齐  -->
