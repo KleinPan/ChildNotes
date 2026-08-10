@@ -55,6 +55,19 @@
     <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
     <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
 
+    <!-- 业务色 Light (强调态浅色底/边)
+         来源: 业务色 8% 透明叠白色 = Material Design Light 推导值
+         design-tokens.md 未明确规定,临时值,待设计确认 -->
+    <Color x:Key="Color.Growth.BlueLight">#E0F2FE</Color>
+    <Color x:Key="Color.Feeding.OrangeLight">#FFF3E0</Color>
+    <Color x:Key="Color.Medicine.RedLight">#FED7D7</Color>
+    <Color x:Key="Color.Brand.PrimaryAlpha14">#1400C875</Color>
+
+    <SolidColorBrush x:Key="GrowthBlueLightBrush" Color="{StaticResource Color.Growth.BlueLight}" />
+    <SolidColorBrush x:Key="FeedingOrangeLightBrush" Color="{StaticResource Color.Feeding.OrangeLight}" />
+    <SolidColorBrush x:Key="MedicineRedLightBrush" Color="{StaticResource Color.Medicine.RedLight}" />
+    <SolidColorBrush x:Key="BrandPrimaryAlpha14Brush" Color="{StaticResource Color.Brand.PrimaryAlpha14}" />
+
     <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource Color.Surface.Background}" />
     <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource Color.Surface.Card}" />
     <SolidColorBrush x:Key="SurfaceDisabledBrush" Color="{StaticResource Color.Surface.Disabled}" />
