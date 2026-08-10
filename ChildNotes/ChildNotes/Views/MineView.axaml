@@ -280,7 +280,7 @@
                                 Background="{StaticResource WeuiRedBrush}"
                                 CornerRadius="8"
                                 IsVisible="{Binding HasUnreadMessages}">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="White"
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="{Binding UnreadMessageCount}" />
                         </Border>
                         <TextBlock Grid.Column="4" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="20"
