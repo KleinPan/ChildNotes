@@ -48,49 +48,171 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private QuickInputViewModel _quickInput;
 
     [ObservableProperty] private bool _isBabySetupOpen;
-    [ObservableProperty] private BabySetupViewModel _babySetup;
+    private BabySetupViewModel? _babySetup;
     [ObservableProperty] private bool _isBabyManagerOpen;
-    [ObservableProperty] private BabyManagerViewModel _babyManager;
+    private BabyManagerViewModel? _babyManager;
     [ObservableProperty] private bool _isStatisticsOpen;
-    [ObservableProperty] private StatisticsViewModel _statistics;
+    private StatisticsViewModel? _statistics;
     [ObservableProperty] private bool _isPointsOpen;
-    [ObservableProperty] private PointsViewModel _points;
+    private PointsViewModel? _points;
     [ObservableProperty] private bool _isMembershipOpen;
-    [ObservableProperty] private MembershipViewModel _membership;
+    private MembershipViewModel? _membership;
     [ObservableProperty] private bool _isAiAnalysisOpen;
-    [ObservableProperty] private AiAnalysisViewModel _aiAnalysis;
+    private AiAnalysisViewModel? _aiAnalysis;
     [ObservableProperty] private bool _isAiSettingsOpen;
-    [ObservableProperty] private AiSettingsViewModel _aiSettings;
+    private AiSettingsViewModel? _aiSettings;
     [ObservableProperty] private bool _isReminderSettingsOpen;
-    [ObservableProperty] private ReminderSettingsViewModel _reminderSettings;
+    private ReminderSettingsViewModel? _reminderSettings;
     [ObservableProperty] private bool _isSyncSettingsOpen;
-    [ObservableProperty] private SyncSettingsViewModel _syncSettings;
+    private SyncSettingsViewModel? _syncSettings;
     [ObservableProperty] private bool _isFamilyOpen;
-    [ObservableProperty] private FamilyViewModel _family;
+    private FamilyViewModel? _family;
 
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
-    [ObservableProperty] private DeveloperOptionsViewModel _developerOptions;
+    private DeveloperOptionsViewModel? _developerOptions;
 
     /// <summary>"使用帮助"弹层（从"我的"页打开）。</summary>
     [ObservableProperty] private bool _isHelpOpen;
-    [ObservableProperty] private HelpViewModel _help;
+    private HelpViewModel? _help;
 
     /// <summary>隐私政策弹层（从"我的"页打开查看完整协议）。</summary>
     [ObservableProperty] private bool _isPrivacyPolicyOpen;
-    [ObservableProperty] private PrivacyConsentViewModel _privacyPolicy;
+    private PrivacyConsentViewModel? _privacyPolicy;
 
     /// <summary>应用内消息中心弹层。</summary>
     [ObservableProperty] private bool _isInAppMessageOpen;
-    [ObservableProperty] private InAppMessageViewModel _inAppMessage;
+    private InAppMessageViewModel? _inAppMessage;
 
     /// <summary>语言设置弹层（中英文切换）。</summary>
     [ObservableProperty] private bool _isLanguageSettingsOpen;
-    [ObservableProperty] private LanguageSettingsViewModel _languageSettings;
+    private LanguageSettingsViewModel? _languageSettings;
 
+    // ===== 弹层 VM 懒加载访问器 =====
+    // 首次访问时创建实例并注册到 _overlays（系统返回键关闭优先级表）。
+    // 后续访问直接返回缓存实例。
+    // 注：事件订阅在创建时完成，与原构造函数行为一致。
+    public BabySetupViewModel BabySetup => _babySetup ??= CreateAndRegisterOverlay(
+        () => new BabySetupViewModel(),
+        vm => { vm.Completed += OnBabySetupCompleted; },
+        () => IsBabySetupOpen = false, () => IsBabySetupOpen);
+    public BabyManagerViewModel BabyManager => _babyManager ??= CreateAndRegisterOverlay(
+        () => new BabyManagerViewModel(),
+        vm => { vm.BabyChanged += OnBabyChanged; },
+        () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
+    public StatisticsViewModel Statistics => _statistics ??= CreateAndRegisterOverlay(
+        () => new StatisticsViewModel(),
+        _ => { },
+        () => IsStatisticsOpen = false, () => IsStatisticsOpen);
+    public PointsViewModel Points => _points ??= CreateAndRegisterOverlay(
+        () => new PointsViewModel(),
+        _ => { },
+        () => IsPointsOpen = false, () => IsPointsOpen);
+    public MembershipViewModel Membership => _membership ??= CreateAndRegisterOverlay(
+        () => new MembershipViewModel(),
+        vm => { vm.PaymentSucceeded += OnMembershipPaymentSucceeded; },
+        () => IsMembershipOpen = false, () => IsMembershipOpen);
+    public AiAnalysisViewModel AiAnalysis => _aiAnalysis ??= CreateAndRegisterOverlay(
+        () => new AiAnalysisViewModel(),
+        vm =>
+        {
+            vm.ConfigRequired += OpenAiSettings;
+            vm.PointsRequired += OpenPoints;
+            vm.MembershipRequired += OpenMembership;
+        },
+        () => IsAiAnalysisOpen = false, () => IsAiAnalysisOpen);
+    public AiSettingsViewModel AiSettings => _aiSettings ??= CreateAndRegisterOverlay(
+        () => new AiSettingsViewModel(),
+        _ => { },
+        () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
+    public ReminderSettingsViewModel ReminderSettings => _reminderSettings ??= CreateAndRegisterOverlay(
+        () => new ReminderSettingsViewModel(),
+        _ => { },
+        () => IsReminderSettingsOpen = false, () => IsReminderSettingsOpen);
+    public SyncSettingsViewModel SyncSettings => _syncSettings ??= CreateAndRegisterOverlay(
+        () => new SyncSettingsViewModel(),
+        _ => { },
+        () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
+    public FamilyViewModel Family => _family ??= CreateAndRegisterOverlay(
+        () => new FamilyViewModel(),
+        _ => { },
+        () => IsFamilyOpen = false, () => IsFamilyOpen);
+    public DeveloperOptionsViewModel DeveloperOptions => _developerOptions ??= CreateAndRegisterOverlay(
+        () => new DeveloperOptionsViewModel(),
+        _ => { },
+        () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
+    public HelpViewModel Help => _help ??= CreateAndRegisterOverlay(
+        () => new HelpViewModel(),
+        _ => { },
+        () => IsHelpOpen = false, () => IsHelpOpen);
+    public PrivacyConsentViewModel PrivacyPolicy => _privacyPolicy ??= CreateAndRegisterOverlay(
+        () =>
+        {
+            // 隐私政策弹层：只读模式，仅展示完整协议 + 关闭按钮
+            var vm = new PrivacyConsentViewModel { IsReadOnly = true };
+            vm.ConsentGiven += () => IsPrivacyPolicyOpen = false;
+            return vm;
+        },
+        _ => { },
+        () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
+    public InAppMessageViewModel InAppMessage => _inAppMessage ??= CreateAndRegisterOverlay(
+        () => new InAppMessageViewModel(),
+        vm => { vm.UnreadCountChanged += () => Mine.RefreshUnreadMessages(); },
+        () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
+    public LanguageSettingsViewModel LanguageSettings => _languageSettings ??= CreateAndRegisterOverlay(
+        () => new LanguageSettingsViewModel(),
+        _ => { },
+        () => IsLanguageSettingsOpen = false, () => IsLanguageSettingsOpen);
+
+    /// <summary>
+    /// 创建弹层 VM 并注册到 _overlays（返回键关闭优先级表）。
+    /// 泛型参数避免 lambda 返回 object 导致重复拆装箱。
+    /// </summary>
+    private T CreateAndRegisterOverlay<T>(
+        Func<T> factory,
+        Action<T> wireEvents,
+        Action close,
+        Func<bool> isOpen) where T : ViewModelBase
+    {
+        var vm = factory();
+        wireEvents(vm);
+        RegisterOverlay(vm, close, isOpen);
+        return vm;
+    }
+
+    // ===== Tab VM 懒加载 =====
+    // Home 立即创建：构造完成后立即 ActivateHomeAfterLogin() 会调用 Home.Activate()。
+    // Feeding/Growth/Mine 懒加载：用户切到对应 Tab 时才创建。
+    // Feeding.EditRequested / Mine.LogoutRequested 事件在首次创建时订阅。
     public HomeViewModel Home { get; }
-    public FeedingViewModel Feeding { get; }
-    public GrowthViewModel Growth { get; }
-    public MineViewModel Mine { get; }
+    private FeedingViewModel? _feeding;
+    private GrowthViewModel? _growth;
+    private MineViewModel? _mine;
+
+    public FeedingViewModel Feeding
+    {
+        get
+        {
+            if (_feeding is null)
+            {
+                _feeding = new FeedingViewModel();
+                _feeding.EditRequested += OpenEditRecord;
+            }
+            return _feeding;
+        }
+    }
+    public GrowthViewModel Growth => _growth ??= new GrowthViewModel();
+    public MineViewModel Mine
+    {
+        get
+        {
+            if (_mine is null)
+            {
+                _mine = new MineViewModel();
+                _mine.LogoutRequested += OnLogout;
+            }
+            return _mine;
+        }
+    }
 
     public event Action? LogoutRequested;
 
@@ -217,26 +339,20 @@ public partial class MainShellViewModel : ViewModelBase
 
     public MainShellViewModel()
     {
+        // ===== 启动必需：立即创建 =====
+        // Home：构造完成后立即 ActivateHomeAfterLogin() 会调用 Home.Activate()，必须立即可用
         Home = new HomeViewModel();
-        Feeding = new FeedingViewModel();
-        Growth = new GrowthViewModel();
-        Mine = new MineViewModel();
-        _currentTab = Home;
-
-        Home.StatisticsRequested += OpenStatistics;
-        Home.CheckInRequested += OpenPoints;
-        Home.QuickRecordRequested += OpenQuickRecord;
-        Feeding.EditRequested += OpenEditRecord;
-        Mine.LogoutRequested += OnLogout;
-
+        // RecordSheet：OpenQuickRecord/OpenEditRecord 可能立即被调用，且 Saved/Closed/VaccineInlineChanged
+        //   事件订阅必须在首次使用前完成
         _recordSheet = new RecordSheetViewModel();
         _recordSheet.Saved += OnRecordSaved;
         _recordSheet.Closed += OnRecordSheetClosed;
         _recordSheet.VaccineInlineChanged += OnVaccineInlineChanged;
-
+        // QuickMenu：首页 + 按钮立即可能被点击，且 OnIsRecordSheetOpenChanged 会访问 QuickMenu
         _quickMenu = new QuickMenuViewModel();
         _quickMenu.OpenRecordRequested += OpenQuickRecord;
-
+        // QuickInput：首页底部输入栏立即显示，Saved/MembershipRequired/ToggleActionsRequested/CloseActionsRequested
+        //   事件必须在用户交互前订阅
         _quickInput = new QuickInputViewModel();
         _quickInput.Saved += OnRecordSaved;
         // AI 记次数用尽 → 跳转会员中心
@@ -246,64 +362,12 @@ public partial class MainShellViewModel : ViewModelBase
         // 输入内容时强制收起功能面板
         _quickInput.CloseActionsRequested += () => QuickMenu.CloseMenuCommand.Execute(null);
 
-        _babySetup = new BabySetupViewModel();
-        _babySetup.Completed += OnBabySetupCompleted;
+        _currentTab = Home;
 
-        _babyManager = new BabyManagerViewModel();
-        _babyManager.BabyChanged += OnBabyChanged;
-
-        _statistics = new StatisticsViewModel();
-
-        _points = new PointsViewModel();
-
-        _membership = new MembershipViewModel();
-        _membership.PaymentSucceeded += OnMembershipPaymentSucceeded;
-
-        _aiAnalysis = new AiAnalysisViewModel();
-        _aiAnalysis.ConfigRequired += OpenAiSettings;
-        _aiAnalysis.PointsRequired += OpenPoints;
-        _aiAnalysis.MembershipRequired += OpenMembership;
-
-        _aiSettings = new AiSettingsViewModel();
-
-        _reminderSettings = new ReminderSettingsViewModel();
-
-        _syncSettings = new SyncSettingsViewModel();
-
-        _family = new FamilyViewModel();
-
-        _developerOptions = new DeveloperOptionsViewModel();
-
-        _help = new HelpViewModel();
-
-        // 隐私政策弹层：只读模式，仅展示完整协议 + 关闭按钮
-        _privacyPolicy = new PrivacyConsentViewModel { IsReadOnly = true };
-        _privacyPolicy.ConsentGiven += () => IsPrivacyPolicyOpen = false;
-
-        // 应用内消息中心
-        _inAppMessage = new InAppMessageViewModel();
-        // 消息中心内标记已读/全部已读后，同步刷新"我的"页红点
-        _inAppMessage.UnreadCountChanged += () => Mine.RefreshUnreadMessages();
-
-        // 语言设置
-        _languageSettings = new LanguageSettingsViewModel();
-
-        // 注册弹层（顺序决定系统返回键的关闭优先级：后注册的先关）
-        RegisterOverlay(BabySetup, () => IsBabySetupOpen = false, () => IsBabySetupOpen);
-        RegisterOverlay(BabyManager, () => IsBabyManagerOpen = false, () => IsBabyManagerOpen);
-        RegisterOverlay(Statistics, () => IsStatisticsOpen = false, () => IsStatisticsOpen);
-        RegisterOverlay(AiAnalysis, () => IsAiAnalysisOpen = false, () => IsAiAnalysisOpen);
-        RegisterOverlay(Points, () => IsPointsOpen = false, () => IsPointsOpen);
-        RegisterOverlay(Membership, () => IsMembershipOpen = false, () => IsMembershipOpen);
-        RegisterOverlay(AiSettings, () => IsAiSettingsOpen = false, () => IsAiSettingsOpen);
-        RegisterOverlay(ReminderSettings, () => IsReminderSettingsOpen = false, () => IsReminderSettingsOpen);
-        RegisterOverlay(SyncSettings, () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
-        RegisterOverlay(Family, () => IsFamilyOpen = false, () => IsFamilyOpen);
-        RegisterOverlay(DeveloperOptions, () => IsDeveloperOptionsOpen = false, () => IsDeveloperOptionsOpen);
-        RegisterOverlay(Help, () => IsHelpOpen = false, () => IsHelpOpen);
-        RegisterOverlay(PrivacyPolicy, () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
-        RegisterOverlay(InAppMessage, () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
-        RegisterOverlay(LanguageSettings, () => IsLanguageSettingsOpen = false, () => IsLanguageSettingsOpen);
+        // 转发 Home 事件到 Shell 层（立即订阅，避免遗漏）
+        Home.StatisticsRequested += OpenStatistics;
+        Home.CheckInRequested += OpenPoints;
+        Home.QuickRecordRequested += OpenQuickRecord;
 
         // 订阅 QuickMenu.IsMenuOpen 变化，触发返回拦截状态检查
         QuickMenu.PropertyChanged += (_, e) =>
@@ -333,9 +397,9 @@ public partial class MainShellViewModel : ViewModelBase
         CurrentTab = tab switch
         {
             "home" => Home,
-            "feeding" => Feeding,
-            "growth" => Growth,
-            "mine" => Mine,
+            "feeding" => Feeding,  // 懒加载：首次切到喂养 Tab 时创建 FeedingViewModel
+            "growth" => Growth,    // 懒加载：首次切到成长 Tab 时创建 GrowthViewModel
+            "mine" => Mine,        // 懒加载：首次切到我的 Tab 时创建 MineViewModel
             _ => Home,
         };
         if (CurrentTab is IActivatable activatable) activatable.Activate();
@@ -347,9 +411,10 @@ public partial class MainShellViewModel : ViewModelBase
     /// </summary>
     public string GetCurrentTabId()
     {
-        if (ReferenceEquals(CurrentTab, Feeding)) return "feeding";
-        if (ReferenceEquals(CurrentTab, Growth)) return "growth";
-        if (ReferenceEquals(CurrentTab, Mine)) return "mine";
+        // 懒加载场景下用 IsXxxSelected 判断（未创建实例也能正确返回）
+        if (IsFeedingSelected) return "feeding";
+        if (IsGrowthSelected) return "growth";
+        if (IsMineSelected) return "mine";
         return "home";
     }
 
@@ -368,7 +433,7 @@ public partial class MainShellViewModel : ViewModelBase
         IsMineSelected = tab == "mine";
         CurrentTab = tab switch
         {
-            "feeding" => Feeding,
+            "feeding" => Feeding,  // 懒加载：恢复时按需创建
             "growth" => Growth,
             "mine" => Mine,
             _ => Home,
@@ -419,7 +484,7 @@ public partial class MainShellViewModel : ViewModelBase
 
     public void OpenBabySetup()
     {
-        BabySetup.Reset();
+        BabySetup.Reset();  // 懒加载：首次访问创建实例 + 注册 Overlay
         IsBabySetupOpen = true;
     }
 
@@ -428,7 +493,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsBabyManagerOpen = true;
-            await BabyManager.LoadAsync();
+            await BabyManager.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenBabyManager failed: " + ex); }
     }
@@ -438,7 +503,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsStatisticsOpen = true;
-            await Statistics.LoadAsync();
+            await Statistics.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenStatistics failed: " + ex); }
     }
@@ -448,7 +513,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsPointsOpen = true;
-            await Points.LoadAsync();
+            await Points.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenPoints failed: " + ex); }
     }
@@ -459,7 +524,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsMembershipOpen = true;
-            await Membership.LoadAsync();
+            await Membership.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenMembership failed: " + ex); }
     }
@@ -467,7 +532,7 @@ public partial class MainShellViewModel : ViewModelBase
     /// <summary>会员支付成功后刷新"我的"页会员状态文案。</summary>
     private async void OnMembershipPaymentSucceeded()
     {
-        try { await Mine.RefreshMembershipStatusAsync(); }
+        try { await Mine.RefreshMembershipStatusAsync(); }  // Mine 懒加载：若用户未访问过"我的"页则此处创建
         catch (Exception ex) { DevLogger.Log("Shell", "OnMembershipPaymentSucceeded refresh failed: " + ex); }
     }
 
@@ -476,26 +541,26 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsAiAnalysisOpen = true;
-            await AiAnalysis.LoadAsync();
+            await AiAnalysis.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenAiAnalysis failed: " + ex); }
     }
 
     public void OpenAiSettings()
     {
-        AiSettings.Activate();
+        AiSettings.Activate();  // 懒加载：首次访问创建实例
         IsAiSettingsOpen = true;
     }
 
     public void OpenReminderSettings()
     {
-        ReminderSettings.Activate();
+        ReminderSettings.Activate();  // 懒加载：首次访问创建实例
         IsReminderSettingsOpen = true;
     }
 
     public void OpenSyncSettings()
     {
-        IsSyncSettingsOpen = true;
+        IsSyncSettingsOpen = true;  // 懒加载：SyncSettings 属性在 View 绑定时才创建
     }
 
     public async void OpenFamily()
@@ -503,7 +568,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsFamilyOpen = true;
-            await Family.LoadAsync();
+            await Family.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenFamily failed: " + ex); }
     }
@@ -516,20 +581,20 @@ public partial class MainShellViewModel : ViewModelBase
         return;
 #else
         IsDeveloperOptionsOpen = true;
-        DeveloperOptions.Activate();
+        DeveloperOptions.Activate();  // 懒加载：首次访问创建实例
 #endif
     }
 
     /// <summary>打开"使用帮助"页。</summary>
     public void OpenHelp()
     {
-        IsHelpOpen = true;
+        IsHelpOpen = true;  // 懒加载：Help 属性在 View 绑定时才创建
     }
 
     /// <summary>打开隐私政策查看（只读模式，不展示同意/不同意按钮）。</summary>
     public void OpenPrivacyPolicy()
     {
-        // 直接展示完整协议视图
+        // 直接展示完整协议视图（PrivacyPolicy 属性首次访问时创建实例并注册 Overlay）
         PrivacyPolicy.ViewFullPolicyCommand.Execute(null);
         IsPrivacyPolicyOpen = true;
     }
@@ -548,7 +613,7 @@ public partial class MainShellViewModel : ViewModelBase
         try
         {
             IsInAppMessageOpen = true;
-            await InAppMessage.LoadAsync();
+            await InAppMessage.LoadAsync();  // 懒加载：首次访问创建实例
         }
         catch (Exception ex) { DevLogger.Log("Shell", "OpenInAppMessage failed: " + ex); }
     }
@@ -556,7 +621,7 @@ public partial class MainShellViewModel : ViewModelBase
     /// <summary>打开语言设置页（中英文切换）。</summary>
     public void OpenLanguageSettings()
     {
-        IsLanguageSettingsOpen = true;
+        IsLanguageSettingsOpen = true;  // 懒加载：LanguageSettings 属性在 View 绑定时才创建
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>
@@ -612,6 +677,8 @@ public partial class MainShellViewModel : ViewModelBase
             await Home.RefreshAsync();
             // 无条件刷新 Feeding 列表：用户可能在首页用 AI 输入栏生成记录后切到喂奶 Tab 查看，
             // 也可能就在喂奶 Tab 内通过 RecordSheet 添加。两种场景都需要刷新。
+            // 懒加载场景：若 Feeding 未创建（用户从未访问过喂奶 Tab），此处触发创建并 Activate。
+            // 这是合理的——保存记录后用户可能立即切到喂奶 Tab，提前创建可避免切换时的卡顿。
             Feeding.Activate();
             // Statistics 不再主动刷新：用户进入统计页时 OpenStatistics 会触发 LoadAsync
             // 避免保存记录后无谓地刷新用户未查看的页面
@@ -650,6 +717,8 @@ public partial class MainShellViewModel : ViewModelBase
     {
         CloseRecordSheetAndQuickMenu();
         CloseAllOverlays();
+        // 释放可释放的懒加载 VM（如 SyncSettings 实现 IDisposable）
+        (_syncSettings as IDisposable)?.Dispose();
         LogoutRequested?.Invoke();
     }
 
