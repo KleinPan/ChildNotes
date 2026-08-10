@@ -94,7 +94,7 @@
         <!-- RenderTransform="none" 初始值必须显式设置，避免首次过渡从 null 跳变 -->
         <Border x:Name="ToastBorder" Grid.Row="1" Margin="0,0,0,8" Padding="16,10"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
-                Background="#CC000000" CornerRadius="8"
+                Background="{StaticResource MaskBrush}" CornerRadius="8"
                 RenderTransform="none"
                 IsVisible="{Binding QuickInput.ShowToast}"
                 ZIndex="100">

@@ -29,7 +29,7 @@
             <Setter Property="Width" Value="48"/>
             <Setter Property="Height" Value="48"/>
             <Setter Property="CornerRadius" Value="24"/>
-            <Setter Property="Background" Value="#F0F0F0"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
         </Style>
         <Style Selector="TextBlock.action-emoji">
             <Setter Property="FontSize" Value="24"/>
@@ -38,7 +38,7 @@
         </Style>
         <Style Selector="TextBlock.action-label">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="0,4,0,0"/>
         </Style>
@@ -54,7 +54,7 @@
          8 项时 1 页（PipsPager 自动隐藏），>8 项时自动分页。
          无遮罩层，面板直接可交互。 -->
     <Border Padding="16,12" Background="{StaticResource WeuiBg2Brush}"
-            BorderBrush="#E8E8E8" BorderThickness="0,1,0,0"
+            BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0"
             IsVisible="{Binding IsMenuOpen}">
         <StackPanel Spacing="0">
             <!-- Carousel：每页一个 UniformGrid 4×2，支持左右滑动 -->

@@ -258,7 +258,7 @@
         <Border Grid.Row="0" Grid.RowSpan="5"
                 VerticalAlignment="Bottom" HorizontalAlignment="Center"
                 Margin="16,0,16,16"
-                Background="#CC000000" CornerRadius="8" Padding="20,10"
+                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10"
                 IsVisible="{Binding ShowToast}">
             <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}"
                        FontSize="13" TextWrapping="Wrap" MaxWidth="320"/>

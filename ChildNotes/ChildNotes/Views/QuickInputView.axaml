@@ -14,7 +14,7 @@
         <!-- 输入框：圆角胶囊形，浅灰底，对齐微信风格 -->
         <Style Selector="TextBox.quick-input">
             <Setter Property="CornerRadius" Value="18" />
-            <Setter Property="Background" Value="#F5F5F5" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Padding" Value="14,8" />
@@ -53,7 +53,7 @@
     </UserControl.Styles>
 
     <!-- 键盘上推由 MainShellView 通过 Row=0 Margin 控制，此处无需特殊布局 -->
-    <Border Padding="12,8,12,8" Background="{StaticResource SurfaceCardBrush}" BorderBrush="#F0F0F0" BorderThickness="0,1,0,0">
+    <Border Padding="12,8,12,8" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0">
         <Grid ColumnDefinitions="*,Auto">
             <!-- 输入框 -->
             <TextBox Grid.Column="0"

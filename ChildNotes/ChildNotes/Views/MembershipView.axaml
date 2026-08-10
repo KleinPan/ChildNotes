@@ -194,7 +194,7 @@
         </Border>
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="#CC000000" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
             <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
         </Border>
     </Grid>

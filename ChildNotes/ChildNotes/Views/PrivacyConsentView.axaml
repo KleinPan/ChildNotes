@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.PrivacyConsentView"
              x:DataType="vm:PrivacyConsentViewModel"
-             Background="#80000000">
+             Background="{StaticResource MaskLightBrush}">
 
     <!-- 隐私协议弹窗：模态遮罩 + 居中白底卡片，覆盖在整个应用之上 -->
     <Panel>
@@ -19,7 +19,7 @@
 
                 <!-- 标题 -->
                 <TextBlock Grid.Row="0" Text="{DynamicResource Privacy_Title}" FontSize="18" FontWeight="Bold"
-                           HorizontalAlignment="Center" Foreground="#1A1A1A"/>
+                           HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
 
                 <!-- 内容区：摘要视图 / 完整协议视图 二选一 -->
                 <Grid Grid.Row="1">
@@ -29,7 +29,7 @@
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="12">
                             <TextBlock Text="{Binding SummaryText}" FontSize="14"
-                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                                       Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
                                 <Button Content="{DynamicResource Privacy_ViewPolicy}" Classes="weui-btn mini default"
                                         Command="{Binding ViewFullPolicyCommand}"/>
@@ -64,11 +64,11 @@
                             <TextBlock Text="{Binding FullPolicyText}"
                                        IsVisible="{Binding IsPolicyTabActive}"
                                        FontSize="13"
-                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                                       Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                             <TextBlock Text="{Binding FullAgreementText}"
                                        IsVisible="{Binding IsAgreementTabActive}"
                                        FontSize="13"
-                                       Foreground="#333333" TextWrapping="Wrap" LineHeight="22"/>
+                                       Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

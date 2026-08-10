@@ -37,7 +37,7 @@
 
         <!--  明细面板样式  -->
         <Style Selector="Border.detail-item">
-            <Setter Property="Background" Value="#F8F9FA"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="10,8"/>
         </Style>
@@ -199,8 +199,8 @@
                             <!--  绘图区  -->
                             <Grid Margin="38,0,0,18" Background="Transparent">
                                 <!--  网格线  -->
-                                <Border Height="2" Background="#EDF0F2" VerticalAlignment="Top"/>
-                                <Border Height="2" Background="#EDF0F2" VerticalAlignment="Center"/>
+                                <Border Height="2" Background="{StaticResource SurfaceDisabledBrush}" VerticalAlignment="Top"/>
+                                <Border Height="2" Background="{StaticResource SurfaceDisabledBrush}" VerticalAlignment="Center"/>
                                 <Border Width="2" Background="#D9DDE3" HorizontalAlignment="Left"/>
 
                                 <!--  柱状图滚动容器（P1-3: 自动滚动到今日）  -->

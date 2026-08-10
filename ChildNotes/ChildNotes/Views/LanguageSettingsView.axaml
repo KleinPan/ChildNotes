@@ -42,7 +42,7 @@
                                     BorderBrush="{Binding $self.Background}"
                                     IsVisible="{Binding IsZhHans}">
                                 <Border.Background>
-                                    <SolidColorBrush Color="#07C160"/>
+                                    <SolidColorBrush Color="{StaticResource Color.Brand.Primary}"/>
                                 </Border.Background>
                                 <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -61,7 +61,7 @@
                                     BorderBrush="{Binding $self.Background}"
                                     IsVisible="{Binding IsEn}">
                                 <Border.Background>
-                                    <SolidColorBrush Color="#07C160"/>
+                                    <SolidColorBrush Color="{StaticResource Color.Brand.Primary}"/>
                                 </Border.Background>
                                 <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>

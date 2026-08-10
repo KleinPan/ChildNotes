@@ -23,7 +23,7 @@
                                    Text="👤" />
                     </Border>
                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                        <TextBlock FontSize="18" FontWeight="Bold" Foreground="#1A1A1A" Text="{Binding NickName}" />
+                        <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding NickName}" />
                         <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding RoleText}" />
                     </StackPanel>
                 </Grid>
