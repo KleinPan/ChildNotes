@@ -112,8 +112,14 @@ public partial class StatisticsViewModel : ViewModelBase
             };
             var avg = avgBase > 0 ? total / avgBase : 0;
 
-            // 柱状图数据
-            var bars = BuildChartBars(valueList, max, selectedRange, typeOpt);
+            // 柱状图数据（month 模式按月聚合，避免横轴 200+ 个日节点）
+            var chartValues = selectedRange == "month"
+                ? valueList.GroupBy(v => v.Date.ToString("yyyy-MM"))
+                           .Select(g => (Date: DateTime.ParseExact(g.Key + "-01", "yyyy-MM-dd", null), Value: g.Sum(v => v.Value)))
+                           .ToList()
+                : valueList;
+            var chartMax = chartValues.Count > 0 ? chartValues.Max(v => v.Value) : 0;
+            var bars = BuildChartBars(chartValues, chartMax, selectedRange, typeOpt);
             // 日历热力图数据
             var calData = BuildCalendarData(valueList, max, selectedRange, typeOpt);
             // 明细面板数据
@@ -167,12 +173,12 @@ public partial class StatisticsViewModel : ViewModelBase
         SummaryItems.Clear();
         foreach (var s in snapshot.Summary) SummaryItems.Add(s);
 
-        // 柱宽自适应（对齐小程序 chart-mode-class）
+        // 柱宽：少柱时给固定宽度（0 在 Avalonia 里是 0 像素不可见，不同于小程序的 flex:1）
         BarWidth = selectedRange switch
         {
             "month" => 42,
             "day" => 30,
-            _ => snapshot.Bars.Count <= 7 ? 0 : 72,  // 0 表示 flex:1 自适应
+            _ => snapshot.Bars.Count <= 7 ? 40 : 72,
         };
 
         // 自动滚动到今日（对齐小程序 getChartScrollLeft）
