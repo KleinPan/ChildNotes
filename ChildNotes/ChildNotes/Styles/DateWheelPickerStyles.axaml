@@ -4,13 +4,13 @@
 
     <!-- ToggleButton 悬停和选中样式 -->
     <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton">
-        <Setter Property="Background" Value="#F5F5F5" />
+        <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
     </Style>
     <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#EBEBEB" />
+        <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}" />
     </Style>
     <Style Selector="ctrl|DateWheelPicker /template/ ToggleButton:checked /template/ ContentPresenter">
-        <Setter Property="Background" Value="#EBEBEB" />
+        <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}" />
     </Style>
 
     <!-- DateWheelPicker 默认模板：日期选择器复合控件 -->
@@ -22,7 +22,7 @@
                                    IsChecked="{TemplateBinding IsDropdownOpen, Mode=TwoWay}"
                                    HorizontalAlignment="Stretch"
                                    HorizontalContentAlignment="Left"
-                                   Background="#F5F5F5"
+                                   Background="{StaticResource SurfaceDisabledBrush}"
                                    BorderThickness="0"
                                    CornerRadius="8"
                                    Padding="8,4"
@@ -37,8 +37,8 @@
                            IsLightDismissEnabled="True"
                            Placement="BottomEdgeAlignedLeft"
                            PlacementTarget="{TemplateBinding}">
-                        <Border Background="White"
-                                BorderBrush="#E0E0E0"
+                        <Border Background="{StaticResource SurfaceCardBrush}"
+                                BorderBrush="{StaticResource SurfaceDividerBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 BoxShadow="0 4 12 #20000000"
@@ -46,7 +46,7 @@
                             <!-- 三列：年 月 日 -->
                             <StackPanel Orientation="Horizontal" Spacing="-2">
                                 <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="年" FontSize="11" Foreground="#999"
+                                    <TextBlock Text="年" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}"
                                                HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     <ctrl:MomentumWheelList Name="PART_YearWheel"
                                                              Width="52"
@@ -61,7 +61,7 @@
                                     </ctrl:MomentumWheelList>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="月" FontSize="11" Foreground="#999"
+                                    <TextBlock Text="月" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}"
                                                HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     <ctrl:MomentumWheelList Name="PART_MonthWheel"
                                                              Width="42"
@@ -76,7 +76,7 @@
                                     </ctrl:MomentumWheelList>
                                 </StackPanel>
                                 <StackPanel Orientation="Vertical">
-                                    <TextBlock Text="日" FontSize="11" Foreground="#999"
+                                    <TextBlock Text="日" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}"
                                                HorizontalAlignment="Center" Margin="0,2,0,0"/>
                                     <ctrl:MomentumWheelList Name="PART_DayWheel"
                                                              Width="42"
