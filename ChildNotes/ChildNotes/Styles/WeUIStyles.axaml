@@ -28,7 +28,7 @@
 
     <!-- 模态遮罩：统一各弹层/对话框的半透明黑色背景（50% black） -->
     <Style Selector="Border.modal-mask">
-        <Setter Property="Background" Value="#80000000" />
+        <Setter Property="Background" Value="{StaticResource MaskLightBrush}" />
     </Style>
 
     <!-- 注：Border.mini-card / Border.quick-action-bg / Border.chip(.active) 原 Style 已删除，
@@ -68,7 +68,7 @@
         <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.weui-btn.primary:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="#06AD56" />
+        <Setter Property="Background" Value="{StaticResource BrandPrimaryDarkBrush}" />
     </Style>
 
     <Style Selector="Button.weui-btn.warn">
@@ -91,8 +91,8 @@
     </Style>
 
     <Style Selector="Border.tab-bar">
-        <Setter Property="Background" Value="White" />
-        <Setter Property="BorderBrush" Value="#F0F0F0" />
+        <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}" />
         <Setter Property="BorderThickness" Value="0,1,0,0" />
         <!-- 原版阴影: 0 -2rpx 12rpx rgba(0,0,0,0.04) -->
         <Setter Property="BoxShadow" Value="0 -1 6 0 #0A000000" />
@@ -123,11 +123,11 @@
         <Setter Property="RenderTransform" Value="scale(0.9)"/>
     </Style>
     <Style Selector="Button.tab-item PathIcon">
-        <Setter Property="Foreground" Value="#999999" />
+        <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}" />
     </Style>
     <Style Selector="Button.tab-item TextBlock.tab-text">
         <Setter Property="FontSize" Value="10" />
-        <Setter Property="Foreground" Value="#999999" />
+        <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}" />
         <Setter Property="HorizontalAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.tab-item.active PathIcon">
