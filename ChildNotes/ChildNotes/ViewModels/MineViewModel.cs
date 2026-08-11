@@ -94,20 +94,50 @@ public partial class MineViewModel : ViewModelBase, IActivatable
             NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
             AvatarUrl = user?.AvatarUrl ?? string.Empty;
 
-            BabyList.Clear();
-            var babies = _babyService.LoadBabyList();
-            foreach (var b in babies) BabyList.Add(b);
-            BabyCount = babies.Count;
-            OnPropertyChanged(nameof(BabyCountText));
-
-            RefreshUnreadMessages();
-            _ = RefreshMembershipStatusAsync();
-            DevLogger.Log("Mine", "Activate done");
+            // DB 调用 + HTTP 调用全部移到后台线程，避免 UI 线程阻塞。
+            // 历史问题：HttpClient.SendAsync 在 Android 上首次调用会做 DNS 解析 + SSL 握手，
+            // 部分操作可能在 UI 线程同步执行，导致 ANR。
+            _ = LoadDataAsync();
+            DevLogger.Log("Mine", "Activate done (async loading scheduled)");
         }
         catch (Exception ex)
         {
             DevLogger.Log("Mine", "Activate EXCEPTION: " + ex);
             ReleaseLogger.Error("Mine", ex, "Activate failed");
+        }
+    }
+
+    /// <summary>
+    /// 后台加载宝宝列表 + 未读消息 + 会员状态。
+    /// 所有 DB/HTTP 调用都在 Task.Run 内执行，UI 线程仅做 ObservableCollection/属性赋值。
+    /// </summary>
+    private async Task LoadDataAsync()
+    {
+        try
+        {
+            // 1. 后台线程：DB 查询
+            var babies = await Task.Run(() => _babyService.LoadBabyList());
+            var unreadCount = await Task.Run(() =>
+            {
+                try { return _msgService.GetUnreadCount(); }
+                catch { return 0; }
+            });
+
+            // 2. UI 线程：更新 ObservableCollection（跨线程访问会抛异常）
+            BabyList.Clear();
+            foreach (var b in babies) BabyList.Add(b);
+            BabyCount = babies.Count;
+            OnPropertyChanged(nameof(BabyCountText));
+            UnreadMessageCount = unreadCount;
+            HasUnreadMessages = unreadCount > 0;
+
+            // 3. 后台线程：HTTP 查询会员状态
+            await RefreshMembershipStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Mine", "LoadDataAsync EXCEPTION: " + ex);
+            ReleaseLogger.Error("Mine", ex, "LoadDataAsync failed");
         }
     }
 
@@ -118,7 +148,8 @@ public partial class MineViewModel : ViewModelBase, IActivatable
         var regularText = _locale.GetString("Mine_Membership_Regular", "普通用户");
         try
         {
-            var status = await ServiceProvider.Instance.MembershipApiClient.GetStatusAsync();
+            // HTTP 调用包到 Task.Run，确保 DNS/SSL 握手在后台线程执行
+            var status = await Task.Run(() => ServiceProvider.Instance.MembershipApiClient.GetStatusAsync());
             // MembershipStatusDto.ExpireAt 为 ISO 8601 字符串，解析为 DateTime? 后判断
             DateTime? expireAt = null;
             if (!string.IsNullOrEmpty(status?.ExpireAt) && DateTime.TryParse(status.ExpireAt, out var parsed))

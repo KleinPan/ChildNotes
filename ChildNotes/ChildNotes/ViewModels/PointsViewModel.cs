@@ -86,8 +86,9 @@ public partial class PointsViewModel : ViewModelBase
         if (Signing || TodaySigned) return;
         Signing = true;
 
-        // 先尝试后端签到（权威数据源）
-        var serverResult = await _pointsApi.SignInAsync();
+        // 先尝试后端签到（权威数据源）。
+        // HTTP 调用包到 Task.Run，确保 DNS/SSL 握手在后台线程执行，避免 Android UI 线程 ANR。
+        var serverResult = await Task.Run(() => _pointsApi.SignInAsync());
         if (serverResult is not null && !serverResult.AlreadySignedIn)
         {
             // 后端签到成功：用后端返回的积分覆盖本地 SQLite，确保本地显示与后端一致
@@ -129,7 +130,7 @@ public partial class PointsViewModel : ViewModelBase
         item.Claiming = true;
         try
         {
-            var result = await _pointsApi.ClaimTaskAsync(item.TaskKey);
+            var result = await Task.Run(() => _pointsApi.ClaimTaskAsync(item.TaskKey));
             item.IsClaimed = true;
             item.RefreshCanClaim();
             Points = (int)result.Points;
