@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -88,51 +87,27 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 
     public void Activate()
     {
-        DevLogger.Log("Mine", "Activate start");
-        // 用户信息从内存读取，立即同步设置（无 DB 调用，不会阻塞）
-        var user = _auth.CurrentUser;
-        NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
-        AvatarUrl = user?.AvatarUrl ?? string.Empty;
-        DevLogger.Log("Mine", "Activate: user info set, starting ActivateCoreAsync");
-
-        // DB 调用移到后台线程，避免启动期与 TryRestoreSession 的 SQLite 操作竞态导致 ANR/闪退
-        _ = ActivateCoreAsync();
-    }
-
-    private async Task ActivateCoreAsync()
-    {
         try
         {
-            DevLogger.Log("Mine", "ActivateCoreAsync: start Task.Run for GetBabyListSnapshot");
-            // 后台线程执行 DB 查询，避免 UI 线程同步阻塞
-            var babies = await Task.Run(() => _babyService.GetBabyListSnapshot());
-            DevLogger.Log("Mine", $"ActivateCoreAsync: babies.Count={babies.Count}");
+            DevLogger.Log("Mine", "Activate start");
+            var user = _auth.CurrentUser;
+            NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
+            AvatarUrl = user?.AvatarUrl ?? string.Empty;
 
-            var unreadCount = 0;
-            try { unreadCount = await Task.Run(() => _msgService.GetUnreadCount()); }
-            catch (Exception ex) { DevLogger.Log("Mine", "GetUnreadCount ex: " + ex.Message); }
-            DevLogger.Log("Mine", $"ActivateCoreAsync: unreadCount={unreadCount}");
+            BabyList.Clear();
+            var babies = _babyService.LoadBabyList();
+            foreach (var b in babies) BabyList.Add(b);
+            BabyCount = babies.Count;
+            OnPropertyChanged(nameof(BabyCountText));
 
-            // UI 属性更新 marshalling 到 UI 线程（ObservableCollection 必须在 UI 线程修改）
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                BabyList.Clear();
-                foreach (var b in babies) BabyList.Add(b);
-                BabyCount = babies.Count;
-                OnPropertyChanged(nameof(BabyCountText));
-
-                UnreadMessageCount = unreadCount;
-                HasUnreadMessages = unreadCount > 0;
-            });
-            DevLogger.Log("Mine", "ActivateCoreAsync: UI props updated");
-
-            // 异步刷新会员状态文案（网络调用，不阻塞 UI）
+            RefreshUnreadMessages();
             _ = RefreshMembershipStatusAsync();
+            DevLogger.Log("Mine", "Activate done");
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Mine", "ActivateCoreAsync EXCEPTION: " + ex);
-            ReleaseLogger.Warn("Mine", ex, "ActivateCoreAsync failed");
+            DevLogger.Log("Mine", "Activate EXCEPTION: " + ex);
+            ReleaseLogger.Error("Mine", ex, "Activate failed");
         }
     }
 
@@ -160,19 +135,11 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。</summary>
     public void RefreshUnreadMessages()
     {
-        _ = RefreshUnreadMessagesAsync();
-    }
-
-    private async Task RefreshUnreadMessagesAsync()
-    {
         try
         {
-            var count = await Task.Run(() => _msgService.GetUnreadCount());
-            await Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                UnreadMessageCount = count;
-                HasUnreadMessages = count > 0;
-            });
+            var count = _msgService.GetUnreadCount();
+            UnreadMessageCount = count;
+            HasUnreadMessages = count > 0;
         }
         catch { /* 非致命 */ }
     }
