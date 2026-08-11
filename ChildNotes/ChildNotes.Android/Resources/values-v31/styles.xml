@@ -18,5 +18,8 @@
     <item name="android:windowActionBar">false</item>
     <item name="android:windowBackground">@drawable/splash_screen</item>
     <item name="android:windowNoTitle">true</item>
+    <!-- 显式设置状态栏颜色，避免 Android 12+ SplashScreen 消失后奶油色 windowSplashScreenBackground 残留到状态栏。
+         值与 Avalonia DesignTokens SurfaceBackgroundBrush (#F5F6F8) 一致，与 MainShellView 背景对齐。 -->
+    <item name="android:statusBarColor">@color/app_background</item>
   </style>
 </resources>

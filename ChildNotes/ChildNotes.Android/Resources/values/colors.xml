@@ -2,4 +2,7 @@
 <resources>
   <!-- 奶油色启动屏背景，与 Avalonia LoadingView 背景 #FFF8E7 一致。 -->
   <color name="splash_background">#FFF8E7</color>
+  <!-- App 主背景色，与 Avalonia DesignTokens SurfaceBackgroundBrush #F5F6F8 一致。
+       用于 postSplashScreenTheme 的 statusBarColor，避免启动屏奶油色残留到状态栏。 -->
+  <color name="app_background">#F5F6F8</color>
 </resources>

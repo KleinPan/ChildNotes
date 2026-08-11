@@ -3,4 +3,6 @@
   <!-- 深色模式也用奶油色背景，与 LoadingView 背景 #FFF8E7 一致，避免启动屏→LoadingView 闪烁。
        LoadingView 内部文字/插画已按暖色调设计，在深色模式下仍可辨识。 -->
   <color name="splash_background">#FFF8E7</color>
+  <!-- App 主背景色（与 values/ 同值，App 强制 Light 模式，深色模式不会实际启用）。 -->
+  <color name="app_background">#F5F6F8</color>
 </resources>
