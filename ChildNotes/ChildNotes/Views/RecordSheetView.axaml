@@ -20,20 +20,20 @@
         </Style>
         <Style Selector="TextBlock.form-label">
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
         <Style Selector="Border.type-tab">
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="0,8" />
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
         </Style>
         <Style Selector="Border.type-tab.active">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
         </Style>
         <Style Selector="Border.type-tab TextBlock">
             <Setter Property="FontSize" Value="13" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.type-tab.active TextBlock">
@@ -43,13 +43,13 @@
         <Style Selector="Border.type-card">
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="Padding" Value="0,12" />
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.type-card.active">
             <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}" />
         </Style>
         <!--  补给 Chip：默认项（灰底）  -->
         <Style Selector="Border.supp-chip">
@@ -68,16 +68,16 @@
         <!--  自定义项（白底 + 绿色描边）  -->
         <Style Selector="Border.supp-chip.custom">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.supp-chip.custom TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource BrandPrimaryBrush}" />
         </Style>
         <!--  选中态（绿底白字）  -->
         <Style Selector="Border.supp-chip.active">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}" />
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}" />
         </Style>
         <Style Selector="Border.supp-chip.active TextBlock">
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
@@ -153,23 +153,23 @@
             <Setter Property="Width" Value="10" />
             <Setter Property="Height" Value="10" />
             <Setter Property="CornerRadius" Value="5" />
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Background" Value="{StaticResource GrowthBlueBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
         <Style Selector="Border.vf-segment">
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="0,6" />
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}" />
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
         <Style Selector="Border.vf-segment.active">
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Background" Value="{StaticResource GrowthBlueBrush}" />
         </Style>
         <Style Selector="Border.vf-segment TextBlock">
             <Setter Property="FontSize" Value="12" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
         <Style Selector="Border.vf-segment.active TextBlock">
@@ -181,7 +181,7 @@
             <Setter Property="FontSize" Value="11" />
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Background" Value="{StaticResource GrowthBlueBrush}" />
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
@@ -191,8 +191,8 @@
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiOrangeBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiOrangeBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource FeedingOrangeBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource FeedingOrangeBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  改时间按钮：蓝色边框风格，与 vf-skip 对称  -->
@@ -202,8 +202,8 @@
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiBlueBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource GrowthBlueBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource GrowthBlueBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  取消按钮：灰色边框风格  -->
@@ -213,8 +213,8 @@
             <Setter Property="Padding" Value="10,3" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  异常表单 chip 样式：呼吸道多选 chip  -->
@@ -228,7 +228,7 @@
         </Style>
         <Style Selector="Border.abn-chip.active">
             <Setter Property="Background" Value="{StaticResource FeedingOrangeLightBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiOrangeBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource FeedingOrangeBrush}" />
         </Style>
         <Style Selector="Border.abn-chip TextBlock">
             <Setter Property="FontSize" Value="13" />
@@ -270,12 +270,12 @@
             x:Name=SheetRoot 供 code-behind 访问。
         -->
         <Border x:Name="SheetRoot" MaxHeight="600" VerticalAlignment="Bottom"
-                Background="{StaticResource WeuiBg2Brush}"
+                Background="{StaticResource SurfaceCardBrush}"
                 CornerRadius="16,16,0,0"
                 IsVisible="{Binding IsVisible}">
 
             <Grid RowDefinitions="Auto,*,Auto">
-                <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="17" FontWeight="Bold"
                                    Text="{Binding SheetTitle}" />
@@ -431,7 +431,7 @@
                             </Border>
                             <Border Padding="10" Background="{StaticResource MedicineRedLightBrush}" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding TemperatureForm.IsFeverWarning}">
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverWarn}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource SemanticErrorBrush}" Text="{DynamicResource RS_TemperatureFeverWarn}" />
                             </Border>
                             <Border Classes="form-section">
                                 <StackPanel>
@@ -458,14 +458,14 @@
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="📏" />
                                         <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
-                                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
                                                    Text="{DynamicResource RS_Height}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                             <TextBox x:Name="GrowthHeightTextBox" Width="80" HorizontalContentAlignment="Center" Background="{StaticResource SurfaceCardBrush}"
                                                      CornerRadius="8" FontSize="22" FontWeight="Bold" PlaceholderText="0"
                                                      Text="{Binding GrowthForm.HeightText}" />
                                             <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
-                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
                                                        Text="cm" />
                                         </StackPanel>
                                     </StackPanel>
@@ -475,14 +475,14 @@
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="⚖️" />
                                         <TextBlock Margin="0,0,0,10" HorizontalAlignment="Center" FontSize="12"
-                                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
                                                    Text="{DynamicResource RS_Weight}" />
                                         <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
                                             <TextBox Width="80" HorizontalContentAlignment="Center" Background="{StaticResource SurfaceCardBrush}" CornerRadius="8"
                                                      FontSize="22" FontWeight="Bold" PlaceholderText="0"
                                                      Text="{Binding GrowthForm.WeightText}" />
                                             <TextBlock Margin="4,0,0,0" VerticalAlignment="Center" FontSize="14"
-                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
                                                        Text="kg" />
                                         </StackPanel>
                                     </StackPanel>
@@ -547,12 +547,12 @@
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomSupplementPlaceholder}" Text="{Binding SupplementForm.CustomItem}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
-                                                Background="{StaticResource WeuiGreenBrush}"
+                                                Background="{StaticResource BrandPrimaryBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomCommand}"
                                                 Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
-                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource WeuiRedBrush}"
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource SemanticErrorBrush}"
                                                IsVisible="{Binding SupplementForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                Text="{Binding SupplementForm.ErrorMessage}" />
                                 </StackPanel>
@@ -587,7 +587,7 @@
                                                  IsVisible="{Binding SupplementForm.ShowCustomUnitInput}"
                                                  Text="{Binding SupplementForm.CustomUnit}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
-                                                Background="{StaticResource WeuiGreenBrush}"
+                                                Background="{StaticResource BrandPrimaryBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding SupplementForm.AddCustomUnitCommand}"
                                                 Content="{DynamicResource RS_AddCustomBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}"
@@ -596,13 +596,13 @@
                                     <Button Margin="0,6,0,0"
                                             HorizontalAlignment="Left"
                                             Background="Transparent"
-                                            BorderBrush="{StaticResource WeuiGreenBrush}"
+                                            BorderBrush="{StaticResource BrandPrimaryBrush}"
                                             BorderThickness="1"
                                             Command="{Binding SupplementForm.ToggleCustomUnitInputCommand}"
                                             Content="{DynamicResource RS_AddCustom}"
                                             CornerRadius="8"
                                             FontSize="12"
-                                            Foreground="{StaticResource WeuiGreenBrush}"
+                                            Foreground="{StaticResource BrandPrimaryBrush}"
                                             Padding="10,4" />
                                 </StackPanel>
                             </Border>
@@ -629,14 +629,14 @@
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
                                 <Border Grid.Column="0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftDurationLabel}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_LeftDurationLabel}" />
                                         <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftDurationText}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
                                         CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_RightDurationLabel}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_RightDurationLabel}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightDurationText}" />
                                     </StackPanel>
                                 </Border>
@@ -644,14 +644,14 @@
                             <Grid Margin="0,0,0,16" ColumnDefinitions="*,*">
                                 <Border Grid.Column="0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_LeftMilkAmount}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_LeftMilkAmount}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftAmountText}" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
                                         CornerRadius="12">
                                     <StackPanel>
-                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_RightMilkAmount}" />
+                                        <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_RightMilkAmount}" />
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.RightAmountText}" />
                                     </StackPanel>
                                 </Border>
@@ -716,12 +716,12 @@
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomFoodPlaceholder}" Text="{Binding ComplementaryForm.CustomFood}" />
                                         <Button Grid.Column="1" Margin="8,0,0,0"
-                                                Background="{StaticResource WeuiGreenBrush}"
+                                                Background="{StaticResource BrandPrimaryBrush}"
                                                 BorderThickness="0"
                                                 Command="{Binding ComplementaryForm.AddCustomCommand}"
                                                 Content="{DynamicResource RS_AddBtn}" CornerRadius="8" Foreground="{StaticResource SurfaceCardBrush}" />
                                     </Grid>
-                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource WeuiRedBrush}"
+                                    <TextBlock Margin="0,4,0,0" FontSize="11" Foreground="{StaticResource SemanticErrorBrush}"
                                                IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                Text="{Binding ComplementaryForm.ErrorMessage}" />
                                 </StackPanel>
@@ -820,7 +820,7 @@
                             </Border>
                             <Border Padding="10" Background="{StaticResource MedicineRedLightBrush}" Classes="form-section" CornerRadius="8"
                                     IsVisible="{Binding AbnormalForm.IsFeverWarning}">
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiRedBrush}" Text="{DynamicResource RS_TemperatureFeverMonitor}" />
+                                <TextBlock FontSize="12" Foreground="{StaticResource SemanticErrorBrush}" Text="{DynamicResource RS_TemperatureFeverMonitor}" />
                             </Border>
 
                             <!--  呼吸道症状（多选 chip）  -->
@@ -925,7 +925,7 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock FontSize="14" FontWeight="Medium" Text="{DynamicResource RS_AddCustomVaccine}" />
-                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Text="{DynamicResource RS_AddCustomVaccineHint}" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Text="{DynamicResource RS_AddCustomVaccineHint}" />
                                     </StackPanel>
                                     <Border Grid.Column="1" Padding="10,3" VerticalAlignment="Center" Background="#EEF8FF"
                                             CornerRadius="12">
@@ -986,7 +986,7 @@
                                     <StackPanel Grid.Column="0" Spacing="2">
                                         <TextBlock FontSize="11" Foreground="#0675B8" Text="{DynamicResource RS_Selected}" />
                                         <TextBlock FontSize="14" FontWeight="Medium" Text="{Binding VaccineForm.SelectedPlan.Name}" />
-                                        <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg2Brush}">
+                                        <TextBlock FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}">
                                             <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}" />
                                             <Run Text=" · " />
                                             <Run Text="{Binding VaccineForm.SelectedPlan.RecommendedDateText}" />
@@ -1009,7 +1009,7 @@
                                 </Border>
                                 <Border Grid.Column="1" Margin="4,0" Padding="8,6" Background="#F3F4F6"
                                         CornerRadius="6">
-                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource RS_TimeAxis}" />
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_TimeAxis}" />
                                 </Border>
                                 <Border Grid.Column="2" Padding="8,6" Background="{StaticResource FeedingOrangeLightBrush}" CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#B45309"
@@ -1059,7 +1059,7 @@
                                                                                    TextTrimming="CharacterEllipsis" />
                                                                         <!--  合并 剂次·日期 + 疾病 为一行（静态数据 OneTime）  -->
                                                                         <TextBlock MaxWidth="220" Margin="0,2,0,0" FontSize="10"
-                                                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                                                                    TextTrimming="CharacterEllipsis" TextWrapping="Wrap">
                                                                             <Run Text="{Binding DoseLabel, Mode=OneTime}" />
                                                                             <Run Text=" · " />
@@ -1068,7 +1068,7 @@
                                                                             <Run Text="{Binding Disease, Mode=OneTime}" />
                                                                         </TextBlock>
                                                                         <!--  状态文本（独立一行）  -->
-                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding StatusText}" />
+                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding StatusText}" />
                                                                         <!--  操作按钮：独立一行，等宽平分（与小程序 vf-time-actions 一致）  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
@@ -1102,7 +1102,7 @@
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
                                                     <TextBlock HorizontalAlignment="Center" FontSize="11"
-                                                               Foreground="{StaticResource WeuiFg3Brush}"
+                                                               Foreground="{StaticResource SurfaceDividerBrush}"
                                                                IsVisible="{Binding !HasFree}"
                                                                Text="{DynamicResource RS_None}" />
                                                 </StackPanel>
@@ -1114,8 +1114,8 @@
                                                     <StackPanel Margin="0,0,0,0" HorizontalAlignment="Center" Spacing="2">
                                                         <Border Classes="vf-dot" />
                                                         <TextBlock HorizontalAlignment="Center" FontSize="10" FontWeight="Medium" Text="{Binding Name, Mode=OneTime}" />
-                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding DateText, Mode=OneTime}" />
-                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource WeuiFg3Brush}">
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding DateText, Mode=OneTime}" />
+                                                        <TextBlock HorizontalAlignment="Center" FontSize="9" Foreground="{StaticResource SurfaceDividerBrush}">
                                                             <Run Text="{Binding HandledCount, Mode=OneTime}" />
                                                             <Run Text="/" />
                                                             <Run Text="{Binding TotalCount, Mode=OneTime}" />
@@ -1145,7 +1145,7 @@
                                                                                    Text="{Binding VaccineName, Mode=OneTime}"
                                                                                    TextTrimming="CharacterEllipsis" />
                                                                         <TextBlock MaxWidth="220" Margin="0,2,0,0" FontSize="10"
-                                                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                                                                    TextTrimming="CharacterEllipsis" TextWrapping="Wrap">
                                                                             <Run Text="{Binding DoseLabel, Mode=OneTime}" />
                                                                             <Run Text=" · " />
@@ -1154,7 +1154,7 @@
                                                                             <Run Text="{Binding Disease, Mode=OneTime}" />
                                                                         </TextBlock>
                                                                         <!--  状态文本（独立一行）  -->
-                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource WeuiFg2Brush}" Text="{Binding StatusText}" />
+                                                                        <TextBlock Margin="0,4,0,0" FontSize="10" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding StatusText}" />
                                                                         <!--  操作按钮：独立一行，等宽平分  -->
                                                                         <Grid Margin="0,6,0,0" ColumnDefinitions="*,*" IsVisible="{Binding NotHandled}">
                                                                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="vf-mark" Click="OnVaccineMarkDone"
@@ -1187,7 +1187,7 @@
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
                                                     <TextBlock HorizontalAlignment="Center" FontSize="11"
-                                                               Foreground="{StaticResource WeuiFg3Brush}"
+                                                               Foreground="{StaticResource SurfaceDividerBrush}"
                                                                IsVisible="{Binding !HasPaid}"
                                                                Text="{DynamicResource RS_None}" />
                                                 </StackPanel>
@@ -1280,14 +1280,14 @@
                         </StackPanel>
 
                         <TextBlock Margin="0,4" FontSize="13"
-                                   Foreground="{StaticResource WeuiRedBrush}"
+                                   Foreground="{StaticResource SemanticErrorBrush}"
                                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                    Text="{Binding ErrorMessage}" />
                     </StackPanel>
                 </ScrollViewer>
 
                 <Border Grid.Row="2" Padding="16,12"
-                        BorderBrush="{StaticResource WeuiFg3Brush}"
+                        BorderBrush="{StaticResource SurfaceDividerBrush}"
                         BorderThickness="0,1,0,0"
                         IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.NotVaccine}}">
                     <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />

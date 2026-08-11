@@ -8,13 +8,13 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.MembershipView"
              x:DataType="vm:MembershipViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <UserControl.Styles>
         <Style Selector="Border.plan-card">
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="16,20"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
@@ -35,7 +35,7 @@
             <StackPanel>
 
                 <!-- 会员状态卡片 -->
-                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,24" CornerRadius="0,0,8,8">
+                <Border Background="{StaticResource BrandPrimaryBrush}" Padding="24,24" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"
                                    Text="{Binding IsActive, Converter={x:Static views:MembershipView.IsMemberTextConverter}}"/>
@@ -71,7 +71,7 @@
                     <TextBlock Text="{DynamicResource Membership_Benefits}"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12">
                             <Grid.ColumnDefinitions>
@@ -81,11 +81,11 @@
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="✏️"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit1Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit1Desc}"/>
                             </StackPanel>
                         </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                         <Grid Margin="14,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -94,11 +94,11 @@
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="📊"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit2Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit2Desc}"/>
                             </StackPanel>
                         </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                         <Grid Margin="14,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -107,11 +107,11 @@
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🎰"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit3Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit3Desc}"/>
                             </StackPanel>
                         </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                         <Grid Margin="14,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
@@ -120,7 +120,7 @@
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🖼️"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit4Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit4Desc}"/>
                             </StackPanel>
                         </Grid>
@@ -142,17 +142,17 @@
                                     <StackPanel Grid.Column="0">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold"/>
-                                            <Border Background="{StaticResource WeuiGreenBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                                            <Border Background="{StaticResource BrandPrimaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
                                                     IsVisible="{Binding IsRecommended}">
                                                 <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"/>
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                            <TextBlock Text="¥" FontSize="14" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
-                                            <TextBlock Text="{Binding PriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource WeuiGreenBrush}"/>
+                                            <TextBlock Text="¥" FontSize="14" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            <TextBlock Text="{Binding PriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}"/>
                                             <TextBlock Text="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}, StringFormat=¥\{0\}}"
-                                                       FontSize="13" Foreground="{StaticResource WeuiFg2Brush}"
+                                                       FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}"
                                                        TextDecorations="Strikethrough" Margin="8,0,0,0"
                                                        VerticalAlignment="Bottom"
                                                        IsVisible="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.IsPositiveConverter}}"/>
@@ -160,7 +160,7 @@
                                     </StackPanel>
                                     <!-- 选中标记：✓ 图标，仅在选中时显示 -->
                                     <Border Grid.Column="1" Width="28" Height="28" CornerRadius="14"
-                                            Background="{StaticResource WeuiGreenBrush}"
+                                            Background="{StaticResource BrandPrimaryBrush}"
                                             VerticalAlignment="Center">
                                         <Border.IsVisible>
                                             <MultiBinding Converter="{x:Static views:MembershipView.PlanSelectedConverter}">
@@ -181,11 +181,11 @@
         </ScrollViewer>
 
         <!-- 底部支付按钮：显示"立即开通"+选中套餐名 -->
-        <Border Grid.Row="2" Background="{StaticResource WeuiBg2Brush}" Padding="16,12">
+        <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" Padding="16,12">
             <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="{DynamicResource Membership_Selected}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
-                    <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource WeuiGreenBrush}" VerticalAlignment="Center"
+                    <TextBlock Text="{DynamicResource Membership_Selected}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
+                    <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Center"
                                Text="{Binding SelectedPlanType, Converter={x:Static views:MembershipView.PlanTypeToNameConverter}}"/>
                 </StackPanel>
                 <Button Content="{DynamicResource Membership_Subscribe}" Classes="weui-btn primary" HorizontalAlignment="Stretch"

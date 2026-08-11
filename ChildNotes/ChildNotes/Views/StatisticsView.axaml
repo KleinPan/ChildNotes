@@ -8,22 +8,22 @@
              x:Class="ChildNotes.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel"
              x:CompileBindings="True"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <UserControl.Styles>
         <!--  类型/范围 chip 样式  -->
         <Style Selector="Border.stat-chip">
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="12,5"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
             <Setter Property="Margin" Value="0,0,8,8"/>
         </Style>
         <Style Selector="Border.stat-chip.active">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}"/>
         </Style>
         <Style Selector="Border.stat-chip TextBlock">
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         </Style>
         <Style Selector="Border.stat-chip.active TextBlock">
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
@@ -31,7 +31,7 @@
 
         <!--  今日柱子光晕效果（对齐小程序 box-shadow）  -->
         <Style Selector="Border.chart-bar.today">
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
 
@@ -57,11 +57,11 @@
             <StackPanel>
 
                 <!--  头部信息条：标题 + 范围 + 类型 badge  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource Radius.Medium}">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="{DynamicResource Stats_Title}" FontSize="15" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                         </StackPanel>
                         <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CurrentTypeLabel}"/>
@@ -70,7 +70,7 @@
                 </Border>
 
                 <!--  类型选择  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource Radius.Medium}">
                     <ItemsControl ItemsSource="{Binding TypeOptions}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
@@ -87,7 +87,7 @@
                 </Border>
 
                 <!--  范围选择 + 日期选择器  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8,12,0" Padding="12,8" CornerRadius="{StaticResource Radius.Medium}">
                     <StackPanel>
                         <ItemsControl ItemsSource="{Binding RangeOptions}">
                             <ItemsControl.ItemsPanel>
@@ -123,7 +123,7 @@
                                             HorizontalAlignment="Left" Padding="10,4"
                                             FontSize="12"/>
                                 <TextBlock Text="{DynamicResource Stats_To}" VerticalAlignment="Center" FontSize="12"
-                                           Foreground="{StaticResource WeuiFg2Brush}"/>
+                                           Foreground="{StaticResource TextPlaceholderBrush}"/>
                                 <controls:DateWheelPicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
                                             HorizontalAlignment="Left" Padding="10,4"
                                             FontSize="12"/>
@@ -133,25 +133,25 @@
                 </Border>
 
                 <!--  统计摘要卡片（总计/均值/峰值）  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,8" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8" Padding="16,14" CornerRadius="{StaticResource Radius.Medium}">
                     <Grid ColumnDefinitions="*,*,*">
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Stats_Total}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Stats_Total}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding TotalText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding AverageLabel}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding AverageLabel}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding AverageText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Stats_Peak}" FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{DynamicResource Stats_Peak}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding MaxText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!--  ====== 图表面板（含日历热力图 + 柱状图 + 明细）======  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,16" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,0,12,12" Padding="16,16" CornerRadius="{StaticResource Radius.Medium}">
                     <StackPanel>
 
                         <!--  P0-2: 日历热力图控件（独立可复用组件）  -->
@@ -170,7 +170,7 @@
                                 <TextBlock FontSize="14" FontWeight="SemiBold">
                                     <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Trend}"/>
                                 </TextBlock>
-                                <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg1Brush}"
+                                <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
                                            Text="{Binding CurrentTypeUnit}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
@@ -189,7 +189,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
                                         <TextBlock Text="{Binding .}" FontSize="9"
-                                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                                    HorizontalAlignment="Right" VerticalAlignment="Center"
                                                    Margin="0,0,4,0"/>
                                     </DataTemplate>
@@ -224,7 +224,7 @@
                                                                     FallbackValue=30}"
                                                             HorizontalAlignment="Center" VerticalAlignment="Bottom" Spacing="3">
                                                     <TextBlock Text="{Binding ValueText}" FontSize="9"
-                                                               Foreground="{StaticResource WeuiFg1Brush}"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
                                                                HorizontalAlignment="Center"/>
                                                     <Border Height="{Binding HeightPct}" MinHeight="2"
                                                             CornerRadius="4,4,0,0"
@@ -232,7 +232,7 @@
                                                             VerticalAlignment="Bottom"
                                                             Classes.chart-bar="{Binding IsToday}"/>
                                                     <TextBlock Text="{Binding Label}" FontSize="9"
-                                                               Foreground="{StaticResource WeuiFg2Brush}"
+                                                               Foreground="{StaticResource TextPlaceholderBrush}"
                                                                HorizontalAlignment="Center"/>
                                                 </StackPanel>
                                                 </DataTemplate>
@@ -246,7 +246,7 @@
                 </Border>
 
                 <!--  P0-3: 明细面板（对齐小程序 detail-panel）  -->
-                <Border Background="{StaticResource WeuiBg2Brush}" Margin="12,0,12,12" Padding="16,14" CornerRadius="{StaticResource WeuiCardRadius}">
+                <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,0,12,12" Padding="16,14" CornerRadius="{StaticResource Radius.Medium}">
                     <StackPanel>
                         <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10">
                             <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Detail}"/>
@@ -263,9 +263,9 @@
                                     <Border Classes="detail-item" Margin="0,0,10,8">
                                         <StackPanel>
                                             <TextBlock Text="{Binding Label}" FontSize="11"
-                                                       Foreground="{StaticResource WeuiFg2Brush}"/>
+                                                       Foreground="{StaticResource TextPlaceholderBrush}"/>
                                             <TextBlock Text="{Binding Value}" FontSize="13" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource WeuiFg0Brush}" Margin="0,3,0,0"/>
+                                                       Foreground="{StaticResource TextPrimaryBrush}" Margin="0,3,0,0"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>

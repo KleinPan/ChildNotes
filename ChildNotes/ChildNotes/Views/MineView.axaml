@@ -7,13 +7,13 @@
              d:DesignHeight="844"
              d:DesignWidth="390"
              x:DataType="vm:MineViewModel"
-             Background="{StaticResource WeuiBg0Brush}"
+             Background="{StaticResource SurfaceBackgroundBrush}"
              mc:Ignorable="d">
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel>
 
-            <Border Margin="0,0,0,8" Padding="14,16" Background="{StaticResource WeuiBg2Brush}">
+            <Border Margin="0,0,0,8" Padding="14,16" Background="{StaticResource SurfaceCardBrush}">
                 <Grid ColumnDefinitions="Auto,*">
                     <!--  原版头像: 绿色渐变背景  -->
                     <Border Grid.Column="0" Width="56" Height="56"
@@ -24,7 +24,7 @@
                     </Border>
                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
                         <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding NickName}" />
-                        <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding RoleText}" />
+                        <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding RoleText}" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -33,7 +33,7 @@
                 <TextBlock Text="{DynamicResource Mine_Section_Baby}" />
             </Border>
 
-            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnBabyManagerTap">
                         <Grid.ColumnDefinitions>
@@ -46,13 +46,13 @@
                                    Text="👶" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_BabyManager}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding BabyCountText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnFamilyTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -63,7 +63,7 @@
                                    Text="👨‍👩‍👧" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Family}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
                 </StackPanel>
@@ -73,7 +73,7 @@
                 <TextBlock Text="{DynamicResource Mine_Section_Tools}" />
             </Border>
 
-            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnMembershipTap">
                         <Grid.ColumnDefinitions>
@@ -91,13 +91,13 @@
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
                                    Text="{DynamicResource Mine_Membership}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding MembershipStatusText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnAiAnalysisTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -106,7 +106,7 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Width="24" Height="24"
-                                Background="{StaticResource WeuiBlueBrush}"
+                                Background="{StaticResource GrowthBlueBrush}"
                                 CornerRadius="6">
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="析" />
@@ -114,13 +114,13 @@
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
                                    Text="{DynamicResource Mine_AiAnalysis}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{DynamicResource Mine_AiAnalysis_Sub}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnStatisticsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -131,10 +131,10 @@
                                    Text="📊" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Statistics}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnPointsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -145,7 +145,7 @@
                                    Text="🎁" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Points}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
                 </StackPanel>
@@ -155,7 +155,7 @@
                 <TextBlock Text="{DynamicResource Mine_Section_Settings}" />
             </Border>
 
-            <Border Margin="12,4" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}">
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
                 <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnLanguageSettingsTap">
                         <Grid.ColumnDefinitions>
@@ -169,13 +169,13 @@
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15"
                                    Text="{DynamicResource Language_Title}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding LanguageDisplayText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnAiSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -186,10 +186,10 @@
                                    Text="🤖" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_AiSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnReminderSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -200,10 +200,10 @@
                                    Text="🔔" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_ReminderSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnSyncSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -214,10 +214,10 @@
                                    Text="☁️" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_SyncSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"
                             IsVisible="{Binding IsDeveloperOptionsVisible}" />
                     <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap"
                           IsVisible="{Binding IsDeveloperOptionsVisible}">
@@ -230,10 +230,10 @@
                                    Text="🔧" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_DeveloperOptions}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"
                             IsVisible="{Binding IsDeveloperOptionsVisible}"/>
                     <Grid Margin="14,12" PointerPressed="OnPrivacyPolicyTap">
                         <Grid.ColumnDefinitions>
@@ -245,10 +245,10 @@
                                    Text="📜" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_PrivacyPolicy}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}" />
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnUserAgreementTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -259,10 +259,10 @@
                                    Text="📑" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_UserAgreement}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                     <Grid Margin="14,12" PointerPressed="OnInAppMessageTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -277,17 +277,17 @@
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_InAppMessage}" />
                         <Border Grid.Column="2" Height="16" MinWidth="16" Padding="4,0"
                                 VerticalAlignment="Center"
-                                Background="{StaticResource WeuiRedBrush}"
+                                Background="{StaticResource SemanticErrorBrush}"
                                 CornerRadius="8"
                                 IsVisible="{Binding HasUnreadMessages}">
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="{Binding UnreadMessageCount}" />
                         </Border>
                         <TextBlock Grid.Column="4" Margin="4,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                     <Grid Margin="14,12" PointerPressed="OnHelpTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -298,10 +298,10 @@
                                    Text="❓" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Help}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource WeuiFg3Brush}"/>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
                     <Grid Margin="14,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -312,7 +312,7 @@
                                    Text="ℹ️" />
                         <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_About}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding AppVersion}" />
                     </Grid>
                 </StackPanel>
@@ -323,7 +323,7 @@
                     Classes="weui-btn default"
                     Command="{Binding LogoutCommand}"
                     Content="{DynamicResource Mine_Logout}"
-                    Foreground="{StaticResource WeuiRedBrush}" />
+                    Foreground="{StaticResource SemanticErrorBrush}" />
 
         </StackPanel>
     </ScrollViewer>

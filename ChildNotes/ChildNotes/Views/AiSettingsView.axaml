@@ -7,7 +7,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.AiSettingsView"
              x:DataType="vm:AiSettingsViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid RowDefinitions="Auto,*,Auto">
 
@@ -24,11 +24,11 @@
             <StackPanel>
 
                 <!-- 启用开关 -->
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,12,12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,12,12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="{DynamicResource AiSettings_EnableAi}" FontSize="15"/>
-                            <TextBlock Text="{DynamicResource AiSettings_EnableAiHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                            <TextBlock Text="{DynamicResource AiSettings_EnableAiHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
                     </Grid>
@@ -39,20 +39,20 @@
                     <TextBlock Text="大模型配置"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,10" ColumnDefinitions="80,*">
                             <TextBlock Grid.Column="0" Text="API 地址" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ConfigApiBaseUrl}" PlaceholderText="https://api.openai.com"
                                      Background="Transparent" BorderThickness="0"/>
                         </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,10" ColumnDefinitions="80,*">
                             <TextBlock Grid.Column="0" Text="API Key" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ConfigApiKey}" PlaceholderText="sk-..."
                                      PasswordChar="•" Background="Transparent" BorderThickness="0"/>
                         </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,10" ColumnDefinitions="80,*">
                             <TextBlock Grid.Column="0" Text="模型名称" FontSize="14" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ConfigModelName}" PlaceholderText="gpt-4o-mini"
@@ -66,13 +66,13 @@
                     <TextBlock Text="{DynamicResource AiSettings_ParseService}"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="{DynamicResource AiSettings_SourceLabel}" FontSize="14"/>
                                 <TextBlock Text="{DynamicResource AiSettings_SourceHint}" FontSize="11"
-                                           Foreground="{StaticResource WeuiFg2Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                           Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                         </Grid>
                         <Grid Margin="14,0,14,12" ColumnDefinitions="*,*">
@@ -81,16 +81,16 @@
                             <RadioButton Grid.Column="1" Content="后端服务" IsChecked="{Binding UseServerSource, Mode=TwoWay}"
                                          IsEnabled="{Binding !IsTesting}"/>
                         </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
                             <TextBlock Grid.Column="0" Text="后端地址" FontSize="14" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrl}" FontSize="13"
-                                       Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                         <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
                             <TextBlock Grid.Column="0" Text="提示" FontSize="14" VerticalAlignment="Top"/>
                             <TextBlock Grid.Column="1" Text="后端地址需在同步设置中配置" FontSize="12"
-                                       Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -108,7 +108,7 @@
                         <TextBlock FontSize="13" FontWeight="Medium"
                                    Foreground="{Binding TestSuccess, Converter={x:Static v:AppConverters.TestResultForegroundConverter}}"
                                    Text="{Binding TestSuccess, Converter={x:Static v:AppConverters.TestResultTitleConverter}}"/>
-                        <TextBlock Text="{Binding TestResult}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding TestResult}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -117,17 +117,17 @@
                     <TextBlock Text="生成参数"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                             <TextBlock Grid.Column="0" Text="温度" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="0" Maximum="2" Value="{Binding ConfigTemperature}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
 
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                             <TextBlock Grid.Column="0" Text="最大 Token 数" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="512" Maximum="8192" Value="{Binding ConfigMaxTokens}" TickFrequency="256" IsSnapToTickEnabled="True"/>
                     </StackPanel>
@@ -140,14 +140,14 @@
                 <Border Classes="section-title">
                     <TextBlock Text="说明"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="{DynamicResource AiSettings_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource AiSettings_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource AiSettings_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource AiSettings_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource AiSettings_Note5}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource AiSettings_Note6}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note1}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note2}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note3}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note4}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note5}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource AiSettings_Note6}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.HelpView"
              x:DataType="vm:HelpViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid RowDefinitions="Auto,*">
 
@@ -25,8 +25,8 @@
 
                 <!-- 顶部 banner -->
                 <Border Margin="12,8" Padding="20,24"
-                        Background="{StaticResource WeuiBlueBrush}"
-                        CornerRadius="{StaticResource WeuiCardRadius}">
+                        Background="{StaticResource GrowthBlueBrush}"
+                        CornerRadius="{StaticResource Radius.Medium}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"
                                    HorizontalAlignment="Center"/>
@@ -48,15 +48,15 @@
                                     </StackPanel>
                                 </Border>
                                 <!-- 章节卡片 -->
-                                <Border Background="{StaticResource WeuiBg2Brush}"
-                                        CornerRadius="{StaticResource WeuiCardRadius}"
+                                <Border Background="{StaticResource SurfaceCardBrush}"
+                                        CornerRadius="{StaticResource Radius.Medium}"
                                         Padding="14,12">
                                     <ItemsControl ItemsSource="{Binding Paragraphs}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="x:String">
                                                 <TextBlock Text="{Binding}"
                                                            FontSize="14"
-                                                           Foreground="{StaticResource WeuiFg0Brush}"
+                                                           Foreground="{StaticResource TextPrimaryBrush}"
                                                            TextWrapping="Wrap"
                                                            Margin="0,4"/>
                                             </DataTemplate>

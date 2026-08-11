@@ -8,7 +8,7 @@
              d:DesignHeight="180"
              d:DesignWidth="390"
              x:DataType="vm:QuickMenuViewModel"
-             Background="{StaticResource WeuiBg2Brush}"
+             Background="{StaticResource SurfaceCardBrush}"
              mc:Ignorable="d">
 
     <UserControl.Resources>
@@ -53,7 +53,7 @@
     <!-- 功能面板：Carousel 翻页 + PipsPager 页码指示器。
          8 项时 1 页（PipsPager 自动隐藏），>8 项时自动分页。
          无遮罩层，面板直接可交互。 -->
-    <Border Padding="16,12" Background="{StaticResource WeuiBg2Brush}"
+    <Border Padding="16,12" Background="{StaticResource SurfaceCardBrush}"
             BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0"
             IsVisible="{Binding IsMenuOpen}">
         <StackPanel Spacing="0">

@@ -7,23 +7,23 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.PointsView"
              x:DataType="vm:PointsViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <UserControl.Styles>
         <Style Selector="Border.timeline-item">
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Padding" Value="0,10"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg1Brush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
         </Style>
         <Style Selector="Border.timeline-item.signed">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}"/>
         </Style>
         <Style Selector="Border.timeline-item.today">
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
         <Style Selector="Border.timeline-item TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         </Style>
         <Style Selector="Border.timeline-item.signed TextBlock">
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
@@ -44,7 +44,7 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <Border Background="{StaticResource WeuiGreenBrush}" Padding="24,28" CornerRadius="0,0,8,8">
+                <Border Background="{StaticResource BrandPrimaryBrush}" Padding="24,28" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="{DynamicResource Points_YourPoints}" FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
@@ -84,7 +84,7 @@
                                 Command="{Binding SignInCommand}" IsEnabled="{Binding !TodaySigned}"
                                 Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
                         <TextBlock Text="{Binding ContinuousDays, StringFormat=您已连续签到 \{0\} 天}" FontSize="12"
-                                   Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -92,19 +92,19 @@
                     <TextBlock Text="{DynamicResource Points_TasksEarn}"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <ItemsControl ItemsSource="{Binding Tasks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:TaskDisplayItem">
                                 <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Medium"/>
-                                        <TextBlock Text="{Binding Desc}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding Desc}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                     </StackPanel>
                                     <!-- 已领取：显示"已领取"灰色标签 -->
                                     <Border Grid.Column="1" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="12" Padding="10,4"
                                             VerticalAlignment="Center" IsVisible="{Binding IsClaimed}">
-                                        <TextBlock Text="已领取" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"/>
+                                        <TextBlock Text="已领取" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
                                     </Border>
                                     <!-- 可领取：显示"领取"按钮 -->
                                     <Button Grid.Column="1" Content="领取"
@@ -118,7 +118,7 @@
                                     <Border Grid.Column="1" Background="{StaticResource BrandPrimaryLightBrush}" CornerRadius="12" Padding="10,4"
                                             VerticalAlignment="Center"
                                             IsVisible="{Binding ShowRewardLabel}">
-                                        <TextBlock Text="{Binding RewardText}" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding RewardText}" FontSize="13" Foreground="{StaticResource BrandPrimaryBrush}" FontWeight="SemiBold"/>
                                     </Border>
                                 </Grid>
                             </DataTemplate>

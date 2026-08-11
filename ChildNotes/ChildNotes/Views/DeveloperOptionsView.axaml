@@ -8,29 +8,29 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.DeveloperOptionsView"
              x:DataType="vm:DeveloperOptionsViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <UserControl.Styles>
         <!-- 搜索框：圆角胶囊形，浅灰底，对齐微信风格 -->
         <Style Selector="TextBox.log-search">
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="{StaticResource WeuiBg0Brush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="PlaceholderForeground" Value="{StaticResource WeuiFg2Brush}"/>
+            <Setter Property="PlaceholderForeground" Value="{StaticResource TextPlaceholderBrush}"/>
         </Style>
 
         <!-- 级别筛选按钮：未选中=描边浅灰，选中=实心主色 -->
         <Style Selector="Button.lvl-btn">
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="CornerRadius" Value="{StaticResource WeuiBtnRadius}"/>
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.PrimaryButton}"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
             <Setter Property="MinHeight" Value="32"/>
             <Setter Property="RenderTransform" Value="none"/>
             <Setter Property="Transitions">
@@ -44,8 +44,8 @@
         </Style>
         <!-- 选中态：实心 WeUI 主色（绿），白字，无边框 -->
         <Style Selector="Button.lvl-btn.selected">
-            <Setter Property="Background" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="FontWeight" Value="Medium"/>
         </Style>
@@ -71,7 +71,7 @@
 
         <!-- 日志条目：单行固定高，白底卡片，行间距 4px -->
         <Style Selector="Border.log-row">
-            <Setter Property="Background" Value="{StaticResource WeuiBg2Brush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
@@ -88,20 +88,20 @@
         </Style>
         <Style Selector="TextBlock.log-time">
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg2Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}"/>
             <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="TextBlock.log-tag">
             <Setter Property="FontSize" Value="10"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
             <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Margin" Value="6,0,0,0"/>
         </Style>
         <Style Selector="TextBlock.log-msg">
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
             <Setter Property="FontFamily" Value="Cascadia Code,Consolas,Menlo,monospace"/>
             <Setter Property="TextWrapping" Value="NoWrap"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
@@ -127,17 +127,17 @@
         <Style Selector="Button.nav-text-btn">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg0Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="MinHeight" Value="40"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.nav-text-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource WeuiBgColorActiveBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}"/>
         </Style>
         <Style Selector="Button.nav-text-btn:pressed /template/ ContentPresenter">
-            <Setter Property="Background" Value="{StaticResource WeuiSeparatorBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceDividerBrush}"/>
         </Style>
     </UserControl.Styles>
 
@@ -163,13 +163,13 @@
         </Border>
 
         <!-- 动画设置（紧凑卡片） -->
-        <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}"
-                CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,8,12,4">
+        <Border Grid.Row="1" Background="{StaticResource SurfaceCardBrush}"
+                CornerRadius="{StaticResource Radius.Medium}" Margin="12,8,12,4">
             <Grid Margin="14,10" ColumnDefinitions="*,Auto">
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{DynamicResource Dev_AnimEnabled}" FontSize="15"/>
                     <TextBlock Text="{DynamicResource Dev_AnimHint}"
-                               FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                               FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
                                Margin="0,2,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding EnableAnimations}"/>
@@ -240,11 +240,11 @@
         </ListBox>
 
         <!-- 底部操作栏：筛选条数 + 导出按钮 -->
-        <Border Grid.Row="4" Padding="14,10" Background="{StaticResource WeuiBg2Brush}"
-                BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+        <Border Grid.Row="4" Padding="14,10" Background="{StaticResource SurfaceCardBrush}"
+                BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Grid.Column="0" VerticalAlignment="Center"
-                           FontSize="12" Foreground="{StaticResource WeuiFg1Brush}"
+                           FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
                            Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
                 <Button Grid.Column="1" Content="{DynamicResource Dev_ExportTxt}"
                         Classes="weui-btn mini primary"

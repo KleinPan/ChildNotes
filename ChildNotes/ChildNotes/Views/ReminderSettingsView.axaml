@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.ReminderSettingsView"
              x:DataType="vm:ReminderSettingsViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid RowDefinitions="Auto,*,Auto">
 
@@ -27,26 +27,26 @@
                     <TextBlock Text="{DynamicResource Reminder_FeedSection}"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="{DynamicResource Reminder_FeedEnable}" FontSize="15"/>
-                                <TextBlock Text="{DynamicResource Reminder_FeedEnableHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{DynamicResource Reminder_FeedEnableHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding FeedReminderEnabled}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                             <TextBlock Grid.Column="0" Text="{DynamicResource Reminder_FeedInterval}" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding FeedIntervalHours, StringFormat='{}{0} 小时'}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding FeedIntervalHours, StringFormat='{}{0} 小时'}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="1" Maximum="6" Value="{Binding FeedIntervalHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                        <TextBlock Text="{DynamicResource Reminder_FeedIntervalHint}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_FeedIntervalHint}" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -55,26 +55,26 @@
                     <TextBlock Text="{DynamicResource Reminder_SleepSection}"/>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="{DynamicResource Reminder_SleepEnable}" FontSize="15"/>
-                                <TextBlock Text="{DynamicResource Reminder_SleepEnableHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="{DynamicResource Reminder_SleepEnableHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding SleepReminderEnabled}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
                             <TextBlock Grid.Column="0" Text="{DynamicResource Reminder_SleepThreshold}" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding SleepTimeoutHours, StringFormat=\{0\} 小时}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SleepTimeoutHours, StringFormat=\{0\} 小时}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="2" Maximum="10" Value="{Binding SleepTimeoutHours}" TickFrequency="1" IsSnapToTickEnabled="True"/>
-                        <TextBlock Text="{DynamicResource Reminder_SleepThresholdHint}" FontSize="11" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_SleepThresholdHint}" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -85,12 +85,12 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Reminder_NotesTitle}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="{DynamicResource Reminder_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Reminder_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Reminder_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Reminder_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note1}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note2}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note3}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Reminder_Note4}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

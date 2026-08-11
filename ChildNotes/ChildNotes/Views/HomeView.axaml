@@ -10,7 +10,7 @@
              d:DesignWidth="390"
              x:CompileBindings="True"
              x:DataType="vm:HomeViewModel"
-             Background="{StaticResource WeuiBg0Brush}"
+             Background="{StaticResource SurfaceBackgroundBrush}"
              UseLayoutRounding="True"
              mc:Ignorable="d">
 
@@ -58,7 +58,7 @@
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
             <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiFg3Brush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}" />
             <Setter Property="BorderThickness" Value="1" />
         </Style>
         <!--  追踪卡片头部胶囊按钮：对齐小程序端 v-btn / at-btn 基线（蓝色强调）  -->
@@ -67,7 +67,7 @@
             <Setter Property="FontSize" Value="12" />
             <Setter Property="Padding" Value="14,5" />
             <Setter Property="MinHeight" Value="0" />
-            <Setter Property="Background" Value="{StaticResource WeuiBlueBrush}" />
+            <Setter Property="Background" Value="{StaticResource GrowthBlueBrush}" />
             <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
@@ -97,7 +97,7 @@
                                 <!--  字号/字重对齐 design-tokens font.size.cardTitle=16-18sp Medium  -->
                                 <TextBlock FontSize="17" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding BabyName}" />
                                 <Border Padding="9,3" HorizontalAlignment="Left" Background="{StaticResource BrandPrimaryAlpha14Brush}" CornerRadius="12">
-                                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="{StaticResource WeuiGreenBrush}" Text="{Binding BabyAgeText}" />
+                                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding BabyAgeText}" />
                                 </Border>
                             </StackPanel>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
@@ -213,13 +213,13 @@
                             <TextBlock VerticalAlignment="Center" FontSize="32" Text="{Binding AiStatusIcon}" />
                             <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="Bold" Text="{Binding AiStatusTitle}" />
                         </StackPanel>
-                        <TextBlock Margin="42,0,0,0" FontSize="13" Foreground="{StaticResource WeuiGreenBrush}" Text="{Binding AiStatusSubtitle}" />
+                        <TextBlock Margin="42,0,0,0" FontSize="13" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding AiStatusSubtitle}" />
                         <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12"
-                                   Foreground="{StaticResource WeuiFg2Brush}"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="{DynamicResource Home_AiChangeHint}" />
                         <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="6">
-                            <PathIcon Width="14" Height="14" Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource WeuiYellowBrush}" />
-                            <TextBlock FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding AiTipText}" />
+                            <PathIcon Width="14" Height="14" Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource VaccineYellowBrush}" />
+                            <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding AiTipText}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -233,7 +233,7 @@
                             <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
                                        FontWeight="SemiBold" Text="{DynamicResource Home_VaccineTracking}" />
                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
                                        Text="{Binding VaccineProgressText}" />
                             <Button Grid.Column="3" Margin="8,0,0,0" Classes="tracker-btn-outline"
                                     Command="{Binding ToggleVaccinePanelCommand}"
@@ -263,15 +263,15 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="m:VaccineItem">
                                     <!--  VaccineItem 是只读 POCO，属性创建后不变，全部用 OneTime 绑定跳过变更监听订阅  -->
-                                    <Border Margin="0,4,0,0" Padding="10,8" Background="{StaticResource WeuiBg1Brush}" CornerRadius="6">
+                                    <Border Margin="0,4,0,0" Padding="10,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Border Grid.Column="0" Padding="6,2" Background="{StaticResource WeuiBg2Brush}" CornerRadius="4">
-                                                <TextBlock FontSize="11" Foreground="{StaticResource WeuiFg1Brush}" Text="{Binding Category, Mode=OneTime}" />
+                                            <Border Grid.Column="0" Padding="6,2" Background="{StaticResource SurfaceCardBrush}" CornerRadius="4">
+                                                <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding Category, Mode=OneTime}" />
                                             </Border>
                                             <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13"
                                                        Text="{Binding Name, Mode=OneTime}" />
                                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
-                                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                                       Foreground="{StaticResource TextPlaceholderBrush}"
                                                        Text="{Binding DueText, Mode=OneTime}" />
                                         </Grid>
                                     </Border>
@@ -302,14 +302,14 @@
                             <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="18" Text="🚨" />
                             <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource WeuiRedBrush}"
+                                       Foreground="{StaticResource SemanticErrorBrush}"
                                        Text="{DynamicResource Home_AbnormalTracking}" />
                             <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
-                                       Foreground="{StaticResource WeuiRedBrush}"
+                                       Foreground="{StaticResource SemanticErrorBrush}"
                                        IsVisible="{Binding HasActiveAbnormal}"
                                        Text="{Binding AbnormalStatusText}" />
                             <Button Grid.Column="3" Margin="8,0,0,0"
-                                    Background="{StaticResource WeuiRedBrush}"
+                                    Background="{StaticResource SemanticErrorBrush}"
                                     Classes="tracker-btn-primary"
                                     Command="{Binding QuickRecordCommand}"
                                     CommandParameter="abnormal" Content="{DynamicResource Home_Record}" />
@@ -323,9 +323,9 @@
                                     <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource MedicineRedLightBrush}" Classes="tracker-btn-outline"
                                             Command="{Binding QuickRecordCommand}"
                                             CommandParameter="abnormal" Content="{DynamicResource Home_ContinueRecord}" FontSize="11" Foreground="{StaticResource MedicineRedBrush}" />
-                                    <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource WeuiGreenBrush}" Classes="tracker-btn-outline"
+                                    <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource BrandPrimaryBrush}" Classes="tracker-btn-outline"
                                             Command="{Binding MarkAbnormalResolvedCommand}"
-                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"
+                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="{StaticResource BrandPrimaryBrush}"
                                             IsVisible="{Binding HasOtherAbnormal}" />
                                 </StackPanel>
                             </StackPanel>

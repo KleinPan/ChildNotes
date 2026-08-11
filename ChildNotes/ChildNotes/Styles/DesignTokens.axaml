@@ -25,6 +25,10 @@
     <Color x:Key="Color.Surface.Background">#F5F6F8</Color>
     <Color x:Key="Color.Surface.Card">#FFFFFF</Color>
     <Color x:Key="Color.Surface.Disabled">#F3F4F6</Color>
+    <!-- 分隔线/边框淡色（替代 WeuiFg3 #1A000000 / WeuiSeparator #1A000000） -->
+    <Color x:Key="Color.Surface.Divider">#1A000000</Color>
+    <!-- 按压/选中态浅灰底（替代 WeuiBgColorActive #ECECEC） -->
+    <Color x:Key="Color.Surface.Active">#ECECEC</Color>
 
     <!-- ============ Color / Text ============ -->
     <Color x:Key="Color.Text.Primary">#1F2937</Color>
@@ -43,6 +47,12 @@
     <!-- ============ Color / AI ============ -->
     <Color x:Key="Color.AI.Primary">#7C5CFF</Color>
     <Color x:Key="Color.AI.Background">#F0FFF0</Color>
+
+    <!-- ============ Color / Loading (启动页专属品牌色) ============ -->
+    <!-- 奶油色背景 + 咖啡色文字，与 Android SplashScreen #FFF8E7 保持一致，实现启动屏→LoadingView 无缝过渡 -->
+    <Color x:Key="Color.Loading.Background">#FFF8E7</Color>
+    <Color x:Key="Color.Loading.TextPrimary">#5D4037</Color>
+    <Color x:Key="Color.Loading.TextSecondary">#8D6E63</Color>
 
     <!-- ============ Color / Brushes (供控件直接引用) ============ -->
     <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource Color.Brand.Primary}" />
@@ -71,6 +81,8 @@
     <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource Color.Surface.Background}" />
     <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource Color.Surface.Card}" />
     <SolidColorBrush x:Key="SurfaceDisabledBrush" Color="{StaticResource Color.Surface.Disabled}" />
+    <SolidColorBrush x:Key="SurfaceDividerBrush" Color="{StaticResource Color.Surface.Divider}" />
+    <SolidColorBrush x:Key="SurfaceActiveBrush" Color="{StaticResource Color.Surface.Active}" />
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource Color.Text.Primary}" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource Color.Text.Secondary}" />
@@ -86,6 +98,10 @@
 
     <SolidColorBrush x:Key="AIPrimaryBrush" Color="{StaticResource Color.AI.Primary}" />
     <SolidColorBrush x:Key="AIBackgroundBrush" Color="{StaticResource Color.AI.Background}" />
+
+    <SolidColorBrush x:Key="LoadingBackgroundBrush" Color="{StaticResource Color.Loading.Background}" />
+    <SolidColorBrush x:Key="LoadingTextPrimaryBrush" Color="{StaticResource Color.Loading.TextPrimary}" />
+    <SolidColorBrush x:Key="LoadingTextSecondaryBrush" Color="{StaticResource Color.Loading.TextSecondary}" />
 
     <!-- ============ Color / Mask (遮罩层) ============ -->
     <!-- design-tokens.md 未规定, 临时值 (Material Design Dialog scrim) -->

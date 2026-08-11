@@ -19,15 +19,15 @@
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="MinHeight" Value="40"/>
             <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
         <Style Selector="Button.gender-btn.active">
             <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource BrandPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.gender-btn:pointerover /template/ ContentPresenter">
@@ -40,7 +40,7 @@
 
     <Grid>
         <!-- 列表面板（对齐小程序 mine 页"宝宝信息" sheet） -->
-        <Border Background="{StaticResource WeuiBg0Brush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Border Background="{StaticResource SurfaceBackgroundBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*,Auto">
 
                 <!-- 统一顶栏 -->
@@ -56,12 +56,12 @@
                 <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Margin="0,12">
                     <StackPanel>
                         <!-- 空态 -->
-                        <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="20,40"
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,4" Padding="20,40"
                                 IsVisible="{Binding !HasBaby}">
                             <StackPanel HorizontalAlignment="Center" Spacing="8">
                                 <TextBlock Text="🍼" FontSize="48" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{DynamicResource BabyMgr_EmptyTitle}" FontSize="16" FontWeight="SemiBold" Foreground="#222" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{DynamicResource BabyMgr_EmptyHint}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_EmptyHint}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
                             </StackPanel>
                         </Border>
 
@@ -69,7 +69,7 @@
                         <ItemsControl ItemsSource="{Binding BabyList}" IsVisible="{Binding HasBaby}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="m:Baby">
-                                    <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="8" Margin="12,4" Padding="14,12"
+                                    <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,4" Padding="14,12"
                                             PointerPressed="OnBabyItemTapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                             <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrandPrimaryLightBrush}" VerticalAlignment="Center" ClipToBounds="True">
@@ -85,13 +85,13 @@
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
-                                                <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                             </StackPanel>
                                             <Border Grid.Column="2" Background="{StaticResource BrandPrimaryAlpha10Brush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
                                                     IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
-                                                <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource WeuiGreenBrush}"/>
+                                                <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource BrandPrimaryBrush}"/>
                                             </Border>
-                                            <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                            <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -115,7 +115,7 @@
             <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
-                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding EditorTitle}" FontSize="17" FontWeight="Bold"/>
                             <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
@@ -134,8 +134,8 @@
                                     HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Cursor="Hand">
                                 <Border Width="80" Height="80" CornerRadius="40"
-                                        Background="{StaticResource WeuiBg2Brush}"
-                                        BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="1">
+                                        Background="{StaticResource SurfaceCardBrush}"
+                                        BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="1">
                                     <Grid>
                                         <!-- 有头像时显示图片 -->
                                         <Image Source="{Binding AvatarBitmap}"
@@ -150,7 +150,7 @@
                                 </Border>
                             </Button>
                             <TextBlock Text="{DynamicResource BabyMgr_ChangeAvatar}" FontSize="11"
-                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
                                        HorizontalAlignment="Center"/>
 
                             <!-- 性别选择 -->
@@ -163,7 +163,7 @@
                                         Click="OnGirlTap"/>
                             </StackPanel>
 
-                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1"/>
 
                             <!-- 姓名 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -173,7 +173,7 @@
                                          VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
                             </StackPanel>
 
-                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1"/>
 
                             <!-- 出生日期 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
@@ -183,20 +183,20 @@
                                                     HorizontalAlignment="Stretch" FontSize="15"/>
                             </StackPanel>
 
-                            <Border BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1"/>
+                            <Border BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1"/>
 
                             <!-- 错误提示 -->
-                            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                            <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}" FontSize="13"
                                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                             <!-- 宝宝 ID 行（仅编辑模式可见）：主人可复制给家人用于加入家庭 -->
                             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,8,0,0"
                                   IsVisible="{Binding IsEditing}">
                                 <TextBlock Grid.Column="0" Text="{DynamicResource BabyMgr_BabyId}" FontSize="13"
-                                           Foreground="{StaticResource WeuiFg1Brush}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
                                            VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding EditingId}" FontSize="12"
-                                           Foreground="{StaticResource WeuiFg2Brush}"
+                                           Foreground="{StaticResource TextPlaceholderBrush}"
                                            FontFamily="Consolas,Menlo,monospace"
                                            VerticalAlignment="Center" Margin="8,0,0,0"
                                            TextTrimming="CharacterEllipsis"/>
@@ -213,7 +213,7 @@
                     </ScrollViewer>
 
                     <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
-                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,10,*">
                             <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default"
                                     CornerRadius="24" MinHeight="40"
@@ -234,7 +234,7 @@
                              CancelCommand="{Binding CloseDeleteConfirmCommand}"
                              ConfirmCommand="{Binding ConfirmDeleteCommand}">
             <controls:DialogHost.MessageContent>
-                <TextBlock FontSize="14" Foreground="{StaticResource WeuiFg1Brush}" TextAlignment="Center" TextWrapping="Wrap">
+                <TextBlock FontSize="14" Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap">
                     <Run Text="确定要删除"/>
                     <Run Text="{Binding DeleteConfirmName}" FontWeight="Bold"/>
                     <Run Text="吗？相关记录将保留，但宝宝信息将无法恢复。"/>

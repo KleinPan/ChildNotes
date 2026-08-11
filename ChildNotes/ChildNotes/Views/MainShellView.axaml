@@ -8,7 +8,7 @@
              x:Class="ChildNotes.Views.MainShellView"
              x:DataType="vm:MainShellViewModel"
              x:CompileBindings="True"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <!--
         布局结构（参考微信）：

@@ -202,10 +202,10 @@
             <Border Classes="modal-mask" />
 
             <!--  Sheet 弹层  -->
-            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource WeuiBg2Brush}" CornerRadius="8,8,0,0">
+            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource SurfaceCardBrush}" CornerRadius="8,8,0,0">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!--  头部（固定）  -->
-                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="18" FontWeight="Bold"
                                        Text="{Binding MilestoneEdit.SheetTitle}" />
@@ -224,17 +224,17 @@
                                 放在表单顶部可确保展开时有充足空间，不会被底部保存按钮遮挡
                             -->
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditDate}" />
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditDate}" />
                                 <ctrl:DateWheelPicker HorizontalAlignment="Stretch"
                                                       SelectedDate="{Binding MilestoneEdit.RecordDate, Mode=TwoWay}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditTitle}" />
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditTitle}" />
                                 <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
                                          Text="{Binding MilestoneEdit.Title}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditContentLabel}" />
+                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditContentLabel}" />
                                 <TextBox Height="100" Padding="12,8" VerticalContentAlignment="Top" AcceptsReturn="True"
                                          Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
                                          Text="{Binding MilestoneEdit.Content}"
@@ -243,9 +243,9 @@
                             <!--  照片编辑区：网格 + 添加按钮，最多 4 张  -->
                             <StackPanel>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Text="{DynamicResource Growth_EditPhotosLabel}" />
+                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditPhotosLabel}" />
                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11"
-                                               Foreground="{StaticResource WeuiFg2Brush}"
+                                               Foreground="{StaticResource TextPlaceholderBrush}"
                                                IsVisible="{Binding MilestoneEdit.CanAddPhoto}"
                                                Text="{DynamicResource Growth_EditAddPhotoHint}" />
                                 </Grid>
@@ -288,12 +288,12 @@
                                     </Button>
                                 </WrapPanel>
                             </StackPanel>
-                            <TextBlock FontSize="13" Foreground="{StaticResource WeuiRedBrush}" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding MilestoneEdit.ErrorMessage}" />
+                            <TextBlock FontSize="13" Foreground="{StaticResource SemanticErrorBrush}" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding MilestoneEdit.ErrorMessage}" />
                         </StackPanel>
                     </ScrollViewer>
 
                     <!--  底部按钮栏（固定）  -->
-                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource WeuiFg3Brush}" BorderThickness="0,1,0,0">
+                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,Auto">
                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="weui-btn primary"
                                     Command="{Binding MilestoneEdit.SaveCommand}"

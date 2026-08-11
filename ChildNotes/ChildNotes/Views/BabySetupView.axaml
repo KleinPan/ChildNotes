@@ -28,7 +28,7 @@
                         <TextBlock Text="{DynamicResource BabySetup_Welcome}" FontSize="19" FontWeight="Bold"
                                    Foreground="#222" HorizontalAlignment="Center"/>
                         <TextBlock Text="{DynamicResource BabySetup_Hint}" FontSize="13"
-                                   Foreground="{StaticResource WeuiFg1Brush}" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- 性别选择 -->
@@ -65,7 +65,7 @@
                     <Border BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1"/>
 
                     <!-- 错误提示 -->
-                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}" FontSize="13"
+                    <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}" FontSize="13"
                                Margin="0,4"
                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
@@ -89,15 +89,15 @@
             <Setter Property="Padding" Value="18,10"/>
             <Setter Property="MinHeight" Value="40"/>
             <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiFg1Brush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="FontSize" Value="14"/>
         </Style>
         <Style Selector="Button.gender-btn.active">
             <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource WeuiGreenBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource WeuiGreenBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource BrandPrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BrandPrimaryBrush}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.gender-btn:pointerover /template/ ContentPresenter">

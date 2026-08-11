@@ -8,7 +8,7 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.SyncSettingsView"
              x:DataType="vm:SyncSettingsViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid RowDefinitions="Auto,*,Auto">
 
@@ -28,19 +28,19 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Sync_SyncLabel}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="{DynamicResource Sync_EnableCloud}" FontSize="15"/>
-                                <TextBlock Text="{DynamicResource Sync_EnableCloudHint}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,2,0,0"/>
+                                <TextBlock Text="{DynamicResource Sync_EnableCloudHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
                         </Grid>
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"/>
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding LastSyncText}" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -54,7 +54,7 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Sync_Server}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel>
                         <!-- 开发版：可编辑 TextBox + 保存按钮 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*,Auto"
@@ -70,13 +70,13 @@
                                     Margin="8,0,0,0"/>
                         </Grid>
                         <!-- 当前生效地址（含回退到默认值的提示）。开发版仅编辑后显示，正式版始终显示 -->
-                        <Border Height="1" Background="{StaticResource WeuiFg3Brush}" Margin="14,0"
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"
                                 IsVisible="{Binding IsServerUrlDirty}"/>
                         <Grid Margin="14,8" ColumnDefinitions="80,*"
                               IsVisible="{Binding IsServerUrlDirty}">
-                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_CurrentEffect}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_CurrentEffect}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="12"
-                                       Foreground="{StaticResource WeuiFg2Brush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                       Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                         <!-- 正式版：只读展示当前生效地址 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*"
@@ -92,7 +92,7 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Sync_NetworkStatus}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" Text="{Binding NetworkStateText}" FontSize="14"/>
                         <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center"
@@ -104,7 +104,7 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Sync_SyncLog}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <!-- 限定最大高度，超出后内部独立垂直滚动；不影响整页滚动 -->
                     <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel>
@@ -123,10 +123,10 @@
                                                 </Border>
                                             </Grid>
                                             <TextBlock Text="{Binding DataVolume}" FontSize="12"
-                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
                                                        IsVisible="{Binding DataVolume, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                             <TextBlock Text="{Binding Message}" FontSize="12"
-                                                       Foreground="{StaticResource WeuiFg1Brush}"
+                                                       Foreground="{StaticResource TextSecondaryBrush}"
                                                        TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </DataTemplate>
@@ -134,7 +134,7 @@
                             </ItemsControl>
                             <!-- 空状态：暂无日志 -->
                             <TextBlock Text="{DynamicResource Sync_NoLog}" FontSize="13"
-                                       Foreground="{StaticResource WeuiFg2Brush}"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
                                        HorizontalAlignment="Center" Margin="0,20"
                                        IsVisible="{Binding SyncLogs.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
                         </StackPanel>
@@ -145,13 +145,13 @@
                 <Border Classes="section-title">
                     <TextBlock Text="{DynamicResource Sync_NotesTitle}"/>
                 </Border>
-                <Border Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}" Margin="12,4,12,24">
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="{DynamicResource Sync_Note1}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note2}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note3}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note4}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note5}" FontSize="12" Foreground="{StaticResource WeuiFg1Brush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note1}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note2}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note3}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note4}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note5}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 

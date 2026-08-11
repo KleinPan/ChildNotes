@@ -6,38 +6,38 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.LoginView"
              x:DataType="vm:LoginViewModel"
-             Background="{StaticResource WeuiBg0Brush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid>
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Grid RowDefinitions="*,Auto,*">
 
                 <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
-                    <Border Width="84" Height="84" CornerRadius="42" Background="{StaticResource WeuiGreenBrush}"
+                    <Border Width="84" Height="84" CornerRadius="42" Background="{StaticResource BrandPrimaryBrush}"
                             HorizontalAlignment="Center" Margin="0,0,0,16">
                         <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="{DynamicResource Login_AppName}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{DynamicResource Login_AppSlogan}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                    <TextBlock Text="{DynamicResource Login_AppSlogan}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
                                HorizontalAlignment="Center" Margin="0,6,0,0"/>
                 </StackPanel>
 
-                <Border Grid.Row="1" Background="{StaticResource WeuiBg2Brush}" CornerRadius="{StaticResource WeuiCardRadius}"
+                <Border Grid.Row="1" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}"
                         Margin="12,0" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource Login_Account}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                        <TextBlock Text="{DynamicResource Login_Account}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
                                    IsVisible="{Binding !IsRegisterMode}"/>
-                        <TextBlock Text="{DynamicResource Login_SetAccount}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"
+                        <TextBlock Text="{DynamicResource Login_SetAccount}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
                                    IsVisible="{Binding IsRegisterMode}"/>
                         <TextBox Text="{Binding Username}" PlaceholderText="{DynamicResource Login_AccountPlaceholder}" CornerRadius="6"
                                  Margin="0,0,0,12"/>
 
-                        <TextBlock Text="{DynamicResource Login_Password}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                        <TextBlock Text="{DynamicResource Login_Password}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                         <TextBox Text="{Binding Password}" PlaceholderText="{DynamicResource Login_PasswordPlaceholder}" PasswordChar="●" CornerRadius="6"
                                  Margin="0,0,0,12"/>
 
                         <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
-                            <TextBlock Text="{DynamicResource Login_Nickname}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}" Margin="0,0,0,8"/>
+                            <TextBlock Text="{DynamicResource Login_Nickname}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
                             <TextBox Text="{Binding NickName}" PlaceholderText="{DynamicResource Login_NicknamePlaceholder}" CornerRadius="6"/>
                         </StackPanel>
 
@@ -46,21 +46,21 @@
                                 HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="⚙" FontSize="13" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                <TextBlock Text="{DynamicResource Login_ServerSettings}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                <TextBlock Text="{DynamicResource Login_ServerSettings}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
                                            VerticalAlignment="Center" IsVisible="{Binding !ShowServerConfig}"/>
-                                <TextBlock Text="{DynamicResource Login_ServerSettingsToggle}" FontSize="13" Foreground="{StaticResource WeuiFg1Brush}"
+                                <TextBlock Text="{DynamicResource Login_ServerSettingsToggle}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
                                            VerticalAlignment="Center" IsVisible="{Binding ShowServerConfig}"/>
                             </StackPanel>
                         </Button>
                         <StackPanel IsVisible="{Binding ShowServerConfig}" Margin="0,0,0,12">
-                            <TextBlock Text="{DynamicResource Login_ServerUrlLabel}" FontSize="12" Foreground="{StaticResource WeuiFg2Brush}" Margin="0,0,0,6"/>
+                            <TextBlock Text="{DynamicResource Login_ServerUrlLabel}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,0,0,6"/>
                             <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://your-server.com"
                                      CornerRadius="6"/>
                             <TextBlock Text="{DynamicResource Login_ServerUrlHint}" FontSize="11"
-                                       Foreground="{StaticResource WeuiFg2Brush}" Margin="0,4,0,0"/>
+                                       Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,4,0,0"/>
                         </StackPanel>
 
-                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource WeuiRedBrush}"
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}"
                                    FontSize="13" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                         <Button Content="{DynamicResource Login_LoginBtn}" Classes="weui-btn primary"
@@ -84,7 +84,7 @@
                 </Border>
 
                 <TextBlock Grid.Row="2" Text="{DynamicResource Login_LocalMode}"
-                           FontSize="11" Foreground="{StaticResource WeuiFg2Brush}"
+                           FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24,0,0"/>
             </Grid>
         </ScrollViewer>
