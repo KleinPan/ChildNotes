@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ChildNotes.Views.LoadingView"
-             Background="#FFF8E7">
+             Background="{StaticResource LoadingBackgroundBrush}">
 
     <Grid>
         <!-- 顶部主视觉：宝宝插画 -->
@@ -16,11 +16,11 @@
             <TextBlock Text="宝宝日记"
                        FontSize="28"
                        FontWeight="Bold"
-                       Foreground="#5D4037"
+                       Foreground="{StaticResource LoadingTextPrimaryBrush}"
                        HorizontalAlignment="Center"/>
             <TextBlock Text="每一次成长，都值得被记录。"
                        FontSize="14"
-                       Foreground="#8D6E63"
+                       Foreground="{StaticResource LoadingTextSecondaryBrush}"
                        HorizontalAlignment="Center"/>
         </StackPanel>
 
@@ -40,7 +40,7 @@
                 <TextBlock x:Name="TipText"
                            Text=""
                            FontSize="13"
-                           Foreground="#5D4037"
+                           Foreground="{StaticResource LoadingTextPrimaryBrush}"
                            TextWrapping="Wrap"
                            TextAlignment="Center"
                            MaxWidth="320"
@@ -49,8 +49,8 @@
                              HorizontalAlignment="Center"
                              Width="120" Height="3"
                              IsIndeterminate="True"
-                             Foreground="#00C875"
-                             Background="#E8FFF4"
+                             Foreground="{StaticResource BrandPrimaryBrush}"
+                             Background="{StaticResource BrandPrimaryLightBrush}"
                              CornerRadius="1.5"/>
             </StackPanel>
         </Grid>
