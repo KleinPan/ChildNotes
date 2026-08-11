@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -87,21 +88,39 @@ public partial class MineViewModel : ViewModelBase, IActivatable
 
     public void Activate()
     {
+        // 用户信息从内存读取，立即同步设置（无 DB 调用，不会阻塞）
         var user = _auth.CurrentUser;
         NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
         AvatarUrl = user?.AvatarUrl ?? string.Empty;
 
-        BabyList.Clear();
-        var babies = _babyService.LoadBabyList();
-        foreach (var b in babies) BabyList.Add(b);
-        BabyCount = babies.Count;
-        // 宝宝数量变化时刷新派生文案
-        OnPropertyChanged(nameof(BabyCountText));
+        // DB 调用移到后台线程，避免启动期与 TryRestoreSession 的 SQLite 操作竞态导致 ANR/闪退
+        _ = ActivateCoreAsync();
+    }
 
-        // 刷新未读消息数（用于"我的"页红点显示）
-        RefreshUnreadMessages();
+    private async Task ActivateCoreAsync()
+    {
+        // 后台线程执行 DB 查询，避免 UI 线程同步阻塞
+        // 注意：不调 _babyService.LoadBabyList()，因为它会修改 AppState.BabyList（ObservableCollection），
+        // 后台线程修改会触发其他 VM 的 CollectionChanged 跨线程异常。
+        // 启动时 TryRestoreSession 已调过 LoadBabyList，此处只读当前快照即可。
+        var babies = await Task.Run(() => _babyService.GetBabyListSnapshot());
+        var unreadCount = 0;
+        try { unreadCount = await Task.Run(() => _msgService.GetUnreadCount()); }
+        catch { /* 非致命 */ }
 
-        // 异步刷新会员状态文案（不阻塞 UI）
+        // UI 属性更新 marshalling 到 UI 线程（ObservableCollection 必须在 UI 线程修改）
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            BabyList.Clear();
+            foreach (var b in babies) BabyList.Add(b);
+            BabyCount = babies.Count;
+            OnPropertyChanged(nameof(BabyCountText));
+
+            UnreadMessageCount = unreadCount;
+            HasUnreadMessages = unreadCount > 0;
+        });
+
+        // 异步刷新会员状态文案（网络调用，不阻塞 UI）
         _ = RefreshMembershipStatusAsync();
     }
 
@@ -129,11 +148,19 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。</summary>
     public void RefreshUnreadMessages()
     {
+        _ = RefreshUnreadMessagesAsync();
+    }
+
+    private async Task RefreshUnreadMessagesAsync()
+    {
         try
         {
-            var count = _msgService.GetUnreadCount();
-            UnreadMessageCount = count;
-            HasUnreadMessages = count > 0;
+            var count = await Task.Run(() => _msgService.GetUnreadCount());
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                UnreadMessageCount = count;
+                HasUnreadMessages = count > 0;
+            });
         }
         catch { /* 非致命 */ }
     }

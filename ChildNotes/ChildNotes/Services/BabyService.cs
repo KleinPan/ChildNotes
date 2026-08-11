@@ -48,6 +48,19 @@ public sealed class BabyService
         }
     }
 
+    /// <summary>
+    /// 只读获取宝宝列表快照（不修改 AppState.BabyList，不触发 CollectionChanged）。
+    /// 适用于后台线程读取，避免与 UI 线程订阅者竞态。
+    /// </summary>
+    public IReadOnlyList<Baby> GetBabyListSnapshot()
+    {
+        // 优先返回 AppState.BabyList 的快照（启动时 TryRestoreSession 已加载）
+        // 若 AppState.BabyList 为空但 DB 有数据（理论上不会，但兜底），再查 DB
+        if (_state.BabyList.Count > 0)
+            return _state.BabyList.ToList();
+        return _repo.GetByUser(_state.UserId);
+    }
+
     public Baby AddBaby(string name, string gender, DateTime? birthDate, string avatar = "")
     {
         var baby = new Baby
