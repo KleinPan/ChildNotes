@@ -18,15 +18,26 @@ public partial class FeedingView : UserControl
     // 判定水平/垂直方向的最小位移
     private const double DirectionThreshold = 6;
 
-    // 类型筛选条：选中态背景色（绿色 #07C160），未选中态（浅灰 #F0F0F0）
+    // 类型筛选条：选中态背景色（品牌色），未选中态（浅灰）
     // ConverterParameter 为筛选 key（all/feed/sleep/diaper/activity/other），
     // 未传 ConverterParameter 时默认与 "all" 比较（用于"全部"按钮）
     public static readonly IValueConverter FilterBgConverter = new FuncValueConverter<string?, string?, IBrush?>(
-        (selected, filter) => selected == (filter ?? "all") ? Brush.Parse("#07C160") : Brush.Parse("#F0F0F0"));
+        (selected, filter) => selected == (filter ?? "all") ? ResolveBrush("BrandPrimaryBrush") : ResolveBrush("SurfaceDisabledBrush"));
 
-    // 类型筛选条：选中态文字色（白色），未选中态（深灰 #333333）
+    // 类型筛选条：选中态文字色（白色），未选中态（次色文字）
     public static readonly IValueConverter FilterFgConverter = new FuncValueConverter<string?, string?, IBrush?>(
-        (selected, filter) => selected == (filter ?? "all") ? Brushes.White : Brush.Parse("#333333"));
+        (selected, filter) => selected == (filter ?? "all") ? Brushes.White : ResolveBrush("TextSecondaryBrush"));
+
+    /// <summary>
+    /// 从 Application 全局资源中解析 Brush（DesignTokens 已在 App.axaml 合并）。
+    /// Converter 无法直接用 StaticResource，通过此方法在首次调用时解析并缓存。
+    /// </summary>
+    private static IBrush? ResolveBrush(string key)
+    {
+        if (Avalonia.Application.Current?.Resources.TryGetResource(key, null, out var v) == true && v is IBrush b)
+            return b;
+        return null;
+    }
 
     private struct SwipeState
     {

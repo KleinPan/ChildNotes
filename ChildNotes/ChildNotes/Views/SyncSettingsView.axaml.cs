@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
@@ -12,7 +13,7 @@ public class OnlineColorConverter : IValueConverter
 {
     public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
     {
-        return value is true ? new SolidColorBrush(Color.Parse("#07C160")) : new SolidColorBrush(Color.Parse("#E74C3C"));
+        return value is true ? SyncBrushResolver.ResolveBrush("BrandPrimaryBrush") : SyncBrushResolver.ResolveBrush("SemanticErrorBrush");
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
@@ -30,16 +31,30 @@ public class SyncLogStatusBrushConverter : IValueConverter
     {
         return value is string s ? s switch
         {
-            "success" => new SolidColorBrush(Color.Parse("#07C160")),
-            "failed" => new SolidColorBrush(Color.Parse("#FA5151")),
-            "running" => new SolidColorBrush(Color.Parse("#10AEFF")),
-            _ => new SolidColorBrush(Color.Parse("#999999")),
-        } : new SolidColorBrush(Color.Parse("#999999"));
+            "success" => SyncBrushResolver.ResolveBrush("BrandPrimaryBrush"),
+            "failed" => SyncBrushResolver.ResolveBrush("SemanticErrorBrush"),
+            "running" => SyncBrushResolver.ResolveBrush("GrowthBlueBrush"),
+            _ => SyncBrushResolver.ResolveBrush("TextPlaceholderBrush"),
+        } : SyncBrushResolver.ResolveBrush("TextPlaceholderBrush");
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
     {
         throw new NotSupportedException();
+    }
+}
+
+/// <summary>
+/// 从 Application 全局资源中解析 Brush（DesignTokens 已在 App.axaml 合并）。
+/// Converter 无法直接用 StaticResource，通过此方法在运行时解析。
+/// </summary>
+internal static class SyncBrushResolver
+{
+    public static IBrush? ResolveBrush(string key)
+    {
+        if (Application.Current?.Resources.TryGetResource(key, null, out var v) == true && v is IBrush b)
+            return b;
+        return null;
     }
 }
 
