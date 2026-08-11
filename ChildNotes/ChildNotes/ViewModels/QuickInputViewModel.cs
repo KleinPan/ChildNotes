@@ -99,61 +99,62 @@ public partial class QuickInputViewModel : ViewModelBase
         SendCommand.NotifyCanExecuteChanged();
         try
         {
-            var items = await _parseService.ParseAsync(text);
-            if (items is null || items.Count == 0)
+            // 解析 + 保存全部移到后台线程，避免 HTTP POST / SQLite 写入阻塞 UI 线程。
+            // Android 上 HttpClient.SendAsync 的部分操作（DNS/SSL 握手）可能在调用线程
+            // 同步执行，即使 await 也无法避免。SaveLocally 的同步 SQLite 写同理。
+            var (summary, toastDuration, savedCount) = await Task.Run(async () =>
             {
-                DisplayToast("解析失败，请稍后重试");
-                return;
-            }
+                var items = await _parseService.ParseAsync(text);
+                if (items is null || items.Count == 0)
+                    return ((string?)null, 0, 0);
 
-            // 后端只解析不落库，前端统一写本地库。
-            // 本地写入后会触发 SyncTrigger.NotifyWrite → 增量推送到后端
-            int saved = 0;
-            int idx = 0;
-            string? lastTime = null; // 同批次已处理的最后一条非空 time，用于继承给后续无 time 的记录
-            foreach (var item in items)
-            {
-                idx++;
-                if (string.IsNullOrEmpty(item.RecordType))
+                int saved = 0;
+                int idx = 0;
+                string? lastTime = null;
+                foreach (var item in items)
                 {
-                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条跳过：RecordType 为空", DevLogger.Level.Warn);
-                    continue;
+                    idx++;
+                    if (string.IsNullOrEmpty(item.RecordType))
+                    {
+                        DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条跳过：RecordType 为空", DevLogger.Level.Warn);
+                        continue;
+                    }
+                    if (string.IsNullOrEmpty(item.Time) && !string.IsNullOrEmpty(lastTime))
+                    {
+                        item.Time = lastTime;
+                        DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条继承前一条 time={lastTime}");
+                    }
+                    else if (!string.IsNullOrEmpty(item.Time))
+                    {
+                        lastTime = item.Time;
+                    }
+                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}/{items.Count}条开始写入 type={item.RecordType} sub={item.RecordSubType ?? "-"}");
+                    AiNoteParseService.SaveLocally(item, text, _recordService);
+                    saved++;
+                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条写入完成 累计 saved={saved}");
                 }
-                // 同一批次多条记录时，若当前记录无 time 则继承前一条的 time
-                // （server 路径后端已处理；此处覆盖 local LLM / 规则降级路径）
-                if (string.IsNullOrEmpty(item.Time) && !string.IsNullOrEmpty(lastTime))
-                {
-                    item.Time = lastTime;
-                    DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条继承前一条 time={lastTime}");
-                }
-                else if (!string.IsNullOrEmpty(item.Time))
-                {
-                    lastTime = item.Time;
-                }
-                DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}/{items.Count}条开始写入 type={item.RecordType} sub={item.RecordSubType ?? "-"}");
-                AiNoteParseService.SaveLocally(item, text, _recordService);
-                saved++;
-                DevLogger.Log("QuickInput", $"[AI-LOG] 第{idx}条写入完成 累计 saved={saved}");
-            }
-            DevLogger.Log("QuickInput", $"[AI-LOG] 全部写入结束 items={items.Count} saved={saved}");
-            if (saved == 0)
+                DevLogger.Log("QuickInput", $"[AI-LOG] 全部写入结束 items={items.Count} saved={saved}");
+                if (saved == 0)
+                    return ((string?)null, 0, 0);
+
+                var source = items[0].Source == ParseSource.Ai ? "AI" : "规则";
+                var header = $"[{source}] 已记录 {saved} 条";
+                var lines = items
+                    .Where(i => !string.IsNullOrEmpty(i.RecordType))
+                    .Select(AiNoteParseService.FormatForToast);
+                var s = header + "\n" + string.Join("\n", lines);
+                var d = Math.Min(6000, 1500 + saved * 700);
+                return (s, d, saved);
+            });
+
+            if (savedCount == 0)
             {
                 DevLogger.Log("QuickInput", "[AI-LOG] saved=0，提示解析失败", DevLogger.Level.Warn);
                 DisplayToast("解析失败，请稍后重试");
                 return;
             }
 
-            // 汇总展示：每条记录一行，格式对齐喂养记录卡片信息密度
-            // 标注解析来源（AI / 规则降级），时长随条数动态延长
-            var source = items[0].Source == ParseSource.Ai ? "AI" : "规则";
-            var header = $"[{source}] 已记录 {saved} 条";
-            var lines = items
-                .Where(i => !string.IsNullOrEmpty(i.RecordType))
-                .Select(AiNoteParseService.FormatForToast);
-            var summary = header + "\n" + string.Join("\n", lines);
-            // 多条记录 Toast 时长：基础 1500ms + 每条 700ms，上限 6000ms
-            var duration = Math.Min(6000, 1500 + saved * 700);
-            DisplayToast(summary, duration);
+            DisplayToast(summary!, toastDuration);
             InputText = string.Empty; // 清空后 HasContent=false 自动恢复 + 按钮
             Saved?.Invoke();
         }
