@@ -65,6 +65,50 @@
     <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
     <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
 
+    <!-- ============ Color / Vaccine Status (疫苗业务状态色) ============ -->
+    <!-- 疫苗记录卡片状态色：默认/已完成/异常/选中态。DesignTokens 未定义，临时集中管理。 -->
+    <Color x:Key="Color.Vaccine.BorderDefault">#EDF1F7</Color>
+    <Color x:Key="Color.Vaccine.Done">#9EE6C1</Color>
+    <Color x:Key="Color.Vaccine.Abnormal">#FFBF9B</Color>
+    <Color x:Key="Color.Vaccine.AbnormalBg">#FFFBE8</Color>
+    <Color x:Key="Color.Vaccine.AbnormalBorder">#F4D35E</Color>
+    <Color x:Key="Color.Vaccine.SelectedBg">#EEF8FF</Color>
+    <Color x:Key="Color.Vaccine.SelectedBorder">#BFE8FF</Color>
+    <Color x:Key="Color.Vaccine.SelectedText">#0675B8</Color>
+
+    <SolidColorBrush x:Key="VaccineBorderDefaultBrush" Color="{StaticResource Color.Vaccine.BorderDefault}" />
+    <SolidColorBrush x:Key="VaccineDoneBrush" Color="{StaticResource Color.Vaccine.Done}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBrush" Color="{StaticResource Color.Vaccine.Abnormal}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBgBrush" Color="{StaticResource Color.Vaccine.AbnormalBg}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBorderBrush" Color="{StaticResource Color.Vaccine.AbnormalBorder}" />
+    <SolidColorBrush x:Key="VaccineSelectedBgBrush" Color="{StaticResource Color.Vaccine.SelectedBg}" />
+    <SolidColorBrush x:Key="VaccineSelectedBorderBrush" Color="{StaticResource Color.Vaccine.SelectedBorder}" />
+    <SolidColorBrush x:Key="VaccineSelectedTextBrush" Color="{StaticResource Color.Vaccine.SelectedText}" />
+
+    <!-- ============ Color / QuickAction (首页快捷动作图标背景色) ============ -->
+    <!-- QuickMenuViewModel 中 10 个快捷动作的图标背景色。ViewModel 通过 IconBg 字段存色值字符串。 -->
+    <Color x:Key="Color.QuickAction.Feed">#FFF0E6</Color>
+    <Color x:Key="Color.QuickAction.Activity">#E3F2FD</Color>
+    <Color x:Key="Color.QuickAction.Complementary">#FFF3E0</Color>
+    <Color x:Key="Color.QuickAction.Pump">#E8F5E9</Color>
+    <Color x:Key="Color.QuickAction.Supplement">#F3E5F5</Color>
+    <Color x:Key="Color.QuickAction.Temperature">#FFE8E8</Color>
+    <Color x:Key="Color.QuickAction.Sleep">#E8F0FE</Color>
+    <Color x:Key="Color.QuickAction.Diaper">#FFF8E1</Color>
+    <Color x:Key="Color.QuickAction.Water">#E1F5FE</Color>
+    <Color x:Key="Color.QuickAction.Growth">#E0F2F1</Color>
+
+    <SolidColorBrush x:Key="QuickActionFeedBrush" Color="{StaticResource Color.QuickAction.Feed}" />
+    <SolidColorBrush x:Key="QuickActionActivityBrush" Color="{StaticResource Color.QuickAction.Activity}" />
+    <SolidColorBrush x:Key="QuickActionComplementaryBrush" Color="{StaticResource Color.QuickAction.Complementary}" />
+    <SolidColorBrush x:Key="QuickActionPumpBrush" Color="{StaticResource Color.QuickAction.Pump}" />
+    <SolidColorBrush x:Key="QuickActionSupplementBrush" Color="{StaticResource Color.QuickAction.Supplement}" />
+    <SolidColorBrush x:Key="QuickActionTemperatureBrush" Color="{StaticResource Color.QuickAction.Temperature}" />
+    <SolidColorBrush x:Key="QuickActionSleepBrush" Color="{StaticResource Color.QuickAction.Sleep}" />
+    <SolidColorBrush x:Key="QuickActionDiaperBrush" Color="{StaticResource Color.QuickAction.Diaper}" />
+    <SolidColorBrush x:Key="QuickActionWaterBrush" Color="{StaticResource Color.QuickAction.Water}" />
+    <SolidColorBrush x:Key="QuickActionGrowthBrush" Color="{StaticResource Color.QuickAction.Growth}" />
+
     <!-- 业务色 Light (强调态浅色底/边)
          来源: 业务色 8% 透明叠白色 = Material Design Light 推导值
          design-tokens.md 未明确规定,临时值,待设计确认 -->

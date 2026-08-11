@@ -107,13 +107,13 @@
                 对应"将来要打"的默认状态
             -->
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="BorderBrush" Value="#EDF1F7" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineBorderDefaultBrush}" />
             <!--  确保卡片不超出 Grid 列宽  -->
             <Setter Property="HorizontalAlignment" Value="Stretch" />
         </Style>
         <Style Selector="Border.vf-card.done">
             <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
-            <Setter Property="BorderBrush" Value="#9EE6C1" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineDoneBrush}" />
         </Style>
         <Style Selector="Border.vf-card.skipped">
             <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
@@ -121,21 +121,21 @@
         </Style>
         <Style Selector="Border.vf-card.replaced">
             <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}" />
-            <Setter Property="BorderBrush" Value="#9EE6C1" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineDoneBrush}" />
         </Style>
         <!--  已到期：橘红色系  -->
         <Style Selector="Border.vf-card.overdue">
             <Setter Property="Background" Value="{StaticResource FeedingOrangeLightBrush}" />
-            <Setter Property="BorderBrush" Value="#FFBF9B" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineAbnormalBrush}" />
         </Style>
         <!--  即将要打：淡黄色系  -->
         <Style Selector="Border.vf-card.due">
-            <Setter Property="Background" Value="#FFFBE8" />
-            <Setter Property="BorderBrush" Value="#F4D35E" />
+            <Setter Property="Background" Value="{StaticResource VaccineAbnormalBgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineAbnormalBorderBrush}" />
         </Style>
         <Style Selector="Border.vf-card.soon">
-            <Setter Property="Background" Value="#FFFBE8" />
-            <Setter Property="BorderBrush" Value="#F4D35E" />
+            <Setter Property="Background" Value="{StaticResource VaccineAbnormalBgBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineAbnormalBorderBrush}" />
         </Style>
         <!--
             将来要打：与基础样式一致（白色背景 + 浅灰边框）
@@ -143,7 +143,7 @@
         -->
         <Style Selector="Border.vf-card.pending">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="BorderBrush" Value="#EDF1F7" />
+            <Setter Property="BorderBrush" Value="{StaticResource VaccineBorderDefaultBrush}" />
         </Style>
         <Style Selector="Panel.vf-axis">
             <Setter Property="Width" Value="60" />
@@ -235,7 +235,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         </Style>
         <Style Selector="Border.abn-chip.active TextBlock">
-            <Setter Property="Foreground" Value="#E67E22" />
+            <Setter Property="Foreground" Value="{StaticResource FeedingOrangeBrush}" />
             <Setter Property="FontWeight" Value="Medium" />
         </Style>
         <!--  消化道异常 chip（红色强调，对齐小程序 .active-danger）  -->
@@ -470,7 +470,7 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Margin="12,0,0,0" Padding="0,16" Background="#F9F9F9"
+                                <Border Grid.Column="1" Margin="12,0,0,0" Padding="0,16" Background="{StaticResource SurfaceDisabledBrush}"
                                         CornerRadius="12">
                                     <StackPanel HorizontalAlignment="Center">
                                         <TextBlock Margin="0,0,0,6" HorizontalAlignment="Center" FontSize="28" Text="⚖️" />
@@ -633,7 +633,7 @@
                                         <TextBox x:Name="PumpLeftDurationTextBox" Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftDurationText}" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
+                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}"
                                         CornerRadius="12">
                                     <StackPanel>
                                         <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_RightDurationLabel}" />
@@ -648,7 +648,7 @@
                                         <TextBox Classes="form-input" PlaceholderText="0" Text="{Binding PumpForm.LeftAmountText}" />
                                     </StackPanel>
                                 </Border>
-                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="#F9F9F9"
+                                <Border Grid.Column="1" Margin="8,0,0,0" Padding="12,10" Background="{StaticResource SurfaceDisabledBrush}"
                                         CornerRadius="12">
                                     <StackPanel>
                                         <TextBlock Margin="0,0,0,6" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_RightMilkAmount}" />
@@ -927,9 +927,9 @@
                                         <TextBlock FontSize="14" FontWeight="Medium" Text="{DynamicResource RS_AddCustomVaccine}" />
                                         <TextBlock FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Text="{DynamicResource RS_AddCustomVaccineHint}" />
                                     </StackPanel>
-                                    <Border Grid.Column="1" Padding="10,3" VerticalAlignment="Center" Background="#EEF8FF"
+                                    <Border Grid.Column="1" Padding="10,3" VerticalAlignment="Center" Background="{StaticResource VaccineSelectedBgBrush}"
                                             CornerRadius="12">
-                                        <TextBlock FontSize="12" Foreground="#0675B8" Text="{Binding VaccineForm.ShowCustomVaccineForm, Converter={x:Static v:RecordSheetView.VaccineToggleTextConverter}}" />
+                                        <TextBlock FontSize="12" Foreground="{StaticResource VaccineSelectedTextBrush}" Text="{Binding VaccineForm.ShowCustomVaccineForm, Converter={x:Static v:RecordSheetView.VaccineToggleTextConverter}}" />
                                     </Border>
                                 </Grid>
                             </Border>
@@ -979,12 +979,12 @@
                             </StackPanel>
 
                             <!--  C. 已选剂次卡片  -->
-                            <Border Grid.Row="2" Margin="0,0,0,12" Background="#EEF8FF" BorderBrush="#BFE8FF"
+                            <Border Grid.Row="2" Margin="0,0,0,12" Background="{StaticResource VaccineSelectedBgBrush}" BorderBrush="{StaticResource VaccineSelectedBorderBrush}"
                                     Classes="vf-entry"
                                     IsVisible="{Binding VaccineForm.SelectedPlan, Converter={x:Static v:RecordSheetView.IsNotNullConverter}}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="2">
-                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="{DynamicResource RS_Selected}" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource VaccineSelectedTextBrush}" Text="{DynamicResource RS_Selected}" />
                                         <TextBlock FontSize="14" FontWeight="Medium" Text="{Binding VaccineForm.SelectedPlan.Name}" />
                                         <TextBlock FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}">
                                             <Run Text="{Binding VaccineForm.SelectedPlan.AgeLabel}" />
@@ -994,7 +994,7 @@
                                     </StackPanel>
                                     <Border Grid.Column="1" Padding="8,3" VerticalAlignment="Center" Background="{StaticResource SurfaceCardBrush}"
                                             CornerRadius="6">
-                                        <TextBlock FontSize="11" Foreground="#0675B8" Text="{Binding VaccineForm.SelectedPlan.StatusText}" />
+                                        <TextBlock FontSize="11" Foreground="{StaticResource VaccineSelectedTextBrush}" Text="{Binding VaccineForm.SelectedPlan.StatusText}" />
                                     </Border>
                                 </Grid>
                             </Border>
@@ -1003,11 +1003,11 @@
 
                             <!--  E. 时间轴表头（三列 Grid，与分组模板完全对称）  -->
                             <Grid Grid.Row="3" Margin="0,4,0,4" ClipToBounds="True" ColumnDefinitions="*,60,*">
-                                <Border Grid.Column="0" Padding="8,6" Background="#EEF8FF" CornerRadius="6">
-                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#0675B8"
+                                <Border Grid.Column="0" Padding="8,6" Background="{StaticResource VaccineSelectedBgBrush}" CornerRadius="6">
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource VaccineSelectedTextBrush}"
                                                Text="{DynamicResource RS_FreeVaccine}" />
                                 </Border>
-                                <Border Grid.Column="1" Margin="4,0" Padding="8,6" Background="#F3F4F6"
+                                <Border Grid.Column="1" Margin="4,0" Padding="8,6" Background="{StaticResource SurfaceDisabledBrush}"
                                         CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_TimeAxis}" />
                                 </Border>
@@ -1077,7 +1077,7 @@
                                                                                     Content="{DynamicResource RS_Skip}" />
                                                                         </Grid>
                                                                         <!--  完成时间  -->
-                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource VaccineDoneBrush}"
                                                                                    IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding DoneTime}" />
                                                                         <!--  跳过时间  -->
@@ -1162,7 +1162,7 @@
                                                                             <Button Grid.Column="1" HorizontalAlignment="Stretch" Classes="vf-skip" Click="OnVaccineSkip"
                                                                                     Content="{DynamicResource RS_Skip}" />
                                                                         </Grid>
-                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="#9EE6C1"
+                                                                        <TextBlock Margin="0,2,0,0" FontSize="10" Foreground="{StaticResource VaccineDoneBrush}"
                                                                                    IsVisible="{Binding DoneTime, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                                                    Text="{Binding DoneTime}" />
                                                                         <!--  跳过时间  -->
