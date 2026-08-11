@@ -2,32 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     x:Class="ChildNotes.Styles.WeUIColors">
 
-    <Color x:Key="WeuiBg0">#EDEDED</Color>
-    <Color x:Key="WeuiBg1">#F7F7F7</Color>
-    <Color x:Key="WeuiBg2">#FFFFFF</Color>
-
-    <Color x:Key="WeuiFg0">#E6000000</Color>
-    <Color x:Key="WeuiFg1">#8C000000</Color>
-    <Color x:Key="WeuiFg2">#4D000000</Color>
-    <Color x:Key="WeuiFg3">#1A000000</Color>
-
-    <SolidColorBrush x:Key="WeuiBg0Brush" Color="{StaticResource WeuiBg0}" />
-    <SolidColorBrush x:Key="WeuiBg1Brush" Color="{StaticResource WeuiBg1}" />
-    <SolidColorBrush x:Key="WeuiBg2Brush" Color="{StaticResource WeuiBg2}" />
-
-    <SolidColorBrush x:Key="WeuiFg0Brush" Color="{StaticResource WeuiFg0}" />
-    <SolidColorBrush x:Key="WeuiFg1Brush" Color="{StaticResource WeuiFg1}" />
-    <SolidColorBrush x:Key="WeuiFg2Brush" Color="{StaticResource WeuiFg2}" />
-    <SolidColorBrush x:Key="WeuiFg3Brush" Color="{StaticResource WeuiFg3}" />
-
-    <SolidColorBrush x:Key="WeuiRedBrush" Color="#FA5151" />
-    <SolidColorBrush x:Key="WeuiOrangeBrush" Color="#FA9D3B" />
-    <SolidColorBrush x:Key="WeuiYellowBrush" Color="#FFC300" />
-    <SolidColorBrush x:Key="WeuiGreenBrush" Color="#07C160" />
-    <SolidColorBrush x:Key="WeuiBlueBrush" Color="#10AEFF" />
-
-    <SolidColorBrush x:Key="WeuiBgColorActiveBrush" Color="#ECECEC" />
-    <SolidColorBrush x:Key="WeuiSeparatorBrush" Color="#1A000000" />
+    <!-- 业务专用色（DesignTokens 未定义，保留集中管理） -->
 
     <!-- 原版 baby-status-bar 统计卡片左边框色 -->
     <SolidColorBrush x:Key="FeedAccentBrush" Color="#FF8A3D" />
@@ -54,8 +29,4 @@
 
     <!-- 原版头像渐变（近似单色，绿主色） -->
     <SolidColorBrush x:Key="AvatarGradientBrush" Color="#07C160" />
-
-    <!-- 圆角对齐 design-tokens: radius.medium=16(卡片), Primary Button=24(pill) -->
-    <CornerRadius x:Key="WeuiCardRadius">16</CornerRadius>
-    <CornerRadius x:Key="WeuiBtnRadius">24</CornerRadius>
 </ResourceDictionary>
