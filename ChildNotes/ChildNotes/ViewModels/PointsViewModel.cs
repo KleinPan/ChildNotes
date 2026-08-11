@@ -77,8 +77,8 @@ public partial class PointsViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 签到：优先调后端 API（确保后端 PostgreSQL 积分同步，避免 AI 分析时后端积分不足）；
-    /// 后端不可用或未配置时回退到本地签到（仅写本地 SQLite）。
+    /// 签到：先本地 SQLite 签到（立即反馈），再后台同步到后端（fire-and-forget）。
+    /// 后端同步失败不影响用户体验，下次打开 App 会重新同步。
     /// </summary>
     [RelayCommand]
     private async Task SignIn()
@@ -86,25 +86,8 @@ public partial class PointsViewModel : ViewModelBase
         if (Signing || TodaySigned) return;
         Signing = true;
 
-        // 先尝试后端签到（权威数据源）。
-        // HTTP 调用包到 Task.Run，确保 DNS/SSL 握手在后台线程执行，避免 Android UI 线程 ANR。
-        var serverResult = await Task.Run(() => _pointsApi.SignInAsync());
-        if (serverResult is not null && !serverResult.AlreadySignedIn)
-        {
-            // 后端签到成功：用后端返回的积分覆盖本地 SQLite，确保本地显示与后端一致
-            await Task.Run(() => _pointsService.SyncPointsFromServer(serverResult.Points, serverResult.TotalEarned, serverResult.TotalSpent));
-            // 刷新本地 dashboard 获取签到时间线等信息
-            var dashboard = await Task.Run(() => _pointsService.GetDashboard());
-            ApplyDashboard(dashboard);
-            TodaySigned = true;
-            ContinuousDays = dashboard.ContinuousDays;
-            SignButtonText = "今日已签到";
-            DisplayToast($"签到成功 +{dashboard.TodayRewardPoints}分");
-            Signing = false;
-            return;
-        }
-
-        // 后端不可用 / 已签到 / 未配置：回退到本地签到
+        // 先本地签到：立即更新 UI，让用户无感知延迟。
+        // 本地 SQLite 签到是毫秒级，用户点击后立即看到"今日已签到"和积分变化。
         var localDashboard = await Task.Run(() => _pointsService.SignIn());
         Points = localDashboard.Points;
         TotalEarned = localDashboard.TotalEarned;
@@ -117,6 +100,27 @@ public partial class PointsViewModel : ViewModelBase
 
         DisplayToast($"签到成功 +{localDashboard.TodayRewardPoints}分");
         Signing = false;
+
+        // 后台同步到后端（fire-and-forget）：确保后端 PostgreSQL 积分与本地一致，
+        // 避免 AI 分析时后端积分不足误报。HTTP 调用包到 Task.Run 避免 UI 线程阻塞。
+        // 后端签到失败不影响用户体验（本地已签到，下次打开会重新同步）。
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var serverResult = await _pointsApi.SignInAsync();
+                if (serverResult is not null && !serverResult.AlreadySignedIn)
+                {
+                    // 后端签到成功：用后端返回的积分覆盖本地 SQLite
+                    _pointsService.SyncPointsFromServer(serverResult.Points, serverResult.TotalEarned, serverResult.TotalSpent);
+                    DevLogger.Log("Points", $"后端签到同步成功: points={serverResult.Points}");
+                }
+            }
+            catch (Exception ex)
+            {
+                DevLogger.Log("Points", "后端签到同步失败: " + ex.Message);
+            }
+        });
     }
 
     /// <summary>
