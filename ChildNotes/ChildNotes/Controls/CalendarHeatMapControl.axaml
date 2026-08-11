@@ -8,8 +8,8 @@
     <!-- 热力图单元格基础样式 -->
     <Style Selector="Border.cell">
       <Setter Property="CornerRadius" Value="6"/>
-      <Setter Property="Background" Value="#F7F8FA"/>
-      <Setter Property="BorderBrush" Value="#EDF0F2"/>
+      <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="4,2"/>
       <Setter Property="MinHeight" Value="40"/>
@@ -35,7 +35,7 @@
       <Setter Property="FontWeight" Value="SemiBold"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
-      <Setter Property="Foreground" Value="#202124"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
 
     <!-- 高值时文字变白 -->
@@ -47,10 +47,10 @@
     <Style Selector="Border.type-badge">
       <Setter Property="CornerRadius" Value="10"/>
       <Setter Property="Padding" Value="8,3"/>
-      <Setter Property="Background" Value="#E8F9EF"/>
+      <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
     </Style>
     <Style Selector="Border.type-badge TextBlock">
-      <Setter Property="Foreground" Value="#07C160"/>
+      <Setter Property="Foreground" Value="{StaticResource BrandPrimaryBrush}"/>
       <Setter Property="FontSize" Value="10"/>
       <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
@@ -58,7 +58,7 @@
     <!-- 星期行文字 -->
     <Style Selector="TextBlock.week-day">
       <Setter Property="FontSize" Value="11"/>
-      <Setter Property="Foreground" Value="#9AA1AB"/>
+      <Setter Property="Foreground" Value="{StaticResource TextPlaceholderBrush}"/>
       <Setter Property="HorizontalAlignment" Value="Center"/>
       <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
@@ -66,8 +66,8 @@
 
   <Border x:Name="PART_Root"
           CornerRadius="12"
-          Background="White"
-          BorderBrush="#EDF0F2"
+          Background="{StaticResource SurfaceCardBrush}"
+          BorderBrush="{StaticResource SurfaceDividerBrush}"
           BorderThickness="1"
           Padding="16,14">
     <StackPanel Spacing="10">
@@ -75,8 +75,8 @@
       <!-- 头部区域：标题 + 副标题 + 类型标签 -->
       <Grid ColumnDefinitions="Auto,*">
         <StackPanel Grid.Column="0" Spacing="2">
-          <TextBlock x:Name="PART_Title" FontSize="15" FontWeight="Bold" Foreground="#202124"/>
-          <TextBlock x:Name="PART_Subtitle" FontSize="12" Foreground="#8A8F98"/>
+          <TextBlock x:Name="PART_Title" FontSize="15" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"/>
+          <TextBlock x:Name="PART_Subtitle" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"/>
         </StackPanel>
         <Border Grid.Column="1" Classes="type-badge"
                 HorizontalAlignment="Right" VerticalAlignment="Center"

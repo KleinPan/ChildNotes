@@ -47,7 +47,7 @@ public class CalendarCellItem : ObservableObject
     private double _cellHeight = 40;
     public double CellHeight { get => _cellHeight; set => SetProperty(ref _cellHeight, value); }
 
-    private IBrush _cellForeground = SolidColorBrush.Parse("#202124");
+    private IBrush _cellForeground = Brushes.Black;
     public IBrush CellForeground { get => _cellForeground; set => SetProperty(ref _cellForeground, value); }
 
     private bool _isHighValue;
@@ -83,9 +83,20 @@ public partial class CalendarHeatMapControl : UserControl
     /// <summary>5级透明度（对齐小程序）。</summary>
     private static readonly double[] AlphaLevels = { 0, 0.12, 0.24, 0.42, 0.72 };
 
-    private static readonly IBrush DefaultCellBg = SolidColorBrush.Parse("#F7F8FA");
-    private static readonly IBrush DefaultCellBorder = SolidColorBrush.Parse("#EDF0F2");
+    private static IBrush? _defaultCellBg;
+    private static IBrush? _defaultCellBorder;
+    private static IBrush? _defaultFg;
+
+    /// <summary>默认单元格背景色（查询 DesignTokens SurfaceDisabledBrush，回退 #F7F8FA）。</summary>
+    private static IBrush DefaultCellBg => _defaultCellBg ??= ResolveBrush("SurfaceDisabledBrush") ?? SolidColorBrush.Parse("#F7F8FA");
+    /// <summary>默认单元格边框色（查询 DesignTokens SurfaceDividerBrush，回退 #EDF0F2）。</summary>
+    private static IBrush DefaultCellBorder => _defaultCellBorder ??= ResolveBrush("SurfaceDividerBrush") ?? SolidColorBrush.Parse("#EDF0F2");
+    /// <summary>默认文字色（查询 DesignTokens TextPrimaryBrush，回退 #202124）。</summary>
+    private static IBrush DefaultFg => _defaultFg ??= ResolveBrush("TextPrimaryBrush") ?? SolidColorBrush.Parse("#202124");
     private static readonly IBrush TransparentBrush = Brushes.Transparent;
+
+    private static IBrush? ResolveBrush(string key)
+        => Application.Current?.Resources.TryGetResource(key, null, out var v) == true && v is IBrush b ? b : null;
 
     public CalendarMode Mode { get => GetValue(ModeProperty); set => SetValue(ModeProperty, value); }
     public IList<CalendarCellItem> Cells { get => GetValue(CellsProperty); set => SetValue(CellsProperty, value); }
@@ -182,7 +193,7 @@ public partial class CalendarHeatMapControl : UserControl
         Color? typeColor = null;
         try { typeColor = string.IsNullOrEmpty(TypeColor) ? null : Color.Parse(TypeColor); } catch { }
         var whiteBrush = Brushes.White;
-        var defaultFg = SolidColorBrush.Parse("#202124");
+        var defaultFg = DefaultFg;
 
         foreach (var cell in Cells)
         {
