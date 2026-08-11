@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -102,8 +103,8 @@ public static class AppConverters
 
     // ===== AI 设置：测试连接结果 =====
     public static readonly IValueConverter TestResultTitleConverter = new BoolToTextConverter("✅ 连接成功", "❌ 连接失败");
-    public static readonly IValueConverter TestResultBackgroundConverter = new BoolToBrushConverter("#E8F9EF", "#FFF0F0");
-    public static readonly IValueConverter TestResultForegroundConverter = new BoolToBrushConverter("#06AD56", "#E64340");
+    public static readonly IValueConverter TestResultBackgroundConverter = new BoolToResourceBrushConverter("BrandPrimaryLightBrush", "MedicineRedLightBrush");
+    public static readonly IValueConverter TestResultForegroundConverter = new BoolToResourceBrushConverter("BrandPrimaryBrush", "SemanticErrorBrush");
 
     // ===== 头像路径 → Bitmap =====
     // BabyBase.Avatar 存储本地文件路径（前端 Baby 继承自 BabyBase），UI 的 Image.Source 需要 IBitmap。
@@ -122,14 +123,20 @@ public static class AppConverters
 
 /// <summary>
 /// DevLogger.Level → 徽章背景色转换器。
-/// Info=#22A039 绿, Warn=#E6A23C 橙, Error=#F56C6C 红, Debug=#909399 灰。
+/// Info=BrandPrimary 绿, Warn=FeedingOrange 橙, Error=SemanticError 红, Debug=TextPlaceholder 灰。
+/// 色值通过 Application.Resources 运行时查询 DesignTokens，支持主题切换。
 /// </summary>
 internal sealed class LogLevelToBrushConverter : IValueConverter
 {
-    private static readonly IBrush Info = Brush.Parse("#22A039");
-    private static readonly IBrush Warn = Brush.Parse("#E6A23C");
-    private static readonly IBrush Error = Brush.Parse("#F56C6C");
-    private static readonly IBrush Debug = Brush.Parse("#909399");
+    private static IBrush? _info;
+    private static IBrush? _warn;
+    private static IBrush? _error;
+    private static IBrush? _debug;
+
+    private static IBrush Info => _info ??= ResolveBrush("BrandPrimaryBrush") ?? Brush.Parse("#22A039");
+    private static IBrush Warn => _warn ??= ResolveBrush("FeedingOrangeBrush") ?? Brush.Parse("#E6A23C");
+    private static IBrush Error => _error ??= ResolveBrush("SemanticErrorBrush") ?? Brush.Parse("#F56C6C");
+    private static IBrush Debug => _debug ??= ResolveBrush("TextPlaceholderBrush") ?? Brush.Parse("#909399");
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is DevLogger.Level lvl
@@ -145,6 +152,9 @@ internal sealed class LogLevelToBrushConverter : IValueConverter
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
+
+    private static IBrush? ResolveBrush(string key)
+        => Application.Current?.Resources.TryGetResource(key, null, out var v) == true && v is IBrush b ? b : null;
 }
 
 /// <summary>DevLogger.Level → 徽章文字色（统一白色）。</summary>
@@ -229,6 +239,30 @@ internal sealed class BoolToBrushConverter : IValueConverter
     }
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is bool b ? (b ? _trueBrush : _falseBrush) : _falseBrush;
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// 布尔值到颜色（IBrush）的转换器，色值通过 Application.Resources 查询 DesignTokens。
+/// 与 BoolToBrushConverter 的区别：参数是 Token key 而非 hex 字符串，支持主题切换。
+/// </summary>
+internal sealed class BoolToResourceBrushConverter : IValueConverter
+{
+    private readonly string _trueKey;
+    private readonly string _falseKey;
+    public BoolToResourceBrushConverter(string trueKey, string falseKey)
+    {
+        _trueKey = trueKey;
+        _falseKey = falseKey;
+    }
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var key = value is bool b && b ? _trueKey : _falseKey;
+        return Application.Current?.Resources.TryGetResource(key, null, out var v) == true && v is IBrush brush
+            ? brush
+            : null;
+    }
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
