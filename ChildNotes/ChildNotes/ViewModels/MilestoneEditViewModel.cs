@@ -218,7 +218,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
         if (string.IsNullOrWhiteSpace(Title))
@@ -232,26 +232,29 @@ public partial class MilestoneEditViewModel : ViewModelBase
             return;
         }
 
-        // 等待所有正在上传的图片完成（最多等待 5 秒，超时则用本地路径保存）
-        WaitForUploads(TimeSpan.FromSeconds(5));
-
-        var photos = Photos.Select(p => p.ToStoredPath()).ToList();
-        var m = new Milestone
+        // 保存逻辑（含等待图片上传 + DB 写入）移到后台线程
+        await Task.Run(() =>
         {
-            Id = _editingId,
-            UserId = _state.UserId,
-            BabyId = _state.CurrentBabyId,
-            Title = Title.Trim(),
-            Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
-            RecordDate = RecordDate.LocalDateTime.Date,
-            PhotosJson = JsonSerializer.Serialize(photos),
-            DeviceId = _cfgRepo.Get().DeviceId,
-        };
+            WaitForUploads(TimeSpan.FromSeconds(5));
 
-        if (string.IsNullOrEmpty(_editingId))
-            _repo.Insert(m);
-        else
-            _repo.Update(m);
+            var photos = Photos.Select(p => p.ToStoredPath()).ToList();
+            var m = new Milestone
+            {
+                Id = _editingId,
+                UserId = _state.UserId,
+                BabyId = _state.CurrentBabyId,
+                Title = Title.Trim(),
+                Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
+                RecordDate = RecordDate.LocalDateTime.Date,
+                PhotosJson = JsonSerializer.Serialize(photos),
+                DeviceId = _cfgRepo.Get().DeviceId,
+            };
+
+            if (string.IsNullOrEmpty(_editingId))
+                _repo.Insert(m);
+            else
+                _repo.Update(m);
+        });
 
         IsVisible = false;
         Saved?.Invoke();
@@ -268,10 +271,10 @@ public partial class MilestoneEditViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Delete()
+    private async Task Delete()
     {
         if (string.IsNullOrEmpty(_editingId)) return;
-        _repo.Delete(_editingId);
+        await Task.Run(() => _repo.Delete(_editingId));
         IsVisible = false;
         Saved?.Invoke();
     }

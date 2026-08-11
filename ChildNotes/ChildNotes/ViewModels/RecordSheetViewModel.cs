@@ -82,7 +82,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         if (dto is null) return false;
         try
         {
-            var recordId = RecordService.AddVaccine(dto);
+            var recordId = await Task.Run(() => RecordService.AddVaccine(dto));
             // 原地更新该卡片状态（只触发该卡片的 INPC 通知，不影响其他卡片）
             VaccineForm.MarkDoneInline(plan, dto.Time, recordId);
             VaccineInlineChanged?.Invoke();
@@ -102,7 +102,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         if (dto is null) return false;
         try
         {
-            var recordId = RecordService.AddVaccine(dto);
+            var recordId = await Task.Run(() => RecordService.AddVaccine(dto));
             VaccineForm.MarkSkippedInline(plan, dto.Time, recordId);
             VaccineInlineChanged?.Invoke();
             return true;
@@ -153,7 +153,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
         try
         {
-            RecordService.UpdateVaccine(plan.RecordId, dto);
+            await Task.Run(() => RecordService.UpdateVaccine(plan.RecordId, dto));
             // 清预加载缓存，确保 LoadAsync 从 DB 重建（改时间后状态可能联动变化，不能用原地更新）
             ChildNotes.ViewModels.VaccineFormViewModel.InvalidatePreload();
             await VaccineForm.LoadAsync();
@@ -179,12 +179,12 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
 
     /// <summary>直接取消已跳过剂次：无数据损失（跳过仅标记状态），与"跳过"操作互逆，不弹窗。
     /// 删除 DB 记录并原地恢复为待接种状态。</summary>
-    public void CancelVaccineSkippedDirect(VaccinePlanView plan)
+    public async Task CancelVaccineSkippedDirect(VaccinePlanView plan)
     {
         if (plan.RecordId is null) return;
         try
         {
-            RecordService.Delete(plan.RecordId);
+            await Task.Run(() => RecordService.Delete(plan.RecordId));
             VaccineForm.CancelInline(plan);
             VaccineInlineChanged?.Invoke();
         }
@@ -217,7 +217,7 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         }
         try
         {
-            RecordService.Delete(plan.RecordId);
+            await Task.Run(() => RecordService.Delete(plan.RecordId));
             // 原地更新该卡片状态为待接种（INPC 通知触发 UI 刷新），不依赖 LoadAsync 重建
             VaccineForm.CancelInline(plan);
             VaccineInlineChanged?.Invoke();
@@ -233,20 +233,20 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task Save()
     {
         ErrorMessage = string.Empty;
         if (!ValidateActiveForm()) return;
         try
         {
-            if (IsEditMode)
+            // DB 操作（GetById + Update/Insert）移到后台线程，避免 Android UI 线程 ANR
+            await Task.Run(() =>
             {
-                UpdateExisting();
-            }
-            else
-            {
-                AddNew();
-            }
+                if (IsEditMode)
+                    UpdateExisting();
+                else
+                    AddNew();
+            });
             IsVisible = false;
             Saved?.Invoke();
             Closed?.Invoke();
