@@ -17,11 +17,6 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenBabyManager();
     }
 
-    private void OnFamilyTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenFamily();
-    }
-
     private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenStatistics();

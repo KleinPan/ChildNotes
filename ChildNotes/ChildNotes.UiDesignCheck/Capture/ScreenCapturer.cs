@@ -71,9 +71,10 @@ public static class ScreenCapturer
 
     public static Control CreateFamilyScreen()
     {
-        var vm = new FamilyViewModel();
+        // Family 页面已合并到 BabyManager（人员管理），此处复用 BabyManager 截图
+        var vm = new BabyManagerViewModel();
         vm.Load();
-        return new FamilyView { DataContext = vm };
+        return new BabyManagerView { DataContext = vm };
     }
 
     public static Control CreatePointsScreen()

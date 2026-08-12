@@ -14,6 +14,7 @@ using Avalonia.Threading;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Dtos;
 using ChildNotes.ViewModels;
 using System.Globalization;
 
@@ -169,6 +170,12 @@ public partial class BabyManagerView : UserControl
     // 判断是否为当前宝宝（参数: Baby, 用 AppState.CurrentBaby.Id 比较）
     public static readonly IValueConverter IsCurrentBabyConverter = new IsCurrentBabyConverter();
 
+    /// <summary>对象不为 null 时返回 true（用于 Baby.Family 是否存在的可见性绑定）。</summary>
+    public static readonly IValueConverter IsNotNullConverter = new IsNotNullConverter();
+
+    /// <summary>对象为 null 时返回 true（用于 Baby.Family 为空时显示"未加入家庭"提示）。</summary>
+    public static readonly IValueConverter IsNullConverter = new IsNullConverter();
+
     private BabyManagerViewModel? Vm => DataContext as BabyManagerViewModel;
 
     private void OnBabyItemTapped(object? sender, PointerPressedEventArgs e)
@@ -235,6 +242,55 @@ public partial class BabyManagerView : UserControl
     {
         if (Vm is { } vm) await vm.CopyEditingIdAsync(TopLevel.GetTopLevel(sender as Visual));
     }
+
+    // ==================== 家人管理事件处理 ====================
+
+    /// <summary>打开"加入家庭"表单。</summary>
+    private void OnJoinTap(object? sender, RoutedEventArgs e) => Vm?.OpenJoin();
+
+    /// <summary>选择加入家庭的角色（Tag 传 RoleOption.Code）。</summary>
+    private void OnSelectJoinRoleTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string code && Vm is { } vm)
+            vm.SelectJoinRole(code);
+    }
+
+    /// <summary>打开"修改我的角色"弹窗（Tag 传 BabyFamilyDto）。</summary>
+    private void OnEditRoleTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is BabyFamilyDto family && Vm is { } vm)
+            vm.OpenRoleEditor(family);
+    }
+
+    /// <summary>选择编辑中的角色（Tag 传 RoleOption.Code）。</summary>
+    private void OnSelectEditingRoleTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string code && Vm is { } vm)
+            vm.SelectEditingRole(code);
+    }
+
+    /// <summary>
+    /// 打开移除成员确认弹窗。
+    /// Tag 传该成员所属的 BabyFamilyDto（由 XAML 绑定到 $parent[ItemsControl].((Baby)DataContext).Family），
+    /// CommandParameter 传当前成员 BabyMemberDto。
+    /// </summary>
+    private void OnRemoveMemberTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn
+            && btn.Tag is BabyFamilyDto family
+            && btn.CommandParameter is BabyMemberDto member
+            && Vm is { } vm)
+        {
+            vm.OpenRemoveConfirm(family, member);
+        }
+    }
+
+    /// <summary>复制宝宝卡片上的宝宝 ID 到剪贴板（Tag 传 BabyId 字符串）。</summary>
+    private async void OnCopyBabyIdTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string babyId && Vm is { } vm)
+            await vm.CopyBabyIdAsync(babyId, TopLevel.GetTopLevel(sender as Visual));
+    }
 }
 
 file sealed class IsCurrentBabyConverter : IValueConverter
@@ -247,6 +303,26 @@ file sealed class IsCurrentBabyConverter : IValueConverter
         }
         return false;
     }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>对象不为 null 时返回 true。</summary>
+file sealed class IsNotNullConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is not null;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>对象为 null 时返回 true。</summary>
+file sealed class IsNullConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is null;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

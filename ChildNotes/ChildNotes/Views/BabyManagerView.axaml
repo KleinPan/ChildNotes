@@ -4,6 +4,8 @@
              xmlns:m="using:ChildNotes.Models"
              xmlns:v="using:ChildNotes.Views"
              xmlns:controls="using:ChildNotes.Controls"
+             xmlns:shared="using:ChildNotes.Shared.Dtos"
+             xmlns:sharedConst="using:ChildNotes.Shared.Constants"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -39,7 +41,7 @@
     </UserControl.Styles>
 
     <Grid>
-        <!-- 列表面板（对齐小程序 mine 页"宝宝信息" sheet） -->
+        <!-- 列表面板（合并宝宝管理 + 家人管理） -->
         <Border Background="{StaticResource SurfaceBackgroundBrush}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid RowDefinitions="Auto,*,Auto">
 
@@ -65,41 +67,188 @@
                             </StackPanel>
                         </Border>
 
-                        <!-- 列表 -->
+                        <!-- 宝宝列表（每个卡片下方含家人区域） -->
                         <ItemsControl ItemsSource="{Binding BabyList}" IsVisible="{Binding HasBaby}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="m:Baby">
-                                    <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,4" Padding="14,12"
-                                            PointerPressed="OnBabyItemTapped">
-                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrandPrimaryLightBrush}" VerticalAlignment="Center" ClipToBounds="True">
-                                                <Panel>
-                                                    <!-- 有头像时显示图片（异步加载，不阻塞 UI 线程） -->
-                                                    <controls:AvatarImage Path="{Binding Avatar}" Stretch="UniformToFill"/>
-                                                    <!-- 无头像时显示性别 emoji 占位 -->
-                                                    <TextBlock Text="{Binding GenderEmoji}"
-                                                               FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               IsVisible="{Binding Avatar, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
-                                                </Panel>
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
-                                                <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                    <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,4" Padding="0">
+                                        <StackPanel>
+                                            <!-- 宝宝信息行（点击进入编辑） -->
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="14,12"
+                                                  PointerPressed="OnBabyItemTapped">
+                                                <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrandPrimaryLightBrush}" VerticalAlignment="Center" ClipToBounds="True">
+                                                    <Panel>
+                                                        <!-- 有头像时显示图片（异步加载，不阻塞 UI 线程） -->
+                                                        <controls:AvatarImage Path="{Binding Avatar}" Stretch="UniformToFill"/>
+                                                        <!-- 无头像时显示性别 emoji 占位 -->
+                                                        <TextBlock Text="{Binding GenderEmoji}"
+                                                                   FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   IsVisible="{Binding Avatar, Converter={x:Static StringConverters.IsNullOrEmpty}}"/>
+                                                    </Panel>
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
+                                                    <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                                <Border Grid.Column="2" Background="{StaticResource BrandPrimaryAlpha10Brush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
+                                                        IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
+                                                    <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource BrandPrimaryBrush}"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                            </Grid>
+
+                                            <!-- 家人区域：仅在 Baby.Family 不为空时显示 -->
+                                            <StackPanel IsVisible="{Binding Family, Converter={x:Static v:BabyManagerView.IsNotNullConverter}}">
+                                                <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
+
+                                                <!-- 宝宝 ID 行：宝宝主人可复制给家人用于加入家庭 -->
+                                                <Grid Margin="14,10" ColumnDefinitions="Auto,*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{DynamicResource Family_BabyId}" FontSize="12"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Family.BabyId}" FontSize="12"
+                                                               Foreground="{StaticResource TextPlaceholderBrush}"
+                                                               FontFamily="Consolas,Menlo,monospace"
+                                                               VerticalAlignment="Center" Margin="8,0,0,0"
+                                                               TextTrimming="CharacterEllipsis"/>
+                                                    <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="weui-btn mini"
+                                                            Click="OnCopyBabyIdTap" Tag="{Binding Family.BabyId}"/>
+                                                </Grid>
+
+                                                <!-- 家人标题行 -->
+                                                <Grid Margin="14,4,14,0" ColumnDefinitions="*,Auto">
+                                                    <TextBlock Grid.Column="0" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextSecondaryBrush}">
+                                                        <Run Text="{DynamicResource Personnel_FamilyPrefix}"/>
+                                                        <Run Text="{Binding Family.Members.Count}"/>
+                                                        <Run Text="{DynamicResource Personnel_FamilySuffix}"/>
+                                                    </TextBlock>
+                                                    <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="weui-btn mini"
+                                                            Click="OnEditRoleTap" Tag="{Binding Family}"/>
+                                                </Grid>
+
+                                                <!-- 成员列表 -->
+                                                <ItemsControl ItemsSource="{Binding Family.Members}" Margin="0,4,0,8">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="shared:BabyMemberDto">
+                                                            <Grid Margin="14,8" ColumnDefinitions="Auto,*,Auto">
+                                                                <Border Grid.Column="0" Width="36" Height="36" CornerRadius="18"
+                                                                        Background="{StaticResource AvatarGradientBrush}"
+                                                                        VerticalAlignment="Center">
+                                                                    <TextBlock Text="👤" FontSize="18" Foreground="{StaticResource SurfaceCardBrush}"
+                                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Border>
+                                                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="{Binding NickName}" FontSize="14" FontWeight="Medium"/>
+                                                                        <TextBlock Text="{DynamicResource Family_Me}" FontSize="12" Foreground="{StaticResource BrandPrimaryBrush}"
+                                                                                   IsVisible="{Binding Mine}" Margin="2,0,0,0"/>
+                                                                        <Border Background="{StaticResource BrandPrimaryBrush}" CornerRadius="4"
+                                                                                Padding="4,1" Margin="6,0,0,0" IsVisible="{Binding Owner}">
+                                                                            <TextBlock Text="{DynamicResource Family_Owner}" FontSize="10" Foreground="{StaticResource SurfaceCardBrush}"/>
+                                                                        </Border>
+                                                                    </StackPanel>
+                                                                    <TextBlock Text="{Binding RoleName}" FontSize="12"
+                                                                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                                                </StackPanel>
+                                                                <!-- 移除按钮：仅 owner 可见，且不能移除自己 -->
+                                                                <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}"
+                                                                        Classes="weui-btn mini"
+                                                                        IsVisible="{Binding !Mine}"
+                                                                        Click="OnRemoveMemberTap"
+                                                                        Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
+                                                                    <Button.CommandParameter>
+                                                                        <Binding/>
+                                                                    </Button.CommandParameter>
+                                                                </Button>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
                                             </StackPanel>
-                                            <Border Grid.Column="2" Background="{StaticResource BrandPrimaryAlpha10Brush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
-                                                    IsVisible="{Binding ., Converter={x:Static v:BabyManagerView.IsCurrentBabyConverter}}">
-                                                <TextBlock Text="{DynamicResource BabyMgr_Current}" FontSize="11" Foreground="{StaticResource BrandPrimaryBrush}"/>
-                                            </Border>
-                                            <TextBlock Grid.Column="3" Text="›" FontSize="20" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center" Margin="4,0,0,0"/>
-                                        </Grid>
+
+                                            <!-- 未加入家庭提示 -->
+                                            <StackPanel IsVisible="{Binding Family, Converter={x:Static v:BabyManagerView.IsNullConverter}}"
+                                                        Margin="14,4,14,10">
+                                                <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="0,0,0,8"/>
+                                                <TextBlock Text="{DynamicResource Personnel_NoFamily}" FontSize="12"
+                                                           Foreground="{StaticResource TextPlaceholderBrush}"/>
+                                            </StackPanel>
+                                        </StackPanel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <!-- ===== 底部家人管理区域 ===== -->
+
+                        <!-- 申请加入新家庭按钮（所有人可见） -->
+                        <Button Content="{DynamicResource Family_JoinById}" Classes="weui-btn primary"
+                                Margin="12,12" HorizontalAlignment="Stretch"
+                                Click="OnJoinTap"/>
+
+                        <!-- 待审批申请（owner 且有数据时可见） -->
+                        <StackPanel IsVisible="{Binding HasPendingRequests}" Margin="12,4,12,0">
+                            <TextBlock Text="{DynamicResource Family_PendingRequests}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4"/>
+                            <ItemsControl ItemsSource="{Binding PendingRequests}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="shared:FamilyJoinRequestDto">
+                                        <Border Background="{StaticResource SurfaceCardBrush}"
+                                                CornerRadius="{StaticResource Radius.Medium}" Margin="0,4" Padding="12,10">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding ApplicantNickName}" FontSize="14" FontWeight="Medium"/>
+                                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0">
+                                                        <Run Text="{Binding BabyName}"/>
+                                                        <Run Text=" · "/>
+                                                        <Run Text="{Binding RoleName}"/>
+                                                    </TextBlock>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                                    <Button Content="{DynamicResource Family_Approve}" Classes="weui-btn mini primary"
+                                                            Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).ApproveRequestCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                    <Button Content="{DynamicResource Family_Reject}" Classes="weui-btn mini"
+                                                            Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).RejectRequestCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- 我的申请历史 -->
+                        <StackPanel IsVisible="{Binding HasMyRequests}" Margin="12,8,12,0">
+                            <TextBlock Text="{DynamicResource Family_MyRequests}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4"/>
+                            <ItemsControl ItemsSource="{Binding MyRequests}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="shared:FamilyJoinRequestDto">
+                                        <Border Background="{StaticResource SurfaceCardBrush}"
+                                                CornerRadius="{StaticResource Radius.Medium}" Margin="0,4" Padding="12,10">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding BabyName}" FontSize="14" FontWeight="Medium"/>
+                                                    <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                                               Text="{Binding RoleName}"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding Status, Converter={x:Static vm:JoinRequestStatusConverter.Instance}}"
+                                                           FontSize="12" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <Border Height="12"/>
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- 底部添加按钮 -->
+                <!-- 底部添加宝宝按钮 -->
                 <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0" Padding="16,12">
                     <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary" CornerRadius="24"
                             HorizontalAlignment="Stretch" MinHeight="48"
@@ -240,5 +389,91 @@
                 </TextBlock>
             </controls:DialogHost.MessageContent>
         </controls:DialogHost>
+
+        <!-- 加入家庭弹窗 -->
+        <Border Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsJoinOpen}">
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource Family_JoinFamily}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="{DynamicResource Family_BabyId}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <TextBox Text="{Binding JoinBabyId}" PlaceholderText="{DynamicResource Family_JoinPlaceholder}" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource Family_SelectRole}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding RoleOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sharedConst:RoleOption">
+                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                        Click="OnSelectJoinRoleTap" Tag="{Binding Code}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding JoinRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
+                               FontSize="12" Foreground="{StaticResource BrandPrimaryBrush}" Margin="0,4,0,10"/>
+                    <TextBlock Text="{Binding JoinError}" FontSize="12" Foreground="{StaticResource SemanticErrorBrush}"
+                               Margin="0,0,0,8" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseJoinCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="weui-btn primary" Command="{Binding ConfirmJoinCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 修改角色弹窗 -->
+        <Border Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsRoleEditorOpen}">
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="{Binding RoleEditorTitle}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="{DynamicResource Family_SelectRole}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6"/>
+                    <ItemsControl ItemsSource="{Binding RoleOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="sharedConst:RoleOption">
+                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                        Click="OnSelectEditingRoleTap" Tag="{Binding Code}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding EditingRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
+                               FontSize="12" Foreground="{StaticResource BrandPrimaryBrush}" Margin="0,4,0,16"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 移除成员确认弹窗 -->
+        <Border Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsRemoveConfirmOpen}">
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="{Binding RemoveConfirmTitle}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding RemoveConfirmBody}" FontSize="14" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRemoveConfirmCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="weui-btn primary" Command="{Binding ConfirmRemoveCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- Toast -->
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
+                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
+        </Border>
     </Grid>
 </UserControl>

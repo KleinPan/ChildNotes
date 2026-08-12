@@ -41,7 +41,7 @@ internal static class Program
             ("Mine", ScreenCapturer.CreateMineScreen),
             ("Statistics", ScreenCapturer.CreateStatisticsScreen),
             ("AiAnalysis", ScreenCapturer.CreateAiAnalysisScreen),
-            ("Family", ScreenCapturer.CreateFamilyScreen),
+            ("Personnel", ScreenCapturer.CreateFamilyScreen),
             ("Points", ScreenCapturer.CreatePointsScreen),
             ("BabySetup", ScreenCapturer.CreateBabySetupScreen),
             ("MainShell", ScreenCapturer.CreateMainShellScreen),

@@ -43,7 +43,6 @@ public class ViewLocator : IDataTemplate
                 ReminderSettingsViewModel => new ReminderSettingsView(),
                 QuickInputViewModel => new QuickInputView(),
                 SyncSettingsViewModel => new SyncSettingsView(),
-                FamilyViewModel => new FamilyView(),
                 RecordSheetViewModel => new RecordSheetView(),
                 QuickMenuViewModel => new QuickMenuView(),
                 DeveloperOptionsViewModel => new DeveloperOptionsView(),

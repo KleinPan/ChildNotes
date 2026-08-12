@@ -65,8 +65,6 @@ public partial class MainShellViewModel : ViewModelBase
     private ReminderSettingsViewModel? _reminderSettings;
     [ObservableProperty] private bool _isSyncSettingsOpen;
     private SyncSettingsViewModel? _syncSettings;
-    [ObservableProperty] private bool _isFamilyOpen;
-    private FamilyViewModel? _family;
 
     [ObservableProperty] private bool _isDeveloperOptionsOpen;
     private DeveloperOptionsViewModel? _developerOptions;
@@ -132,10 +130,6 @@ public partial class MainShellViewModel : ViewModelBase
         () => new SyncSettingsViewModel(),
         _ => { },
         () => IsSyncSettingsOpen = false, () => IsSyncSettingsOpen);
-    public FamilyViewModel Family => _family ??= CreateAndRegisterOverlay(
-        () => new FamilyViewModel(),
-        _ => { },
-        () => IsFamilyOpen = false, () => IsFamilyOpen);
     public DeveloperOptionsViewModel DeveloperOptions => _developerOptions ??= CreateAndRegisterOverlay(
         () => new DeveloperOptionsViewModel(),
         _ => { },
@@ -330,7 +324,6 @@ public partial class MainShellViewModel : ViewModelBase
     partial void OnIsAiAnalysisOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsAiSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsSyncSettingsOpenChanged(bool value) => RaiseInterceptBackChanged();
-    partial void OnIsFamilyOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsDeveloperOptionsOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsHelpOpenChanged(bool value) => RaiseInterceptBackChanged();
     partial void OnIsPrivacyPolicyOpenChanged(bool value) => RaiseInterceptBackChanged();
@@ -569,16 +562,6 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenSyncSettings()
     {
         IsSyncSettingsOpen = true;  // 懒加载：SyncSettings 属性在 View 绑定时才创建
-    }
-
-    public async void OpenFamily()
-    {
-        try
-        {
-            IsFamilyOpen = true;
-            await Family.LoadAsync();  // 懒加载：首次访问创建实例
-        }
-        catch (Exception ex) { DevLogger.Log("Shell", "OpenFamily failed: " + ex); }
     }
 
     public void OpenDeveloperOptions()

@@ -60,9 +60,6 @@
         <ContentControl Grid.Row="0" Content="{Binding SyncSettings}" IsTabStop="False"
                         IsVisible="{Binding IsSyncSettingsOpen}"/>
 
-        <ContentControl Grid.Row="0" Content="{Binding Family}" IsTabStop="False"
-                        IsVisible="{Binding IsFamilyOpen}"/>
-
         <ContentControl Grid.Row="0" Content="{Binding DeveloperOptions}" IsTabStop="False"
                         IsVisible="{Binding IsDeveloperOptionsOpen}"/>
 

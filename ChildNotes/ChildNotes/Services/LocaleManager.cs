@@ -164,7 +164,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Baby"] = "宝宝";
         this["Mine_Section_Tools"] = "工具";
         this["Mine_Section_Settings"] = "设置";
-        this["Mine_BabyManager"] = "宝宝管理";
+        this["Mine_BabyManager"] = "人员管理";
         this["Mine_BabyCount_Suffix"] = "个宝宝";
         this["Mine_Family"] = "家人管理";
         this["Mine_Membership"] = "会员中心";
@@ -340,7 +340,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Growth_ErrPhotoSave"] = "图片保存失败";
 
         // ===== BabyManagerView =====
-        this["BabyMgr_Title"] = "宝宝管理";
+        this["BabyMgr_Title"] = "人员管理";
         this["BabyMgr_EmptyTitle"] = "还没有宝宝信息";
         this["BabyMgr_EmptyHint"] = "先添加宝宝后，就能在这里查看和修改。";
         this["BabyMgr_Current"] = "当前";
@@ -365,6 +365,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["BabyMgr_IdCopied"] = "宝宝 ID 已复制";
         this["BabyMgr_PickAvatarTitle"] = "选择头像";
         this["BabyMgr_PickImageFilter"] = "图片文件";
+
+        // ===== 人员管理（合并家人管理后新增） =====
+        this["Personnel_FamilyPrefix"] = "家人（";
+        this["Personnel_FamilySuffix"] = "）";
+        this["Personnel_NoFamily"] = "暂未加入家庭";
 
         // ===== BabySetupView =====
         this["BabySetup_Welcome"] = "欢迎使用成长记录";
@@ -826,7 +831,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Baby"] = "Baby";
         this["Mine_Section_Tools"] = "Tools";
         this["Mine_Section_Settings"] = "Settings";
-        this["Mine_BabyManager"] = "Baby Management";
+        this["Mine_BabyManager"] = "Personnel";
         this["Mine_BabyCount_Suffix"] = " babies";
         this["Mine_Family"] = "Family Management";
         this["Mine_Membership"] = "Membership";
@@ -996,7 +1001,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Growth_ErrPhotoSave"] = "Failed to save image";
 
         // ===== BabyManagerView =====
-        this["BabyMgr_Title"] = "Baby Management";
+        this["BabyMgr_Title"] = "Personnel";
         this["BabyMgr_EmptyTitle"] = "No baby yet";
         this["BabyMgr_EmptyHint"] = "Add a baby first to view and edit here.";
         this["BabyMgr_Current"] = "Current";
@@ -1021,6 +1026,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["BabyMgr_IdCopied"] = "Baby ID copied";
         this["BabyMgr_PickAvatarTitle"] = "Select avatar";
         this["BabyMgr_PickImageFilter"] = "Image files";
+
+        // ===== 人员管理（合并家人管理后新增） =====
+        this["Personnel_FamilyPrefix"] = "Family (";
+        this["Personnel_FamilySuffix"] = ")";
+        this["Personnel_NoFamily"] = "Not in a family";
 
         // ===== BabySetupView =====
         this["BabySetup_Welcome"] = "Welcome to Growth Notes";
