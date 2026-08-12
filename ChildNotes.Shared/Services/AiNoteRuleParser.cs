@@ -536,10 +536,14 @@ public static class AiNoteRuleParser
         if (string.IsNullOrWhiteSpace(foodName)) foodName = "辅食";
         // 统一逗号为顿号（食材列表场景）
         foodName = foodName.Replace(',', '、').Replace('，', '、');
+        // 根据食材名自动推断分类标签（如 "米粉、肝粉" → ["主食","肉蛋"]）
+        var foodTypes = FoodCategoryMapper.ExtractCategories(foodName);
+
         item = new AiNoteParseItem
         {
             RecordType = RecordType.Complementary,
             FoodName = foodName,
+            FoodTypes = foodTypes,
             AmountText = amountText,
             AmountUnit = amountUnit,
             Time = ExtractTime(text, now),

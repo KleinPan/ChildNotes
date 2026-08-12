@@ -222,7 +222,9 @@
                                         <TextBlock Grid.Row="0" Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center"
                                                    FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
                                                    IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                                   Text="{Binding SubText}" />
+                                                   Text="{Binding SubText}"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   MaxWidth="200" />
                                         <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
                                         <TextBlock Grid.Row="0" Grid.Column="5" Margin="0,0,0,0" VerticalAlignment="Center"
                                                    FontSize="12" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}"
