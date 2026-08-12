@@ -94,9 +94,12 @@ public sealed class SyncConfigRepository : BaseRepository
 
     public void UpdateToken(string token)
     {
+        // token 列有 NOT NULL 约束，空 token 必须写空字符串而非 NULL。
+        // 401 清 token 时会传 ""，若 emptyAsNull=true 会写成 DBNull 撞约束抛 SqliteException，
+        // 导致整个请求链路中断（连自动重新登录重试都走不到）。
         ExecuteNonQuery(
             "UPDATE sync_config SET token=@t WHERE id=1",
-            cmd => cmd.AddString("@t", token, emptyAsNull: true));
+            cmd => cmd.AddString("@t", token ?? string.Empty, emptyAsNull: false));
         InvalidateCache();
     }
 
