@@ -77,9 +77,11 @@ public class PointsService : IPointsService
             throw new BusinessException("未知任务", 400, "UNKNOWN_TASK");
         }
 
-        var today = DateTime.Today;
+        // DateTime.Today 返回 Kind=Local，直接传给 LINQ 查询 timestamptz 字段会报
+        // "Cannot write DateTime with Kind=Local"。转成 UTC Kind 避免报错。
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc);
         // 日常任务幂等：用户 + 任务 key + 当日。CreatedAt 为 UTC，按本地日期换算为 UTC 区间查询。
-        var todayStartUtc = today.ToUniversalTime();
+        var todayStartUtc = today;
         var todayEndUtc = todayStartUtc.AddDays(1);
         if (await IsDailyTaskClaimedInternalAsync(uid, normalizedKey, todayStartUtc, todayEndUtc, ct))
         {
@@ -156,7 +158,9 @@ public class PointsService : IPointsService
         });
 
         // 日常任务
-        var today = DateTime.Today;
+        // DateTime.Today 返回 Kind=Local，传给 IsDailyTaskCompletedAsync 的 LINQ 查询
+        // 会报 "Cannot write DateTime with Kind=Local"。转成 UTC Kind。
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc);
         var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(userId, ct);
         var hasBabies = babyIds.Count > 0;
 

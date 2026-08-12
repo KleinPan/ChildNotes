@@ -86,9 +86,21 @@ public sealed class SyncConfigRepository : BaseRepository
 
     public void UpdateSyncResult(DateTime syncAt, string status, string msg)
     {
-        ExecuteNonQuery(
-            "UPDATE sync_config SET last_sync_at=@t, last_sync_status=@s, last_sync_msg=@m WHERE id=1",
-            cmd => cmd.AddUtc("@t", syncAt).AddString("@s", status, emptyAsNull: true).AddString("@m", msg, emptyAsNull: true));
+        // 失败时不更新 last_sync_at：避免下次同步的 since 比本地数据的 updated_at 还晚，
+        // 导致本地待 Push 的数据被 GetByUpdatedAt(since) 过滤掉永远无法上送。
+        // 只更新状态和消息，last_sync_at 保留上次成功同步的时间。
+        if (status == "ok")
+        {
+            ExecuteNonQuery(
+                "UPDATE sync_config SET last_sync_at=@t, last_sync_status=@s, last_sync_msg=@m WHERE id=1",
+                cmd => cmd.AddUtc("@t", syncAt).AddString("@s", status, emptyAsNull: true).AddString("@m", msg, emptyAsNull: true));
+        }
+        else
+        {
+            ExecuteNonQuery(
+                "UPDATE sync_config SET last_sync_status=@s, last_sync_msg=@m WHERE id=1",
+                cmd => cmd.AddString("@s", status, emptyAsNull: true).AddString("@m", msg, emptyAsNull: true));
+        }
         InvalidateCache();
     }
 
