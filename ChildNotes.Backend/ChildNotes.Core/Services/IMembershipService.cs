@@ -36,6 +36,13 @@ public interface IMembershipService
     Task<int> IncrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
+    /// 原子地检查额度并递增今日 AI 记调用次数。
+    /// 仅在未超限时 +1，返回 (是否成功, 递增后已用次数)。
+    /// 解决"先 SELECT 检查 + 后 UPDATE 递增"的 TOCTOU 并发漏洞。
+    /// </summary>
+    Task<(bool ok, int used)> TryIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
     /// 获取用户今日 AI 记已用次数。
     /// </summary>
     Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default);
@@ -50,6 +57,18 @@ public interface IMembershipService
     /// 返回增加后的已用次数。
     /// </summary>
     Task<int> IncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 原子地检查额度并递增本周 AI 分析调用次数。
+    /// 仅在未超限时 +1，返回 (是否成功, 递增后已用次数)。
+    /// 解决"先 SELECT 检查 + 后 UPDATE 递增"的 TOCTOU 并发漏洞。
+    /// </summary>
+    Task<(bool ok, int used)> TryIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 递减本周 AI 分析调用次数（-1，不低于 0）。用于 AI 调用失败时退还次数。
+    /// </summary>
+    Task DecrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
     /// 获取用户本周 AI 分析已用次数。

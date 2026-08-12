@@ -209,6 +209,12 @@ public class MembershipService : IMembershipService
     public Task<int> IncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
         => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
 
+    public async Task<(bool ok, int used)> TryIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
+    {
+        var limit = await GetAiNoteDailyLimitAsync(userId, ct);
+        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, limit, ct);
+    }
+
     public Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default)
         => GetUsedAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
 
@@ -223,6 +229,24 @@ public class MembershipService : IMembershipService
 
     public Task<int> IncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
         => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+
+    public async Task<(bool ok, int used)> TryIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
+    {
+        var limit = await GetAiAnalysisWeeklyLimitAsync(userId, ct);
+        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), limit, ct);
+    }
+
+    public async Task DecrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
+    {
+        var periodStart = GetWeekStartUtc(DateTime.UtcNow);
+        // 原子递减，不低于 0
+        await _db.AiUsageRecords
+            .Where(x => x.UserId == userId && x.UsageType == MembershipConstants.UsageTypeAiAnalysis
+                && x.PeriodStart == periodStart && x.UsedCount > 0)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.UsedCount, x => x.UsedCount - 1)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
+    }
 
     public Task<int> GetAiAnalysisUsedThisWeekAsync(string userId, CancellationToken ct = default)
         => GetUsedAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
@@ -310,6 +334,76 @@ public class MembershipService : IMembershipService
             return existing.UsedCount;
         }
         return 1;
+    }
+
+    /// <summary>
+    /// 原子地检查额度并递增。WHERE UsedCount &lt; limit 保证并发安全：
+    /// 多个请求同时到达时，只有未超限的请求能 +1，超限的返回 (false, currentUsed)。
+    /// 首次使用（无记录）时直接插入 UsedCount=1，若 limit=0 则不插入返回 (false, 0)。
+    /// </summary>
+    private async Task<(bool ok, int used)> TryIncrementUsageAsync(
+        string userId, string usageType, DateTime periodStart, int limit, CancellationToken ct)
+    {
+        if (limit <= 0)
+            return (false, 0);
+
+        // PostgreSQL：原子条件递增
+        if (_db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            var rows = await _db.AiUsageRecords
+                .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart
+                    && x.UsedCount < limit)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.UsedCount, x => x.UsedCount + 1)
+                    .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
+
+            if (rows > 0)
+            {
+                var used = await _db.AiUsageRecords
+                    .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart)
+                    .Select(x => x.UsedCount)
+                    .FirstAsync(ct);
+                return (true, used);
+            }
+
+            // rows==0：要么记录不存在（首次），要么已超限
+            var existing = await _db.AiUsageRecords.AsNoTracking().FirstOrDefaultAsync(
+                x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart, ct);
+            if (existing is not null)
+                return (false, existing.UsedCount); // 已超限
+            // 首次使用，走插入路径
+        }
+
+        // 首次或 InMemory：插入新记录
+        var record = new AiUsageRecord
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            UserId = userId,
+            UsageType = usageType,
+            PeriodStart = periodStart,
+            UsedCount = 1,
+        };
+        _db.AiUsageRecords.Add(record);
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+            return (true, 1);
+        }
+        catch (DbUpdateException)
+        {
+            // 并发竞态：另一请求已插入，改为条件递增
+            var rows = await _db.AiUsageRecords
+                .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart
+                    && x.UsedCount < limit)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.UsedCount, x => x.UsedCount + 1)
+                    .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
+            var used = await _db.AiUsageRecords
+                .Where(x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart)
+                .Select(x => x.UsedCount)
+                .FirstAsync(ct);
+            return (rows > 0, used);
+        }
     }
 
     private async Task<int> GetUsedAsync(string userId, string usageType, DateTime periodStart, CancellationToken ct)

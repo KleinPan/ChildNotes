@@ -172,11 +172,11 @@ public partial class AiNoteService : IAiNoteService
         _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ForceAi={ForceAi} 文本={Text}",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ForceAi, text);
 
-        // 每日次数限制检查（非会员 10 次/天，会员 100 次/天）
+        // 每日次数限制：原子地检查额度并递增（防止并发绕过限制）
         var uid = _current.RequireUserId();
         var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
-        var used = await _membership.GetAiNoteUsedTodayAsync(uid, ct);
-        if (used >= limit)
+        var (ok, used) = await _membership.TryIncrementAiNoteUsageAsync(uid, ct);
+        if (!ok)
             throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
 
         // ===== 规则优先 + 智能升级 =====
@@ -249,8 +249,7 @@ public partial class AiNoteService : IAiNoteService
             items.FirstOrDefault()?.Source ?? "-",
             text);
 
-        // 解析成功后增加今日使用次数（best-effort，统计失败不阻塞解析）
-        try { await _membership.IncrementAiNoteUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞 */ }
+        // 次数已在解析前原子递增，无需再单独计数
 
         return new AiNoteParseBatchResponse { Items = items };
     }

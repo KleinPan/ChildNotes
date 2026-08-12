@@ -68,10 +68,10 @@ public class AiAnalysisService : IAiAnalysisService
         if (existing is not null && existing.SourceText == sourceText)
             return ToDto(existing);
 
-        // 每周次数限制检查（非会员 1 次/周，会员 10 次/周）
+        // 每周次数限制：原子地检查额度并递增（防止并发绕过限制）
         var limit = await _membership.GetAiAnalysisWeeklyLimitAsync(uid, ct);
-        var used = await _membership.GetAiAnalysisUsedThisWeekAsync(uid, ct);
-        if (used >= limit)
+        var (ok, used) = await _membership.TryIncrementAiAnalysisUsageAsync(uid, ct);
+        if (!ok)
             throw new BusinessException($"本周 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
 
         // 调用 AI 前先扣积分（积分不足抛 BusinessException(INSUFFICIENT_POINTS)）
@@ -90,13 +90,13 @@ public class AiAnalysisService : IAiAnalysisService
             if (string.IsNullOrWhiteSpace(analysisText))
                 throw new BusinessException("AI 分析响应为空", 502);
 
-            // AI 调用成功后，增加本周使用次数（幂等命中不消耗，此处才消耗）
-            try { await _membership.IncrementAiAnalysisUsageAsync(uid, ct); } catch { /* 次数统计失败不阻塞分析 */ }
+            // 次数已在调用前原子递增，无需再单独计数
         }
         catch
         {
-            // AI 调用失败：退还已扣积分（best-effort，失败仅记日志不阻塞异常传播）
+            // AI 调用失败：退还已扣积分和已递增的次数（best-effort，失败仅记日志不阻塞异常传播）
             try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost, ct); } catch { }
+            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); } catch { }
             throw;
         }
 
