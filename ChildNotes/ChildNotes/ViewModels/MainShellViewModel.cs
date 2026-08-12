@@ -683,11 +683,9 @@ public partial class MainShellViewModel : ViewModelBase
         {
             await Task.Delay(100, ct);
             await Home.RefreshAsync();
-            // 无条件刷新 Feeding 列表：用户可能在首页用 AI 输入栏生成记录后切到喂奶 Tab 查看，
-            // 也可能就在喂奶 Tab 内通过 RecordSheet 添加。两种场景都需要刷新。
-            // 懒加载场景：若 Feeding 未创建（用户从未访问过喂奶 Tab），此处触发创建并 Activate。
-            // 这是合理的——保存记录后用户可能立即切到喂奶 Tab，提前创建可避免切换时的卡顿。
-            Feeding.Activate();
+            // 仅在当前是喂养 Tab 时才刷新列表；否则等用户切过去时 SwitchTab 会自动 Activate
+            if (IsFeedingSelected)
+                Feeding.Activate();
             // Statistics 不再主动刷新：用户进入统计页时 OpenStatistics 会触发 LoadAsync
             // 避免保存记录后无谓地刷新用户未查看的页面
         }
