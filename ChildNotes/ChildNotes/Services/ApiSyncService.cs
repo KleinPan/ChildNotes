@@ -26,6 +26,15 @@ public sealed class ApiSyncService : BaseApiClient
     private readonly MilestoneRepository _milestoneRepo;
     private readonly PointsRepository _pointsRepo;
     private readonly Data.DbConnectionFactory? _dbFactory;
+    /// <summary>家庭加入申请仓储（Pull-only）。null 兼容旧构造函数。</summary>
+    private Data.Repositories.FamilyJoinRequestRepository? _joinRequestRepo;
+    /// <summary>应用内消息服务（用于生成审批结果/新申请通知）。null 表示不生成通知。</summary>
+    private Services.InAppMessageService? _inAppMessageService;
+    /// <summary>当前用户状态（用于判断申请是本人提交还是他人提交）。null 表示不可用。</summary>
+    private AppState? _appState;
+
+    /// <summary>本次同步中收集的 join_request 状态变化（事务提交后用于生成通知）。</summary>
+    private readonly List<(SyncFamilyJoinRequestItem item, string? oldStatus)> _pendingJoinNotifications = new();
 
     /// <summary>同步过程依赖的网络监测器（可选，由 ServiceProvider 注入）。</summary>
     public NetworkMonitor? NetworkMonitor { get; set; }
@@ -46,6 +55,15 @@ public sealed class ApiSyncService : BaseApiClient
         : this(cfgRepo, babyRepo, recordRepo, milestoneRepo, pointsRepo)
     {
         _dbFactory = dbFactory;
+    }
+
+    /// <summary>注入家庭加入申请仓储与应用内消息服务（用于审批通知）。由 ServiceProvider 构造后调用。</summary>
+    public void SetJoinRequestDeps(Data.Repositories.FamilyJoinRequestRepository joinRequestRepo,
+        Services.InAppMessageService inAppMessageService, AppState appState)
+    {
+        _joinRequestRepo = joinRequestRepo;
+        _inAppMessageService = inAppMessageService;
+        _appState = appState;
     }
 
     /// <summary>指示当前是否正在同步中（避免重入）。</summary>
@@ -142,22 +160,37 @@ public sealed class ApiSyncService : BaseApiClient
                     foreach (var bm in pageResp.BabyMembers)
                         _babyRepo.UpsertMemberFromSync(bm, pullConn, pullTx);
 
+                    // 加入申请：写入前先记录旧状态（用于状态变化生成通知），再 LWW 合并
+                    if (_joinRequestRepo is not null && pageResp.FamilyJoinRequests.Count > 0)
+                    {
+                        foreach (var jr in pageResp.FamilyJoinRequests)
+                        {
+                            string? oldStatus = _joinRequestRepo.FindById(jr.Id)?.Status;
+                            _joinRequestRepo.UpsertFromSync(jr, pullConn, pullTx);
+                            _pendingJoinNotifications.Add((jr, oldStatus));
+                        }
+                    }
+
                     // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
                     if (pageResp.UserPoints is not null)
                         _pointsRepo.UpsertUserPointsFromSync(MapToUserPoints(pageResp.UserPoints), pullConn, pullTx);
 
                     pullPages++;
                     DevLogger.Log("Sync",
-                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, babyMembers={pageResp.BabyMembers.Count}, hasMore={pageResp.HasMore}");
+                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, babyMembers={pageResp.BabyMembers.Count}, joinRequests={pageResp.FamilyJoinRequests.Count}, hasMore={pageResp.HasMore}");
 
-                    // HasMore 为 false 或五类都无数据时终止；游标推进到 NextCursor
-                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0 && pageResp.BabyMembers.Count == 0))
+                    // HasMore 为 false 或六类都无数据时终止；游标推进到 NextCursor
+                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0 && pageResp.BabyMembers.Count == 0 && pageResp.FamilyJoinRequests.Count == 0))
                         break;
                     cursor = pageResp.NextCursor;
                     if (cursor is null) break; // 无游标但 HasMore=true 的防御性退出
                 }
                 pullTx.Commit();
             }
+
+            // 2.1 处理 join_request 状态变化，生成本地 InAppMessage 通知
+            //     事务已提交，本地仓储可读到最新状态；通知仅生成一次
+            ProcessJoinRequestNotifications();
 
             // 3. Push：把本地 updated_at > since 的数据上送（带重试与切备用地址）
             //     注：使用 pushResp.ServerTime 作为新的 last_sync_at 基准，
@@ -245,6 +278,86 @@ public sealed class ApiSyncService : BaseApiClient
     {
         _cfgRepo.UpdateSyncResult(syncAt ?? DateTime.Now, ok ? "ok" : "fail", msg);
         return new SyncResult { Success = ok, Message = msg, DoneAt = DateTime.Now, ErrorKind = errKind };
+    }
+
+    /// <summary>
+    /// 处理本次同步中收集的 join_request 状态变化，生成对应的本地 InAppMessage 通知。
+    /// 必须在 Pull 事务提交后调用，避免事务回滚导致通知与本地状态不一致。
+    /// 通知规则：
+    /// - 新申请（old=null/new=pending）：通知宝宝 owner（当 owner 是当前用户）
+    /// - 申请通过（old=pending/new=approved）：通知申请人（当申请人是当前用户）
+    /// - 申请被拒（old=pending/new=rejected）：通知申请人（当申请人是当前用户）
+    /// 注：同步协议项只含 BabyId/ApplicantUserId 等关键字段，不含名称；
+    /// 通知 Body 显示 BabyId 简写（前 8 位），用户可点开家人管理页查看详情。
+    /// </summary>
+    private void ProcessJoinRequestNotifications()
+    {
+        if (_inAppMessageService is null || _appState?.User?.Id is not string myUid)
+        {
+            _pendingJoinNotifications.Clear();
+            return;
+        }
+
+        try
+        {
+            foreach (var (item, oldStatus) in _pendingJoinNotifications)
+            {
+                var newStatus = item.Status;
+                var isApplicant = item.ApplicantUserId == myUid;
+                var babyIdShort = item.BabyId.Length > 8 ? item.BabyId.Substring(0, 8) : item.BabyId;
+
+                // 规则1：新申请通知 owner（当前用户不是申请人时，可能是该宝宝 owner）
+                if (oldStatus is null && newStatus == "pending" && !isApplicant)
+                {
+                    _inAppMessageService.Insert(new InAppMessage
+                    {
+                        UserId = myUid,
+                        Title = "新的家庭加入申请",
+                        Body = $"有新用户申请加入宝宝（ID: {babyIdShort}…）",
+                        Category = "family_join_request_new",
+                        DataJson = $"{{\"requestId\":\"{item.Id}\",\"babyId\":\"{item.BabyId}\"}}",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.ToString("O"),
+                    });
+                }
+                // 规则2：申请通过通知申请人
+                else if (oldStatus == "pending" && newStatus == "approved" && isApplicant)
+                {
+                    _inAppMessageService.Insert(new InAppMessage
+                    {
+                        UserId = myUid,
+                        Title = "加入申请已通过",
+                        Body = $"你加入宝宝（ID: {babyIdShort}…）的申请已被通过",
+                        Category = "family_join_request_approved",
+                        DataJson = $"{{\"requestId\":\"{item.Id}\",\"babyId\":\"{item.BabyId}\"}}",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.ToString("O"),
+                    });
+                }
+                // 规则3：申请被拒通知申请人
+                else if (oldStatus == "pending" && newStatus == "rejected" && isApplicant)
+                {
+                    _inAppMessageService.Insert(new InAppMessage
+                    {
+                        UserId = myUid,
+                        Title = "加入申请被拒绝",
+                        Body = $"你加入宝宝（ID: {babyIdShort}…）的申请被拒绝",
+                        Category = "family_join_request_rejected",
+                        DataJson = $"{{\"requestId\":\"{item.Id}\",\"babyId\":\"{item.BabyId}\"}}",
+                        IsRead = false,
+                        CreatedAt = DateTime.UtcNow.ToString("O"),
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Sync", "ProcessJoinRequestNotifications failed (non-fatal): " + ex.Message);
+        }
+        finally
+        {
+            _pendingJoinNotifications.Clear();
+        }
     }
 
     private async Task<string?> EnsureTokenAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)

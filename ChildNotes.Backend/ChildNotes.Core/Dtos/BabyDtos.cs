@@ -42,3 +42,21 @@ public class JoinFamilyRequest
     public string RoleCode { get; set; } = "other";
     public string? RoleName { get; set; }
 }
+
+/// <summary>移除家庭成员请求。仅 owner 可调用。</summary>
+public class RemoveMemberRequest
+{
+    public string BabyId { get; set; } = string.Empty;
+    /// <summary>要移除的用户 ID。</summary>
+    public string TargetUserId { get; set; } = string.Empty;
+}
+
+/// <summary>加入申请审批操作请求。</summary>
+public class ProcessJoinRequestDto
+{
+    public string RequestId { get; set; } = string.Empty;
+    /// <summary>true=批准，false=拒绝。</summary>
+    public bool Approve { get; set; }
+}
+
+// FamilyJoinRequestDto 已迁移至 ChildNotes.Shared.Dtos（前后端共享）

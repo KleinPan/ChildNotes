@@ -2,6 +2,7 @@ using System.Net.Http;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Sync;
 // 前端历史命名 → 共享 DTO 别名（保持调用方代码不变）
 using BabyFamilyItem = ChildNotes.Shared.Dtos.BabyFamilyDto;
 using FamilyMemberItem = ChildNotes.Shared.Dtos.BabyMemberDto;
@@ -99,6 +100,49 @@ public sealed class FamilyApiClient : BaseApiClient
         var body = Serialize(new { babyId, roleCode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join", body, ct);
         var result = resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
+        InvalidateFamiliesCache();
+        return result;
+    }
+
+    /// <summary>owner 移除家庭成员。返回是否成功（HTTP 204）。</summary>
+    public async Task<bool> RemoveMemberAsync(string babyId, string targetUserId, CancellationToken ct = default)
+    {
+        var body = Serialize(new { babyId, targetUserId });
+        using var resp = await SendAsync(_cfgRepo, HttpMethod.Delete, "/api/baby/family/member", body, ct);
+        var ok = resp is not null && resp.IsSuccessStatusCode;
+        if (ok) InvalidateFamiliesCache();
+        return ok;
+    }
+
+    /// <summary>提交加入家庭申请（pending 状态，等待 owner 审批）。返回申请 DTO，失败返回 null。</summary>
+    public async Task<FamilyJoinRequestDto?> RequestJoinAsync(string babyId, string roleCode, CancellationToken ct = default)
+    {
+        var body = Serialize(new { babyId, roleCode });
+        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join-request", body, ct);
+        return resp is null ? null : await ReadDataAsync<FamilyJoinRequestDto>(resp, ct);
+    }
+
+    /// <summary>owner 列出自己所有宝宝下待审的加入申请。</summary>
+    public async Task<List<FamilyJoinRequestDto>?> ListPendingJoinRequestsAsync(CancellationToken ct = default)
+    {
+        using var resp = await SendAsync(_cfgRepo, HttpMethod.Get, "/api/baby/family/join-requests/pending", null, ct);
+        return resp is null ? null : await ReadDataAsync<List<FamilyJoinRequestDto>>(resp, ct);
+    }
+
+    /// <summary>当前用户作为申请人，列出自己的加入申请（含历史）。</summary>
+    public async Task<List<FamilyJoinRequestDto>?> ListMyJoinRequestsAsync(CancellationToken ct = default)
+    {
+        using var resp = await SendAsync(_cfgRepo, HttpMethod.Get, "/api/baby/family/join-requests/mine", null, ct);
+        return resp is null ? null : await ReadDataAsync<List<FamilyJoinRequestDto>>(resp, ct);
+    }
+
+    /// <summary>owner 批准或拒绝加入申请。approve=true 批准，false 拒绝。</summary>
+    public async Task<FamilyJoinRequestDto?> ProcessJoinRequestAsync(string requestId, bool approve, CancellationToken ct = default)
+    {
+        var body = Serialize(new { requestId, approve });
+        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join-request/process", body, ct);
+        var result = resp is null ? null : await ReadDataAsync<FamilyJoinRequestDto>(resp, ct);
+        // 审批后家庭列表会变化（批准）或申请列表变化（拒绝），失效缓存让下次拉取最新
         InvalidateFamiliesCache();
         return result;
     }

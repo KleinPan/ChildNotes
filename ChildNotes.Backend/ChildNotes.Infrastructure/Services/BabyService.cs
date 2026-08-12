@@ -280,6 +280,208 @@ public class BabyService : IBabyService
         };
     }
 
+    // ===== 移除成员 + 加入申请/审批 =====
+
+    public async Task RemoveMemberAsync(RemoveMemberRequest req, CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        // 仅 owner 可移除；通过 baby.UserId == uid 判定 owner（与 BabyMember.IsOwner 等价）
+        var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == req.BabyId, ct)
+            ?? throw new NotFoundException("宝宝不存在");
+        if (baby.UserId != uid)
+            throw new ForbiddenException("仅宝宝创建者可移除家庭成员");
+
+        if (req.TargetUserId == uid)
+            throw new BusinessException("不能移除自己，请使用退出家庭功能");
+
+        var member = await _db.BabyMembers.FirstOrDefaultAsync(
+            m => m.BabyId == req.BabyId && m.UserId == req.TargetUserId, ct);
+        if (member is null) return; // 幂等：已不存在视为成功
+        if (member.IsOwner)
+            throw new BusinessException("不能移除宝宝创建者");
+
+        // 软删除：Status=removed，UpdatedAt 推进以便同步到其他设备
+        member.Status = StatusConstants.BabyMember.Removed;
+        member.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task<FamilyJoinRequestDto> RequestJoinAsync(JoinFamilyRequest req, CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == req.BabyId, ct)
+            ?? throw new NotFoundException("宝宝不存在");
+
+        // owner 不需要申请
+        if (baby.UserId == uid)
+            throw new BusinessException("您是该宝宝的创建者，无需申请加入");
+
+        // 已是 active 成员，直接返回已加入状态（幂等）
+        var existingMember = await _db.BabyMembers.FirstOrDefaultAsync(
+            m => m.BabyId == req.BabyId && m.UserId == uid, ct);
+        if (existingMember is not null && existingMember.Status == StatusConstants.BabyMember.Active)
+            throw new BusinessException("您已加入该家庭");
+
+        // 拒绝已有 pending 申请重复提交
+        var pending = await _db.FamilyJoinRequests.FirstOrDefaultAsync(
+            r => r.BabyId == req.BabyId && r.ApplicantUserId == uid
+                && r.Status == StatusConstants.FamilyJoinRequest.Pending, ct);
+        if (pending is not null)
+            throw new BusinessException("已有待审批的申请，请等待创建者处理");
+
+        var roleName = string.IsNullOrWhiteSpace(req.RoleName)
+            ? FamilyRoles.GetRoleName(req.RoleCode) : req.RoleName;
+        var now = DateTime.UtcNow;
+        var request = new FamilyJoinRequest
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            BabyId = req.BabyId,
+            ApplicantUserId = uid,
+            RoleCode = req.RoleCode,
+            RoleName = roleName,
+            Status = StatusConstants.FamilyJoinRequest.Pending,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+        _db.FamilyJoinRequests.Add(request);
+        await _db.SaveChangesAsync(ct);
+        return await BuildJoinRequestDtoAsync(request, baby, ct);
+    }
+
+    public async Task<List<FamilyJoinRequestDto>> ListPendingJoinRequestsAsync(CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        // 当前用户是 owner 的宝宝 ID 集合
+        var myBabyIds = await _db.Babies.Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
+        if (myBabyIds.Count == 0) return new();
+
+        var reqs = await _db.FamilyJoinRequests
+            .Where(r => myBabyIds.Contains(r.BabyId) && r.Status == StatusConstants.FamilyJoinRequest.Pending)
+            .OrderByDescending(r => r.CreatedAt).ToListAsync(ct);
+        return await BuildJoinRequestDtosAsync(reqs, ct);
+    }
+
+    public async Task<List<FamilyJoinRequestDto>> ListMyJoinRequestsAsync(CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        var reqs = await _db.FamilyJoinRequests
+            .Where(r => r.ApplicantUserId == uid)
+            .OrderByDescending(r => r.UpdatedAt).ToListAsync(ct);
+        return await BuildJoinRequestDtosAsync(reqs, ct);
+    }
+
+    public async Task<FamilyJoinRequestDto> ProcessJoinRequestAsync(ProcessJoinRequestDto req, CancellationToken ct = default)
+    {
+        var uid = _current.RequireUserId();
+        var request = await _db.FamilyJoinRequests.FirstOrDefaultAsync(r => r.Id == req.RequestId, ct)
+            ?? throw new NotFoundException("加入申请不存在");
+        if (request.Status != StatusConstants.FamilyJoinRequest.Pending)
+            throw new BusinessException("该申请已被处理");
+
+        // 校验当前用户是该宝宝 owner
+        var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == request.BabyId, ct)
+            ?? throw new NotFoundException("宝宝不存在");
+        if (baby.UserId != uid)
+            throw new ForbiddenException("仅宝宝创建者可处理加入申请");
+
+        var now = DateTime.UtcNow;
+        request.ProcessedAt = now;
+        request.UpdatedAt = now;
+
+        if (req.Approve)
+        {
+            request.Status = StatusConstants.FamilyJoinRequest.Approved;
+            // 给 owner 名下所有宝宝都建/复活成员记录（与原 JoinFamilyViaInviteAsync 语义一致）
+            var ownerBabies = await _db.Babies.Where(b => b.UserId == uid).ToListAsync(ct);
+            var ownerBabyIds = ownerBabies.Select(b => b.Id).ToList();
+            var existingMembers = await _db.BabyMembers
+                .Where(m => ownerBabyIds.Contains(m.BabyId) && m.UserId == request.ApplicantUserId)
+                .ToListAsync(ct);
+            var existingBabyIds = existingMembers.Select(m => m.BabyId).ToHashSet();
+            foreach (var b in ownerBabies)
+            {
+                if (existingBabyIds.Contains(b.Id))
+                {
+                    // 复活旧记录（可能是 removed 状态）
+                    var em = existingMembers.First(m => m.BabyId == b.Id);
+                    em.Status = StatusConstants.BabyMember.Active;
+                    em.RoleCode = request.RoleCode;
+                    em.RoleName = request.RoleName;
+                    em.UpdatedAt = now;
+                }
+                else
+                {
+                    _db.BabyMembers.Add(new BabyMember
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        BabyId = b.Id,
+                        UserId = request.ApplicantUserId,
+                        RoleCode = request.RoleCode,
+                        RoleName = request.RoleName,
+                        IsOwner = false,
+                        Status = StatusConstants.BabyMember.Active,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                    });
+                }
+                // 推进 baby.UpdatedAt 让新成员下次同步能拉到 baby 本身
+                b.UpdatedAt = now;
+            }
+        }
+        else
+        {
+            request.Status = StatusConstants.FamilyJoinRequest.Rejected;
+        }
+        await _db.SaveChangesAsync(ct);
+        return await BuildJoinRequestDtoAsync(request, baby, ct);
+    }
+
+    private async Task<FamilyJoinRequestDto> BuildJoinRequestDtoAsync(FamilyJoinRequest r, Baby baby, CancellationToken ct)
+    {
+        var applicant = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == r.ApplicantUserId, ct);
+        return new FamilyJoinRequestDto
+        {
+            Id = r.Id,
+            BabyId = r.BabyId,
+            BabyName = baby.Name,
+            ApplicantUserId = r.ApplicantUserId,
+            ApplicantNickName = applicant?.NickName ?? "用户",
+            ApplicantAvatarUrl = applicant?.AvatarUrl ?? string.Empty,
+            RoleCode = r.RoleCode,
+            RoleName = r.RoleName,
+            Status = r.Status,
+            ProcessedAt = r.ProcessedAt,
+            CreatedAt = r.CreatedAt,
+            UpdatedAt = r.UpdatedAt,
+        };
+    }
+
+    private async Task<List<FamilyJoinRequestDto>> BuildJoinRequestDtosAsync(List<FamilyJoinRequest> reqs, CancellationToken ct)
+    {
+        if (reqs.Count == 0) return new();
+        var babyIds = reqs.Select(r => r.BabyId).Distinct().ToList();
+        var applicantIds = reqs.Select(r => r.ApplicantUserId).Distinct().ToList();
+        var babies = await _db.Babies.Where(b => babyIds.Contains(b.Id)).ToListAsync(ct);
+        var users = await _db.AppUsers.Where(u => applicantIds.Contains(u.Id)).ToListAsync(ct);
+        var babyMap = babies.ToDictionary(b => b.Id);
+        var userMap = users.ToDictionary(u => u.Id);
+        return reqs.Select(r => new FamilyJoinRequestDto
+        {
+            Id = r.Id,
+            BabyId = r.BabyId,
+            BabyName = babyMap.GetValueOrDefault(r.BabyId)?.Name ?? "宝宝",
+            ApplicantUserId = r.ApplicantUserId,
+            ApplicantNickName = userMap.GetValueOrDefault(r.ApplicantUserId)?.NickName ?? "用户",
+            ApplicantAvatarUrl = userMap.GetValueOrDefault(r.ApplicantUserId)?.AvatarUrl ?? string.Empty,
+            RoleCode = r.RoleCode,
+            RoleName = r.RoleName,
+            Status = r.Status,
+            ProcessedAt = r.ProcessedAt,
+            CreatedAt = r.CreatedAt,
+            UpdatedAt = r.UpdatedAt,
+        }).ToList();
+    }
+
     private static BabyDto ToBabyDto(Baby b) => new()
     {
         Id = b.Id,

@@ -38,4 +38,32 @@ public class BabyController : AppBaseController
     [HttpPost("family/join")]
     public async Task<BabyMemberDto> JoinFamily([FromBody] JoinFamilyRequest req, CancellationToken ct)
         => await _baby.JoinFamilyViaInviteAsync(req, ct);
+
+    /// <summary>owner 移除家庭成员（软删除）。</summary>
+    [HttpDelete("family/member")]
+    public async Task<IActionResult> RemoveMember([FromBody] RemoveMemberRequest req, CancellationToken ct)
+    {
+        await _baby.RemoveMemberAsync(req, ct);
+        return NoContent();
+    }
+
+    /// <summary>提交加入家庭申请（pending 状态，等待 owner 审批）。</summary>
+    [HttpPost("family/join-request")]
+    public async Task<FamilyJoinRequestDto> CreateJoinRequest([FromBody] JoinFamilyRequest req, CancellationToken ct)
+        => await _baby.RequestJoinAsync(req, ct);
+
+    /// <summary>owner 列出自己所有宝宝下待审的加入申请。</summary>
+    [HttpGet("family/join-requests/pending")]
+    public async Task<List<FamilyJoinRequestDto>> ListPendingJoinRequests(CancellationToken ct)
+        => await _baby.ListPendingJoinRequestsAsync(ct);
+
+    /// <summary>当前用户作为申请人，列出自己的加入申请（含历史）。</summary>
+    [HttpGet("family/join-requests/mine")]
+    public async Task<List<FamilyJoinRequestDto>> ListMyJoinRequests(CancellationToken ct)
+        => await _baby.ListMyJoinRequestsAsync(ct);
+
+    /// <summary>owner 批准或拒绝加入申请。approve=true 批准，false 拒绝。</summary>
+    [HttpPost("family/join-request/process")]
+    public async Task<FamilyJoinRequestDto> ProcessJoinRequest([FromBody] ProcessJoinRequestDto req, CancellationToken ct)
+        => await _baby.ProcessJoinRequestAsync(req, ct);
 }

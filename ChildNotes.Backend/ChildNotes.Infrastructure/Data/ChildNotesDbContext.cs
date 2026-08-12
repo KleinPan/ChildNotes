@@ -26,6 +26,7 @@ public class ChildNotesDbContext : DbContext
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<MembershipOrder> MembershipOrders => Set<MembershipOrder>();
     public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
+    public DbSet<FamilyJoinRequest> FamilyJoinRequests => Set<FamilyJoinRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -357,6 +358,24 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             // 同一用户同一类型同一周期只能有一条记录
             e.HasIndex(x => new { x.UserId, x.UsageType, x.PeriodStart }).IsUnique();
+        });
+
+        modelBuilder.Entity<FamilyJoinRequest>(e =>
+        {
+            e.ToTable("family_join_request");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.BabyId).HasColumnName("baby_id").IsRequired();
+            e.Property(x => x.ApplicantUserId).HasColumnName("applicant_user_id").IsRequired();
+            e.Property(x => x.RoleCode).HasColumnName("role_code").IsRequired();
+            e.Property(x => x.RoleName).HasColumnName("role_name").IsRequired();
+            e.Property(x => x.Status).HasColumnName("status").IsRequired().HasDefaultValue(StatusConstants.FamilyJoinRequest.Pending);
+            e.Property(x => x.ProcessedAt).HasColumnName("processed_at");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            // 同一申请人 + 同一宝宝 + 同一非终态 只能有一条 pending；终态后允许重新申请（不同 Id）
+            e.HasIndex(x => new { x.BabyId, x.ApplicantUserId, x.Status });
+            e.HasIndex(x => x.UpdatedAt);
         });
     }
 }

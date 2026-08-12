@@ -30,6 +30,63 @@
                         Margin="12,12" HorizontalAlignment="Stretch"
                         Click="OnJoinTap"/>
 
+                <!-- 待审批申请（仅 owner 且有数据时可见） -->
+                <StackPanel IsVisible="{Binding HasPendingRequests}" Margin="12,4,12,0">
+                    <TextBlock Text="{DynamicResource Family_PendingRequests}" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4"/>
+                    <ItemsControl ItemsSource="{Binding PendingRequests}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="shared:FamilyJoinRequestDto">
+                                <Border Background="{StaticResource SurfaceCardBrush}"
+                                        CornerRadius="{StaticResource Radius.Medium}" Margin="0,4" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding ApplicantNickName}" FontSize="14" FontWeight="Medium"/>
+                                            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0">
+                                                <Run Text="{Binding BabyName}"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding RoleName}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                            <Button Content="{DynamicResource Family_Approve}" Classes="weui-btn mini primary"
+                                                    Command="{Binding $parent[ItemsControl].((vm:FamilyViewModel)DataContext).ApproveRequestCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="{DynamicResource Family_Reject}" Classes="weui-btn mini"
+                                                    Command="{Binding $parent[ItemsControl].((vm:FamilyViewModel)DataContext).RejectRequestCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <!-- 我的申请历史 -->
+                <StackPanel IsVisible="{Binding HasMyRequests}" Margin="12,8,12,0">
+                    <TextBlock Text="{DynamicResource Family_MyRequests}" FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,4"/>
+                    <ItemsControl ItemsSource="{Binding MyRequests}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="shared:FamilyJoinRequestDto">
+                                <Border Background="{StaticResource SurfaceCardBrush}"
+                                        CornerRadius="{StaticResource Radius.Medium}" Margin="0,4" Padding="12,10">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding BabyName}" FontSize="14" FontWeight="Medium"/>
+                                            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                                       Text="{Binding RoleName}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding Status, Converter={x:Static vm:JoinRequestStatusConverter.Instance}}"
+                                                   FontSize="12" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
                 <!-- 加载中 / 空态 -->
                 <StackPanel IsVisible="{Binding !HasData}" Margin="0,40">
                     <TextBlock Text="{Binding EmptyHint}" FontSize="14"
@@ -94,6 +151,16 @@
                                                         <TextBlock Text="{Binding RoleName}" FontSize="12"
                                                                    Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                     </StackPanel>
+                                                    <!-- 移除按钮：仅 owner 可见，且不能移除自己 -->
+                                                    <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}"
+                                                            Classes="weui-btn mini"
+                                                            IsVisible="{Binding !Mine}"
+                                                            Click="OnRemoveMemberTap"
+                                                            Tag="{Binding $parent[ItemsControl].((shared:BabyFamilyDto)DataContext)}">
+                                                        <Button.CommandParameter>
+                                                            <Binding/>
+                                                        </Button.CommandParameter>
+                                                    </Button>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
@@ -168,6 +235,22 @@
                     <Grid ColumnDefinitions="*,8,*">
                         <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
                         <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Border>
+
+        <!-- 移除成员确认弹窗 -->
+        <Border Grid.RowSpan="2" Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsRemoveConfirmOpen}">
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12"
+                    Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="{Binding RemoveConfirmTitle}" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                    <TextBlock Text="{Binding RemoveConfirmBody}" FontSize="14" TextWrapping="Wrap"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
+                    <Grid ColumnDefinitions="*,8,*">
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRemoveConfirmCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="weui-btn primary" Command="{Binding ConfirmRemoveCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

@@ -6,12 +6,15 @@ using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Dtos;
 using BabyFamilyItem = ChildNotes.Shared.Dtos.BabyFamilyDto;
+using JoinRequestItem = ChildNotes.Shared.Dtos.FamilyJoinRequestDto;
 
 namespace ChildNotes.ViewModels;
 
 /// <summary>
-/// 家人管理 ViewModel：在线查看/修改自己角色，并支持通过宝宝 ID 加入家庭。
+/// 家人管理 ViewModel：在线查看/修改自己角色，支持通过宝宝 ID 申请加入家庭，
+/// owner 可移除家庭成员 / 审批加入申请。
 /// 需要后端服务可用；离线时提示用户启用同步。
 /// </summary>
 public partial class FamilyViewModel : ViewModelBase
@@ -23,14 +26,22 @@ public partial class FamilyViewModel : ViewModelBase
     /// <summary>展开后的家庭列表（每个宝宝一个家庭）。</summary>
     public ObservableCollection<BabyFamilyItem> Families { get; } = new();
 
+    /// <summary>待审批的加入申请列表（仅 owner 可见）。</summary>
+    public ObservableCollection<JoinRequestItem> PendingRequests { get; } = new();
+
+    /// <summary>我的加入申请历史（含已处理）。</summary>
+    public ObservableCollection<JoinRequestItem> MyRequests { get; } = new();
+
     /// <summary>角色选项。</summary>
     public IReadOnlyList<RoleOption> RoleOptions => FamilyRoles.All;
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasData;
     [ObservableProperty] private string _emptyHint = string.Empty;
+    [ObservableProperty] private bool _hasPendingRequests;
+    [ObservableProperty] private bool _hasMyRequests;
 
-    // 加入家庭表单
+    // 加入家庭表单（改为提交申请）
     [ObservableProperty] private bool _isJoinOpen;
     [ObservableProperty] private string _joinBabyId = string.Empty;
     [ObservableProperty] private string _joinRoleCode = "other";
@@ -41,6 +52,14 @@ public partial class FamilyViewModel : ViewModelBase
     [ObservableProperty] private string _roleEditorTitle = string.Empty;
     [ObservableProperty] private string _editingBabyId = string.Empty;
     [ObservableProperty] private string _editingRoleCode = "other";
+
+    // 移除成员确认弹窗
+    [ObservableProperty] private bool _isRemoveConfirmOpen;
+    [ObservableProperty] private string _removeConfirmTitle = string.Empty;
+    [ObservableProperty] private string _removeConfirmBody = string.Empty;
+    private string _removeTargetBabyId = string.Empty;
+    private string _removeTargetUserId = string.Empty;
+    private string _removeTargetNickName = string.Empty;
 
     public FamilyViewModel()
     {
@@ -53,12 +72,10 @@ public partial class FamilyViewModel : ViewModelBase
     private void OnLanguageChanged(AppLanguage lang)
     {
         Title = _locale.GetString("Family_Title", "家人管理");
-        // 刷新角色编辑器标题（如果打开）
         if (IsRoleEditorOpen)
             RoleEditorTitle = string.Format(_locale.GetString("Family_RoleEditorTitle", "我的角色 · {0}"), _editingBabyName);
         else
             RoleEditorTitle = _locale.GetString("Family_MyRole", "我的角色");
-        // 刷新空状态提示（仅刷新默认未加载状态）
         if (!IsLoading && !HasData && Families.Count == 0)
             EmptyHint = _locale.GetString("Family_EmptyNotLoaded", "尚未加载");
     }
@@ -69,7 +86,12 @@ public partial class FamilyViewModel : ViewModelBase
         EmptyHint = _locale.GetString("Family_Loading", "加载中…");
         try
         {
-            var list = await _api.ListFamiliesAsync();
+            var listTask = _api.ListFamiliesAsync();
+            var pendingTask = _api.ListPendingJoinRequestsAsync();
+            var mineTask = _api.ListMyJoinRequestsAsync();
+            await Task.WhenAll(listTask, pendingTask, mineTask);
+
+            var list = await listTask;
             Families.Clear();
             if (list is null)
             {
@@ -80,6 +102,24 @@ public partial class FamilyViewModel : ViewModelBase
             foreach (var f in list) Families.Add(f);
             HasData = Families.Count > 0;
             EmptyHint = HasData ? "" : _locale.GetString("Family_EmptyNoFamily", "还没有加入任何家庭");
+
+            // 待审批申请（owner 视角）
+            var pending = await pendingTask;
+            PendingRequests.Clear();
+            if (pending is not null)
+            {
+                foreach (var r in pending) PendingRequests.Add(r);
+            }
+            HasPendingRequests = PendingRequests.Count > 0;
+
+            // 我的申请历史
+            var mine = await mineTask;
+            MyRequests.Clear();
+            if (mine is not null)
+            {
+                foreach (var r in mine) MyRequests.Add(r);
+            }
+            HasMyRequests = MyRequests.Count > 0;
         }
         catch (Exception ex)
         {
@@ -100,7 +140,7 @@ public partial class FamilyViewModel : ViewModelBase
         DisplayToast(_locale.GetString("Family_Refreshed", "已刷新"));
     }
 
-    // ===== 加入家庭 =====
+    // ===== 申请加入家庭（原直接加入改为提交申请） =====
     public void OpenJoin()
     {
         JoinBabyId = string.Empty;
@@ -124,27 +164,20 @@ public partial class FamilyViewModel : ViewModelBase
             JoinError = _locale.GetString("Family_ErrIdEmpty", "请输入宝宝 ID");
             return;
         }
-        var result = await _api.JoinFamilyAsync(babyId, JoinRoleCode);
+        var result = await _api.RequestJoinAsync(babyId, JoinRoleCode);
         if (result is null)
         {
-            JoinError = _locale.GetString("Family_ErrJoinFailed", "加入失败，请检查宝宝 ID 或网络");
+            JoinError = _locale.GetString("Family_JoinRequestFailed", "申请提交失败，请检查宝宝 ID 或网络");
             return;
         }
         IsJoinOpen = false;
-        DisplayToast(string.Format(_locale.GetString("Family_JoinedToast", "已加入，角色：{0}"), FamilyRoles.GetRoleName(JoinRoleCode)));
+        DisplayToast(_locale.GetString("Family_JoinRequestSubmitted", "申请已提交，等待宝宝主人审批"));
         await LoadAsync();
-        // join 成功后重置 LastSyncAt，使下次同步做一次全量 Pull。
-        // 原因：join 在后端写 baby_member + 更新 baby.UpdatedAt=now，但若本账号此前同步过，
-        // LastSyncAt 已晚于主人其他宝宝的 updated_at（创建时的旧时间），增量同步会漏拉。
-        // 重置后 RunNowAsync 会从 1970 开始全量拉，确保新成员本地拿到所有可见 baby + baby_member。
-        ServiceProvider.Instance.SyncConfigRepository.ResetLastSyncAt();
-        _ = ServiceProvider.Instance.SyncTrigger?.RunNowAsync();
     }
 
     // ===== 修改我的角色 =====
     public void OpenRoleEditor(BabyFamilyItem family)
     {
-        // 找到当前用户在此家庭的成员记录
         var me = family.Members.FirstOrDefault(m => m.Mine);
         EditingBabyId = family.BabyId;
         EditingRoleCode = me?.RoleCode ?? "other";
@@ -172,15 +205,68 @@ public partial class FamilyViewModel : ViewModelBase
         await LoadAsync();
     }
 
-    // ===== 复制宝宝 ID =====
-    // 家人管理需要宝宝 ID 才能加入家庭，但 UI 之前无处可复制。
-    // 由家庭卡片上的"复制 ID"按钮调用，把宝宝 ID 写入系统剪贴板。
+    // ===== owner 移除家庭成员 =====
+    /// <summary>打开移除确认弹窗。由 View 通过成员项的"移除"按钮调用。</summary>
+    public void OpenRemoveConfirm(BabyFamilyItem family, BabyMemberDto member)
+    {
+        _removeTargetBabyId = family.BabyId;
+        _removeTargetUserId = member.UserId;
+        _removeTargetNickName = member.NickName;
+        RemoveConfirmTitle = _locale.GetString("Family_RemoveConfirmTitle", "移除家庭成员");
+        RemoveConfirmBody = string.Format(
+            _locale.GetString("Family_RemoveConfirmBody",
+                "确定将「{0}」从「{1}」家庭中移除？移除后该成员将无法查看本家庭数据，若需重新加入需经过你的审批。"),
+            member.NickName, family.BabyName);
+        IsRemoveConfirmOpen = true;
+    }
 
-    /// <summary>
-    /// 复制指定宝宝 ID 到系统剪贴板，并提示用户。
-    /// 由 View 通过 TopLevel.GetTopLevel(sender) 获取 TopLevel 并传入，
-    /// 桌面端和 Android 端通用（Android 端 RootContainer 是 UserControl，ServiceProvider.MainView 未赋值）。
-    /// </summary>
+    [RelayCommand]
+    private void CloseRemoveConfirm() => IsRemoveConfirmOpen = false;
+
+    [RelayCommand]
+    private async Task ConfirmRemove()
+    {
+        var ok = await _api.RemoveMemberAsync(_removeTargetBabyId, _removeTargetUserId);
+        if (!ok)
+        {
+            DisplayToast(_locale.GetString("Family_RemoveFailed", "移除失败，请稍后再试"));
+            return;
+        }
+        IsRemoveConfirmOpen = false;
+        DisplayToast(string.Format(_locale.GetString("Family_RemovedToast", "已移除「{0}」"), _removeTargetNickName));
+        await LoadAsync();
+    }
+
+    // ===== owner 审批加入申请 =====
+    [RelayCommand]
+    private async Task ApproveRequest(JoinRequestItem? req)
+    {
+        if (req is null) return;
+        var result = await _api.ProcessJoinRequestAsync(req.Id, approve: true);
+        if (result is null)
+        {
+            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稍后再试"));
+            return;
+        }
+        DisplayToast(string.Format(_locale.GetString("Family_RequestApprovedToast", "已通过「{0}」的申请"), req.ApplicantNickName));
+        await LoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task RejectRequest(JoinRequestItem? req)
+    {
+        if (req is null) return;
+        var result = await _api.ProcessJoinRequestAsync(req.Id, approve: false);
+        if (result is null)
+        {
+            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稍后再试"));
+            return;
+        }
+        DisplayToast(string.Format(_locale.GetString("Family_RequestRejectedToast", "已拒绝「{0}」的申请"), req.ApplicantNickName));
+        await LoadAsync();
+    }
+
+    // ===== 复制宝宝 ID =====
     public async Task CopyBabyIdAsync(string babyId, TopLevel? topLevel)
     {
         if (string.IsNullOrWhiteSpace(babyId))

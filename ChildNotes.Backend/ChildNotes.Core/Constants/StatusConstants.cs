@@ -24,6 +24,18 @@ public static class StatusConstants
     public static class BabyMember
     {
         public const string Active = "active";
+        /// <summary>被 owner 移除。再次申请加入并经 owner 审批通过后可改回 active。</summary>
+        public const string Removed = "removed";
+    }
+
+    /// <summary>家庭加入申请状态。</summary>
+    public static class FamilyJoinRequest
+    {
+        public const string Pending = "pending";
+        public const string Approved = "approved";
+        public const string Rejected = "rejected";
+        /// <summary>申请人主动撤回。</summary>
+        public const string Cancelled = "cancelled";
     }
 
     /// <summary>Public lottery activity status.</summary>

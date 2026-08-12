@@ -57,6 +57,15 @@ public class SyncService : ISyncService
             ? m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
             : m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc;
 
+        // 加入申请同步：申请人自己提交的 + owner 名下宝宝相关的
+        // owner 端用于感知有新申请待审；申请人端用于感知审批结果
+        var myOwnedBabyIds = await _db.Babies.Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
+        Expression<Func<FamilyJoinRequest, bool>> jrCursor = hasCursor
+            ? r => (r.ApplicantUserId == uid || myOwnedBabyIds.Contains(r.BabyId))
+                && r.UpdatedAt > sinceUtc
+                && (r.UpdatedAt > cursorTime!.Value || (r.UpdatedAt == cursorTime.Value && string.Compare(r.Id, cursorId) > 0))
+            : r => (r.ApplicantUserId == uid || myOwnedBabyIds.Contains(r.BabyId)) && r.UpdatedAt > sinceUtc;
+
         var babies = babyIds.Count == 0 ? new() :
             await _db.Babies.AsNoTracking().IgnoreQueryFilters()
                 .Where(babyCursor)
@@ -94,6 +103,13 @@ public class SyncService : ISyncService
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
+        // 加入申请：申请人自己 + owner 名下宝宝相关。Pull-only。
+        var joinRequests = await _db.FamilyJoinRequests.AsNoTracking()
+            .Where(jrCursor)
+            .OrderBy(r => r.UpdatedAt).ThenBy(r => r.Id)
+            .Take(pageLimit)
+            .ToListAsync(ct);
+
         // 当前用户积分余额（每页都返回，客户端以最后一页为准）。积分是 Pull-only 数据。
         var userPoints = await _db.UserPoints.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == uid, ct);
 
@@ -115,6 +131,7 @@ public class SyncService : ISyncService
             if (milestones.Count == pageLimit) { var last = milestones[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
             if (signIns.Count == pageLimit) { var last = signIns[^1]; candidates.Add((last.CreatedAt, last.Id)); }
             if (babyMembers.Count == pageLimit) { var last = babyMembers[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
+            if (joinRequests.Count == pageLimit) { var last = joinRequests[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
             if (candidates.Count > 0)
             {
                 var min = candidates.OrderBy(c => c.ts).ThenBy(c => c.id).First();

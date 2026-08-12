@@ -11,8 +11,9 @@ public static class DbInitializer
     /// 新增表/列/索引时递增此版本号，已迁移到该版本的 DB 启动时跳过全部 DDL。
     /// v1→v2：新增 reminder_config 表。
     /// v2→v3：数据归一 — 维D类补充剂名称统一为"维生素D3"（child_record.payload_json + user_supplement_item.name）。
+    /// v3→v4：新增 family_join_request 表（加入家庭申请/审批状态机）。
     /// </summary>
-    private const int CurrentSchemaVersion = 3;
+    private const int CurrentSchemaVersion = 4;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -317,6 +318,24 @@ CREATE TABLE IF NOT EXISTS reminder_config (
 INSERT OR IGNORE INTO reminder_config (id, feed_reminder_enabled, feed_interval_hours, sleep_reminder_enabled, sleep_timeout_hours)
 VALUES (1, 1, 3, 1, 4);
 ");
+
+        // ===== v4 加入家庭申请表 =====
+        // 同步 Pull-only：客户端接收服务端下发的申请状态变化，根据状态变化生成本地 InAppMessage 通知
+        conn.ExecuteNonQuery(@"
+CREATE TABLE IF NOT EXISTS family_join_request (
+    id TEXT PRIMARY KEY NOT NULL,
+    baby_id TEXT NOT NULL,
+    applicant_user_id TEXT NOT NULL,
+    role_code TEXT NOT NULL,
+    role_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    processed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);");
+        conn.ExecuteNonQuery(@"
+CREATE INDEX IF NOT EXISTS idx_family_join_request_updated
+    ON family_join_request (updated_at);");
 
         // ===== v3 数据归一：维D类补充剂名称统一为"维生素D3" =====
         // 仅在从 v2 升级到 v3 时执行（新库 user_version=0 → 3 也会走一遍，新库无数据无副作用）。

@@ -1209,6 +1209,26 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Family_JoinedToast"] = "Joined as: {0}";
         this["Family_SaveFailed"] = "Save failed";
         this["Family_RoleUpdated"] = "Role updated to: {0}";
+        this["Family_RemoveMember"] = "Remove";
+        this["Family_RemoveConfirmTitle"] = "Remove family member";
+        this["Family_RemoveConfirmBody"] = "Remove \"{0}\" from \"{1}\" family? They will lose access to family data. Re-joining requires your approval.";
+        this["Family_RemoveFailed"] = "Remove failed, try again later";
+        this["Family_RemovedToast"] = "Removed \"{0}\"";
+        this["Family_JoinRequestSubmitted"] = "Request submitted, waiting for owner approval";
+        this["Family_JoinRequestFailed"] = "Request failed, check Baby ID or network";
+        this["Family_PendingRequests"] = "Pending requests";
+        this["Family_MyRequests"] = "My requests";
+        this["Family_NoPendingRequests"] = "No pending requests";
+        this["Family_NoMyRequests"] = "No request history";
+        this["Family_Approve"] = "Approve";
+        this["Family_Reject"] = "Reject";
+        this["Family_RequestApprovedToast"] = "Approved \"{0}\"";
+        this["Family_RequestRejectedToast"] = "Rejected \"{0}\"";
+        this["Family_ProcessFailed"] = "Operation failed, try again later";
+        this["Family_RequestStatusPending"] = "Pending";
+        this["Family_RequestStatusApproved"] = "Approved";
+        this["Family_RequestStatusRejected"] = "Rejected";
+        this["Family_RequestStatusCancelled"] = "Cancelled";
 
         // ===== DeveloperOptionsView =====
         this["Dev_Title"] = "Developer Options";

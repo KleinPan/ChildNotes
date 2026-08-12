@@ -46,6 +46,8 @@ public sealed class ServiceProvider
     /// <summary>本地通知：默认 NullLocalNotification，Android/iOS 平台启动时通过 OverrideLocalNotification 注入真实实现。</summary>
     public Services.Push.ILocalNotification LocalNotification { get; private set; }
     public Services.Push.IPushService PushService { get; }
+    /// <summary>家庭加入申请本地仓储（Pull-only，同步审批状态 + 生成本地通知）。</summary>
+    public Data.Repositories.FamilyJoinRequestRepository FamilyJoinRequestRepository { get; }
 
     /// <summary>
     /// 主窗口引用：用于在 ViewModel 中获取 TopLevel.Clipboard 等平台能力。
@@ -122,6 +124,13 @@ public sealed class ServiceProvider
         // 注：属性名与类型名相同，需用完整命名空间限定类型
         InAppMessageRepository = new Data.Repositories.InAppMessageRepository(DbFactory);
         InAppMessageService = new Services.InAppMessageService(InAppMessageRepository, AppState);
+
+        // 家庭加入申请本地仓储（Pull-only，用于同步审批状态 + 生成本地通知）
+        // 注：属性名 FamilyJoinRequestRepository 与类型 Data.Repositories.FamilyJoinRequestRepository 同名，
+        // 此处用完整命名空间限定类型，避免 using ChildNotes.Data.Repositories 引入的歧义。
+        FamilyJoinRequestRepository = new Data.Repositories.FamilyJoinRequestRepository(DbFactory);
+        // 注入 ApiSyncService 的 join_request 依赖（InAppMessageService + AppState + 仓储）
+        ApiSyncService.SetJoinRequestDeps(this.FamilyJoinRequestRepository, InAppMessageService, AppState);
 
         // 推送平台：默认 NullPushPlatform（未接入 SDK），后续 Android/iOS 平台替换为真实实现
         PushPlatform = new Services.Push.NullPushPlatform();

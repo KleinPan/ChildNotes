@@ -37,6 +37,8 @@ public class SyncPullResponse
     public List<SyncBabyMemberItem> BabyMembers { get; set; } = new();
     /// <summary>当前用户积分余额（每页都带，客户端以最后一页为准；Pull-only）。</summary>
     public SyncUserPointsItem? UserPoints { get; set; }
+    /// <summary>家庭加入申请（Pull-only，申请人 + owner 均可拉到相关记录）。</summary>
+    public List<SyncFamilyJoinRequestItem> FamilyJoinRequests { get; set; } = new();
     public DateTime ServerTime { get; set; }
     /// <summary>是否还有更多数据可拉取（分页用）。true 时客户端应继续请求下一页。</summary>
     public bool HasMore { get; set; }
@@ -64,6 +66,25 @@ public class SyncBabyMemberItem
     public string RoleName { get; set; } = string.Empty;
     public bool IsOwner { get; set; }
     public string Status { get; set; } = "active";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+/// <summary>
+/// 家庭加入申请同步项。Pull-only。
+/// 申请人会拉到自己提交的申请；owner 会拉到指向自己宝宝的申请。
+/// 客户端根据状态变化（pending→approved/rejected）生成本地 InAppMessage 通知。
+/// </summary>
+public class SyncFamilyJoinRequestItem
+{
+    public string Id { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
+    public string ApplicantUserId { get; set; } = string.Empty;
+    public string RoleCode { get; set; } = string.Empty;
+    public string RoleName { get; set; } = string.Empty;
+    /// <summary>pending/approved/rejected/cancelled。</summary>
+    public string Status { get; set; } = "pending";
+    public DateTime? ProcessedAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
