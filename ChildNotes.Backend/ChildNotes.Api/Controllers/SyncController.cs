@@ -11,8 +11,11 @@ public class SyncController : AppBaseController
     public SyncController(ISyncService sync) => _sync = sync;
 
     [HttpGet("pull")]
-    public async Task<SyncPullResponse> Pull([FromQuery] DateTime? since, [FromQuery] int? limit, CancellationToken ct)
-        => await _sync.PullAsync(since ?? DateTime.UnixEpoch, limit ?? 500, ct);
+    public async Task<SyncPullResponse> Pull(
+        [FromQuery] DateTime? since, [FromQuery] int? limit,
+        [FromQuery] DateTime? cursorTime, [FromQuery] string? cursorId,
+        CancellationToken ct)
+        => await _sync.PullAsync(since ?? DateTime.UnixEpoch, limit ?? 500, cursorTime, cursorId, ct);
 
     [HttpPost("push")]
     public async Task<SyncBatchResponse> Push([FromBody] SyncBatchRequest req, CancellationToken ct)

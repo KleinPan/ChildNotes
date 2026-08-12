@@ -40,8 +40,15 @@ public class SyncPullResponse
     public DateTime ServerTime { get; set; }
     /// <summary>是否还有更多数据可拉取（分页用）。true 时客户端应继续请求下一页。</summary>
     public bool HasMore { get; set; }
-    /// <summary>下一页游标（已拉取记录的最大 updated_at）。客户端下次请求作为 since 之外的偏移基准。</summary>
-    public DateTime? NextCursor { get; set; }
+    /// <summary>下一页复合游标 (UpdatedAt, Id)。防止同一 UpdatedAt 跨页时漏数据。</summary>
+    public SyncCursor? NextCursor { get; set; }
+}
+
+/// <summary>复合分页游标 (UpdatedAt, Id)，用于跨页精确推进。</summary>
+public class SyncCursor
+{
+    public DateTime Timestamp { get; set; }
+    public string Id { get; set; } = string.Empty;
 }
 
 /// <summary>

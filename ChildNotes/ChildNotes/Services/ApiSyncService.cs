@@ -116,15 +116,15 @@ public sealed class ApiSyncService : BaseApiClient
             //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
             int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pulledSignIns = 0, pullPages = 0;
-            DateTime? cursor = since;
+            SyncCursor? cursor = null; // null 表示第一页，用 since 过滤
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
             using (var pullConn = _dbFactory!.Create())
             using (var pullTx = pullConn.BeginTransaction())
             {
-                while (cursor is not null && pullPages < maxPages)
+                while (pullPages < maxPages)
                 {
-                    var pageResp = await PullWithRetryAsync(serverUrl, token, cursor.Value, pageSize, ct);
+                    var pageResp = await PullWithRetryAsync(serverUrl, token, since, pageSize, cursor, ct);
                     if (pageResp is null)
                     {
                         pullTx.Rollback();
@@ -153,7 +153,8 @@ public sealed class ApiSyncService : BaseApiClient
                     // HasMore 为 false 或五类都无数据时终止；游标推进到 NextCursor
                     if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0 && pageResp.BabyMembers.Count == 0))
                         break;
-                    cursor = pageResp.NextCursor ?? cursor.Value;
+                    cursor = pageResp.NextCursor;
+                    if (cursor is null) break; // 无游标但 HasMore=true 的防御性退出
                 }
                 pullTx.Commit();
             }
@@ -414,7 +415,7 @@ public sealed class ApiSyncService : BaseApiClient
         }
     }
 
-    private async Task<SyncPullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, CancellationToken ct)
+    private async Task<SyncPullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, SyncCursor? cursor, CancellationToken ct)
     {
         try
         {
@@ -423,6 +424,9 @@ public sealed class ApiSyncService : BaseApiClient
                 {
                     var path = "/api/sync/pull?since=" + Uri.EscapeDataString(since.ToUniversalTime().ToString("O"))
                                + "&limit=" + limit;
+                    if (cursor is not null)
+                        path += "&cursorTime=" + Uri.EscapeDataString(cursor.Timestamp.ToUniversalTime().ToString("O"))
+                             + "&cursorId=" + Uri.EscapeDataString(cursor.Id);
                     using var resp = await SendWithTokenV2Async(_cfgRepo, server, token, HttpMethod.Get, path, null, ct);
                     return await ReadDataAsync<SyncPullResponse>(resp, ct)
                         ?? throw new SyncException(SyncErrorKind.Business, "Pull 响应解析失败");
@@ -437,7 +441,7 @@ public sealed class ApiSyncService : BaseApiClient
                 var cfg = _cfgRepo.Get();
                 var newToken = await LoginAsync(cfg, serverUrl, ct);
                 // 递归一次（已无 token，不会再触发 Auth 重试分支）
-                return await PullWithRetryAsync(serverUrl, newToken, since, limit, ct);
+                return await PullWithRetryAsync(serverUrl, newToken, since, limit, cursor, ct);
             }
             DevLogger.Log("Sync", $"Pull failed: {ex.Kind} {ex.Message}");
             return null;

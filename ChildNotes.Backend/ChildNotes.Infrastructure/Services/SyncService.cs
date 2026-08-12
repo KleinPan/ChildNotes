@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
@@ -25,7 +26,8 @@ public class SyncService : ISyncService
         _babyAccess = babyAccess;
     }
 
-    public async Task<SyncPullResponse> PullAsync(DateTime since, int limit = 500, CancellationToken ct = default)
+    public async Task<SyncPullResponse> PullAsync(DateTime since, int limit = 500,
+        DateTime? cursorTime = null, string? cursorId = null, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var sinceUtc = since.ToUniversalTime();
@@ -35,40 +37,60 @@ public class SyncService : ISyncService
         // 当前用户可访问的宝宝 ID 集合（自己创建 + baby_member active）
         var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
 
+        // 复合游标过滤：(UpdatedAt > cursorTime) OR (UpdatedAt == cursorTime AND Id > cursorId)
+        // 第一页（cursorTime == null）只用 since 过滤
+        // 用 string.Compare 静态方法，EF Core 对它有完整的翻译支持
+        var hasCursor = cursorTime is not null && !string.IsNullOrEmpty(cursorId);
+        Expression<Func<Baby, bool>> babyCursor = hasCursor
+            ? b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc && (b.UpdatedAt > cursorTime!.Value || (b.UpdatedAt == cursorTime.Value && string.Compare(b.Id, cursorId) > 0))
+            : b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc;
+        Expression<Func<ChildRecord, bool>> recordCursor = hasCursor
+            ? r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc && (r.UpdatedAt > cursorTime!.Value || (r.UpdatedAt == cursorTime.Value && string.Compare(r.Id, cursorId) > 0))
+            : r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc;
+        Expression<Func<Milestone, bool>> msCursor = hasCursor
+            ? m => m.UserId == uid && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
+            : m => m.UserId == uid && m.UpdatedAt > sinceUtc;
+        Expression<Func<SignInRecord, bool>> siCursor = hasCursor
+            ? s => s.UserId == uid && s.CreatedAt > sinceUtc && (s.CreatedAt > cursorTime!.Value || (s.CreatedAt == cursorTime.Value && string.Compare(s.Id, cursorId) > 0))
+            : s => s.UserId == uid && s.CreatedAt > sinceUtc;
+        Expression<Func<BabyMember, bool>> bmCursor = hasCursor
+            ? m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
+            : m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc;
+
         var babies = babyIds.Count == 0 ? new() :
             await _db.Babies.AsNoTracking().IgnoreQueryFilters()
-                .Where(b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc)
-                .OrderBy(b => b.UpdatedAt)
+                .Where(babyCursor)
+                .OrderBy(b => b.UpdatedAt).ThenBy(b => b.Id)
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
         var records = babyIds.Count == 0 ? new() :
             await _db.ChildRecords.AsNoTracking().IgnoreQueryFilters()
-                .Where(r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc)
-                .OrderBy(r => r.UpdatedAt)
+                .Where(recordCursor)
+                .OrderBy(r => r.UpdatedAt).ThenBy(r => r.Id)
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
         // 里程碑：仅同步当前用户自己创建的（不受 baby_member 跨用户共享约束，与小程序一致）
         var milestones = await _db.Milestones.AsNoTracking().IgnoreQueryFilters()
-            .Where(m => m.UserId == uid && m.UpdatedAt > sinceUtc)
-            .OrderBy(m => m.UpdatedAt)
+            .Where(msCursor)
+            .OrderBy(m => m.UpdatedAt).ThenBy(m => m.Id)
             .Take(pageLimit)
             .ToListAsync(ct);
 
         // 签到记录：仅同步当前用户自己的。SignInRecord 只有 CreatedAt（无 UpdatedAt），
-        // 增量基准用 CreatedAt。首签记录 CreatedAt 最早，分页时按 CreatedAt 升序。
-        var signIns = await _db.SignInRecords.AsNoTracking()
-            .Where(s => s.UserId == uid && s.CreatedAt > sinceUtc)
-            .OrderBy(s => s.CreatedAt)
-            .Take(pageLimit)
-            .ToListAsync(ct);
+            // 增量基准用 CreatedAt。首签记录 CreatedAt 最早，分页时按 CreatedAt 升序。
+            var signIns = await _db.SignInRecords.AsNoTracking()
+                .Where(siCursor)
+                .OrderBy(s => s.CreatedAt).ThenBy(s => s.Id)
+                .Take(pageLimit)
+                .ToListAsync(ct);
 
         // 当前用户参与的宝宝成员关系（含自己创建和 join 的）。Pull-only，前端用于判断可访问的宝宝。
         var babyMembers = babyIds.Count == 0 ? new() :
             await _db.BabyMembers.AsNoTracking()
-                .Where(m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc)
-                .OrderBy(m => m.UpdatedAt)
+                .Where(bmCursor)
+                .OrderBy(m => m.UpdatedAt).ThenBy(m => m.Id)
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
@@ -80,18 +102,25 @@ public class SyncService : ISyncService
             || milestones.Count == pageLimit || signIns.Count == pageLimit
             || babyMembers.Count == pageLimit;
 
-        // 游标取"达上限表"的最大时间戳中的最小值。
+        // 复合游标取"达上限表"的 (Max(timestamp), 对应 Max(Id)) 中的最小值。
+        // 各表按 (timestamp, Id) 排序，达上限时取最后一条的 (timestamp, Id) 作为该表的候选。
+        // 然后从所有候选中取 timestamp 最小（相同则 Id 最小）的作为 nextCursor。
         // 未达上限的表数据已全部拉完，不参与 cursor 计算。
-        // 这样下一页 WHERE UpdatedAt > cursor 不会跳过任何达上限表的剩余数据。
-        // 例：records 500 条(10:00~10:30) 达上限，baby 1 条(11:00) 未达上限
-        //   → cursor = 10:30（只看 records），下一页 baby 11:00 会被重复拉但 LWW 幂等兜底
-        List<DateTime> cappedMaxes = new(5);
-        if (records.Count == pageLimit) cappedMaxes.Add(records.Max(r => r.UpdatedAt));
-        if (babies.Count == pageLimit) cappedMaxes.Add(babies.Max(b => b.UpdatedAt));
-        if (milestones.Count == pageLimit) cappedMaxes.Add(milestones.Max(m => m.UpdatedAt));
-        if (signIns.Count == pageLimit) cappedMaxes.Add(signIns.Max(s => s.CreatedAt));
-        if (babyMembers.Count == pageLimit) cappedMaxes.Add(babyMembers.Max(m => m.UpdatedAt));
-        DateTime? nextCursor = cappedMaxes.Count > 0 ? cappedMaxes.Min() : null;
+        SyncCursor? nextCursor = null;
+        if (hasMore)
+        {
+            var candidates = new List<(DateTime ts, string id)>(5);
+            if (records.Count == pageLimit) { var last = records[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
+            if (babies.Count == pageLimit) { var last = babies[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
+            if (milestones.Count == pageLimit) { var last = milestones[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
+            if (signIns.Count == pageLimit) { var last = signIns[^1]; candidates.Add((last.CreatedAt, last.Id)); }
+            if (babyMembers.Count == pageLimit) { var last = babyMembers[^1]; candidates.Add((last.UpdatedAt, last.Id)); }
+            if (candidates.Count > 0)
+            {
+                var min = candidates.OrderBy(c => c.ts).ThenBy(c => c.id).First();
+                nextCursor = new SyncCursor { Timestamp = min.ts, Id = min.id };
+            }
+        }
 
         return new SyncPullResponse
         {
