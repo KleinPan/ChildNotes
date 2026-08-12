@@ -128,11 +128,12 @@ public class BabyService : IBabyService
 
         // 补建 owner baby_member 记录：早期创建的宝宝可能没有 owner 成员记录
         // （baby_member 功能上线前创建的宝宝），导致家人列表查不到这些宝宝。
+        // 仅检查 IsOwner=true 的记录是否存在，避免历史脏数据干扰补建。
         var myBabies = await _db.Babies.Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
         if (myBabies.Count > 0)
         {
             var existingOwnerBabyIds = await _db.BabyMembers
-                .Where(m => m.UserId == uid && myBabies.Contains(m.BabyId))
+                .Where(m => m.UserId == uid && myBabies.Contains(m.BabyId) && m.IsOwner)
                 .Select(m => m.BabyId).ToListAsync(ct);
             var missingBabyIds = myBabies.Except(existingOwnerBabyIds).ToList();
             if (missingBabyIds.Count > 0)
@@ -144,8 +145,8 @@ public class BabyService : IBabyService
                         Id = Guid.NewGuid().ToString("N"),
                         BabyId = babyId,
                         UserId = uid,
-                        RoleCode = "father",
-                        RoleName = "爸爸",
+                        RoleCode = "guardian",
+                        RoleName = "监护人",
                         IsOwner = true,
                         Status = StatusConstants.BabyMember.Active,
                     });

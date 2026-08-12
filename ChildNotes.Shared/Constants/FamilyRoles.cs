@@ -18,6 +18,7 @@ public static class FamilyRoles
         new RoleOption("paternalAunt", "姑姑"),
         new RoleOption("maternalUncle", "舅舅"),
         new RoleOption("nanny", "保姆"),
+        new RoleOption("guardian", "监护人"),
         new RoleOption("other", "其他"),
     };
 
