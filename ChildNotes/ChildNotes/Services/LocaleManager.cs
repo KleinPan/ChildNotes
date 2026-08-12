@@ -483,6 +483,8 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Sync_Note3"] = "• 网络恢复后自动同步；新增记录 5 秒后自动同步";
         this["Sync_Note4"] = "• 同步失败会自动重试，瞬时错误无需手动干预";
         this["Sync_Note5"] = "• 冲突按更新时间合并（后写覆盖）";
+        this["Sync_ForceFullSync"] = "强制全量同步";
+        this["Sync_ForceFullSyncHint"] = "重置同步基线并重新拉取/推送全部数据（用于修复历史同步异常）";
         // SyncSettingsView code-behind
         this["Sync_StatusSuccess"] = "成功";
         this["Sync_StatusFailed"] = "失败";
@@ -1143,6 +1145,8 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Sync_Note3"] = "• Auto-syncs on network recovery; new records sync after 5s";
         this["Sync_Note4"] = "• Auto-retry on failure; transient errors need no action";
         this["Sync_Note5"] = "• Conflicts merged by update time (last-write-wins)";
+        this["Sync_ForceFullSync"] = "Force full sync";
+        this["Sync_ForceFullSyncHint"] = "Resets sync baseline and re-pulls/pushes all data (for historical sync issues)";
         this["Sync_StatusSuccess"] = "Success";
         this["Sync_StatusFailed"] = "Failed";
         this["Sync_StatusRunning"] = "Running";

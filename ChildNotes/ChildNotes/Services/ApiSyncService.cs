@@ -133,6 +133,7 @@ public sealed class ApiSyncService : BaseApiClient
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
             //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
+            DevLogger.Log("Sync", $"Pull since={since:O} (LastSyncAt={(cfg.LastSyncAt?.ToString("O") ?? "null")})");
             int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pulledSignIns = 0, pullPages = 0;
             SyncCursor? cursor = null; // null 表示第一页，用 since 过滤
             const int pageSize = 500;
@@ -201,6 +202,8 @@ public sealed class ApiSyncService : BaseApiClient
             var localRecords = _recordRepo.GetByUpdatedAt(pushSince);
             var localMilestones = _milestoneRepo.GetByUpdatedAt(pushSince);
             var localSignIns = _pointsRepo.GetSignInsByCreatedAt(pushSince);
+            DevLogger.Log("Sync",
+                $"Push prepare: babies={localBabies.Count}, records={localRecords.Count}, milestones={localMilestones.Count}, signIns={localSignIns.Count} (pushSince={pushSince:O})");
 
             var pushReq = new SyncBatchRequest
             {

@@ -68,9 +68,14 @@ public sealed class MilestoneRepository : BaseRepository
             "UPDATE milestone SET is_deleted=1, updated_at=@n WHERE id=@id",
             cmd => cmd.AddUtc("@n", DateTime.UtcNow).Add("@id", id));
 
-    /// <summary>获取本地指定更新时间之后的所有里程碑（含已软删，用于增量上送）。</summary>
+    /// <summary>
+    /// 获取本地待上送的里程碑（含已软删，用于 Push 增量推送）。
+    /// 过滤条件：updated_at > since（常规增量） OR synced_at IS NULL（从未同步过的记录）。
+    /// 后者是为了兜底 LastSyncAt 被污染的场景：即使 LastSyncAt 已晚于记录 updated_at，
+    /// 未同步过的记录仍会被纳入 Push，避免数据永久卡在本地。
+    /// </summary>
     public List<Milestone> GetByUpdatedAt(DateTime since)
-        => Query(SelectBase + " WHERE updated_at > @s ORDER BY updated_at",
+        => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
             cmd => cmd.AddUtc("@s", since), Map);
 
     /// <summary>以 LWW（updated_at 比较）合并远端下发的里程碑。返回是否实际写入。</summary>

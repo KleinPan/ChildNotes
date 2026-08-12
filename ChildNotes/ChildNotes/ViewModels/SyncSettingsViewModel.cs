@@ -202,4 +202,34 @@ public partial class SyncSettingsViewModel : ViewModelBase, IDisposable
             IsSyncing = false;
         }
     }
+
+    /// <summary>
+    /// 强制全量同步：重置 LastSyncAt 为 NULL，下次 Pull 拉取全量数据；
+    /// 同时 Push 阶段因 GetByUpdatedAt 兜底了 synced_at IS NULL 的记录，
+    /// 本地未同步过的数据也会被推送到服务端。
+    /// 适用场景：LastSyncAt 被旧版 UpdateSyncResult 污染导致漏推/漏拉。
+    /// </summary>
+    [RelayCommand]
+    private async Task ForceFullSync()
+    {
+        if (IsSyncing) return;
+        IsSyncing = true;
+        StatusText = "全量同步中…";
+        ReloadSyncLogs();
+        try
+        {
+            // 1. 重置 LastSyncAt，让 Pull 走全量
+            _cfgRepo.ResetLastSyncAt();
+            // 2. 触发同步
+            var result = await _trigger.RunNowAsync();
+            StatusText = result.Success ? "全量同步成功" : "全量同步失败";
+            UpdateLastSyncText(_cfgRepo.Get());
+            ReloadSyncLogs();
+            DisplayToast(result.Success ? "全量同步完成：" + result.Message : ("失败：" + result.Message));
+        }
+        finally
+        {
+            IsSyncing = false;
+        }
+    }
 }
