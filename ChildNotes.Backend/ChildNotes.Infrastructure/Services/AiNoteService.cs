@@ -181,22 +181,27 @@ public partial class AiNoteService : IAiNoteService
 
         // ===== 规则优先 + 智能升级 =====
         // 1. 先用规则解析（0ms）
-        // 2. 规则所有条目置信度 >= 0.6 且非 ForceAi → 直接返回（快速路径）
+        // 2. 规则所有条目置信度 >= 0.6 且非 ForceAi 且非复杂文本 → 直接返回（快速路径）
         // 3. 否则调 AI 解析（1-3秒）；AI 失败则用规则结果兜底
+        // 复杂文本启发式（ShouldForceAi）：长文本或多逗号场景规则无法准确剥离描述性语句，
+        // 应交由 AI 处理；规则解析仍会作为 AI 失败时的兜底执行。
         var ruleItems = AiNoteRuleParser.ParseMulti(text);
         var ruleHighConfidence = ruleItems.All(it => it.Confidence >= RuleFastPathThreshold);
+        var shouldForceAi = AiNoteRuleParser.ShouldForceAi(text);
 
         List<AiNoteParseItem> items;
-        if (!req.ForceAi && ruleHighConfidence)
+        if (!req.ForceAi && !shouldForceAi && ruleHighConfidence)
         {
-            // 快速路径：规则置信度足够高，直接返回，不调 AI
+            // 快速路径：规则置信度足够高且非复杂文本，直接返回，不调 AI
             _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf} Text={Text}",
                 ruleItems.Count, ruleItems.Min(it => it.Confidence), text);
             items = ruleItems;
         }
         else
         {
-            // 慢速路径：规则置信度不足或强制 AI，调 AI 解析
+            // 慢速路径：规则置信度不足、复杂文本、或强制 AI，调 AI 解析
+            if (shouldForceAi)
+                _logger.LogInformation("[AI-LOG] 复杂文本强制AI跳过规则快速路径 Text={Text}", text);
             try
             {
                 items = await ParseByAiAsync(text, ct);

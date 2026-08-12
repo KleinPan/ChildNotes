@@ -351,6 +351,62 @@ public class AiNoteParseTests
         Assert.Equal("11:30", items[0].Time);
     }
 
+    // ===== ShouldForceAi 复杂文本启发式测试 =====
+
+    /// <summary>
+    /// 复杂文本（长文本或多逗号）应触发 ShouldForceAi=true，让后端跳过规则快速路径走 AI。
+    /// 避免规则解析把描述性尾句/感慨语污染到结构化字段。
+    /// </summary>
+    [Theory]
+    [InlineData("17点20吃的米粉，菠菜，肝粉，肉泥，核桃油，今天吃的多")] // 用户实际反馈案例
+    [InlineData("11点吃米粉，肝粉，肉泥，核桃油，香蕉，苹果，今天吃得多")] // 多逗号+描述尾句
+    [InlineData("早上8点喝了120ml奶粉，换了尿布，大便黄绿色，有点稀，精神还好")] // 多事件+描述
+    [InlineData("今天宝宝状态不错，上午玩了很久，下午睡了两个小时，吃奶也正常")] // 长描述文本
+    public void ShouldForceAi_ComplexText_ReturnsTrue(string text)
+    {
+        Assert.True(AiNoteRuleParser.ShouldForceAi(text), $"复杂文本应触发强制AI：{text}");
+    }
+
+    /// <summary>
+    /// 简单文本不应触发 ShouldForceAi，仍走规则快速路径。
+    /// </summary>
+    [Theory]
+    [InlineData("喝了120ml奶")]
+    [InlineData("换尿布")]
+    [InlineData("睡了30分钟")]
+    [InlineData("11点吃米粉，肝粉，肉泥")] // 2个逗号，未达3个阈值
+    [InlineData("8:30喝90ml奶粉")]
+    public void ShouldForceAi_SimpleText_ReturnsFalse(string text)
+    {
+        Assert.False(AiNoteRuleParser.ShouldForceAi(text), $"简单文本不应触发强制AI：{text}");
+    }
+
+    /// <summary>
+    /// 回归测试：辅食多食材+描述尾句场景，规则解析的 foodName 不应被时间数字/描述语污染。
+    /// 即使触发 ShouldForceAi 走 AI，AI 失败降级时规则结果也不能脏（避免 foodName 出现"20的"或"的多"）。
+    /// </summary>
+    [Fact]
+    public void RuleParse_ComplementaryFood_StripsTimeDigitsAndDescriptiveTail()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("17点20吃的米粉，菠菜，肝粉，肉泥，核桃油，今天吃的多");
+        var parsed = items[0];
+        Assert.Equal(RecordType.Complementary, parsed.RecordType);
+        var foodName = parsed.FoodName ?? "";
+        // 不应残留时间数字"20"
+        Assert.DoesNotContain("20", foodName);
+        // 不应残留"的"字
+        Assert.DoesNotContain("的", foodName);
+        // 不应残留"多"字（描述尾句）
+        Assert.DoesNotContain("多", foodName);
+        // 应包含核心食材名
+        Assert.Contains("米粉", foodName);
+        Assert.Contains("菠菜", foodName);
+        Assert.Contains("肝粉", foodName);
+        Assert.Contains("肉泥", foodName);
+        Assert.Contains("核桃油", foodName);
+    }
+
     [Theory]
     [InlineData("14点30分喝了120ml奶", "14:30")]
     [InlineData("3:00吃了奶", "03:00")]

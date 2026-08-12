@@ -79,6 +79,26 @@ public static class AiNoteRuleParser
     #region 多条解析
 
     /// <summary>
+    /// 判断文本是否应直接跳过规则快速路径、强制走 AI 解析。
+    /// 启发式：长文本或多逗号场景往往包含描述性语句/感慨尾句/复合语义，规则无法准确剥离，应交由 AI。
+    /// - 长度 &gt; 15 字（去掉首段时间数字后的有效文本长度）
+    /// - 或逗号数 &gt;= 3（多段并列，可能含描述性尾句）
+    /// 仅用于决定是否跳过规则快速路径，规则解析仍会作为 AI 失败的兜底执行。
+    /// </summary>
+    public static bool ShouldForceAi(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        // 去掉首段时间数字（如"17点20"）后的有效文本长度
+        var stripped = TimeRegex.Replace(text, "");
+        if (stripped.Length > 15) return true;
+        // 逗号数（中英文都算）
+        int commaCount = 0;
+        foreach (var c in text)
+            if (c == '，' || c == ',') commaCount++;
+        return commaCount >= 3;
+    }
+
+    /// <summary>
     /// 多条解析：先用 NoteSplitter 切分复合语句，再逐段解析。
     /// 若切分后所有段都解析失败，回退到对原句调一次 Parse，避免切分破坏整体语义。
     /// </summary>
@@ -491,18 +511,27 @@ public static class AiNoteRuleParser
             amountUnit = amountMatch.Groups[2].Value == "g" ? "克" : amountMatch.Groups[2].Value;
         }
         // 提取食物名称：去掉时间/数量/单位/动词后的剩余文本
-        var foodName = Regex.Replace(text, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "")
-            .Replace("吃了", "").Replace("吃", "").Replace("辅食", "")
-            // 去掉时间表达：完整时段词优先，单字时间词在后（避免误伤食材名）
+        // 时间表达优先整体去除（含"17点20"、"8:30"、"11点半"），避免数字残留污染食材名
+        var foodName = TimeRegex.Replace(text, "")
+            // 兜底：去掉残留的纯数字时间片段（如"17点20"去掉"17点"后残留的"20"）
             .Replace("昨天", "").Replace("今天", "")
             .Replace("早上", "").Replace("早晨", "")
             .Replace("中午", "")
             .Replace("下午", "").Replace("傍晚", "")
             .Replace("晚上", "").Replace("夜里", "").Replace("夜间", "").Replace("凌晨", "")
-            // 单字时间词：用正则去掉，只匹配数字后的"点/分/时"或独立出现的"早/夜"
-            ;
-        foodName = Regex.Replace(foodName, @"\d+[点分时]", "");
-        foodName = Regex.Replace(foodName, @"^[早夜午]", "");
+            .Replace("今早", "").Replace("今晚", "");
+        // 去掉残留的数字+点/分/时（如"20分"）
+        foodName = Regex.Replace(foodName, @"\d+[点分时:：]\d*", "");
+        // 去掉残留的纯数字（如"17点20"残留的"20"）
+        foodName = Regex.Replace(foodName, @"\d+", "");
+        // 去掉数量+单位（如"20克"、"半碗"）
+        foodName = Regex.Replace(foodName, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "");
+        foodName = Regex.Replace(foodName, @"半(?:碗|勺|包|个)", "");
+        // 去掉描述性尾句/感慨语（如"今天吃的多"、"吃得多"、"今天吃得多"）
+        // 在食材列表场景中，这些不是食材名，混入会污染 foodName
+        foodName = Regex.Replace(foodName, @"今天吃(?:得|的)多|吃(?:得|的)多|今天吃(?:得|的)少|吃(?:得|的)少", "");
+        // 去掉动词/泛义词
+        foodName = foodName.Replace("吃了", "").Replace("吃", "").Replace("辅食", "").Replace("的", "");
         foodName = foodName.Trim('，', '、', ' ', '：', ':');
         if (string.IsNullOrWhiteSpace(foodName)) foodName = "辅食";
         // 统一逗号为顿号（食材列表场景）
