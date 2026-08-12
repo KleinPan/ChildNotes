@@ -61,7 +61,7 @@ public sealed class AvatarImage : Image
         Bitmap? bmp = null;
         try
         {
-            // URL：后台线程下载 + 解码
+            // URL：真 async HTTP 下载（不占用 ThreadPool 线程等待）+ 后台 CPU 解码
             if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
@@ -72,9 +72,11 @@ public sealed class AvatarImage : Image
                 }
                 else
                 {
+                    // HTTP 用真 async：I/O 等待期间不占用任何线程
+                    var bytes = await Http.GetByteArrayAsync(path);
+                    // Bitmap 解码是 CPU 密集型，用 Task.Run 包裹
                     bmp = await Task.Run(() =>
                     {
-                        var bytes = Http.GetByteArrayAsync(path).GetAwaiter().GetResult();
                         using var ms = new MemoryStream(bytes);
                         return Bitmap.DecodeToWidth(ms, 160);
                     });
@@ -84,7 +86,7 @@ public sealed class AvatarImage : Image
             }
             else
             {
-                // 本地文件路径：后台线程读取
+                // 本地文件路径：文件读取+解码都是 CPU/IO，用 Task.Run 包裹
                 bmp = await Task.Run(() =>
                 {
                     if (!File.Exists(path))
