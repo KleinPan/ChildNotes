@@ -156,7 +156,7 @@ public partial class MainShellViewModel : ViewModelBase
         () => IsPrivacyPolicyOpen = false, () => IsPrivacyPolicyOpen);
     public InAppMessageViewModel InAppMessage => _inAppMessage ??= CreateAndRegisterOverlay(
         () => new InAppMessageViewModel(),
-        vm => { vm.UnreadCountChanged += () => Mine.RefreshUnreadMessages(); },
+        vm => { vm.UnreadCountChanged += () => _ = Mine.RefreshUnreadMessagesAsync(); },
         () => IsInAppMessageOpen = false, () => IsInAppMessageOpen);
     public LanguageSettingsViewModel LanguageSettings => _languageSettings ??= CreateAndRegisterOverlay(
         () => new LanguageSettingsViewModel(),

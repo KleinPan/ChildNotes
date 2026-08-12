@@ -43,6 +43,9 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
         MilestoneEdit.Saved += OnMilestoneSaved;
     }
 
+    /// <summary>加载取消令牌：快速切 tab 时取消旧加载，防止旧数据覆盖新 UI。</summary>
+    private CancellationTokenSource? _loadCts;
+
     public void Activate()
     {
         _ = LoadDataAsync();
@@ -50,21 +53,44 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
 
     /// <summary>
     /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI。
+    /// 含 CTS 取消：快速切 tab 时取消旧加载。
     /// </summary>
     private async Task LoadDataAsync()
     {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         var state = ServiceProvider.Instance.AppState;
         var babyId = state.CurrentBabyId;
         var userId = state.UserId;
-        // 后台线程执行 DB 查询
-        var list = await Task.Run(() => _milestoneRepo.GetAll(userId, babyId)
-                                                  .OrderBy(x => x.RecordDate)
-                                                  .ThenBy(x => x.Id)
-                                                  .ToList());
-        Milestones.Clear();
-        foreach (var m in list)
+        try
         {
-            Milestones.Add(new MilestoneDisplayItem(m));
+            // 后台线程执行 DB 查询
+            var list = await Task.Run(() => _milestoneRepo.GetAll(userId, babyId)
+                                                      .OrderBy(x => x.RecordDate)
+                                                      .ThenBy(x => x.Id)
+                                                      .ToList(), ct);
+            ct.ThrowIfCancellationRequested();
+            Milestones.Clear();
+            foreach (var m in list)
+            {
+                Milestones.Add(new MilestoneDisplayItem(m));
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // 被新加载取代，静默
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Growth", $"LoadDataAsync failed: {ex.Message}");
+        }
+        finally
+        {
+            _loadCts?.Dispose();
+            _loadCts = null;
         }
     }
 
@@ -81,9 +107,17 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
         MilestoneEdit.Show();
     }
 
-    public void DeleteMilestone(MilestoneDisplayItem item)
+    public async void DeleteMilestone(MilestoneDisplayItem item)
     {
-        _milestoneRepo.Delete(item.Milestone.Id);
+        try
+        {
+            var id = item.Milestone.Id;
+            await Task.Run(() => _milestoneRepo.Delete(id));
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Growth", $"DeleteMilestone failed: {ex.Message}");
+        }
         _ = LoadDataAsync();
     }
 

@@ -32,6 +32,9 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     /// <summary>全量记录缓存（未筛选），切换筛选时直接从此过滤，避免重复 DB 查询。</summary>
     private List<RecordDisplayItem> _allRecords = new();
 
+    /// <summary>加载取消令牌：快速切 tab/切日期时取消旧加载，防止旧数据覆盖新 UI。</summary>
+    private CancellationTokenSource? _loadCts;
+
     /// <summary>请求主壳层打开编辑记录抽屉（复用 RecordSheet 编辑模式）。</summary>
     public event Action<ChildRecord>? EditRequested;
 
@@ -93,29 +96,53 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
 
     /// <summary>
     /// 异步加载数据：DB 查询移到后台线程，避免切换 tab 时阻塞 UI 100-300ms。
+    /// 含 CTS 取消：快速切 tab/切日期时取消旧加载，防止旧数据覆盖新 UI。
     /// </summary>
     private async Task LoadDataAsync()
     {
+        // 取消上一次未完成的加载
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         var date = SelectedDate;
-        // 后台线程执行 DB 查询，UI 线程并行准备日期显示
-        var (stats, records) = await Task.Run(() =>
-            (_statsService.GetDayStats(date), _recordService.GetByDate(date)));
+        try
+        {
+            // 后台线程执行 DB 查询，UI 线程并行准备日期显示
+            var (stats, records) = await Task.Run(() =>
+                (_statsService.GetDayStats(date), _recordService.GetByDate(date)), ct);
 
-        DisplayDate = ServiceProvider.Instance.DateTimeFormatter.FormatChineseMonthDay(date) + " " + GetWeekday(date);
-        IsToday = date.Date == DateTime.Today;
-        IsNextDayEnabled = date.Date < DateTime.Today;
-        DayStats = stats;
+            ct.ThrowIfCancellationRequested();
+            DisplayDate = ServiceProvider.Instance.DateTimeFormatter.FormatChineseMonthDay(date) + " " + GetWeekday(date);
+            IsToday = date.Date == DateTime.Today;
+            IsNextDayEnabled = date.Date < DateTime.Today;
+            DayStats = stats;
 
-        // 疫苗记录仅在首页"疫苗追踪"模块展示，不在喂养页面记录列表中显示
-        // 活动记录已从首页移到喂养页时间轴展示（与喂奶/睡眠等并列）
-        // 排序对齐小程序 _sort：睡眠记录用 StartTime（PayloadJson 内），其他用 RecordTime
-        // 原因：历史数据中睡眠记录的 RecordTime 可能被存为记录创建时刻而非睡眠开始时间，
-        // 导致睡眠记录在列表中排序错乱
-        _allRecords = records.Where(x => x.RecordType != RecordType.Vaccine)
-            .OrderBy(GetSortTime)
-            .Select(r => new RecordDisplayItem(r))
-            .ToList();
-        ApplyFilter();
+            // 疫苗记录仅在首页"疫苗追踪"模块展示，不在喂养页面记录列表中显示
+            // 活动记录已从首页移到喂养页时间轴展示（与喂奶/睡眠等并列）
+            // 排序对齐小程序 _sort：睡眠记录用 StartTime（PayloadJson 内），其他用 RecordTime
+            // 原因：历史数据中睡眠记录的 RecordTime 可能被存为记录创建时刻而非睡眠开始时间，
+            // 导致睡眠记录在列表中排序错乱
+            _allRecords = records.Where(x => x.RecordType != RecordType.Vaccine)
+                .OrderBy(GetSortTime)
+                .Select(r => new RecordDisplayItem(r))
+                .ToList();
+            ApplyFilter();
+        }
+        catch (OperationCanceledException)
+        {
+            // 被新加载取代，静默
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Feeding", $"LoadDataAsync failed: {ex.Message}");
+        }
+        finally
+        {
+            _loadCts?.Dispose();
+            _loadCts = null;
+        }
     }
 
     /// <summary>
@@ -269,9 +296,20 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
     }
 
     [RelayCommand]
-    private void ConfirmDelete()
+    private async Task ConfirmDelete()
     {
-        _recordService.Delete(_deletingRecordId);
+        try
+        {
+            // DB 删除移到后台线程，避免 UI 卡顿
+            var id = _deletingRecordId;
+            await Task.Run(() => _recordService.Delete(id));
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Feeding", $"ConfirmDelete failed: {ex.Message}");
+            DisplayToast(_locale.GetString("Feeding_Deleted", "删除失败"));
+            return;
+        }
         ShowDeleteConfirm = false;
         _ = LoadDataAsync();
         DisplayToast(_locale.GetString("Feeding_Deleted", "已删除记录"));

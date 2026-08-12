@@ -8,7 +8,9 @@ namespace ChildNotes.Services;
 /// <summary>
 /// 同步触发器：启动后 8 秒首同步；写入后 5 秒防抖再同步；手动触发立即同步；
 /// 网络恢复时立即触发；长空闲期每 15 分钟保活同步。
-/// 全部串行，重入时跳过。失败不抛异常，下次触发再试。
+/// Single-flight + Pending：任何时刻最多一个 SyncAsync 在执行；
+/// 同步期间到达的新请求只标记 pending=true，当前同步完成后追加一次，不会并发。
+/// 失败不抛异常，下次触发再试。
 /// </summary>
 public sealed class SyncTrigger : IDisposable
 {
@@ -21,6 +23,10 @@ public sealed class SyncTrigger : IDisposable
     private bool _disposed;
     private DateTime _lastRunAt = DateTime.MinValue;
     private static readonly TimeSpan MinInterval = TimeSpan.FromSeconds(3);
+
+    // Single-flight：保证同一时刻只有一个同步在执行，期间到达的请求合并为一次 pending
+    private readonly SemaphoreSlim _syncLock = new(1, 1);
+    private bool _syncPending;
 
     public event Action<ApiSyncService.SyncResult>? SyncCompleted;
 
@@ -93,9 +99,38 @@ public sealed class SyncTrigger : IDisposable
             }
         }
 
-        // 节流跳过的同步不记录日志，避免噪音。
-        // 注意：后续若 SyncAsync 内部因"未启用/配置不完整"返回失败，
-        // 仍会写入 running + failed 两条日志（因为此处已先写入 running 日志）。
+        // Single-flight：若已有同步在执行，只标记 pending，不启动第二个。
+        // 当前同步完成后会检查 pending 并追加一次，合并短时间内的多次触发。
+        if (!await _syncLock.WaitAsync(0))
+        {
+            _syncPending = true;
+            DevLogger.Log("Sync", $"Sync already running, {source} coalesced as pending");
+            return new ApiSyncService.SyncResult { Success = false, Message = "同步进行中，已合并" };
+        }
+
+        ApiSyncService.SyncResult result;
+        try
+        {
+            result = await ExecuteSyncAsync(source);
+
+            // 当前同步完成后，若期间有新请求到达，追加一次同步（coalescing）
+            while (_syncPending && !_disposed)
+            {
+                _syncPending = false;
+                DevLogger.Log("Sync", "Running pending sync (coalesced from earlier requests)");
+                result = await ExecuteSyncAsync(source + "+pending");
+            }
+        }
+        finally
+        {
+            _syncLock.Release();
+        }
+        return result;
+    }
+
+    /// <summary>真正执行一次 SyncAsync（含日志记录）。由 RunOnce 在持有 _syncLock 时调用。</summary>
+    private async Task<ApiSyncService.SyncResult> ExecuteSyncAsync(string source)
+    {
         // 仅真正进入同步流程时写入 running 日志
         long logId = 0;
         if (_logRepo is not null)
@@ -166,5 +201,6 @@ public sealed class SyncTrigger : IDisposable
         _startupTimer.Dispose();
         _keepaliveTimer?.Dispose();
         lock (_debounceLock) { _debounceTimer?.Dispose(); _debounceTimer = null; }
+        _syncLock.Dispose();
     }
 }

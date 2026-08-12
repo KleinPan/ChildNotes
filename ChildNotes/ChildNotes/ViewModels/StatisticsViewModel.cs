@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Controls;
@@ -87,14 +88,25 @@ public partial class StatisticsViewModel : ViewModelBase
         SelectedYear = $"{today:yyyy}";
     }
 
+    /// <summary>加载取消令牌：快速切类型/范围时取消旧加载，防止旧数据覆盖新 UI。</summary>
+    private CancellationTokenSource? _loadCts;
+
     public async Task LoadAsync()
     {
+        // 取消上一次未完成的加载
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         UpdateSelections();
         var (start, end) = GetRange();
         var selectedType = SelectedType;
         var selectedRange = SelectedRange;
         var typeOpt = TypeOptions.First(t => t.Key == selectedType);
 
+        try
+        {
         // 后台线程：DB 查询 + 纯计算
         var snapshot = await Task.Run(() =>
         {
@@ -126,8 +138,9 @@ public partial class StatisticsViewModel : ViewModelBase
             var summary = BuildSummaryItems(selectedType, aggregates);
 
             return new Snapshot(bars, total, avg, max, calData, summary, valueList);
-        });
+        }, ct);
 
+        ct.ThrowIfCancellationRequested();
         // UI 线程：仅属性赋值
         RangeLabel = selectedRange switch
         {
@@ -196,6 +209,20 @@ public partial class StatisticsViewModel : ViewModelBase
             else { ChartScrollLeft = 0; }
         }
         else { ChartScrollLeft = 0; }
+        }
+        catch (OperationCanceledException)
+        {
+            // 被新加载取代，静默
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Statistics", $"LoadAsync failed: {ex.Message}");
+        }
+        finally
+        {
+            _loadCts?.Dispose();
+            _loadCts = null;
+        }
     }
 
     // ---- 内部构建方法 ----

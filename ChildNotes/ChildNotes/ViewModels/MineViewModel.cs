@@ -107,22 +107,32 @@ public partial class MineViewModel : ViewModelBase, IActivatable
         }
     }
 
+    /// <summary>加载取消令牌：快速切 tab 时取消旧加载，防止旧数据覆盖新 UI。</summary>
+    private CancellationTokenSource? _loadCts;
+
     /// <summary>
     /// 后台加载宝宝列表 + 未读消息 + 会员状态。
     /// 所有 DB/HTTP 调用都在 Task.Run 内执行，UI 线程仅做 ObservableCollection/属性赋值。
+    /// 含 CTS 取消：快速切 tab 时取消旧加载。
     /// </summary>
     private async Task LoadDataAsync()
     {
+        _loadCts?.Cancel();
+        _loadCts?.Dispose();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
         try
         {
             // 1. 后台线程：DB 查询
-            var babies = await Task.Run(() => _babyService.LoadBabyList());
+            var babies = await Task.Run(() => _babyService.LoadBabyList(), ct);
             var unreadCount = await Task.Run(() =>
             {
                 try { return _msgService.GetUnreadCount(); }
                 catch { return 0; }
-            });
+            }, ct);
 
+            ct.ThrowIfCancellationRequested();
             // 2. UI 线程：更新 ObservableCollection（跨线程访问会抛异常）
             BabyList.Clear();
             foreach (var b in babies) BabyList.Add(b);
@@ -134,10 +144,19 @@ public partial class MineViewModel : ViewModelBase, IActivatable
             // 3. 后台线程：HTTP 查询会员状态
             await RefreshMembershipStatusAsync();
         }
+        catch (OperationCanceledException)
+        {
+            // 被新加载取代，静默
+        }
         catch (Exception ex)
         {
             DevLogger.Log("Mine", "LoadDataAsync EXCEPTION: " + ex);
             ReleaseLogger.Error("Mine", ex, "LoadDataAsync failed");
+        }
+        finally
+        {
+            _loadCts?.Dispose();
+            _loadCts = null;
         }
     }
 
@@ -163,12 +182,12 @@ public partial class MineViewModel : ViewModelBase, IActivatable
         }
     }
 
-    /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。</summary>
-    public void RefreshUnreadMessages()
+    /// <summary>刷新未读消息数（由 InAppMessageViewModel 关闭后回调）。DB 查询移到后台线程。</summary>
+    public async Task RefreshUnreadMessagesAsync()
     {
         try
         {
-            var count = _msgService.GetUnreadCount();
+            var count = await Task.Run(() => _msgService.GetUnreadCount());
             UnreadMessageCount = count;
             HasUnreadMessages = count > 0;
         }
