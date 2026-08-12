@@ -237,9 +237,14 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
     {
         ErrorMessage = string.Empty;
         if (!ValidateActiveForm()) return;
+
+        // 立即关闭弹层，给用户即时反馈，避免等待 DB 完成
+        IsVisible = false;
+        Saved?.Invoke();
+        Closed?.Invoke();
+
         try
         {
-            // DB 操作（GetById + Update/Insert）移到后台线程，避免 Android UI 线程 ANR
             await Task.Run(() =>
             {
                 if (IsEditMode)
@@ -247,13 +252,11 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 else
                     AddNew();
             });
-            IsVisible = false;
-            Saved?.Invoke();
-            Closed?.Invoke();
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"保存失败：{ex.Message}";
+            DevLogger.Log("RecordSheet", $"Save failed: {ex}");
+            ReleaseLogger.Error("RecordSheet", ex, "Save failed");
         }
     }
 
