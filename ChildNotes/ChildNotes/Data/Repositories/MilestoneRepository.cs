@@ -11,19 +11,19 @@ public sealed class MilestoneRepository : BaseRepository
         "SELECT id, user_id, baby_id, title, content, record_date, photos_json, created_at, updated_at, " +
         "is_deleted, device_id, synced_at FROM milestone";
 
-    /// <summary>查询当前用户+宝宝下的未删除里程碑（按日期倒序）。</summary>
+    /// <summary>查询当前宝宝下的未删除里程碑（按日期倒序）。</summary>
     public List<Milestone> GetAll(string userId, string? babyId)
     {
-        var sql = SelectBase + " WHERE user_id=@uid AND is_deleted=0";
-        if (babyId is not null) sql += " AND baby_id=@bid";
-        sql += " ORDER BY record_date DESC, id DESC";
-        return Query(sql,
-            cmd =>
-            {
-                cmd.Add("@uid", userId);
-                if (babyId is not null) cmd.Add("@bid", babyId);
-            },
-            Map);
+        // 家庭共享：优先按 baby_id 过滤，仅在 babyId 为空时回退到 user_id
+        var sql = SelectBase + " WHERE is_deleted=0";
+        if (babyId is not null)
+        {
+            sql += " AND baby_id=@bid";
+            sql += " ORDER BY record_date DESC, id DESC";
+            return Query(sql, cmd => cmd.Add("@bid", babyId), Map);
+        }
+        sql += " AND user_id=@uid ORDER BY record_date DESC, id DESC";
+        return Query(sql, cmd => cmd.Add("@uid", userId), Map);
     }
 
     public Milestone? FindById(string id)

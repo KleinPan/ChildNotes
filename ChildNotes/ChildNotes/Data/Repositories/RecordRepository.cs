@@ -60,34 +60,13 @@ public sealed class RecordRepository : BaseRepository
             cmd => cmd.AddDate("@s", start).AddDate("@e", end));
 
     public ChildRecord? GetLatest(string userId, string? babyId, string recordType)
-    {
-        using var conn = OpenConnection();
-        using var cmd = conn.CreateCommand();
-        var sql = SelectBase + " WHERE user_id=@uid AND record_type=@rt AND deleted=0";
-        if (babyId is not null) sql += " AND baby_id=@bid";
-        sql += " ORDER BY record_time DESC LIMIT 1";
-        cmd.CommandText = sql;
-        cmd.Add("@uid", userId).Add("@rt", recordType);
-        if (babyId is not null) cmd.Add("@bid", babyId);
-        using var r = cmd.ExecuteReader();
-        return r.Read() ? Map(r) : null;
-    }
+        => QueryLatest(userId, babyId, "record_type=@rt",
+            cmd => cmd.Add("@rt", recordType));
 
     public List<ChildRecord> GetByType(string userId, string? babyId, string recordType, int limit = 100)
-    {
-        using var conn = OpenConnection();
-        using var cmd = conn.CreateCommand();
-        var sql = SelectBase + " WHERE user_id=@uid AND record_type=@rt AND deleted=0";
-        if (babyId is not null) sql += " AND baby_id=@bid";
-        sql += " ORDER BY record_time DESC LIMIT @lim";
-        cmd.CommandText = sql;
-        cmd.Add("@uid", userId).Add("@rt", recordType).Add("@lim", limit);
-        if (babyId is not null) cmd.Add("@bid", babyId);
-        using var r = cmd.ExecuteReader();
-        var list = new List<ChildRecord>();
-        while (r.Read()) list.Add(Map(r));
-        return list;
-    }
+        => QueryList(userId, babyId, "record_type=@rt",
+            cmd => cmd.Add("@rt", recordType),
+            limit);
 
     /// <summary>获取本地指定更新时间之后的所有记录（含已软删，用于增量上送）。</summary>
     public List<ChildRecord> GetByUpdatedAt(DateTime since)
@@ -146,13 +125,57 @@ public sealed class RecordRepository : BaseRepository
     {
         using var conn = OpenConnection();
         using var cmd = conn.CreateCommand();
-        var sql = SelectBase + " WHERE user_id=@uid AND deleted=0 AND " + condition;
-        if (babyId is not null) sql += " AND baby_id=@bid";
+        // 家庭共享记录：优先按 baby_id 过滤（家庭多成员都能看到该宝宝的所有记录），
+        // 仅在 babyId 为空时回退到 user_id 过滤（兼容无宝宝的早期数据）。
+        var sql = SelectBase + " WHERE deleted=0 AND " + condition;
+        if (babyId is not null)
+            sql += " AND baby_id=@bid";
+        else
+            sql += " AND user_id=@uid";
         sql += " ORDER BY record_time ASC";
         cmd.CommandText = sql;
-        cmd.Add("@uid", userId);
         if (babyId is not null) cmd.Add("@bid", babyId);
+        else cmd.Add("@uid", userId);
         addExtra(cmd);
+        using var r = cmd.ExecuteReader();
+        var list = new List<ChildRecord>();
+        while (r.Read()) list.Add(Map(r));
+        return list;
+    }
+
+    private ChildRecord? QueryLatest(string userId, string? babyId, string condition, Action<SqliteCommand> addExtra)
+    {
+        using var conn = OpenConnection();
+        using var cmd = conn.CreateCommand();
+        var sql = SelectBase + " WHERE deleted=0 AND " + condition;
+        if (babyId is not null)
+            sql += " AND baby_id=@bid";
+        else
+            sql += " AND user_id=@uid";
+        sql += " ORDER BY record_time DESC LIMIT 1";
+        cmd.CommandText = sql;
+        if (babyId is not null) cmd.Add("@bid", babyId);
+        else cmd.Add("@uid", userId);
+        addExtra(cmd);
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? Map(r) : null;
+    }
+
+    private List<ChildRecord> QueryList(string userId, string? babyId, string condition, Action<SqliteCommand> addExtra, int limit)
+    {
+        using var conn = OpenConnection();
+        using var cmd = conn.CreateCommand();
+        var sql = SelectBase + " WHERE deleted=0 AND " + condition;
+        if (babyId is not null)
+            sql += " AND baby_id=@bid";
+        else
+            sql += " AND user_id=@uid";
+        sql += " ORDER BY record_time DESC LIMIT @lim";
+        cmd.CommandText = sql;
+        if (babyId is not null) cmd.Add("@bid", babyId);
+        else cmd.Add("@uid", userId);
+        addExtra(cmd);
+        cmd.Add("@lim", limit);
         using var r = cmd.ExecuteReader();
         var list = new List<ChildRecord>();
         while (r.Read()) list.Add(Map(r));
