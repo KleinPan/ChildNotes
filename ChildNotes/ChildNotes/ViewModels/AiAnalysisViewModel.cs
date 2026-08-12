@@ -52,6 +52,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
     private List<AiAnalysisRecord> _allRecords = new();
     private int _loadedCount;
+    private bool _isLoading;
 
     public ObservableCollection<AiAnalysisRecord> Records { get; } = new();
 
@@ -92,26 +93,30 @@ public partial class AiAnalysisViewModel : ViewModelBase
     /// </summary>
     public async Task LoadAsync()
     {
+        _isLoading = true;
         var baby = _state.CurrentBaby;
         BabyName = baby?.Name ?? string.Empty;
 
         var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Local);
         StartDate = today.AddDays(-6);
         EndDate = today;
-        UpdateRangeTip();
 
         // 并行加载积分余额、分析成本、历史记录
+        // HTTP 调用包到 Task.Run：Android 首次 HttpClient 调用的 DNS/SSL 握手
+        // 可能在调用线程同步执行，与 PointsViewModel 保持一致。
         var localPointsTask = Task.Run(() => _pointsService.GetDashboard());
-        var costTask = _aiService.GetAnalysisCostAsync();
-        var serverRecordsTask = _aiService.ListRecordsFromServerAsync();
+        var costTask = Task.Run(() => _aiService.GetAnalysisCostAsync());
+        var serverRecordsTask = Task.Run(() => _aiService.ListRecordsFromServerAsync());
+        // GetLlmConfig 首次调用会同步读 SQLite，移到后台线程避免阻塞 UI
+        var configTask = Task.Run(() => _aiService.GetLlmConfig());
 
         // server 模式下从后端实时获取权威积分余额，避免本地 SQLite 与后端 PostgreSQL 不一致
         // （本地签到只写 SQLite 不调后端 API，后端积分可能为 0 或偏低，导致扣分时报"积分不足"）
-        var config = _aiService.GetLlmConfig();
+        var config = await configTask;
         long? serverPoints = null;
         if (config.NoteSource == "server")
         {
-            serverPoints = await _pointsApi.GetPointsAsync();
+            serverPoints = await Task.Run(() => _pointsApi.GetPointsAsync());
         }
 
         var dashboard = await localPointsTask;
@@ -129,6 +134,9 @@ public partial class AiAnalysisViewModel : ViewModelBase
         _loadedCount = 0;
         Records.Clear();
         LoadMoreRecords(InitialPageSize);
+
+        _isLoading = false;
+        UpdateRangeTip();
     }
 
     /// <summary>刷新积分是否充足的判断。</summary>
@@ -173,6 +181,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
     private void UpdateRangeTip()
     {
+        if (_isLoading) return;
         ErrorMessage = string.Empty;
         if (StartDate is null || EndDate is null)
         {
