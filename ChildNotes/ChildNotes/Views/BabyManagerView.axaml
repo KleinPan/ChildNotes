@@ -16,6 +16,17 @@
     <UserControl.Styles>
         <!-- 抽屉动画由 code-behind 用 Animation KeyFrame API 驱动，无需 XAML Transitions -->
 
+        <!-- 抽屉遮罩层：全屏半透明黑底，盖住底层内容 -->
+        <Style Selector="Border.drawer-mask">
+            <Setter Property="Background" Value="{StaticResource MaskLightBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+        </Style>
+        <!-- 抽屉面板：底部弹出，圆角顶部，最大高度限制 -->
+        <Style Selector="Border.drawer-panel">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
         <Style Selector="Button.gender-btn">
             <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Padding" Value="18,10"/>
@@ -464,7 +475,7 @@
                                Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
                         <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRemoveConfirmCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="weui-btn primary" Command="{Binding ConfirmRemoveCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="weui-btn warn" Command="{Binding ConfirmRemoveCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

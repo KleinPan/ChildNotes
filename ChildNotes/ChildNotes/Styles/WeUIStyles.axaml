@@ -87,7 +87,7 @@
     <Style Selector="Button.weui-btn.mini">
         <Setter Property="FontSize" Value="12" />
         <Setter Property="Padding" Value="12,6" />
-        <Setter Property="MinHeight" Value="44" />
+        <Setter Property="MinHeight" Value="28" />
     </Style>
 
     <Style Selector="Border.tab-bar">
