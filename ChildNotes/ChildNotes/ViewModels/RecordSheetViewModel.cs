@@ -238,11 +238,9 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
         ErrorMessage = string.Empty;
         if (!ValidateActiveForm()) return;
 
-        // 立即关闭弹层，给用户即时反馈，避免等待 DB 完成
-        IsVisible = false;
-        Saved?.Invoke();
-        Closed?.Invoke();
-
+        // 顺序：DB 写入成功 → 关弹层 → 通知 UI 刷新。
+        // 不再 fire-and-forget：之前"先关弹层再后台写 DB"会导致刷新时 DB 还没写入，
+        // 且 Home 2 秒防抖会跳过保存后的首次刷新，用户看到旧数据。
         try
         {
             await Task.Run(() =>
@@ -252,11 +250,16 @@ public partial class RecordSheetViewModel : RecordFormHostViewModel
                 else
                     AddNew();
             });
+            IsVisible = false;
+            Saved?.Invoke();
+            Closed?.Invoke();
         }
         catch (Exception ex)
         {
             DevLogger.Log("RecordSheet", $"Save failed: {ex}");
             ReleaseLogger.Error("RecordSheet", ex, "Save failed");
+            // 失败时不关弹层，让用户看到错误并决定重试或取消
+            ErrorMessage = $"保存失败：{ex.Message}";
         }
     }
 
