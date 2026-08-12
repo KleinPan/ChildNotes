@@ -64,30 +64,34 @@ public class SyncService : ISyncService
             .Take(pageLimit)
             .ToListAsync(ct);
 
+        // 当前用户参与的宝宝成员关系（含自己创建和 join 的）。Pull-only，前端用于判断可访问的宝宝。
+        var babyMembers = babyIds.Count == 0 ? new() :
+            await _db.BabyMembers.AsNoTracking()
+                .Where(m => babyIds.Contains(m.BabyId) && m.UserId == uid && m.UpdatedAt > sinceUtc)
+                .OrderBy(m => m.UpdatedAt)
+                .Take(pageLimit)
+                .ToListAsync(ct);
+
         // 当前用户积分余额（每页都返回，客户端以最后一页为准）。积分是 Pull-only 数据。
         var userPoints = await _db.UserPoints.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == uid, ct);
 
         // 分页判定：任一类型达到上限即认为可能有更多数据
         var hasMore = babies.Count == pageLimit || records.Count == pageLimit
-            || milestones.Count == pageLimit || signIns.Count == pageLimit;
-        // 游标取已拉取数据中最大的时间戳（四类取较新者；签到用 CreatedAt）
-        DateTime? nextCursor = null;
-        if (records.Count > 0) nextCursor = records.Max(r => r.UpdatedAt);
-        if (babies.Count > 0)
-        {
-            var babyMax = babies.Max(b => b.UpdatedAt);
-            nextCursor = nextCursor.HasValue ? (babyMax > nextCursor ? babyMax : nextCursor) : babyMax;
-        }
-        if (milestones.Count > 0)
-        {
-            var msMax = milestones.Max(m => m.UpdatedAt);
-            nextCursor = nextCursor.HasValue ? (msMax > nextCursor ? msMax : nextCursor) : msMax;
-        }
-        if (signIns.Count > 0)
-        {
-            var siMax = signIns.Max(s => s.CreatedAt);
-            nextCursor = nextCursor.HasValue ? (siMax > nextCursor ? siMax : nextCursor) : siMax;
-        }
+            || milestones.Count == pageLimit || signIns.Count == pageLimit
+            || babyMembers.Count == pageLimit;
+
+        // 游标取"达上限表"的最大时间戳中的最小值。
+        // 未达上限的表数据已全部拉完，不参与 cursor 计算。
+        // 这样下一页 WHERE UpdatedAt > cursor 不会跳过任何达上限表的剩余数据。
+        // 例：records 500 条(10:00~10:30) 达上限，baby 1 条(11:00) 未达上限
+        //   → cursor = 10:30（只看 records），下一页 baby 11:00 会被重复拉但 LWW 幂等兜底
+        List<DateTime> cappedMaxes = new(5);
+        if (records.Count == pageLimit) cappedMaxes.Add(records.Max(r => r.UpdatedAt));
+        if (babies.Count == pageLimit) cappedMaxes.Add(babies.Max(b => b.UpdatedAt));
+        if (milestones.Count == pageLimit) cappedMaxes.Add(milestones.Max(m => m.UpdatedAt));
+        if (signIns.Count == pageLimit) cappedMaxes.Add(signIns.Max(s => s.CreatedAt));
+        if (babyMembers.Count == pageLimit) cappedMaxes.Add(babyMembers.Max(m => m.UpdatedAt));
+        DateTime? nextCursor = cappedMaxes.Count > 0 ? cappedMaxes.Min() : null;
 
         return new SyncPullResponse
         {
@@ -95,6 +99,18 @@ public class SyncService : ISyncService
             Records = records.Select(ToRecordItem).ToList(),
             Milestones = milestones.Select(ToMilestoneItem).ToList(),
             SignIns = signIns.Select(ToSignInItem).ToList(),
+            BabyMembers = babyMembers.Select(m => new SyncBabyMemberItem
+            {
+                Id = m.Id,
+                BabyId = m.BabyId,
+                UserId = m.UserId,
+                RoleCode = m.RoleCode,
+                RoleName = m.RoleName,
+                IsOwner = m.IsOwner,
+                Status = m.Status,
+                CreatedAt = m.CreatedAt,
+                UpdatedAt = m.UpdatedAt,
+            }).ToList(),
             UserPoints = userPoints is null ? null : ToUserPointsItem(userPoints),
             ServerTime = DateTime.UtcNow,
             HasMore = hasMore,
