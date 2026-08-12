@@ -70,11 +70,18 @@
         </Style>
 
         <!-- 日志条目：两行布局（上 meta 下 msg），白底卡片，行间距 4px -->
+        <!-- 固定行高 50px：VirtualizingStackPanel 据此精确计算可视区，2000 条只渲染 ~20 条 -->
         <Style Selector="Border.log-row">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
             <Setter Property="CornerRadius" Value="6"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Height" Value="50"/>
+        </Style>
+        <!-- 选中项（点击展开）：解除固定高度，消息换行显示完整内容 -->
+        <Style Selector="ListBox.log-list > ListBoxItem:selected > Border.log-row">
+            <Setter Property="Height" Value="NaN"/>
+            <Setter Property="Padding" Value="10,8"/>
         </Style>
 
         <!-- 第一行 meta：徽章 + 时间 + Tag，紧凑单行 -->
@@ -197,10 +204,10 @@
         </StackPanel>
 
         <!--
-            日志列表：ListBox + VirtualizingStackPanel，虚拟化
+            日志列表：ListBox + VirtualizingStackPanel，虚拟化 + 固定行高
+            - 固定行高 50px 让 VirtualizingStackPanel 精确计算可视区，2000 条只渲染 ~20 条
             - 两行布局：第一行 meta（徽章+时间+Tag）紧凑显示，第二行 msg 占满宽度
-            - 默认单行省略；点击选中 → msg 换行显示完整内容
-            - 去除固定行高（两行布局高度不固定），虚拟化仍生效（CacheLength 0.3）
+            - 点击条目选中 → 选中项解除固定高度 + 消息换行，实现"点击展开查看完整日志"
         -->
         <ListBox Grid.Row="3" Classes="log-list"
                  ItemsSource="{Binding Filtered}"
