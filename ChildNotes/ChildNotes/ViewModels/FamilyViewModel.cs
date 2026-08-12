@@ -133,7 +133,11 @@ public partial class FamilyViewModel : ViewModelBase
         IsJoinOpen = false;
         DisplayToast(string.Format(_locale.GetString("Family_JoinedToast", "已加入，角色：{0}"), FamilyRoles.GetRoleName(JoinRoleCode)));
         await LoadAsync();
-        // join 成功后立即触发同步，Pull 下来的 baby_member 记录让本地宝宝列表包含新宝宝
+        // join 成功后重置 LastSyncAt，使下次同步做一次全量 Pull。
+        // 原因：join 在后端写 baby_member + 更新 baby.UpdatedAt=now，但若本账号此前同步过，
+        // LastSyncAt 已晚于主人其他宝宝的 updated_at（创建时的旧时间），增量同步会漏拉。
+        // 重置后 RunNowAsync 会从 1970 开始全量拉，确保新成员本地拿到所有可见 baby + baby_member。
+        ServiceProvider.Instance.SyncConfigRepository.ResetLastSyncAt();
         _ = ServiceProvider.Instance.SyncTrigger?.RunNowAsync();
     }
 

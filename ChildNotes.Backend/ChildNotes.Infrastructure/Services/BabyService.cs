@@ -245,6 +245,7 @@ public class BabyService : IBabyService
         var existingMemberBabyIds = await _db.BabyMembers
             .Where(m => ownerBabyIds.Contains(m.BabyId) && m.UserId == uid)
             .Select(m => m.BabyId).ToListAsync(ct);
+        var now = DateTime.UtcNow;
         foreach (var b in ownerBabies)
         {
             if (existingMemberBabyIds.Contains(b.Id)) continue;
@@ -258,6 +259,10 @@ public class BabyService : IBabyService
                 IsOwner = false,
                 Status = StatusConstants.BabyMember.Active,
             });
+            // join 时更新 baby.UpdatedAt，让新成员下次增量同步能拉到 baby 记录本身
+            // （否则 baby.UpdatedAt 还是创建时的旧时间，被 since > UpdatedAt 过滤掉，
+            // 导致新成员本地 baby 表没有该宝宝，显示 0 个宝宝）
+            b.UpdatedAt = now;
         }
         await _db.SaveChangesAsync(ct);
 

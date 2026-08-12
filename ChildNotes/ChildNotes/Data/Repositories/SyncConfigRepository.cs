@@ -92,6 +92,20 @@ public sealed class SyncConfigRepository : BaseRepository
         InvalidateCache();
     }
 
+    /// <summary>
+    /// 重置 last_sync_at 为 NULL，使下次同步做一次全量 Pull。
+    /// 加入家庭后调用：新成员需要拉取所有可见的 baby / baby_member 记录，
+    /// 而后端 join 虽然更新了 baby.UpdatedAt，但若本成员账号此前同步过，
+    /// since 已晚于主人其他宝宝的 updated_at，全量同步确保不漏。
+    /// </summary>
+    public void ResetLastSyncAt()
+    {
+        ExecuteNonQuery(
+            "UPDATE sync_config SET last_sync_at=NULL, last_sync_status=NULL, last_sync_msg=NULL WHERE id=1",
+            _ => { });
+        InvalidateCache();
+    }
+
     public void UpdateToken(string token)
     {
         // token 列有 NOT NULL 约束，空 token 必须写空字符串而非 NULL。
