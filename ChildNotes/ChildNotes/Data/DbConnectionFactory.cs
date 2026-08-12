@@ -31,8 +31,9 @@ public sealed class DbConnectionFactory
         var conn = new SqliteConnection(_connectionString);
         conn.Open();
         // 每个连接都必须重新启用 foreign_keys 和 busy_timeout（连接级属性，不跨连接持久化）
+        // busy_timeout=10000：同步 Pull 事务期间 UpdateToken 等写操作需等待事务释放写锁
         using var pragma = conn.CreateCommand();
-        pragma.CommandText = "PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;";
+        pragma.CommandText = "PRAGMA busy_timeout=10000; PRAGMA foreign_keys=ON;";
         pragma.ExecuteNonQuery();
         return conn;
     }
@@ -41,10 +42,17 @@ public sealed class DbConnectionFactory
     /// 使用 VACUUM INTO 将当前数据库快照备份到指定路径。
     /// VACUUM INTO 是 SQLite 3.27+ 的特性，生成一个干净的、独立的备份文件，
     /// 不影响原数据库读写，适合在同步前做防极端损坏的快照。
+    /// 注意：VACUUM INTO 不覆盖已存在文件，需先删除旧备份。
     /// </summary>
-    /// <param name="backupPath">备份文件路径。若已存在会被覆盖。</param>
+    /// <param name="backupPath">备份文件路径。若已存在会先删除再备份。</param>
     public void BackupTo(string backupPath)
     {
+        // VACUUM INTO 不覆盖已存在文件，需先删除旧备份
+        if (System.IO.File.Exists(backupPath))
+        {
+            try { System.IO.File.Delete(backupPath); }
+            catch { /* 旧文件被占用等情况忽略，VACUUM INTO 会报错但不阻塞同步 */ }
+        }
         // VACUUM INTO 不支持参数化路径，但路径来自代码内部常量，无注入风险
         using var conn = Create();
         using var cmd = conn.CreateCommand();
