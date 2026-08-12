@@ -18,12 +18,12 @@ public static class AiNoteRuleParser
         new(@"(\d+)(?:\s*多)?\s*(ml|毫升|mL|奶粉|母乳|奶)", RegexOptions.Compiled);
 
     /// <summary>
-    /// 纯数字喂奶：用户省略单位（如"喝了110"、"3点喝了90"）。
-    /// 育儿语境下"喝+数字"默认指奶量 ml。限 2-3 位（10-999）避免误匹配。
+    /// 纯数字喂奶：用户省略单位（如"喝了110"、"吃了120"、"3点喝了90"）。
+    /// 育儿语境下"喝/吃+数字"默认指奶量 ml。限 2-3 位（10-999）避免误匹配。
     /// 否定前瞻排除紧跟其他单位词的情况（虽带单位的已由 FeedAmountRegex 先匹配，此处保险）。
     /// </summary>
     private static readonly Regex FeedBareAmountRegex =
-        new(@"喝[了]?\s*(\d{2,3})(?!\s*(?:ml|毫升|mL|克|g|个|勺|碗|包|粒|滴|片|丸|度|℃))", RegexOptions.Compiled);
+        new(@"[喝吃][了]?\s*(\d{2,3})(?!\s*(?:ml|毫升|mL|克|g|个|勺|碗|包|粒|滴|片|丸|度|℃))", RegexOptions.Compiled);
 
     private static readonly Regex BreastRegex =
         new(@"(?:左|left)\s*(\d+)\s*(?:分|min|分钟)?.*?(?:右|right)\s*(\d+)\s*(?:分|min|分钟)?", RegexOptions.Compiled);
