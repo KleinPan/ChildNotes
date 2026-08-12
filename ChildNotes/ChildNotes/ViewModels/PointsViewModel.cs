@@ -47,7 +47,9 @@ public partial class PointsViewModel : ViewModelBase
 
         // 任务列表优先从后端加载（含完成/领取状态，支持领取）；
         // 后端不可达时回退到本地 dashboard.Tasks（仅展示，不可领取）。
-        var serverTasks = await _pointsApi.GetTasksAsync();
+        // HTTP 调用包到 Task.Run：Android 首次 HttpClient 调用的 DNS/SSL 握手
+        // 可能在调用线程同步执行，与 SignIn/ClaimTask 保持一致。
+        var serverTasks = await Task.Run(() => _pointsApi.GetTasksAsync());
         if (serverTasks is { Count: > 0 })
         {
             Tasks.Clear();
