@@ -33,6 +33,8 @@ public class SyncPullResponse
     public List<SyncBabyItem> Babies { get; set; } = new();
     public List<SyncMilestoneItem> Milestones { get; set; } = new();
     public List<SyncSignInItem> SignIns { get; set; } = new();
+    /// <summary>当前用户参与的宝宝成员关系（含自己创建和 join 的）。Pull-only，前端不发 Push。</summary>
+    public List<SyncBabyMemberItem> BabyMembers { get; set; } = new();
     /// <summary>当前用户积分余额（每页都带，客户端以最后一页为准；Pull-only）。</summary>
     public SyncUserPointsItem? UserPoints { get; set; }
     public DateTime ServerTime { get; set; }
@@ -40,6 +42,23 @@ public class SyncPullResponse
     public bool HasMore { get; set; }
     /// <summary>下一页游标（已拉取记录的最大 updated_at）。客户端下次请求作为 since 之外的偏移基准。</summary>
     public DateTime? NextCursor { get; set; }
+}
+
+/// <summary>
+/// 宝宝成员关系同步项。Pull-only：前端只接收不上送。
+/// 用于让 join 后的客户端感知自己可访问的宝宝（GetByUser 查 baby_member 表）。
+/// </summary>
+public class SyncBabyMemberItem
+{
+    public string Id { get; set; } = string.Empty;
+    public string BabyId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string RoleCode { get; set; } = string.Empty;
+    public string RoleName { get; set; } = string.Empty;
+    public bool IsOwner { get; set; }
+    public string Status { get; set; } = "active";
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>

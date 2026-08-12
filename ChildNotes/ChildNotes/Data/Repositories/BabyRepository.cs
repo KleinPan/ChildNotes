@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using ChildNotes.Models;
+using ChildNotes.Shared.Sync;
 
 namespace ChildNotes.Data.Repositories;
 
@@ -12,7 +13,7 @@ public sealed class BabyRepository : BaseRepository
         "device_id, synced_at FROM baby";
 
     public List<Baby> GetByUser(string userId)
-        => Query(SelectBase + " WHERE user_id = @u ORDER BY id",
+        => Query(SelectBase + " WHERE user_id = @u OR id IN (SELECT baby_id FROM baby_member WHERE user_id = @u AND status = 'active') ORDER BY id",
             cmd => cmd.Add("@u", userId), Map);
 
     public Baby? FindById(string id)
@@ -97,6 +98,38 @@ public sealed class BabyRepository : BaseRepository
            .AddUtc("@c", item.CreatedAt)
            .AddUtc("@t", item.UpdatedAt);
         // 返回受影响行数：1 表示写入（INSERT 或 UPDATE），0 表示因 LWW 跳过
+        return cmd.ExecuteNonQuery() > 0;
+    }
+
+    /// <summary>
+    /// 以 LWW（updated_at 比较）合并远端下发的 baby_member 记录。
+    /// 用于同步 Pull：join 后客户端需要本地 baby_member 记录来判断可访问的宝宝。
+    /// </summary>
+    public bool UpsertMemberFromSync(SyncBabyMemberItem item, SqliteConnection conn, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = @"
+            INSERT INTO baby_member (id, baby_id, user_id, role_code, role_name, is_owner, status, created_at, updated_at)
+            VALUES (@id, @bid, @uid, @rc, @rn, @io, @st, @c, @u)
+            ON CONFLICT(id) DO UPDATE SET
+                baby_id = excluded.baby_id,
+                user_id = excluded.user_id,
+                role_code = excluded.role_code,
+                role_name = excluded.role_name,
+                is_owner = excluded.is_owner,
+                status = excluded.status,
+                updated_at = excluded.updated_at
+            WHERE excluded.updated_at > baby_member.updated_at";
+        cmd.Add("@id", item.Id)
+           .Add("@bid", item.BabyId)
+           .Add("@uid", item.UserId)
+           .Add("@rc", item.RoleCode)
+           .Add("@rn", item.RoleName)
+           .Add("@io", item.IsOwner ? 1 : 0)
+           .Add("@st", item.Status)
+           .AddUtc("@c", item.CreatedAt)
+           .AddUtc("@u", item.UpdatedAt);
         return cmd.ExecuteNonQuery() > 0;
     }
 

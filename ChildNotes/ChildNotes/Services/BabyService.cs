@@ -16,7 +16,28 @@ public sealed class BabyService
     }
 
     /// <summary>由 ServiceProvider 在构造完成后注入，避免循环依赖。</summary>
-    public SyncTrigger? SyncTrigger { get; set; }
+    public SyncTrigger? SyncTrigger
+    {
+        get => _syncTrigger;
+        set
+        {
+            if (_syncTrigger is not null)
+                _syncTrigger.SyncCompleted -= OnSyncCompleted;
+            _syncTrigger = value;
+            if (_syncTrigger is not null)
+                _syncTrigger.SyncCompleted += OnSyncCompleted;
+        }
+    }
+    private SyncTrigger? _syncTrigger;
+
+    private void OnSyncCompleted(ApiSyncService.SyncResult result)
+    {
+        // 同步成功后刷新宝宝列表（join 的宝宝通过 baby_member 表可见）
+        if (result.Success)
+        {
+            try { LoadBabyList(); } catch { }
+        }
+    }
 
     private void NotifyWrite()
     {

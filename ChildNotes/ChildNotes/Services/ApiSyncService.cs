@@ -139,6 +139,8 @@ public sealed class ApiSyncService : BaseApiClient
                         if (_milestoneRepo.UpsertFromSync(MapToMilestone(m), pullConn, pullTx)) pulledMilestones++;
                     foreach (var s in pageResp.SignIns)
                         if (_pointsRepo.UpsertSignInFromSync(MapToSignIn(s), pullConn, pullTx)) pulledSignIns++;
+                    foreach (var bm in pageResp.BabyMembers)
+                        _babyRepo.UpsertMemberFromSync(bm, pullConn, pullTx);
 
                     // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
                     if (pageResp.UserPoints is not null)
@@ -146,10 +148,10 @@ public sealed class ApiSyncService : BaseApiClient
 
                     pullPages++;
                     DevLogger.Log("Sync",
-                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, hasMore={pageResp.HasMore}");
+                        $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, babyMembers={pageResp.BabyMembers.Count}, hasMore={pageResp.HasMore}");
 
-                    // HasMore 为 false 或四类都无数据时终止；游标推进到 NextCursor
-                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0))
+                    // HasMore 为 false 或五类都无数据时终止；游标推进到 NextCursor
+                    if (!pageResp.HasMore || (pageResp.Babies.Count == 0 && pageResp.Records.Count == 0 && pageResp.Milestones.Count == 0 && pageResp.SignIns.Count == 0 && pageResp.BabyMembers.Count == 0))
                         break;
                     cursor = pageResp.NextCursor ?? cursor.Value;
                 }

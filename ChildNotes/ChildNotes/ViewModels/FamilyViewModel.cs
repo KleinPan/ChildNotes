@@ -133,6 +133,8 @@ public partial class FamilyViewModel : ViewModelBase
         IsJoinOpen = false;
         DisplayToast(string.Format(_locale.GetString("Family_JoinedToast", "已加入，角色：{0}"), FamilyRoles.GetRoleName(JoinRoleCode)));
         await LoadAsync();
+        // join 成功后立即触发同步，Pull 下来的 baby_member 记录让本地宝宝列表包含新宝宝
+        _ = ServiceProvider.Instance.SyncTrigger?.RunNowAsync();
     }
 
     // ===== 修改我的角色 =====
