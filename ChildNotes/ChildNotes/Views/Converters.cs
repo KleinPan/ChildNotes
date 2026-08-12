@@ -1,12 +1,9 @@
 using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using ChildNotes.Infrastructure;
 using ChildNotes.Shared.Constants;
 using System.Globalization;
-using System.IO;
-using System.Net.Http;
 
 namespace ChildNotes.Views;
 
@@ -106,10 +103,9 @@ public static class AppConverters
     public static readonly IValueConverter TestResultBackgroundConverter = new BoolToResourceBrushConverter("BrandPrimaryLightBrush", "MedicineRedLightBrush");
     public static readonly IValueConverter TestResultForegroundConverter = new BoolToResourceBrushConverter("BrandPrimaryBrush", "SemanticErrorBrush");
 
-    // ===== 头像路径 → Bitmap =====
-    // BabyBase.Avatar 存储本地文件路径（前端 Baby 继承自 BabyBase），UI 的 Image.Source 需要 IBitmap。
-    // 文件不存在或路径为空时返回 null，配合 XAML 中 IsVisible 控制 Image 显隐。
-    public static readonly IValueConverter AvatarPathToBitmap = new AvatarPathToBitmapConverter();
+    // ===== 头像加载 =====
+    // 头像（本地路径/URL）→ Bitmap 的异步加载已迁移到 Controls/AvatarImage.cs，
+    // 不再使用 IValueConverter（Converter 在 UI 线程同步阻塞 HTTP 会导致卡死）。
 
     // ===== 程序日志：级别 → 徽章背景色 =====
     // 用于 DeveloperOptionsView 日志条目的级别徽章 Background 绑定。
@@ -162,55 +158,6 @@ internal sealed class LogLevelToTextBrushConverter : IValueConverter
 {
     private static readonly IBrush White = Brushes.White;
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture) => White;
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
-
-/// <summary>
-/// 头像 → Bitmap 转换器。支持两种来源：
-/// 1. http/https URL：从服务器加载（头像上传后存的是 URL，跨设备可访问）
-/// 2. 本地文件路径：直接读取文件（旧数据或离线选的头像）
-/// 加载失败时返回 null（配合 IsVisible 隐藏 Image，露出占位 emoji）。
-/// </summary>
-internal sealed class AvatarPathToBitmapConverter : IValueConverter
-{
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
-
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is not string path || string.IsNullOrWhiteSpace(path))
-            return null;
-
-        // URL：异步下载后在 UI 线程返回 Bitmap（同步阻塞等待，简单可靠）
-        if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                var bytes = Http.GetByteArrayAsync(path).GetAwaiter().GetResult();
-                using var ms = new MemoryStream(bytes);
-                return Bitmap.DecodeToWidth(ms, 160);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        // 本地文件路径
-        if (!System.IO.File.Exists(path))
-            return null;
-        try
-        {
-            using var fs = System.IO.File.OpenRead(path);
-            return Bitmap.DecodeToWidth(fs, 160);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }

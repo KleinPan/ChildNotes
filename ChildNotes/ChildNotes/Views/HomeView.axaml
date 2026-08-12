@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:m="using:ChildNotes.Models.Home"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:c="using:ChildNotes.Controls"
              xmlns:v="using:ChildNotes.Views"
              xmlns:vm="using:ChildNotes.ViewModels"
              d:DesignHeight="844"
@@ -85,8 +86,8 @@
                                     Background="{StaticResource AvatarGradientBrush}"
                                     ClipToBounds="True" CornerRadius="26">
                                 <Panel>
-                                    <!--  有头像时显示图片  -->
-                                    <Image Source="{Binding BabyAvatar, Converter={x:Static v:AppConverters.AvatarPathToBitmap}}" Stretch="UniformToFill" />
+                                    <!--  有头像时显示图片（异步加载，不阻塞 UI 线程）  -->
+                                    <c:AvatarImage Path="{Binding BabyAvatar}" Stretch="UniformToFill" />
                                     <!--  无头像时显示 👶 占位  -->
                                     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24" Foreground="{StaticResource SurfaceCardBrush}"
                                                IsVisible="{Binding BabyAvatar, Converter={x:Static StringConverters.IsNullOrEmpty}}"

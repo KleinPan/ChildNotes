@@ -74,9 +74,8 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                                             <Border Grid.Column="0" Width="44" Height="44" CornerRadius="22" Background="{StaticResource BrandPrimaryLightBrush}" VerticalAlignment="Center" ClipToBounds="True">
                                                 <Panel>
-                                                    <!-- 有头像时显示图片 -->
-                                                    <Image Source="{Binding Avatar, Converter={x:Static v:AppConverters.AvatarPathToBitmap}}"
-                                                           Stretch="UniformToFill"/>
+                                                    <!-- 有头像时显示图片（异步加载，不阻塞 UI 线程） -->
+                                                    <controls:AvatarImage Path="{Binding Avatar}" Stretch="UniformToFill"/>
                                                     <!-- 无头像时显示性别 emoji 占位 -->
                                                     <TextBlock Text="{Binding GenderEmoji}"
                                                                FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"
