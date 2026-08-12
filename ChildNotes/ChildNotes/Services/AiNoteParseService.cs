@@ -370,7 +370,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             case RecordType.Complementary:
                 recordService.AddComplementary(new ChildNotes.Shared.Dtos.ComplementaryRecordDto
                 {
-                    FoodName = r.FoodName ?? r.Note,
+                    FoodName = r.FoodName,
                     FoodTypes = r.FoodTypes ?? new List<string>(),
                     Amount = r.AmountText,
                     AmountUnit = r.AmountUnit,

@@ -490,15 +490,15 @@ public sealed partial class RecordDisplayItem : ObservableObject
     }
 
     /// <summary>
-    /// 辅食记录：title 显示食物名称，sub 显示量，note 显示备注。
+    /// 辅食记录：title 固定显示"辅食"（类别，对齐瓶喂"瓶喂"的展示模式），
+    /// sub 显示食物名称+类型+量（具体内容），note 仅显示用户手填备注。
     /// </summary>
     private static (string Title, string Sub, string Extra, string Note) BuildComplementaryText(ChildRecord r)
     {
         var dto = r.GetPayload<ComplementaryRecordDto>();
-        var title = !string.IsNullOrWhiteSpace(dto?.FoodName)
-            ? dto!.FoodName!
-            : LocaleManager.Instance.GetString("Rec_Complementary", "辅食");
+        var title = LocaleManager.Instance.GetString("Rec_Complementary", "辅食");
         var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(dto?.FoodName)) parts.Add(dto!.FoodName!);
         if (dto?.FoodTypes.Count > 0) parts.Add(string.Join("、", dto!.FoodTypes));
         if (!string.IsNullOrWhiteSpace(dto?.Amount))
             parts.Add($"{dto!.Amount}{dto.AmountUnit ?? ""}");
