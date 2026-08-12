@@ -267,6 +267,66 @@ public sealed class ApiSyncService : BaseApiClient
         catch (SyncException ex)
         {
             DevLogger.Log("Sync", $"Login failed after retry: {ex.Kind} {ex.Message}");
+            // 离线注册的用户后端没有账号，登录会报"用户不存在"。
+            // 自动用 sync_config 的凭据调 /api/auth/register 创建后端账号，再登录一次。
+            if (!string.IsNullOrWhiteSpace(cfg.Username) && !string.IsNullOrWhiteSpace(cfg.Password))
+            {
+                DevLogger.Log("Sync", "Attempting auto-register on backend...");
+                var regToken = await TryRegisterAndLoginAsync(cfg, serverUrl, ct);
+                if (regToken is not null)
+                    return regToken;
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 离线注册用户的后端账号补建：调 /api/auth/register 创建账号并直接拿到 token。
+    /// 注册成功后同样做 user.id 迁移（与 LoginAsync 一致）。
+    /// 若注册也失败（如用户名已被他人占用），返回 null。
+    /// </summary>
+    private async Task<string?> TryRegisterAndLoginAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
+    {
+        try
+        {
+            var url = serverUrl.TrimEnd('/') + "/api/auth/register";
+            var nickName = ServiceProvider.Instance.AuthService.CurrentUser?.NickName;
+            if (string.IsNullOrWhiteSpace(nickName)) nickName = cfg.Username;
+            var body = Serialize(new { username = cfg.Username, password = cfg.Password, nickName });
+            using var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
+            using var resp = await Http.SendAsync(req, ct);
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                DevLogger.Log("Sync", $"Auto-register fail: {(int)resp.StatusCode} {json}");
+                return null;
+            }
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("data", out var data) ||
+                !data.TryGetProperty("token", out var tokenEl) ||
+                string.IsNullOrWhiteSpace(tokenEl.GetString()))
+            {
+                DevLogger.Log("Sync", "Auto-register fail: 响应缺少 data.token");
+                return null;
+            }
+            var token = tokenEl.GetString()!;
+            _cfgRepo.UpdateToken(token);
+            DevLogger.Log("Sync", "Auto-register ok, token updated");
+            // 注册响应也带 user.id，做本地迁移
+            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
+            {
+                var remoteUserId = idEl.GetString();
+                if (!string.IsNullOrEmpty(remoteUserId))
+                    MigrateLocalUserIdIfNeeded(remoteUserId);
+            }
+            return token;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Sync", "Auto-register exception: " + ex.Message);
             return null;
         }
     }
