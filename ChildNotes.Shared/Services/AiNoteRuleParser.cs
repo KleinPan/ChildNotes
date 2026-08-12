@@ -336,18 +336,20 @@ public static class AiNoteRuleParser
     #region Water（喝水）分支
 
     /// <summary>
-    /// 判断文本是否为喝水（含"水"且含"喝/饮"）。须在 feed/supplement 之前判定。
+    /// 判断文本是否为喝水（含"水"且含"喝/饮"或 ml/毫升 量词）。须在 feed/supplement 之前判定。
     /// 但若文本同时含"奶/奶粉/母乳"等喂奶关键词，说明是复合句（如"喝了110奶粉和10ml水"），
     /// 不应整体判定为 water（否则丢失 feed 记录），交给后续切分/解析处理。
+    /// 无动词但有 ml 量词也判定为 water（如切分后的"20ml水"）。
     /// </summary>
     private static bool IsWaterLike(string text)
     {
-        if (!text.Contains("水") || !(text.Contains("喝") || text.Contains("饮")))
+        if (!text.Contains("水"))
             return false;
         // 复合句：同时含喂奶关键词，不整体判定为 water
         if (text.Contains("奶") || text.Contains("母乳"))
             return false;
-        return true;
+        // 含"喝/饮"动词，或含 ml/毫升 量词（如"20ml水"）均判定为 water
+        return text.Contains("喝") || text.Contains("饮") || MlAmountRegex.IsMatch(text);
     }
 
     /// <summary>
