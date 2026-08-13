@@ -68,12 +68,12 @@ Bottom Sheet
 
 | 属性 | 规则 |
 |---|---|
-| 顶部圆角 | `radius.xl` (24dp) |
-| 顶部 Drag Handle | 宽 40dp / 高 4dp / 圆角 `radius.pill` / 色 `color.border.subtle` / 距顶 `spacing.sm` (8dp) |
+| 顶部圆角 | `radius.xl` |
+| 顶部 Drag Handle | 宽 40dp / 高 4dp / 圆角 `radius.pill` / 色 `color.border.subtle` / 距顶 `spacing.sm` |
 | 最大高度 | 不超过屏高 80% |
 | 内容超过高度 | Content 区域可滚动（`ScrollViewer`），Drag Handle 和 Header 固定不滚动 |
 | 遮罩 | `color.overlay.scrim` |
-| 动画 | 从底部滑入，`motion.duration.normal` (200-300ms) |
+| 动画 | 从底部滑入，`motion.duration.normal` |
 
 ### Header 规则
 
@@ -232,7 +232,7 @@ AI 可以是重点入口，但产品能力层级仍然是"记录优先，AI 辅�
 
 ## 13. Animation Rules
 
-**推荐动画**：时间 200-300ms，用于页面切换、Bottom Sheet、状态变化。
+**推荐动画**：时长使用 `motion.duration.normal`，用于页面切换、Bottom Sheet、状态变化。
 
 **禁止**：大量粒子动画、自动播放动画、影响记录效率的动画。
 
@@ -262,7 +262,7 @@ AI 可以是重点入口，但产品能力层级仍然是"记录优先，AI 辅�
 
 - **桌面端鼠标操作**：鼠标 Hover 须有视觉反馈（由平台主题统一处理，业务页面不自行定义 Hover 色）。
 - **键盘 Focus**：所有可交互组件必须支持键盘 Focus，Focus 状态使用 `color.border.focus`，不得只依赖颜色变化或阴影。
-- **最小文字可读性**：正文不得低于 `font.size.body` (16sp)，辅助信息不得低于 `font.size.caption` (12sp)。
+- **最小文字可读性**：正文不得低于 `font.size.body`，辅助信息不得低于 `font.size.caption`。
 - **Icon Button Accessible Label**：Icon Button 必须提供 Tooltip（Desktop）或 Accessible Label，供屏幕阅读器朗读。
 
 ## 15. AI Development Rules

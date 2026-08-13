@@ -278,35 +278,47 @@ Small 又尝试覆盖为 32dp
 
 #### 5.2.1 Icon Size（图标视觉尺寸）
 
-图标自身的视觉大小，不等同于点击区域。
+图标自身的视觉大小，不等同于 Icon Button Visual Size 或 Touch Target。具体 Token 见 [`design-tokens.md`](design-tokens.md) 的"Icon"。
 
-| Token / 值 | 用途 |
+| Token | 用途 |
 |---|---|
-| 16dp | 辅助图标（如 Card 内的小标记） |
-| 20dp | 普通操作图标 |
-| 24dp | 导航默认 |
-| 32dp | 强调图标 / 功能入口 |
+| `size.icon.small` | 辅助图标（如 Card 内小标记） |
+| `size.icon.medium` | 普通操作图标 |
+| `size.icon.navigation` | 导航图标 |
+| `size.icon.large` | 强调图标 |
 
 #### 5.2.2 Icon Button（图标按钮）
 
 Icon Button 是 Visual Type 的一种（见 5.1.1），只含图标不含文字。
 
-**Visual Size**（复用 Button Size 体系，不得自定义新尺寸）：
+**三个概念必须区分（强制）**：
 
-| Size | Touch Target | Icon Size |
+```text
+Icon Size          → 图标自身的视觉尺寸（size.icon.*）
+Icon Button Visual Size → 按钮背景/视觉容器尺寸（等于 Button Size 的 Height）
+Touch Target       → 实际可点击区域（≥ 40×40 或 ≥ 48×48）
+```
+
+> **Icon Size ≠ Icon Button Visual Size ≠ Touch Target。** 40px / 48px 不是 Icon Size，而是 Icon Button Visual Size 或 Touch Target。
+
+**Icon Button Visual Size**（复用 Button Size 体系，不得自定义新尺寸）：
+
+| Size | Visual Size（容器，宽=高） | 推荐 Icon Size |
 |---|---|---|
-| Small | 32×32dp | 16-20dp |
-| Medium（默认） | 40×40dp | 20-24dp |
-| Large | 48×48dp | 24dp |
+| Small | `size.control.height.small` | `size.icon.small` 或 `size.icon.medium` |
+| Medium（默认） | `size.control.height.medium` | `size.icon.medium` 或 `size.icon.navigation` |
+| Large | `size.control.height.large` | `size.icon.navigation` |
 
-**Touch Target ≠ Icon Size（强制）**：
-
-> 图标尺寸不等于点击区域。24dp 的图标可以放在 40×40dp 或 48×48dp 的 Touch Target 中。点击区域由 Button Size 决定，不由图标大小决定。
+**Touch Target（点击区域，强制）**：
 
 Touch Target 最低要求（详见 [`interaction.md`](interaction.md) 的 Accessibility）：
 
-- 普通移动端交互目标 ≥ 40×40dp
-- 重要核心操作 ≥ 48×48dp
+| 场景 | 最低要求 |
+|---|---|
+| Mobile 普通交互 | ≥ 40×40dp |
+| Mobile 重要核心操作 | ≥ 48×48dp |
+
+> Small Icon Button 的 Visual Size 允许为 32×32dp，但在移动端**实际可点击区域必须通过外层 HitTest 区域、透明 Padding 或其他布局方式扩展到至少 40×40dp**。32×32dp 是视觉尺寸，不是 Touch Target。
 
 **内容与可访问性**：
 
@@ -318,6 +330,7 @@ Touch Target 最低要求（详见 [`interaction.md`](interaction.md) 的 Access
 
 - 用无语义图标代替文字操作而不提供 accessible label。
 - 让图标视觉大小决定点击区域大小。
+- 将 40px / 48px 当作 Icon Size 使用。
 
 ### 5.3 Card 通用卡片
 
@@ -383,17 +396,18 @@ Card 必须明确属于以下三种之一，不得处于"看起来可点但又�
 
 | Size | Padding | Font Size |
 |---|---|---|
-| Small | `spacing.xs` `spacing.sm` | `font.size.caption` (12sp) |
-| Medium（默认） | `spacing.sm` `spacing.md` | `font.size.label` (14sp) |
+| Small | `spacing.xs` `spacing.sm` | `font.size.caption` |
+| Medium（默认） | `spacing.sm` `spacing.md` | `font.size.label` |
 
 圆角统一使用 `radius.small`。
 
 #### 5.4.3 Content
 
 - 单行，不换行。
-- 可选 Icon（放文字前），Icon Size 16dp。
+- 可选 Icon（放文字前），Icon Size `size.icon.small`。
 - 文本字体：`font.weight.medium`。
-- 最大长度：建议 ≤ 6 个中文字符。超出时使用省略号（`…`）截断，不得换行。
+- 最大显示长度：默认 6 个中文字符。超过时使用省略号（`…`）截断，不得换行。
+- 业务已明确声明的长文本 Tag 可以超过 6 个字符，但必须指定最大宽度和截断策略。AI 不得自行创建例外。
 - 禁止因空间不足压缩到文字不可读。
 
 #### 5.4.4 Behavior
@@ -428,16 +442,33 @@ Dialog
 
 | 属性 | 规则 |
 |---|---|
-| 宽度 | Mobile 默认占屏宽减去左右各 `spacing.lg` (16dp)；Desktop 居中，宽度由内容决定但不超过最大宽度 |
-| 最小宽度 | 不低于 280dp |
+| 宽度 | Mobile 默认 `ScreenWidth - 2 × spacing.lg`；Desktop 居中，宽度由内容决定但不超过最大宽度 |
+| 最小宽度 | 280dp（`MinWidth`） |
 | 最大宽度 | Mobile 不超过屏宽；Desktop 不超过 480dp |
-| Padding | 外边距 `spacing.lg` (16dp) |
-| Title 与 Content 间距 | `spacing.md` (12dp) |
-| Content 与 Action 间距 | `spacing.xl` (24dp) |
+| Padding | 外边距 `spacing.lg` |
+| Title 与 Content 间距 | `spacing.md` |
+| Content 与 Action 间距 | `spacing.xl` |
 | 最大高度 | 不超过屏高 80% |
 | 长内容 Overflow | Content 区域可滚动（`ScrollViewer`），Title 和 Action Area 固定不滚动 |
-| 圆角 | `radius.xl` (24dp) |
+| 圆角 | `radius.xl` |
 | 遮罩 | `color.overlay.scrim` |
+
+**极小屏幕宽度优先级（强制）**：
+
+> 当可用宽度不足时，按以下优先级处理，MinWidth 不得导致 Dialog 溢出屏幕。
+
+```text
+AvailableWidth = ScreenWidth - 2 × spacing.lg
+
+if AvailableWidth >= 280dp:
+    Dialog Width = min(DesktopMaxWidth, AvailableWidth)
+else:
+    Dialog Width = AvailableWidth   // 以可用宽度为准，不突破屏幕安全边距
+```
+
+- 正常屏幕：Dialog 宽度 = `min(最大宽度, 可用宽度)`。
+- 极窄屏幕（可用宽度 < 280dp）：以可用宽度为最终宽度，不得突破屏幕安全边距。
+- 禁止 MinWidth 强行撑大 Dialog 导致溢出屏幕。
 
 #### 5.5.3 Action Layout（操作区布局，强制）
 
@@ -449,7 +480,7 @@ Dialog
 **2 个操作**：
 
 - 默认水平排列，Equal Width（等宽）。
-- 按钮之间间距 `spacing.md` (12dp)。
+- 按钮之间间距 `spacing.md`。
 - 空间不足以满足两个按钮的 MinWidth：优先增加 Dialog 宽度；若仍不足，自动改为垂直排列。
 - **禁止**压缩 Button 至低于其 MinWidth。
 - **禁止**裁剪或隐藏 Button 文字。
@@ -702,7 +733,7 @@ Sheet 与 Dialog 的完整规范见：
 
 | 项 | 规范 |
 |---|---|
-| 时长 | 短动画 200-300ms |
+| 时长 | 使用 `motion.duration.normal`（具体值见 `design-tokens.md`） |
 | 用途 | Bottom Sheet、页面切换、状态变化 |
 | 禁止 | 复杂动画影响效率 |
 

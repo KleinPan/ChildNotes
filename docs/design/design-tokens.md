@@ -265,13 +265,20 @@ Shadow 只用于表达空间层级，不用于装饰。优先使用 Surface 差�
 
 ## Motion
 
-动画统一管理：
+动画统一管理。每个 Token 对应确定值，不使用范围。
+
+### Duration
+
+| Token | 值 | 用途 |
+|---|---|---|
+| `motion.duration.fast` | 150ms | 点击反馈、轻量状态切换 |
+| `motion.duration.normal` | 250ms | Sheet 展开、卡片进入、Tab 切换、页面切换 |
+| `motion.duration.slow` | 400ms | 需要情绪表达的低频动效 |
+
+### Easing
 
 | Token | 用途 |
 |---|---|
-| `motion.duration.fast` | 点击反馈、轻量状态切换 |
-| `motion.duration.normal` | Sheet 展开、卡片进入、Tab 切换 |
-| `motion.duration.slow` | 需要情绪表达的低频动效 |
 | `motion.easing.standard` | 默认缓动 |
 | `motion.easing.emphasized` | 主操作反馈 |
 
@@ -281,26 +288,33 @@ Shadow 只用于表达空间层级，不用于装饰。优先使用 Surface 差�
 
 ### Control Height
 
+Button / Icon Button 的 Height / MinHeight / MinWidth / Padding 一律由 Size（Small / Medium / Large）决定，不得由 Primary / Secondary / Danger 等 Visual Type 决定。详见 [`components.md`](components.md) 的"Size 与 Visual Type 正交"规则。
+
 | Token | 值 | 用途 |
 |---|---|---|
-| `size.control.height.small` | 32px | 紧凑操作、辅助控件 |
-| `size.control.height.medium` | 40px | 普通 Desktop 控件 |
-| `size.control.height.large` | 48px | Mobile 主操作、Primary Button |
+| `size.control.height.small` | 32px | Small Button / 紧凑操作 / 辅助控件 |
+| `size.control.height.medium` | 40px | Medium Button（默认）/ 普通 Desktop 控件 |
+| `size.control.height.large` | 48px | Large Button / Mobile 主操作默认推荐尺寸 |
 
 规则：
 
-- Mobile Primary Action 默认使用 48px。
+- Button 的 Height 由其 Size 决定，与 Visual Type 无关。
+- Mobile Primary Action 默认使用 Large（`size.control.height.large`）。
 - 重要触控操作区域不得小于交互规范要求。
 - 不要让业务页面自行出现 42px、44px、46px 等随机高度。
 
 ### Icon
 
-| 场景 | 尺寸 |
-|---|---|
-| 导航 | 24px |
-| 普通操作 | 20px |
-| 列表 | 24-32px |
-| 大功能入口 | 40-48px |
+图标自身的视觉尺寸。**Icon Size ≠ Icon Button Visual Size ≠ Touch Target**，三者不得混用。
+
+| Token | 值 | 用途 |
+|---|---|---|
+| `size.icon.small` | 16px | 辅助图标（如 Card 内小标记） |
+| `size.icon.medium` | 20px | 普通操作图标 |
+| `size.icon.navigation` | 24px | 导航图标 |
+| `size.icon.large` | 32px | 强调图标 |
+
+> Icon Button 的 Visual Size（容器尺寸）和 Touch Target（点击区域）见 [`components.md`](components.md) 的"5.2 Icon"。40px / 48px 不是 Icon Size，而是 Icon Button Visual Size 或 Touch Target。
 
 风格：圆润、简洁、低饱和。**Emoji 和 Icon 不混用**。
 
@@ -318,10 +332,15 @@ Shadow 只用于表达空间层级，不用于装饰。优先使用 Surface 差�
 
 ## Button Tokens
 
-| 类型 | 规格 |
-|---|---|
-| Primary Button | 高度 `size.control.height.large` (48px) / 圆角 `radius.pill` / 文字 `font.size.label` (14sp Medium) / 底色 `color.action.primary.default` / 文字色 `color.action.primary.foreground` |
-| Secondary Button | 背景 `color.action.secondary.background` / 文字 `color.action.secondary.foreground` |
+Button 的 Visual Type 只定义视觉属性（Background / Foreground / Border / Radius / 状态色），**不定义 Height / MinHeight / MinWidth / Padding**。尺寸由 Size 决定，详见 [`components.md`](components.md) 的"Size 与 Visual Type 正交"。
+
+| Visual Type | Background | Foreground | Radius |
+|---|---|---|---|
+| Primary | `color.action.primary.default` | `color.action.primary.foreground` | `radius.pill` |
+| Secondary | `color.action.secondary.background` | `color.action.secondary.foreground` | `radius.medium` |
+| Danger | `color.semantic.error` | `color.text.onPrimary` | `radius.medium` |
+
+Button 文字统一使用 `font.size.label` + `font.weight.medium`。
 
 ## Baby Theme Rules
 
