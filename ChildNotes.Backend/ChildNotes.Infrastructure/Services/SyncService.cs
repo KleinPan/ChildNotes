@@ -113,10 +113,12 @@ public class SyncService : ISyncService
         // 当前用户积分余额（每页都返回，客户端以最后一页为准）。积分是 Pull-only 数据。
         var userPoints = await _db.UserPoints.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == uid, ct);
 
-        // 分页判定：任一类型达到上限即认为可能有更多数据
+        // 分页判定：任一同步集合达到上限即认为可能有更多数据。
+        // 注意：新增同步集合时必须同步加入此判断，否则该集合满页时会漏数据
+        // （cursor 被设置但 hasMore=false，客户端 break 退出循环）。
         var hasMore = babies.Count == pageLimit || records.Count == pageLimit
             || milestones.Count == pageLimit || signIns.Count == pageLimit
-            || babyMembers.Count == pageLimit;
+            || babyMembers.Count == pageLimit || joinRequests.Count == pageLimit;
 
         // 复合游标取"达上限表"的 (Max(timestamp), 对应 Max(Id)) 中的最小值。
         // 各表按 (timestamp, Id) 排序，达上限时取最后一条的 (timestamp, Id) 作为该表的候选。
