@@ -170,7 +170,10 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
         PreviewCurrentBitmap = null;
         try
         {
-            if (!path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            // 服务器相对路径（/uploads/、/api/）拼接主服务器地址
+            path = ChildNotes.Services.ImagePathResolver.Resolve(path);
+
+            if (!ChildNotes.Services.ImagePathResolver.IsHttpUrl(path))
             {
                 if (!File.Exists(path)) return;
                 using var fs = File.OpenRead(path);
@@ -250,8 +253,11 @@ public sealed class MilestoneThumbItem : ObservableObject
         var path = item.Source;
         if (string.IsNullOrWhiteSpace(path)) return;
 
+        // 服务器相对路径（/uploads/、/api/）拼接主服务器地址
+        path = ChildNotes.Services.ImagePathResolver.Resolve(path);
+
         // 本地路径：同步存在性检查 + 后台解码
-        if (!path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        if (!ChildNotes.Services.ImagePathResolver.IsHttpUrl(path))
         {
             if (!File.Exists(path)) return;
             try

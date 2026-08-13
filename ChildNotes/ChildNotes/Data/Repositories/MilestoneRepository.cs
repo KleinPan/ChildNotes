@@ -14,13 +14,19 @@ public sealed class MilestoneRepository : BaseRepository
     /// <summary>查询当前宝宝下的未删除里程碑（按日期倒序）。</summary>
     public List<Milestone> GetAll(string userId, string? babyId)
     {
-        // 家庭共享：优先按 baby_id 过滤，仅在 babyId 为空时回退到 user_id
+        // 家庭共享：优先按 baby_id 过滤，同时兜底 user_id（兼容 baby_id 为 null 的历史数据）。
+        // 与后端 SyncService.msCursor 的 (m.BabyId != null && babyIds.Contains(m.BabyId)) || m.UserId == uid 语义对齐，
+        // 否则同步下发的 baby_id=null 历史里程碑会被本地查询过滤掉，UI 看不到。
         var sql = SelectBase + " WHERE is_deleted=0";
         if (babyId is not null)
         {
-            sql += " AND baby_id=@bid";
+            sql += " AND (baby_id=@bid OR user_id=@uid)";
             sql += " ORDER BY record_date DESC, id DESC";
-            return Query(sql, cmd => cmd.Add("@bid", babyId), Map);
+            return Query(sql, cmd =>
+            {
+                cmd.Add("@bid", babyId);
+                cmd.Add("@uid", userId);
+            }, Map);
         }
         sql += " AND user_id=@uid ORDER BY record_date DESC, id DESC";
         return Query(sql, cmd => cmd.Add("@uid", userId), Map);

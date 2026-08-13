@@ -566,9 +566,11 @@ public partial class BabyManagerViewModel : ViewModelBase
         }
         try
         {
+            // 服务器相对路径（/uploads/、/api/）拼接主服务器地址
+            path = ChildNotes.Services.ImagePathResolver.Resolve(path);
+
             // URL：从服务器下载
-            if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-                path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            if (ChildNotes.Services.ImagePathResolver.IsHttpUrl(path))
             {
                 using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
                 var bytes = await http.GetByteArrayAsync(path);
