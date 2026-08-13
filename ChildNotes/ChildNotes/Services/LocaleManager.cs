@@ -1224,6 +1224,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Family_SaveFailed"] = "Save failed";
         this["Family_RoleUpdated"] = "Role updated to: {0}";
         this["Family_RemoveMember"] = "Remove";
+        this["Family_LeaveFamily"] = "Leave";
         this["Family_RemoveConfirmTitle"] = "Remove family member";
         this["Family_RemoveConfirmBody"] = "Remove \"{0}\" from \"{1}\" family? They will lose access to family data. Re-joining requires your approval.";
         this["Family_RemoveFailed"] = "Remove failed, try again later";

@@ -83,7 +83,7 @@
         </ScrollViewer>
 
         <!-- 加载中提示 -->
-        <Border Grid.Row="1" Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsLoading}"
+        <Border Grid.Row="1" Background="{StaticResource MaskBrush}" IsVisible="{Binding IsLoading}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <TextBlock Text="{DynamicResource Common_Loading}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>

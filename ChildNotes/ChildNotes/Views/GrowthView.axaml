@@ -83,7 +83,7 @@
         <!--  照片删除按钮：圆形半透明黑底白字（对齐小程序 .g-photo-del）。
               覆盖 Button 默认主题，避免出现边框/默认背景。  -->
         <Style Selector="Button.photo-del-btn">
-            <Setter Property="Background" Value="{StaticResource MaskLightBrush}" />
+            <Setter Property="Background" Value="{StaticResource MaskBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="CornerRadius" Value="11" />
             <Setter Property="Padding" Value="0" />

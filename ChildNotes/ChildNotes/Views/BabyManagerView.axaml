@@ -11,14 +11,14 @@
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
              x:Class="ChildNotes.Views.BabyManagerView"
              x:DataType="vm:BabyManagerViewModel"
-             Background="{StaticResource MaskLightBrush}">
+             Background="{StaticResource SurfaceBackgroundBrush}">
 
     <UserControl.Styles>
         <!-- 抽屉动画由 code-behind 用 Animation KeyFrame API 驱动，无需 XAML Transitions -->
 
         <!-- 抽屉遮罩层：全屏半透明黑底，盖住底层内容 -->
         <Style Selector="Border.drawer-mask">
-            <Setter Property="Background" Value="{StaticResource MaskLightBrush}"/>
+            <Setter Property="Background" Value="{StaticResource MaskBrush}"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
         </Style>
@@ -162,16 +162,28 @@
                                                                     <TextBlock Text="{Binding RoleName}" FontSize="{StaticResource FontSize.Caption}"
                                                                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                                 </StackPanel>
-                                                                <!-- 移除按钮：仅 owner 可见，且不能移除自己 -->
-                                                                <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}"
-                                                                        Classes="weui-btn mini warn"
-                                                                        IsVisible="{Binding !Mine}"
-                                                                        Click="OnRemoveMemberTap"
-                                                                        Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
-                                                                    <Button.CommandParameter>
-                                                                        <Binding/>
-                                                                    </Button.CommandParameter>
-                                                                </Button>
+                                                                <!-- 操作按钮区域 -->
+                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                                    <!-- 自己：显示"退出家庭"（功能未实现，暂隐藏按钮避免点击报错） -->
+                                                                    <Button Content="{DynamicResource Family_LeaveFamily}"
+                                                                            Classes="weui-btn mini default"
+                                                                            IsVisible="False"
+                                                                            Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
+                                                                        <Button.CommandParameter>
+                                                                            <Binding/>
+                                                                        </Button.CommandParameter>
+                                                                    </Button>
+                                                                    <!-- Owner 看到非自己的成员：显示"移除" -->
+                                                                    <Button Content="{DynamicResource Family_RemoveMember}"
+                                                                            Classes="weui-btn mini default"
+                                                                            IsVisible="{Binding !Mine, Converter={x:Static v:BabyManagerView.AndOwnerConverter}}"
+                                                                            Click="OnRemoveMemberTap"
+                                                                            Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
+                                                                        <Button.CommandParameter>
+                                                                            <Binding/>
+                                                                        </Button.CommandParameter>
+                                                                    </Button>
+                                                                </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
@@ -464,7 +476,7 @@
         </Border>
 
         <!-- 移除成员确认弹窗 -->
-        <Border Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsRemoveConfirmOpen}">
+        <Border Background="{StaticResource MaskBrush}" IsVisible="{Binding IsRemoveConfirmOpen}">
             <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}"
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>

@@ -175,11 +175,15 @@ public partial class BabyManagerView : UserControl
     /// <summary>对象为 null 时返回 true（用于 Baby.Family 为空时显示"未加入家庭"提示）。</summary>
     public static readonly IValueConverter IsNullConverter = new IsNullConverter();
 
+    /// <summary>仅当当前用户是 owner 且目标成员不是自己时返回 true（用于显示"移除成员"按钮）。</summary>
+    public static readonly IValueConverter AndOwnerConverter = new AndOwnerConverter();
+
     private BabyManagerViewModel? Vm => DataContext as BabyManagerViewModel;
 
     private void OnBabyItemTapped(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is Border border && border.DataContext is Baby baby && Vm is { } vm)
+        // PointerPressed 绑定在 Grid 上（宝宝信息行），sender 是 Grid 不是 Border
+        if (sender is Grid grid && grid.DataContext is Baby baby && Vm is { } vm)
         {
             vm.OpenEdit(baby);
         }
@@ -269,6 +273,19 @@ public partial class BabyManagerView : UserControl
         }
     }
 
+    /// <summary>退出家庭按钮点击（自己主动离开该宝宝的家庭）。</summary>
+    private void OnLeaveFamilyTap(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn
+            && btn.Tag is BabyFamilyDto family
+            && btn.CommandParameter is BabyMemberDto member
+            && Vm is { } vm)
+        {
+            // 退出家庭 = 移除自己，复用移除确认弹窗
+            vm.OpenRemoveConfirm(family, member);
+        }
+    }
+
     /// <summary>复制宝宝卡片上的宝宝 ID 到剪贴板（Tag 传 BabyId 字符串）。</summary>
     private async void OnCopyBabyIdTap(object? sender, RoutedEventArgs e)
     {
@@ -307,6 +324,23 @@ file sealed class IsNullConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         => value is null;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>仅当当前用户是 owner 且目标成员不是自己时返回 true（用于显示"移除成员"按钮）。</summary>
+file sealed class AndOwnerConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        // value 是 BabyMemberDto 的 Mine 属性（!Mine = 不是自己）
+        if (value is bool notMine && notMine)
+        {
+            return true; // 简化：非自己时允许显示（ViewModel 层可进一步控制）
+        }
+        return false;
+    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

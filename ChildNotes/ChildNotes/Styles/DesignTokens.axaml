@@ -196,9 +196,10 @@
     <SolidColorBrush x:Key="BorderErrorBrush" Color="{StaticResource Color.Border.Error}" />
 
     <SolidColorBrush x:Key="OverlayScrimBrush" Color="{StaticResource Color.Overlay.Scrim}" />
-    <!-- 兼容旧引用：Mask 系列 = Overlay.Scrim（规范统一 32% 黑，禁止页面自行定义 30/40/50%） -->
+    <!-- 兼容旧引用：MaskBrush = Overlay.Scrim（弹窗/抽屉/Modal 遮罩，32% 黑） -->
     <SolidColorBrush x:Key="MaskBrush" Color="{StaticResource Color.Overlay.Scrim}" />
-    <SolidColorBrush x:Key="MaskLightBrush" Color="{StaticResource Color.Overlay.Scrim}" />
+    <!-- 兼容旧引用：MaskLightBrush = 页面浅色背景/加载遮罩（非弹窗遮罩） -->
+    <SolidColorBrush x:Key="MaskLightBrush" Color="{StaticResource Color.Surface.Background}" />
 
     <SolidColorBrush x:Key="ActionPrimaryDefaultBrush" Color="{StaticResource Color.Action.Primary.Default}" />
     <SolidColorBrush x:Key="ActionPrimaryPressedBrush" Color="{StaticResource Color.Action.Primary.Pressed}" />
