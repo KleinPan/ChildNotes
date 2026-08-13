@@ -18,7 +18,7 @@
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
 
                 <!-- 标题 -->
-                <TextBlock Grid.Row="0" Text="{DynamicResource Privacy_Title}" FontSize="18" FontWeight="Bold"
+                <TextBlock Grid.Row="0" Text="{DynamicResource Privacy_Title}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"
                            HorizontalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
 
                 <!-- 内容区：摘要视图 / 完整协议视图 二选一 -->
@@ -28,7 +28,7 @@
                                   HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="{Binding SummaryText}" FontSize="14"
+                            <TextBlock Text="{Binding SummaryText}" FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
                                 <Button Content="{DynamicResource Privacy_ViewPolicy}" Classes="weui-btn mini default"
@@ -63,11 +63,11 @@
                             <!-- 协议正文（按 Tab 切换显示） -->
                             <TextBlock Text="{Binding FullPolicyText}"
                                        IsVisible="{Binding IsPolicyTabActive}"
-                                       FontSize="13"
+                                       FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                             <TextBlock Text="{Binding FullAgreementText}"
                                        IsVisible="{Binding IsAgreementTabActive}"
-                                       FontSize="13"
+                                       FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                         </StackPanel>
                     </ScrollViewer>

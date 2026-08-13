@@ -32,15 +32,15 @@
                     <StackPanel>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource Sync_EnableCloud}" FontSize="15"/>
-                                <TextBlock Text="{DynamicResource Sync_EnableCloudHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
+                                <TextBlock Text="{DynamicResource Sync_EnableCloud}" FontSize="{StaticResource FontSize.Body}"/>
+                                <TextBlock Text="{DynamicResource Sync_EnableCloudHint}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" IsChecked="{Binding Enabled}"/>
                         </Grid>
                         <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" Text="{Binding LastSyncText}" FontSize="14"/>
-                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"/>
+                            <TextBlock Grid.Column="0" Text="{Binding LastSyncText}" FontSize="{StaticResource FontSize.Label}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding StatusText}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -54,7 +54,7 @@
                 <Button Content="{DynamicResource Sync_ForceFullSync}"
                         Classes="weui-btn default" Margin="12,0,12,4" HorizontalAlignment="Stretch"
                         Command="{Binding ForceFullSyncCommand}" IsEnabled="{Binding !IsSyncing}"/>
-                <TextBlock Text="{DynamicResource Sync_ForceFullSyncHint}" FontSize="11"
+                <TextBlock Text="{DynamicResource Sync_ForceFullSyncHint}" FontSize="{StaticResource FontSize.Caption}"
                            Foreground="{StaticResource TextPlaceholderBrush}" Margin="14,0,14,12" TextWrapping="Wrap"/>
 
                 <!-- 服务器（地址可配置，后期可隐藏编辑入口改为只读） -->
@@ -66,8 +66,8 @@
                         <!-- 开发版：可编辑 TextBox + 保存按钮 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*,Auto"
                               IsVisible="{Binding IsServerUrlEditable}">
-                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="13"
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="1" Text="{Binding ServerUrlInput}" FontSize="{StaticResource FontSize.Label}"
                                      PlaceholderText="https://api.example.com"
                                      VerticalAlignment="Center"
                                      BorderThickness="0" Padding="0"/>
@@ -81,15 +81,15 @@
                                 IsVisible="{Binding IsServerUrlDirty}"/>
                         <Grid Margin="14,8" ColumnDefinitions="80,*"
                               IsVisible="{Binding IsServerUrlDirty}">
-                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_CurrentEffect}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="12"
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_CurrentEffect}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="{StaticResource FontSize.Caption}"
                                        Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                         <!-- 正式版：只读展示当前生效地址 -->
                         <Grid Margin="14,12" ColumnDefinitions="80,*"
                               IsVisible="{Binding !IsServerUrlEditable}">
-                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="14" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="13"
+                            <TextBlock Grid.Column="0" Text="{DynamicResource Sync_AddressLabel}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServerUrlDisplay}" FontSize="{StaticResource FontSize.Label}"
                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                     </StackPanel>
@@ -101,7 +101,7 @@
                 </Border>
                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <Grid Margin="14,12" ColumnDefinitions="*,Auto">
-                        <TextBlock Grid.Column="0" Text="{Binding NetworkStateText}" FontSize="14"/>
+                        <TextBlock Grid.Column="0" Text="{Binding NetworkStateText}" FontSize="{StaticResource FontSize.Label}"/>
                         <Ellipse Grid.Column="1" Width="10" Height="10" VerticalAlignment="Center"
                                  Fill="{Binding IsOnline, Converter={x:Static v:SyncSettingsView.OnlineColorConverter}}"/>
                     </Grid>
@@ -121,18 +121,18 @@
                                         <StackPanel Margin="14,10" Spacing="4">
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <TextBlock Grid.Column="0" Text="{Binding DoneAt, StringFormat='yyyy-MM-dd HH:mm:ss'}"
-                                                           FontSize="13" FontWeight="Medium"/>
+                                                           FontSize="{StaticResource FontSize.Label}" FontWeight="Medium"/>
                                                 <!-- 状态标识：颜色区分 success/failed/running -->
-                                                <Border Grid.Column="1" Padding="6,2" CornerRadius="4"
+                                                <Border Grid.Column="1" Padding="6,2" CornerRadius="{StaticResource Radius.XS}"
                                                         Background="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusBrushConverter}}">
                                                     <TextBlock Text="{Binding Status, Converter={x:Static v:SyncSettingsView.SyncLogStatusTextConverter}}"
-                                                               FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"/>
+                                                               FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SurfaceCardBrush}"/>
                                                 </Border>
                                             </Grid>
-                                            <TextBlock Text="{Binding DataVolume}" FontSize="12"
+                                            <TextBlock Text="{Binding DataVolume}" FontSize="{StaticResource FontSize.Caption}"
                                                        Foreground="{StaticResource TextSecondaryBrush}"
                                                        IsVisible="{Binding DataVolume, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                            <TextBlock Text="{Binding Message}" FontSize="12"
+                                            <TextBlock Text="{Binding Message}" FontSize="{StaticResource FontSize.Caption}"
                                                        Foreground="{StaticResource TextSecondaryBrush}"
                                                        TextWrapping="Wrap"/>
                                         </StackPanel>
@@ -140,7 +140,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <!-- 空状态：暂无日志 -->
-                            <TextBlock Text="{DynamicResource Sync_NoLog}" FontSize="13"
+                            <TextBlock Text="{DynamicResource Sync_NoLog}" FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextPlaceholderBrush}"
                                        HorizontalAlignment="Center" Margin="0,20"
                                        IsVisible="{Binding SyncLogs.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"/>
@@ -154,11 +154,11 @@
                 </Border>
                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">
-                        <TextBlock Text="{DynamicResource Sync_Note1}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note2}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note3}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note4}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                        <TextBlock Text="{DynamicResource Sync_Note5}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note1}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note2}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note3}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note4}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{DynamicResource Sync_Note5}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
 
@@ -166,8 +166,8 @@
         </ScrollViewer>
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"/>
         </Border>
     </Grid>
 </UserControl>

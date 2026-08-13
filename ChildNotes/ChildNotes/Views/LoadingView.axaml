@@ -19,7 +19,7 @@
                        Foreground="{StaticResource LoadingTextPrimaryBrush}"
                        HorizontalAlignment="Center"/>
             <TextBlock Text="每一次成长，都值得被记录。"
-                       FontSize="14"
+                       FontSize="{StaticResource FontSize.Label}"
                        Foreground="{StaticResource LoadingTextSecondaryBrush}"
                        HorizontalAlignment="Center"/>
         </StackPanel>
@@ -39,7 +39,7 @@
                         Margin="24,0,24,48" Spacing="16">
                 <TextBlock x:Name="TipText"
                            Text=""
-                           FontSize="13"
+                           FontSize="{StaticResource FontSize.Label}"
                            Foreground="{StaticResource LoadingTextPrimaryBrush}"
                            TextWrapping="Wrap"
                            TextAlignment="Center"

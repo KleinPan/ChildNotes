@@ -35,16 +35,16 @@
                         <Grid Margin="14,14" ColumnDefinitions="*,Auto"
                               PointerPressed="OnSelectZhHans">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource Language_ZhHans}" FontSize="15"/>
+                                <TextBlock Text="{DynamicResource Language_ZhHans}" FontSize="{StaticResource FontSize.Body}"/>
                             </StackPanel>
                             <Border Grid.Column="1" Width="22" Height="22"
-                                    CornerRadius="11"
+                                    CornerRadius="{StaticResource Radius.Pill}"
                                     BorderBrush="{Binding $self.Background}"
                                     IsVisible="{Binding IsZhHans}">
                                 <Border.Background>
                                     <SolidColorBrush Color="{StaticResource Color.Brand.Primary}"/>
                                 </Border.Background>
-                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
+                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -54,16 +54,16 @@
                         <Grid Margin="14,14" ColumnDefinitions="*,Auto"
                               PointerPressed="OnSelectEn">
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource Language_En}" FontSize="15"/>
+                                <TextBlock Text="{DynamicResource Language_En}" FontSize="{StaticResource FontSize.Body}"/>
                             </StackPanel>
                             <Border Grid.Column="1" Width="22" Height="22"
-                                    CornerRadius="11"
+                                    CornerRadius="{StaticResource Radius.Pill}"
                                     BorderBrush="{Binding $self.Background}"
                                     IsVisible="{Binding IsEn}">
                                 <Border.Background>
                                     <SolidColorBrush Color="{StaticResource Color.Brand.Primary}"/>
                                 </Border.Background>
-                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
+                                <TextBlock Text="✓" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                         </Grid>
@@ -71,7 +71,7 @@
                 </Border>
 
                 <TextBlock Text="{DynamicResource Language_Description}"
-                           FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}"
+                           FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextPlaceholderBrush}"
                            Margin="16,10,16,0" TextWrapping="Wrap"/>
 
             </StackPanel>

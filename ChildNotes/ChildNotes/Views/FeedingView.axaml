@@ -65,11 +65,11 @@
                                 HorizontalAlignment="Right" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                 Background="Transparent" BorderThickness="0" Classes="date-nav"
                                 Command="{Binding PrevDayCommand}"
-                                Content="‹" CornerRadius="18" FontSize="24" FontWeight="Light" />
+                                Content="‹" CornerRadius="{StaticResource Radius.Pill}" FontSize="24" FontWeight="Light" />
                         <!--  原版 date-display: padding 0 20rpx，提供箭头与日期的间距  -->
                         <StackPanel Grid.Column="1" Margin="10,0" VerticalAlignment="Center" Orientation="Horizontal"
                                     Spacing="6">
-                            <TextBlock VerticalAlignment="Center" FontSize="17" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"
+                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}"
                                        Text="{Binding DisplayDate}" />
                             <TextBlock VerticalAlignment="Center" FontSize="12" Opacity="0.5" Text="📅" />
                         </StackPanel>
@@ -77,7 +77,7 @@
                                 HorizontalAlignment="Left" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                 Background="Transparent" BorderThickness="0" Classes="date-nav"
                                 Command="{Binding NextDayCommand}"
-                                Content="›" CornerRadius="18" FontSize="24" FontWeight="Light"
+                                Content="›" CornerRadius="{StaticResource Radius.Pill}" FontSize="24" FontWeight="Light"
                                 IsEnabled="{Binding IsNextDayEnabled}" />
                     </Grid>
                 </Border>
@@ -87,7 +87,7 @@
                         Background="{StaticResource BrandPrimaryLightBrush}" BorderThickness="0"
                         Command="{Binding GoTodayCommand}"
                         Content="{DynamicResource Feeding_GoToday}"
-                        CornerRadius="0" FontSize="13" Foreground="{StaticResource BrandPrimaryBrush}"
+                        CornerRadius="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource BrandPrimaryBrush}"
                         IsVisible="{Binding !IsToday}" />
 
                 <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -134,7 +134,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="all"
                                 Content="{DynamicResource Feeding_FilterAll}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}}" />
                         <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=feed}"
@@ -142,7 +142,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="feed"
                                 Content="{DynamicResource Feeding_FilterFeed}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=feed}" />
                         <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=sleep}"
@@ -150,7 +150,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="sleep"
                                 Content="{DynamicResource Feeding_FilterSleep}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=sleep}" />
                         <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=diaper}"
@@ -158,7 +158,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="diaper"
                                 Content="{DynamicResource Feeding_FilterDiaper}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=diaper}" />
                         <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=activity}"
@@ -166,7 +166,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="activity"
                                 Content="{DynamicResource Feeding_FilterActivity}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=activity}" />
                         <Button Padding="14,6"
                                 Background="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterBgConverter}, ConverterParameter=other}"
@@ -174,7 +174,7 @@
                                 Command="{Binding ApplyTypeFilterCommand}"
                                 CommandParameter="other"
                                 Content="{DynamicResource Feeding_FilterOther}"
-                                CornerRadius="16" FontSize="13"
+                                CornerRadius="{StaticResource Radius.Large}" FontSize="{StaticResource FontSize.Label}"
                                 Foreground="{Binding SelectedFilter, Converter={x:Static v:FeedingView.FilterFgConverter}, ConverterParameter=other}" />
                     </StackPanel>
                 </ScrollViewer>
@@ -193,7 +193,7 @@
                                 <Border Width="72" HorizontalAlignment="Right" Background="{StaticResource SemanticErrorBrush}" CornerRadius="0,8,8,0"
                                         Tag="{Binding .}"
                                         Tapped="OnDeleteTap">
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold"
+                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold"
                                                Foreground="{StaticResource SurfaceCardBrush}"
                                                Text="{DynamicResource Common_Delete}" />
                                 </Border>
@@ -209,32 +209,32 @@
                                     <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto" RowDefinitions="Auto,Auto">
                                         <!--  原版 card-left: 时间在左侧  -->
                                         <TextBlock Grid.Row="0" Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"
                                                    Text="{Binding TimeText}" />
                                         <!--  原版 card-icon: 60rpx≈30px 圆角方框，#f9f9f9 底  -->
                                         <Border Grid.Row="0" Grid.Column="1" Width="30" Height="30"
-                                                Margin="0,0,8,0" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="8">
+                                                Margin="0,0,8,0" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Small}">
                                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="18" Text="{Binding Icon}" />
                                         </Border>
-                                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontSize="14"
+                                        <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                                    FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}"
                                                    Text="{Binding TitleText}" />
                                         <TextBlock Grid.Row="0" Grid.Column="4" Margin="0,0,8,0" VerticalAlignment="Center"
-                                                   FontSize="12" Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"
                                                    IsVisible="{Binding SubText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding SubText}"
                                                    TextTrimming="CharacterEllipsis"
                                                    MaxWidth="200" />
                                         <!--  extra（右侧绿色强调，对齐小程序 card-extra #07c160）  -->
                                         <TextBlock Grid.Row="0" Grid.Column="5" Margin="0,0,0,0" VerticalAlignment="Center"
-                                                   FontSize="12" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}"
+                                                   FontSize="{StaticResource FontSize.Caption}" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}"
                                                    IsVisible="{Binding ExtraText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                    Text="{Binding ExtraText}" />
                                         <!--  备注（对齐小程序 card-note：浅灰背景块 + 深灰文字），从标题列开始对齐  -->
                                         <Border Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="4" Margin="0,6,0,0"
-                                                Padding="8,6" HorizontalAlignment="Left" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6"
+                                                Padding="8,6" HorizontalAlignment="Left" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Small}"
                                                 IsVisible="{Binding NoteText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding NoteText}" TextWrapping="Wrap" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding NoteText}" TextWrapping="Wrap" />
                                         </Border>
                                     </Grid>
                                 </Border>
@@ -243,7 +243,7 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
 
-                <TextBlock Margin="0,40" HorizontalAlignment="Center" FontSize="13"
+                <TextBlock Margin="0,40" HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                            Foreground="{StaticResource TextPlaceholderBrush}"
                            IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}"
                            Text="{DynamicResource Feeding_NoRecords}" />
@@ -252,9 +252,9 @@
         </ScrollViewer>
 
         <Border Margin="0,0,0,80" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                Background="{StaticResource MaskBrush}" CornerRadius="8"
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}"
                 IsVisible="{Binding ShowToast}">
-            <TextBlock FontSize="13" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" />
+            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" />
         </Border>
 
         <controls:DialogHost Title="{DynamicResource Feeding_DeleteConfirmTitle}"
@@ -265,8 +265,8 @@
                              IsOpen="{Binding ShowDeleteConfirm}">
             <controls:DialogHost.MessageContent>
                 <StackPanel HorizontalAlignment="Center">
-                    <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Feeding_DeleteConfirmMsg}" TextAlignment="Center" />
-                    <TextBlock FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding DeleteItemTitle}" TextAlignment="Center" />
+                    <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Feeding_DeleteConfirmMsg}" TextAlignment="Center" />
+                    <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding DeleteItemTitle}" TextAlignment="Center" />
                 </StackPanel>
             </controls:DialogHost.MessageContent>
         </controls:DialogHost>

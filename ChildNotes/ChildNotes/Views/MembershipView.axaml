@@ -37,12 +37,12 @@
                 <!-- 会员状态卡片 -->
                 <Border Background="{StaticResource BrandPrimaryBrush}" Padding="24,24" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center"
+                        <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center"
                                    Text="{Binding IsActive, Converter={x:Static views:MembershipView.IsMemberTextConverter}}"/>
 
                         <!-- AI 记次数（今日） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
+                            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiNoteRemainingToday}"/>
                                 <Run Text=" / "/>
@@ -52,7 +52,7 @@
 
                         <!-- AI 分析次数（本周） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
+                            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiAnalysisRemainingThisWeek}"/>
                                 <Run Text=" / "/>
@@ -60,7 +60,7 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <TextBlock FontSize="12" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,10,0,0"
+                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,10,0,0"
                                    Text="{Binding ExpireAtText, StringFormat=会员到期：\{0\}}"
                                    IsVisible="{Binding IsActive}"/>
                     </StackPanel>
@@ -80,8 +80,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="✏️"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit1Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Membership_Benefit1Title}"/>
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit1Desc}"/>
                             </StackPanel>
                         </Grid>
@@ -93,8 +93,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="📊"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit2Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Membership_Benefit2Title}"/>
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit2Desc}"/>
                             </StackPanel>
                         </Grid>
@@ -106,8 +106,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🎰"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit3Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Membership_Benefit3Title}"/>
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit3Desc}"/>
                             </StackPanel>
                         </Grid>
@@ -119,8 +119,8 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Margin="0,0,12,0" FontSize="20" Text="🖼️"/>
                             <StackPanel Grid.Column="1">
-                                <TextBlock FontSize="15" Text="{DynamicResource Membership_Benefit4Title}"/>
-                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
+                                <TextBlock FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Membership_Benefit4Title}"/>
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"
                                            Text="{DynamicResource Membership_Benefit4Desc}"/>
                             </StackPanel>
                         </Grid>
@@ -141,25 +141,25 @@
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="Bold"/>
-                                            <Border Background="{StaticResource BrandPrimaryBrush}" CornerRadius="4" Padding="6,2" Margin="8,0,0,0"
+                                            <TextBlock Text="{Binding Name}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"/>
+                                            <Border Background="{StaticResource BrandPrimaryBrush}" CornerRadius="{StaticResource Radius.XS}" Padding="6,2" Margin="8,0,0,0"
                                                     IsVisible="{Binding IsRecommended}">
-                                                <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"/>
+                                                <TextBlock Text="{DynamicResource Membership_Recommended}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SurfaceCardBrush}"/>
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+                                        <TextBlock Text="{Binding Description}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                            <TextBlock Text="¥" FontSize="14" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
+                                            <TextBlock Text="¥" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,2"/>
                                             <TextBlock Text="{Binding PriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}}" FontSize="24" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}"/>
                                             <TextBlock Text="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.CentsToYuanConverter}, StringFormat=¥\{0\}}"
-                                                       FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}"
+                                                       FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPlaceholderBrush}"
                                                        TextDecorations="Strikethrough" Margin="8,0,0,0"
                                                        VerticalAlignment="Bottom"
                                                        IsVisible="{Binding OriginalPriceCents, Converter={x:Static views:MembershipView.IsPositiveConverter}}"/>
                                         </StackPanel>
                                     </StackPanel>
                                     <!-- 选中标记：✓ 图标，仅在选中时显示 -->
-                                    <Border Grid.Column="1" Width="28" Height="28" CornerRadius="14"
+                                    <Border Grid.Column="1" Width="28" Height="28" CornerRadius="{StaticResource Radius.Pill}"
                                             Background="{StaticResource BrandPrimaryBrush}"
                                             VerticalAlignment="Center">
                                         <Border.IsVisible>
@@ -184,8 +184,8 @@
         <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" Padding="16,12">
             <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="{DynamicResource Membership_Selected}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
-                    <TextBlock FontSize="13" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Center"
+                    <TextBlock Text="{DynamicResource Membership_Selected}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextPlaceholderBrush}" VerticalAlignment="Center"/>
+                    <TextBlock FontSize="{StaticResource FontSize.Label}" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Center"
                                Text="{Binding SelectedPlanType, Converter={x:Static views:MembershipView.PlanTypeToNameConverter}}"/>
                 </StackPanel>
                 <Button Content="{DynamicResource Membership_Subscribe}" Classes="weui-btn primary" HorizontalAlignment="Stretch"
@@ -194,8 +194,8 @@
         </Border>
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"/>
         </Border>
     </Grid>
 </UserControl>

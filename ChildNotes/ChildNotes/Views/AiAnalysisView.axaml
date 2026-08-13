@@ -40,9 +40,9 @@
                 <!-- 顶部 Banner：紧凑型 -->
                 <Border Background="{StaticResource BrandPrimaryBrush}" Padding="20,16" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="宝宝喂养分析" FontSize="17" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="宝宝喂养分析" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
                         <!-- Banner 副标题：复用 OnPrimary 80% 透明度（规范 color.text.onPrimary=#FFFFFF） -->
-                        <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="12" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
 
@@ -52,14 +52,14 @@
                     <StackPanel>
                         <!-- 第一行：余额 + 消耗 + 签到按钮 -->
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
+                            <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
                                 <Run Text="积分 "/><Run Text="{Binding CurrentPoints}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/><Run Text="/ 消耗 "/><Run Text="{Binding AnalysisCost}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/>
                             </TextBlock>
-                            <Button Grid.Column="1" Content="签到赚积分" Classes="weui-btn mini" Padding="10,6" FontSize="11"
+                            <Button Grid.Column="1" Content="签到赚积分" Classes="weui-btn mini" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
                                     Command="{Binding OpenPointsCommand}" Background="{StaticResource FeedingOrangeLightBrush}" Foreground="{StaticResource FeedingOrangeBrush}" BorderThickness="0"/>
                         </Grid>
                         <!-- 第二行：仅积分不足时显示，独占整行不被遮挡 -->
-                        <TextBlock Text="{Binding InsufficientTip}" FontSize="11" Foreground="{StaticResource SemanticErrorBrush}" Margin="0,4,0,0"
+                        <TextBlock Text="{Binding InsufficientTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SemanticErrorBrush}" Margin="0,4,0,0"
                                    IsVisible="{Binding !PointsSufficient}"/>
                     </StackPanel>
                 </Border>
@@ -68,35 +68,35 @@
                     <StackPanel>
 
                         <!-- 日期选择器 + 说明合为一行 -->
-                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8" Padding="14">
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Small}" Margin="12,8" Padding="14">
                             <StackPanel>
-                                <TextBlock FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6">
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6">
                                     <Run Text="选择连续 7 天范围生成 AI 分析"/>
                                     <Run Text="(每次消耗积分)" Foreground="{StaticResource FeedingOrangeBrush}"/>
                                 </TextBlock>
                                 <Grid ColumnDefinitions="*,Auto,*" Margin="0,0,0,4">
                                     <StackPanel Grid.Column="0">
-                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="13" PlaceholderText="开始"/>
+                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="开始"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="至" VerticalAlignment="Bottom" Margin="8,0" Foreground="{StaticResource TextSecondaryBrush}"/>
                                     <StackPanel Grid.Column="2">
-                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="13" PlaceholderText="结束"/>
+                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="结束"/>
                                     </StackPanel>
                                 </Grid>
-                                <TextBlock Text="{Binding RangeTip}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                <TextBlock Text="{Binding RangeTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
 
                         <!-- 生成按钮 -->
-                        <Button Content="{Binding GenerateButtonText}" Classes="weui-btn primary" CornerRadius="6" Padding="0,13"
+                        <Button Content="{Binding GenerateButtonText}" Classes="weui-btn primary" CornerRadius="{StaticResource Radius.Small}" Padding="0,13"
                                 Command="{Binding GenerateCommand}" IsEnabled="{Binding CanGenerate}"
                                 Margin="12,4" HorizontalAlignment="Stretch"/>
-                        <Button Content="取消分析" Classes="weui-btn default" CornerRadius="6" Padding="0,11"
+                        <Button Content="取消分析" Classes="weui-btn default" CornerRadius="{StaticResource Radius.Small}" Padding="0,11"
                                 Command="{Binding CancelGenerateCommand}"
                                 Margin="12,0,12,2" HorizontalAlignment="Stretch"
                                 IsVisible="{Binding Generating}"/>
 
-                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}" FontSize="12"
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}" FontSize="{StaticResource FontSize.Caption}"
                                    Margin="12,4" TextWrapping="Wrap"
                                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
@@ -112,13 +112,13 @@
                                     <Border Classes="record-card" PointerPressed="OnRecordTap" Tag="{Binding Id}">
                                         <StackPanel>
                                             <Grid ColumnDefinitions="*,Auto">
-                                                <TextBlock Grid.Column="0" Text="{Binding CreatedAtLabel}" FontSize="14" FontWeight="SemiBold"/>
+                                                <TextBlock Grid.Column="0" Text="{Binding CreatedAtLabel}" FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold"/>
                                                 <TextBlock Grid.Column="1" Text="›" FontSize="18" Foreground="{StaticResource TextPlaceholderBrush}"/>
                                             </Grid>
-                                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0"/>
-                                            <TextBlock Text="{Binding DataQualityTip}" FontSize="11" Foreground="{StaticResource FeedingOrangeBrush}" Margin="0,1,0,0"
+                                            <TextBlock Text="{Binding RangeLabel}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,3,0,0"/>
+                                            <TextBlock Text="{Binding DataQualityTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource FeedingOrangeBrush}" Margin="0,1,0,0"
                                                        IsVisible="{Binding DataQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                            <TextBlock Text="{Binding Preview}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Preview}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </Border>
                                 </DataTemplate>
@@ -126,12 +126,12 @@
                         </ItemsControl>
 
                         <!-- 加载更多 -->
-                        <Button Content="{DynamicResource AiAnalysis_LoadMore}" Classes="weui-btn default" CornerRadius="6" Padding="0,9"
+                        <Button Content="{DynamicResource AiAnalysis_LoadMore}" Classes="weui-btn default" CornerRadius="{StaticResource Radius.Small}" Padding="0,9"
                                 Command="{Binding LoadMoreCommand}"
-                                Margin="12,2,12,6" HorizontalAlignment="Stretch" FontSize="13"
+                                Margin="12,2,12,6" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}"
                                 IsVisible="{Binding HasMore}"/>
 
-                        <TextBlock Text="{DynamicResource AiAnalysis_AllLoaded}" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}"
+                        <TextBlock Text="{DynamicResource AiAnalysis_AllLoaded}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextPlaceholderBrush}"
                                    HorizontalAlignment="Center" Margin="0,2,0,8"
                                    IsVisible="{Binding AllLoaded}"/>
 
@@ -139,8 +139,8 @@
                         <Panel IsVisible="{Binding Records.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}" Margin="0,30,0,0">
                             <StackPanel HorizontalAlignment="Center">
                                 <TextBlock Text="📊" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                                <TextBlock Text="{DynamicResource AiAnalysis_Empty}" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
-                                <TextBlock Text="{DynamicResource AiAnalysis_EmptyHint}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="16,0"/>
+                                <TextBlock Text="{DynamicResource AiAnalysis_Empty}" FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,4"/>
+                                <TextBlock Text="{DynamicResource AiAnalysis_EmptyHint}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="16,0"/>
                             </StackPanel>
                         </Panel>
 
@@ -151,13 +151,13 @@
                 <Panel IsVisible="{Binding ShowDetail}">
                     <StackPanel>
                         <!-- 详情头：始终可见，提供快速"收起"按钮 + 点击空白处折叠 -->
-                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8,12,0" Padding="14,12"
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Small}" Margin="12,8,12,0" Padding="14,12"
                                 PointerPressed="OnDetailHeaderTap">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="{Binding DetailRangeLabel}" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
-                                    <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成于 \{0\}}" FontSize="11" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding DetailQualityTip}" FontSize="11" Foreground="{StaticResource FeedingOrangeBrush}" Margin="0,2,0,0"
+                                    <TextBlock Text="{Binding DetailRangeLabel}" FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                    <TextBlock Text="{Binding DetailCreatedLabel, StringFormat=生成于 \{0\}}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,2,0,0"/>
+                                    <TextBlock Text="{Binding DetailQualityTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource FeedingOrangeBrush}" Margin="0,2,0,0"
                                                IsVisible="{Binding DetailQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="⌃" FontSize="18" Padding="8,2" MinWidth="32"
@@ -168,12 +168,12 @@
                         </Border>
 
                         <!-- 分析正文 -->
-                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="8" Margin="12,8" Padding="16,18">
-                            <TextBlock Text="{Binding DetailText}" FontSize="14" TextWrapping="Wrap" LineHeight="24"/>
+                        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Small}" Margin="12,8" Padding="16,18">
+                            <TextBlock Text="{Binding DetailText}" FontSize="{StaticResource FontSize.Label}" TextWrapping="Wrap" LineHeight="24"/>
                         </Border>
 
                         <!-- 底部"返回列表"按钮（保留，兼容习惯用户） -->
-                        <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="weui-btn default" CornerRadius="6" Padding="0,11"
+                        <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="weui-btn default" CornerRadius="{StaticResource Radius.Small}" Padding="0,11"
                                 Command="{Binding BackToListCommand}" Margin="12,6,12,8" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Panel>
@@ -182,8 +182,8 @@
         </ScrollViewer>
 
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
-                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"/>
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"/>
         </Border>
 
     </Grid>

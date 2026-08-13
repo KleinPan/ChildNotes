@@ -47,21 +47,21 @@
                                     Padding="14,12">
                                 <Grid RowDefinitions="Auto,Auto,Auto">
                                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold"
                                                    Foreground="{StaticResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
                                         <!-- 未读小圆点 -->
-                                        <Border Grid.Column="1" Width="8" Height="8" CornerRadius="4"
+                                        <Border Grid.Column="1" Width="8" Height="8" CornerRadius="{StaticResource Radius.Pill}"
                                                 Background="{StaticResource SemanticErrorBrush}"
                                                 IsVisible="{Binding !IsRead}"
                                                 VerticalAlignment="Center" Margin="8,0,0,0"/>
                                     </Grid>
-                                    <TextBlock Grid.Row="1" Text="{Binding Body}" FontSize="13"
+                                    <TextBlock Grid.Row="1" Text="{Binding Body}" FontSize="{StaticResource FontSize.Label}"
                                                Foreground="{StaticResource TextSecondaryBrush}"
                                                TextWrapping="Wrap" Margin="0,6,0,0"/>
                                     <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                                        <TextBlock Grid.Column="0" Text="{Binding DisplayTime}" FontSize="12"
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayTime}" FontSize="{StaticResource FontSize.Caption}"
                                                    Foreground="{StaticResource TextPlaceholderBrush}"/>
-                                        <Button Grid.Column="1" Content="{DynamicResource Common_Delete}" FontSize="12"
+                                        <Button Grid.Column="1" Content="{DynamicResource Common_Delete}" FontSize="{StaticResource FontSize.Caption}"
                                                 Classes="weui-btn mini default"
                                                 Command="{Binding $parent[ItemsControl].((vm:InAppMessageViewModel)DataContext).DeleteMessageCommand}"
                                                 CommandParameter="{Binding}"/>
@@ -77,7 +77,7 @@
                             Margin="0,80,0,0" Spacing="8"
                             IsVisible="{Binding Messages.Count, Converter={x:Static v:InAppMessageView.ZeroToBoolConverter}}">
                     <TextBlock Text="📬" FontSize="48" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{DynamicResource Msg_Empty}" FontSize="14" Foreground="{StaticResource TextPlaceholderBrush}" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{DynamicResource Msg_Empty}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPlaceholderBrush}" HorizontalAlignment="Center"/>
                 </StackPanel>
             </StackPanel>
         </ScrollViewer>
@@ -85,14 +85,14 @@
         <!-- 加载中提示 -->
         <Border Grid.Row="1" Background="{StaticResource MaskLightBrush}" IsVisible="{Binding IsLoading}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-            <TextBlock Text="{DynamicResource Common_Loading}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="14"
+            <TextBlock Text="{DynamicResource Common_Loading}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
 
         <!-- Toast 浮层 -->
         <Border Grid.Row="1" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="16,0,16,24"
-                Background="{StaticResource MaskBrush}" CornerRadius="8" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                        TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>

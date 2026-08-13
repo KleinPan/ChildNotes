@@ -91,11 +91,11 @@
         <!-- RenderTransform="none" 初始值必须显式设置，避免首次过渡从 null 跳变 -->
         <Border x:Name="ToastBorder" Grid.Row="1" Margin="0,0,0,8" Padding="16,10"
                 HorizontalAlignment="Center" VerticalAlignment="Top"
-                Background="{StaticResource MaskBrush}" CornerRadius="8"
+                Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}"
                 RenderTransform="none"
                 IsVisible="{Binding QuickInput.ShowToast}"
                 ZIndex="100">
-            <TextBlock FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
+            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
                        Text="{Binding QuickInput.ToastMessage}"
                        TextWrapping="Wrap" MaxWidth="340" />
         </Border>

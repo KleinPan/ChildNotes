@@ -30,7 +30,7 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.9"
+                        <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.9"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
@@ -44,7 +44,7 @@
                                 <Border Classes="section-title" Margin="0,8,0,4">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <TextBlock Text="{Binding Icon}" FontSize="14"/>
-                                        <TextBlock Text="{Binding Title}" FontSize="13"/>
+                                        <TextBlock Text="{Binding Title}" FontSize="{StaticResource FontSize.Label}"/>
                                     </StackPanel>
                                 </Border>
                                 <!-- 章节卡片 -->
@@ -55,7 +55,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="x:String">
                                                 <TextBlock Text="{Binding}"
-                                                           FontSize="14"
+                                                           FontSize="{StaticResource FontSize.Label}"
                                                            Foreground="{StaticResource TextPrimaryBrush}"
                                                            TextWrapping="Wrap"
                                                            Margin="0,4"/>

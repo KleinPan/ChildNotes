@@ -60,8 +60,8 @@
                 <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8,12,0" Padding="16,12" CornerRadius="{StaticResource Radius.Medium}">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="{DynamicResource Stats_Title}" FontSize="15" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding RangeLabel}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+                            <TextBlock Text="{DynamicResource Stats_Title}" FontSize="{StaticResource FontSize.Body}" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding RangeLabel}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
                         </StackPanel>
                         <Border Grid.Column="1" Classes="stat-chip active" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CurrentTypeLabel}"/>
@@ -108,25 +108,25 @@
                             <controls:DateWheelPicker x:Name="MonthPicker"
                                         SelectedDateChanged="OnMonthChanged"
                                         HorizontalAlignment="Left" Padding="10,4"
-                                        FontSize="12"
+                                        FontSize="{StaticResource FontSize.Caption}"
                                         IsVisible="{Binding ShowMonthPicker}"/>
                             <!--  月模式：年份选择  -->
                             <controls:DateWheelPicker x:Name="YearPicker"
                                         SelectedDateChanged="OnYearChanged"
                                         HorizontalAlignment="Left" Padding="10,4"
-                                        FontSize="12"
+                                        FontSize="{StaticResource FontSize.Caption}"
                                         IsVisible="{Binding ShowYearPicker}"/>
                             <!--  自定义模式：起止日期  -->
                             <StackPanel Orientation="Horizontal" Spacing="6"
                                         IsVisible="{Binding ShowRangePickers}">
                                 <controls:DateWheelPicker x:Name="StartPicker" SelectedDateChanged="OnStartDateChanged"
                                             HorizontalAlignment="Left" Padding="10,4"
-                                            FontSize="12"/>
-                                <TextBlock Text="{DynamicResource Stats_To}" VerticalAlignment="Center" FontSize="12"
+                                            FontSize="{StaticResource FontSize.Caption}"/>
+                                <TextBlock Text="{DynamicResource Stats_To}" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                            Foreground="{StaticResource TextPlaceholderBrush}"/>
                                 <controls:DateWheelPicker x:Name="EndPicker" SelectedDateChanged="OnEndDateChanged"
                                             HorizontalAlignment="Left" Padding="10,4"
-                                            FontSize="12"/>
+                                            FontSize="{StaticResource FontSize.Caption}"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -136,16 +136,16 @@
                 <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,8" Padding="16,14" CornerRadius="{StaticResource Radius.Medium}">
                     <Grid ColumnDefinitions="*,*,*">
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Stats_Total}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding TotalText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            <TextBlock Text="{DynamicResource Stats_Total}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding TotalText}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding AverageLabel}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding AverageText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            <TextBlock Text="{Binding AverageLabel}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding AverageText}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="{DynamicResource Stats_Peak}" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding MaxText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
+                            <TextBlock Text="{DynamicResource Stats_Peak}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding MaxText}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,3,0,0"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -167,13 +167,13 @@
                         <!--  图表标题区（对齐小程序 chart-hd）  -->
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
                             <StackPanel Grid.Column="0">
-                                <TextBlock FontSize="14" FontWeight="SemiBold">
+                                <TextBlock FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold">
                                     <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Trend}"/>
                                 </TextBlock>
-                                <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
+                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"
                                            Text="{Binding CurrentTypeUnit}" Margin="0,2,0,0"/>
                             </StackPanel>
-                            <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
+                            <TextBlock Grid.Column="1" FontSize="{StaticResource FontSize.Label}" FontWeight="Bold"
                                        Foreground="{Binding CurrentTypeColor}"
                                        Text="{Binding TotalText}" VerticalAlignment="Bottom"/>
                         </Grid>
@@ -248,7 +248,7 @@
                 <!--  P0-3: 明细面板（对齐小程序 detail-panel）  -->
                 <Border Background="{StaticResource SurfaceCardBrush}" Margin="12,0,12,12" Padding="16,14" CornerRadius="{StaticResource Radius.Medium}">
                     <StackPanel>
-                        <TextBlock FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10">
+                        <TextBlock FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold" Margin="0,0,0,10">
                             <Run Text="{Binding CurrentTypeLabel}"/><Run Text="{DynamicResource Stats_Detail}"/>
                         </TextBlock>
                         <ItemsControl ItemsSource="{Binding SummaryItems}">
@@ -262,9 +262,9 @@
                                 <DataTemplate x:DataType="vm:SummaryItem">
                                     <Border Classes="detail-item" Margin="0,0,10,8">
                                         <StackPanel>
-                                            <TextBlock Text="{Binding Label}" FontSize="11"
+                                            <TextBlock Text="{Binding Label}" FontSize="{StaticResource FontSize.Caption}"
                                                        Foreground="{StaticResource TextPlaceholderBrush}"/>
-                                            <TextBlock Text="{Binding Value}" FontSize="13" FontWeight="SemiBold"
+                                            <TextBlock Text="{Binding Value}" FontSize="{StaticResource FontSize.Label}" FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}" Margin="0,3,0,0"/>
                                         </StackPanel>
                                     </Border>

@@ -18,13 +18,13 @@
                     <!--  原版头像: 绿色渐变背景  -->
                     <Border Grid.Column="0" Width="56" Height="56"
                             Background="{StaticResource AvatarGradientBrush}"
-                            CornerRadius="28">
+                            CornerRadius="{StaticResource Radius.Pill}">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource SurfaceCardBrush}"
                                    Text="👤" />
                     </Border>
                     <StackPanel Grid.Column="1" Margin="14,0,0,0" VerticalAlignment="Center">
-                        <TextBlock FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding NickName}" />
-                        <TextBlock Margin="0,4,0,0" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding RoleText}" />
+                        <TextBlock FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding NickName}" />
+                        <TextBlock Margin="0,4,0,0" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding RoleText}" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -44,8 +44,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="👨‍👩‍👧‍👦" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_BabyManager}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_BabyManager}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding BabyCountText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
@@ -71,12 +71,12 @@
                         <Border Grid.Column="0" Width="24" Height="24"
                                 Background="{StaticResource FeedingOrangeBrush}"
                                 CornerRadius="{StaticResource Radius.XS}">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="V" />
                         </Border>
-                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
+                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                    Text="{DynamicResource Mine_Membership}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding MembershipStatusText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
@@ -93,13 +93,13 @@
                         </Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Width="24" Height="24"
                                 Background="{StaticResource GrowthBlueBrush}"
-                                CornerRadius="6">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
+                                CornerRadius="{StaticResource Radius.Small}">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="析" />
                         </Border>
-                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="15"
+                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                    Text="{DynamicResource Mine_AiAnalysis}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{DynamicResource Mine_AiAnalysis_Sub}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
@@ -115,7 +115,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📊" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Statistics}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_Statistics}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -129,7 +129,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🎁" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Points}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_Points}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -152,9 +152,9 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🌐" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15"
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                    Text="{DynamicResource Language_Title}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding LanguageDisplayText}" />
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
@@ -170,7 +170,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🤖" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_AiSettings}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_AiSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -184,7 +184,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🔔" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_ReminderSettings}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_ReminderSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -198,7 +198,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="☁️" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_SyncSettings}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_SyncSettings}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -214,7 +214,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="🔧" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_DeveloperOptions}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_DeveloperOptions}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -229,7 +229,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📜" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_PrivacyPolicy}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_PrivacyPolicy}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -243,7 +243,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📑" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_UserAgreement}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_UserAgreement}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -258,14 +258,14 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="📬" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_InAppMessage}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_InAppMessage}" />
                         <Border Grid.Column="2" Height="16" MinWidth="16" Padding="4,0"
                                 Margin="8,0,0,0"
                                 VerticalAlignment="Center"
                                 Background="{StaticResource SemanticErrorBrush}"
-                                CornerRadius="8"
+                                CornerRadius="{StaticResource Radius.Small}"
                                 IsVisible="{Binding HasUnreadMessages}">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource SurfaceCardBrush}"
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="{Binding UnreadMessageCount}" />
                         </Border>
                         <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
@@ -281,7 +281,7 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="❓" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_Help}" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_Help}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -295,8 +295,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
                                    Text="ℹ️" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="15" Text="{DynamicResource Mine_About}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="13"
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_About}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding AppVersion}" />
                     </Grid>

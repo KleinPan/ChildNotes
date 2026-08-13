@@ -66,7 +66,7 @@
         <!--  追踪卡片头部胶囊按钮：对齐小程序端 v-btn / at-btn 基线（蓝色强调）  -->
         <Style Selector="Button.tracker-btn-primary">
             <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
-            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
             <Setter Property="Padding" Value="14,5" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="Background" Value="{StaticResource GrowthBlueBrush}" />
@@ -97,9 +97,9 @@
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
                                 <!--  字号/字重对齐 design-tokens font.size.cardTitle=16-18sp Medium  -->
-                                <TextBlock FontSize="17" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding BabyName}" />
+                                <TextBlock FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Medium" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding BabyName}" />
                                 <Border Padding="9,3" HorizontalAlignment="Left" Background="{StaticResource BrandPrimaryAlpha14Brush}" CornerRadius="{StaticResource Radius.Pill}">
-                                    <TextBlock FontSize="12" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding BabyAgeText}" />
+                                    <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Medium" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding BabyAgeText}" />
                                 </Border>
                             </StackPanel>
                             <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6">
@@ -110,7 +110,7 @@
                                         CornerRadius="{StaticResource Radius.Small}">
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
                                         <TextBlock HorizontalAlignment="Center" FontSize="17" Text="📊" />
-                                        <TextBlock HorizontalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource GrowthBlueBrush}"
+                                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" FontWeight="SemiBold" Foreground="{StaticResource GrowthBlueBrush}"
                                                    Text="{DynamicResource Home_Stats}" />
                                     </StackPanel>
                                 </Button>
@@ -121,7 +121,7 @@
                                         CornerRadius="{StaticResource Radius.Small}">
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="4">
                                         <TextBlock HorizontalAlignment="Center" FontSize="17" Foreground="{StaticResource FeedingOrangeBrush}" Text="✓" />
-                                        <TextBlock HorizontalAlignment="Center" FontSize="11" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"
+                                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"
                                                    Text="{DynamicResource Home_CheckIn}" />
                                     </StackPanel>
                                 </Button>
@@ -141,10 +141,10 @@
                                             Background="{StaticResource FeedAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_LastFeed}" />
+                                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_LastFeed}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LastFeedAgoText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding LastFeedSummary}" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LastFeedAgoText}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding LastFeedSummary}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -157,10 +157,10 @@
                                             Background="{StaticResource DiaperAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_Diaper}" />
+                                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_Diaper}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding DiaperTodayText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding DiaperDetailText}" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding DiaperTodayText}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding DiaperDetailText}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -176,10 +176,10 @@
                                             Background="{StaticResource SleepAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_SleepToday}" />
+                                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_SleepToday}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding SleepTodayText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_SleepCount}" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding SleepTodayText}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_SleepCount}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -192,11 +192,11 @@
                                             Background="{StaticResource GrowthAccentBrush}"
                                             CornerRadius="1.5" />
                                     <StackPanel Grid.Column="1" Spacing="1">
-                                        <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_HeightWeight}" />
+                                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Home_HeightWeight}" />
                                         <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LatestHeightText}" />
-                                            <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="/" />
-                                            <TextBlock FontSize="12" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LatestWeightText}" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LatestHeightText}" />
+                                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="/" />
+                                            <TextBlock FontSize="{StaticResource FontSize.Caption}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding LatestWeightText}" />
                                         </StackPanel>
                                     </StackPanel>
                                 </Grid>
@@ -213,15 +213,15 @@
                                 绑定 AiStatusIcon 让卡片随状态切换图标（☀️/🌡️/⚠️/😊/📝）。
                             -->
                             <TextBlock VerticalAlignment="Center" FontSize="32" Text="{Binding AiStatusIcon}" />
-                            <TextBlock VerticalAlignment="Center" FontSize="15" FontWeight="Bold" Text="{Binding AiStatusTitle}" />
+                            <TextBlock VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" FontWeight="Bold" Text="{Binding AiStatusTitle}" />
                         </StackPanel>
-                        <TextBlock Margin="42,0,0,0" FontSize="13" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding AiStatusSubtitle}" />
-                        <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12"
+                        <TextBlock Margin="42,0,0,0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource BrandPrimaryBrush}" Text="{Binding AiStatusSubtitle}" />
+                        <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="{DynamicResource Home_AiChangeHint}" />
                         <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="6">
                             <PathIcon Width="14" Height="14" Data="{StaticResource icon-lightbulb}" Foreground="{StaticResource VaccineYellowBrush}" />
-                            <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding AiTipText}" />
+                            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding AiTipText}" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -232,9 +232,9 @@
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                             <PathIcon Grid.Column="0" Width="18" Height="18" VerticalAlignment="Center"
                                       Data="{StaticResource icon-vaccine}" />
-                            <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
+                            <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                        FontWeight="SemiBold" Text="{DynamicResource Home_VaccineTracking}" />
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                        Foreground="{StaticResource TextPlaceholderBrush}"
                                        Text="{Binding VaccineProgressText}" />
                             <Button Grid.Column="3" Margin="8,0,0,0" Classes="tracker-btn-outline"
@@ -267,12 +267,12 @@
                                     <!--  VaccineItem 是只读 POCO，属性创建后不变，全部用 OneTime 绑定跳过变更监听订阅  -->
                                     <Border Margin="0,4,0,0" Padding="10,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Small}">
                                         <Grid ColumnDefinitions="Auto,*,Auto">
-                                            <Border Grid.Column="0" Padding="6,2" Background="{StaticResource SurfaceCardBrush}" CornerRadius="4">
-                                                <TextBlock FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding Category, Mode=OneTime}" />
+                                            <Border Grid.Column="0" Padding="6,2" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.XS}">
+                                                <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding Category, Mode=OneTime}" />
                                             </Border>
-                                            <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="13"
+                                            <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                                        Text="{Binding Name, Mode=OneTime}" />
-                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                                        Foreground="{StaticResource TextPlaceholderBrush}"
                                                        Text="{Binding DueText, Mode=OneTime}" />
                                         </Grid>
@@ -302,11 +302,11 @@
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                             <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="18" Text="🚨" />
-                            <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="15"
+                            <TextBlock Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                        FontWeight="SemiBold"
                                        Foreground="{StaticResource SemanticErrorBrush}"
                                        Text="{DynamicResource Home_AbnormalTracking}" />
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="12"
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                        Foreground="{StaticResource SemanticErrorBrush}"
                                        IsVisible="{Binding HasActiveAbnormal}"
                                        Text="{Binding AbnormalStatusText}" />
@@ -320,14 +320,14 @@
                         <!--  活动异常状态摘要（发烧/腹泻/其他异常），无活动异常时隐藏  -->
                         <Border Padding="10,8" Background="{StaticResource MedicineRedLightBrush}" CornerRadius="{StaticResource Radius.Small}" IsVisible="{Binding HasActiveAbnormal}">
                             <StackPanel Spacing="4">
-                                <TextBlock FontSize="13" Foreground="{StaticResource MedicineRedBrush}" Text="{Binding AbnormalSummaryText}" TextWrapping="Wrap" />
+                                <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource MedicineRedBrush}" Text="{Binding AbnormalSummaryText}" TextWrapping="Wrap" />
                                 <StackPanel Margin="0,4,0,0" Orientation="Horizontal" Spacing="8">
                                     <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource MedicineRedLightBrush}" Classes="tracker-btn-outline"
                                             Command="{Binding QuickRecordCommand}"
-                                            CommandParameter="abnormal" Content="{DynamicResource Home_ContinueRecord}" FontSize="11" Foreground="{StaticResource MedicineRedBrush}" />
+                                            CommandParameter="abnormal" Content="{DynamicResource Home_ContinueRecord}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource MedicineRedBrush}" />
                                     <Button Padding="10,4" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource BrandPrimaryBrush}" Classes="tracker-btn-outline"
                                             Command="{Binding MarkAbnormalResolvedCommand}"
-                                            Content="{DynamicResource Home_Recovered}" FontSize="11" Foreground="{StaticResource BrandPrimaryBrush}"
+                                            Content="{DynamicResource Home_Recovered}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource BrandPrimaryBrush}"
                                             IsVisible="{Binding HasOtherAbnormal}" />
                                 </StackPanel>
                             </StackPanel>

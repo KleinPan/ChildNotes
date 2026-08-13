@@ -125,9 +125,9 @@
             <StackPanel>
                 <StackPanel Margin="0,40,0,32" HorizontalAlignment="Center">
                     <TextBlock Margin="0,0,0,8" HorizontalAlignment="Center" FontSize="40" Text="📆" />
-                    <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="{StaticResource GrowthBrownPrimaryBrush}"
+                    <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource GrowthBrownPrimaryBrush}"
                                Text="{DynamicResource Growth_Title}" />
-                    <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}"
+                    <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource GrowthBrownLightBrush}"
                                Text="{DynamicResource Growth_Subtitle}" />
                 </StackPanel>
 
@@ -147,7 +147,7 @@
                                                 <TextBlock Classes="growth-date" Text="{Binding DateText}" />
                                             </Border>
                                         </Grid>
-                                        <Border Padding="10,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="4" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <Border Padding="10,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.XS}" IsVisible="{Binding Content, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                             <TextBlock Classes="growth-content" Text="{Binding Content}" />
                                         </Border>
                                         <!--  照片缩略图网格（最多 4 张，本地路径同步加载，远程 URL 异步加载）  -->
@@ -160,7 +160,7 @@
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:MilestoneThumbItem">
                                                     <Border Width="72" Height="72" Margin="0,0,6,6" Background="{StaticResource SurfaceDisabledBrush}"
-                                                            CornerRadius="6" ClipToBounds="True"
+                                                            CornerRadius="{StaticResource Radius.Small}" ClipToBounds="True"
                                                             PointerPressed="OnPhotoTap">
                                                         <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
                                                     </Border>
@@ -179,7 +179,7 @@
                                            DotSize="14" DotTopMargin="10" HalfSpacing="20" LineBrush="{StaticResource BorderSubtleBrush}"
                                            LineWidth="2" />
                     <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card-add" PointerPressed="OnAddMilestone">
-                        <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource GrowthHintGrayBrush}" Text="{DynamicResource Growth_AddMoment}" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource GrowthHintGrayBrush}" Text="{DynamicResource Growth_AddMoment}" />
                     </Border>
                 </Grid>
 
@@ -188,11 +188,11 @@
                         IsVisible="{Binding Milestones.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
                     <StackPanel HorizontalAlignment="Center" Spacing="10">
                         <TextBlock HorizontalAlignment="Center" FontSize="36" Text="🌱" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource GrowthBrownSecondaryBrush}"
+                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold" Foreground="{StaticResource GrowthBrownSecondaryBrush}"
                                    Text="{DynamicResource Growth_EmptyTitle}" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint1}"
+                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint1}"
                                    TextAlignment="Center" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint2}"
+                        <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint2}"
                                    TextAlignment="Center" />
                         <Button Margin="0,8,0,0" Classes="weui-btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
                     </StackPanel>
@@ -210,7 +210,7 @@
                     <!--  头部（固定）  -->
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="18" FontWeight="Bold"
+                            <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"
                                        Text="{Binding MilestoneEdit.SheetTitle}" />
                             <Button Grid.Column="1" Padding="8,2" Background="Transparent" BorderThickness="0"
                                     Command="{Binding MilestoneEdit.CloseCommand}"
@@ -227,27 +227,27 @@
                                 放在表单顶部可确保展开时有充足空间，不会被底部保存按钮遮挡
                             -->
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditDate}" />
+                                <TextBlock Margin="0,0,0,8" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditDate}" />
                                 <ctrl:DateWheelPicker HorizontalAlignment="Stretch"
                                                       SelectedDate="{Binding MilestoneEdit.RecordDate, Mode=TwoWay}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditTitle}" />
-                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
+                                <TextBlock Margin="0,0,0,8" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditTitle}" />
+                                <TextBox x:Name="MilestoneTitleTextBox" Padding="12,8" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Small}" PlaceholderText="{DynamicResource Growth_EditTitlePlaceholder}"
                                          Text="{Binding MilestoneEdit.Title}" />
                             </StackPanel>
                             <StackPanel>
-                                <TextBlock Margin="0,0,0,8" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditContentLabel}" />
+                                <TextBlock Margin="0,0,0,8" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditContentLabel}" />
                                 <TextBox Height="100" Padding="12,8" VerticalContentAlignment="Top" AcceptsReturn="True"
-                                         Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="6" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
+                                         Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Small}" PlaceholderText="{DynamicResource Growth_EditContentPlaceholder}"
                                          Text="{Binding MilestoneEdit.Content}"
                                          TextWrapping="Wrap" />
                             </StackPanel>
                             <!--  照片编辑区：网格 + 添加按钮，最多 4 张  -->
                             <StackPanel>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
-                                    <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditPhotosLabel}" />
-                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="11"
+                                    <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource Growth_EditPhotosLabel}" />
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Caption}"
                                                Foreground="{StaticResource TextPlaceholderBrush}"
                                                IsVisible="{Binding MilestoneEdit.CanAddPhoto}"
                                                Text="{DynamicResource Growth_EditAddPhotoHint}" />
@@ -262,14 +262,14 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:MilestonePhotoItem">
                                                 <Grid Width="80" Height="80" Margin="0,0,8,8">
-                                                    <Border CornerRadius="6" ClipToBounds="True">
+                                                    <Border CornerRadius="{StaticResource Radius.Small}" ClipToBounds="True">
                                                         <!--  本地路径直接绑定 Bitmap；远程 URL 用 Image 异步加载  -->
                                                         <Image Source="{Binding Bitmap}" Stretch="UniformToFill" />
                                                     </Border>
                                                     <!--  上传中指示器  -->
-                                                    <Border Background="{StaticResource MaskLightBrush}" CornerRadius="6" IsVisible="{Binding IsUploading}">
+                                                    <Border Background="{StaticResource MaskLightBrush}" CornerRadius="{StaticResource Radius.Small}" IsVisible="{Binding IsUploading}">
                                                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   FontSize="10" Foreground="{StaticResource SurfaceCardBrush}" Text="{DynamicResource Growth_Uploading}" />
+                                                                   FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SurfaceCardBrush}" Text="{DynamicResource Growth_Uploading}" />
                                                     </Border>
                                                     <!--  删除按钮（右上角内侧，对齐小程序 top:4rpx right:4rpx）  -->
                                                 <Button Width="22" Height="22" Margin="0,3,3,0"
@@ -291,7 +291,7 @@
                                     </Button>
                                 </WrapPanel>
                             </StackPanel>
-                            <TextBlock FontSize="13" Foreground="{StaticResource SemanticErrorBrush}" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding MilestoneEdit.ErrorMessage}" />
+                            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SemanticErrorBrush}" IsVisible="{Binding MilestoneEdit.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" Text="{Binding MilestoneEdit.ErrorMessage}" />
                         </StackPanel>
                     </ScrollViewer>
 
@@ -321,26 +321,26 @@
                 <!--  关闭按钮  -->
                 <Button Width="44" Height="44" Margin="0,24,24,0"
                         HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="{StaticResource Radius.Pill}"
                         Command="{Binding ClosePreviewCommand}"
                         Content="✕" FontSize="18" Foreground="Black" />
                 <!--  上一张  -->
                 <Button Width="44" Height="44" Margin="24,0"
                         HorizontalAlignment="Left" VerticalAlignment="Center"
-                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="{StaticResource Radius.Pill}"
                         Command="{Binding PreviewPrevCommand}"
                         Content="‹" FontSize="24" Foreground="Black" />
                 <!--  下一张  -->
                 <Button Width="44" Height="44" Margin="24,0"
                         HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="{StaticResource Radius.Pill}"
                         Command="{Binding PreviewNextCommand}"
                         Content="›" FontSize="24" Foreground="Black" />
                 <!--  计数  -->
                 <Border Margin="0,0,0,24" Padding="12,6"
                         HorizontalAlignment="Center" VerticalAlignment="Bottom"
                         Background="{StaticResource GrowthSemiBlackBrush}" CornerRadius="{StaticResource Radius.Medium}">
-                    <TextBlock Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
+                    <TextBlock Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"
                                Text="{Binding PreviewCountText}" />
                 </Border>
             </Grid>

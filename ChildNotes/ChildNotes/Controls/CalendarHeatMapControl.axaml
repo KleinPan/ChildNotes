@@ -113,7 +113,7 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate DataType="controls:CalendarCellItem">
-            <Border CornerRadius="6" BorderThickness="1" Padding="3,2"
+            <Border CornerRadius="{StaticResource Radius.Small}" BorderThickness="1" Padding="3,2"
                     HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                     Background="{Binding CellBackground}"
                     BorderBrush="{Binding CellBorderBrush}"
