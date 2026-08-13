@@ -77,16 +77,16 @@
                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12"
                       IsVisible="{Binding !IsReadOnly}">
                     <Button Grid.Column="0" Content="{DynamicResource Privacy_Disagree}"
-                            Classes="btn secondary" CornerRadius="{StaticResource Radius.Medium}" MinHeight="40"
+                            Classes="btn secondary large" CornerRadius="{StaticResource Radius.Medium}" MinHeight="40"
                             Command="{Binding DisagreeCommand}"/>
                     <Button Grid.Column="1" Content="{DynamicResource Privacy_AgreeContinue}"
-                            Classes="btn primary" MinHeight="40"
+                            Classes="btn primary large" MinHeight="40"
                             Command="{Binding AgreeCommand}"/>
                 </Grid>
 
                 <!-- 只读模式：仅显示关闭按钮 -->
                 <Button Grid.Row="2" Content="{DynamicResource Privacy_Close}"
-                        Classes="btn primary" MinHeight="40"
+                        Classes="btn primary large" MinHeight="40"
                         Command="{Binding CloseCommand}"
                         IsVisible="{Binding IsReadOnly}"/>
 

@@ -265,6 +265,7 @@
                              CancelText="{DynamicResource Common_Cancel}"
                              ConfirmCommand="{Binding ConfirmDeleteCommand}"
                              ConfirmText="{DynamicResource Feeding_DeleteConfirmTitle}"
+                             IsDangerConfirm="True"
                              IsOpen="{Binding ShowDeleteConfirm}">
             <controls:DialogHost.MessageContent>
                 <StackPanel HorizontalAlignment="Center">

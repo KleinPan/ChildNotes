@@ -210,7 +210,7 @@ Hover 规则：
 场景规则：
 
 - 页面水平边距（手机）：16px
-- 卡片间距：12-16px
+- 卡片间距：使用 `spacing.md` 或 `spacing.lg`
 - 大模块间距：24px
 
 ## Radius

@@ -242,6 +242,9 @@
     <CornerRadius x:Key="Radius.Large">16</CornerRadius>
     <CornerRadius x:Key="Radius.XL">24</CornerRadius>
     <CornerRadius x:Key="Radius.Pill">999</CornerRadius>
+
+    <!-- Bottom Sheet 顶部圆角（radius.xl，底部贴边为 0），规范 interaction.md §4 -->
+    <CornerRadius x:Key="Radius.XLTop">24,24,0,0</CornerRadius>
     <!-- 兼容旧引用（已废弃，新代码请用上面的语义 Token） -->
     <CornerRadius x:Key="Radius.PrimaryButton">999</CornerRadius>
     <CornerRadius x:Key="Radius.SecondaryButton">12</CornerRadius>
@@ -277,7 +280,7 @@
     <BoxShadows x:Key="Shadow.Modal">0 8 24 0 #26000000</BoxShadows>
 
     <!-- ============ Motion / Duration (毫秒) ============ -->
-    <x:Double x:Key="Motion.Duration.Fast">80</x:Double>
-    <x:Double x:Key="Motion.Duration.Normal">200</x:Double>
+    <x:Double x:Key="Motion.Duration.Fast">150</x:Double>
+    <x:Double x:Key="Motion.Duration.Normal">250</x:Double>
     <x:Double x:Key="Motion.Duration.Slow">400</x:Double>
 </ResourceDictionary>

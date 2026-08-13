@@ -35,8 +35,8 @@
     <Style Selector="Border.card">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
-        <Setter Property="Padding" Value="14" />
-        <Setter Property="Margin" Value="12,8" />
+        <Setter Property="Padding" Value="{StaticResource Spacing.Lg}" />
+        <Setter Property="Margin" Value="{StaticResource Spacing.CardMargin}" />
         <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}" />
     </Style>
 
@@ -120,11 +120,10 @@
         <Setter Property="Background" Value="{StaticResource ActionPrimaryPressedBrush}" />
     </Style>
 
-    <!-- Secondary Button: Action.Secondary 背景 / Text.Primary 文字 / Border.Subtle 边框 / medium 圆角
-         用于"取消/返回/辅助操作" -->
+    <!-- Secondary Button: Action.Secondary 背景 / Text.Primary 文字 / Border.Subtle 边框
+         用于"取消/返回/辅助操作"
+         Height/MinHeight/Padding 由 Size 决定，正交规则（components.md 5.1.2） -->
     <Style Selector="Button.btn.secondary">
-        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
-        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
         <Setter Property="Background" Value="{StaticResource ActionSecondaryBackgroundBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ActionSecondaryForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
@@ -238,7 +237,7 @@
         <Setter Property="Transitions">
             <Transitions>
                 <TransformOperationsTransition Property="RenderTransform"
-                                               Duration="0:0:0.1"
+                                               Duration="0:0:0.15"
                                                Easing="QuadraticEaseOut"/>
             </Transitions>
         </Setter>
@@ -319,8 +318,8 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-        <Setter Property="MinWidth" Value="36"/>
-        <Setter Property="MinHeight" Value="36"/>
+        <Setter Property="MinWidth" Value="40"/>
+        <Setter Property="MinHeight" Value="40"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="HorizontalAlignment" Value="Right"/>
     </Style>
@@ -338,7 +337,7 @@
         <Setter Property="RenderTransform" Value="none"/>
         <Setter Property="Transitions">
             <Transitions>
-                <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
             </Transitions>
         </Setter>
     </Style>

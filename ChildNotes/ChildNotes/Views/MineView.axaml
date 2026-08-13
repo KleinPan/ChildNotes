@@ -305,7 +305,7 @@
 
             <!--  原版退出登录: 白底红字  -->
             <Button Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Classes="btn secondary"
+                    Classes="btn secondary large"
                     Command="{Binding LogoutCommand}"
                     Content="{DynamicResource Mine_Logout}"
                     Foreground="{StaticResource SemanticErrorBrush}" />

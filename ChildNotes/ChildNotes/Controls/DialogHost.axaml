@@ -8,20 +8,21 @@
 
     <Panel x:Name="DialogContainer" IsVisible="False">
         <Border x:Name="ModalMask" Classes="modal-mask"/>
-        <Border x:Name="DialogContent" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Large}" Padding="24,20"
+        <Border x:Name="DialogContent" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.XL}" Padding="24,20"
                 MaxWidth="300" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="12">
                 <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                           FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
+                           FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" HorizontalAlignment="Center"/>
                 <ContentControl Content="{Binding MessageContent, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
                 <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Stretch">
                     <Grid ColumnDefinitions="*,12,*">
                         <Button Grid.Column="0" Content="{Binding CancelText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                                Classes="btn secondary" HorizontalAlignment="Stretch"
+                                Classes="btn secondary large" HorizontalAlignment="Stretch"
                                 Command="{Binding CancelCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
                         <Button Grid.Column="2" Content="{Binding ConfirmText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                                Classes="btn primary" HorizontalAlignment="Stretch"
-                                Command="{Binding ConfirmCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
+                                Classes="btn primary large" HorizontalAlignment="Stretch"
+                                Command="{Binding ConfirmCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
+                                x:Name="ConfirmButton"/>
                     </Grid>
                 </StackPanel>
             </StackPanel>

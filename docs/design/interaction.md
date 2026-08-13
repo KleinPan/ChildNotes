@@ -78,7 +78,7 @@ Bottom Sheet
 ### Header 规则
 
 - Header 非必须。如 Content 本身已表达清晰（如 Quick Record Sheet 的图标网格），可不设 Header。
-- 如设 Header，Title 使用 `font.size.cardTitle` (18sp Medium)。
+- 如设 Header，Title 使用 `font.size.cardTitle`。
 - Close Action（关闭按钮）可选，放 Header 右侧；若不设，用户通过下滑或返回键关闭。
 
 ### 关闭规则（强制）

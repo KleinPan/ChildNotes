@@ -70,7 +70,7 @@
                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                     <!-- 保存按钮 -->
-                    <Button Content="{DynamicResource BabySetup_Start}" Classes="btn primary"
+                    <Button Content="{DynamicResource BabySetup_Start}" Classes="btn primary large"
                             Command="{Binding SaveCommand}" IsEnabled="{Binding !Saving}"
                             Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
 

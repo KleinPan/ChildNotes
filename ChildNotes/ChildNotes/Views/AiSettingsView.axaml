@@ -96,7 +96,7 @@
                 </Border>
 
                 <!-- 连接测试 -->
-                <Button Content="{Binding TestButtonText}" Classes="btn secondary" Margin="12,12"
+                <Button Content="{Binding TestButtonText}" Classes="btn secondary large" Margin="12,12"
                         HorizontalAlignment="Stretch"
                         Command="{Binding TestConnectionCommand}"
                         IsEnabled="{Binding !IsTesting}"/>
@@ -133,7 +133,7 @@
                     </StackPanel>
                 </Border>
 
-                <Button Content="{DynamicResource AiSettings_Save}" Classes="btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource AiSettings_Save}" Classes="btn primary large" Margin="12,16" HorizontalAlignment="Stretch"
                         Command="{Binding SaveCommand}"/>
 
                 <!-- 说明 -->

@@ -199,7 +199,7 @@
                         <!-- ===== 底部家人管理区域 ===== -->
 
                         <!-- 申请加入新家庭按钮（所有人可见，全宽底部按钮用 default 样式，避免 pill+stretch 变椭圆） -->
-                        <Button Content="{DynamicResource Family_JoinById}" Classes="btn secondary"
+                        <Button Content="{DynamicResource Family_JoinById}" Classes="btn secondary large"
                                 Margin="12,12" HorizontalAlignment="Stretch"
                                 Click="OnJoinTap"/>
 
@@ -266,7 +266,7 @@
 
                 <!-- 底部添加宝宝按钮（全宽底部按钮用 default 样式，避免 pill+stretch 变椭圆） -->
                 <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0" Padding="16,12">
-                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="btn secondary"
+                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="btn secondary large"
                             HorizontalAlignment="Stretch"
                             Click="OnAddTapped"/>
                 </Border>
@@ -276,10 +276,14 @@
         <!-- 编辑/添加表单（统一为：标题栏 ✕ 关闭 + 底部 保存按钮，与 RecordSheetView 一致） -->
         <!-- 抽屉动画：mask 淡入淡出 + panel 从底部滑入，由 code-behind 控制 open class -->
         <Border x:Name="EditorSheet" Classes="drawer-mask" IsVisible="{Binding IsEditorOpen}">
-            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="24,24,0,0" VerticalAlignment="Bottom" MaxHeight="600">
-                <Grid RowDefinitions="Auto,*,Auto">
+            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.XLTop}" VerticalAlignment="Bottom" MaxHeight="600">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <!-- Drag Handle（interaction.md §4 Anatomy，必须） -->
+                    <Border Grid.Row="0" Height="4" Width="40" CornerRadius="{StaticResource Radius.Pill}"
+                            Background="{StaticResource BorderSubtleBrush}"
+                            HorizontalAlignment="Center" Margin="0,8"/>
                     <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
-                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="1" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding EditorTitle}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"/>
                             <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
@@ -370,7 +374,7 @@
 
                             <!-- 删除宝宝按钮（仅编辑模式）：危险操作入口
                                  规范 5.1.6: 列表/表单内的危险入口用 Secondary + 红色文字，不用红色实心 -->
-                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="btn secondary"
+                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="btn secondary large"
                                     Foreground="{StaticResource SemanticErrorBrush}" BorderBrush="{StaticResource SemanticErrorBrush}"
                                     IsVisible="{Binding IsEditing}"
                                     HorizontalAlignment="Stretch" Margin="0,16,0,0"
@@ -379,11 +383,11 @@
                     </ScrollViewer>
 
                     <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
-                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
+                    <Border Grid.Row="3" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,10,*">
-                            <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary"
+                            <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large"
                                     Command="{Binding CloseEditorCommand}"/>
-                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary"
+                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary large"
                                     Command="{Binding SaveCommand}"/>
                         </Grid>
                     </Border>
@@ -396,7 +400,8 @@
                              Title="{DynamicResource BabyMgr_DeleteTitle}"
                              CancelText="{DynamicResource Common_Cancel}" ConfirmText="{DynamicResource Common_Delete}"
                              CancelCommand="{Binding CloseDeleteConfirmCommand}"
-                             ConfirmCommand="{Binding ConfirmDeleteCommand}">
+                             ConfirmCommand="{Binding ConfirmDeleteCommand}"
+                             IsDangerConfirm="True">
             <controls:DialogHost.MessageContent>
                 <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap">
                     <Run Text="确定要删除"/>
@@ -433,8 +438,8 @@
                     <TextBlock Text="{Binding JoinError}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SemanticErrorBrush}"
                                Margin="0,0,0,8" TextWrapping="Wrap"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseJoinCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="btn primary" Command="{Binding ConfirmJoinCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large" Command="{Binding CloseJoinCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="btn primary large" Command="{Binding ConfirmJoinCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -463,7 +468,7 @@
                     <TextBlock Text="{Binding EditingRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
                                FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource BrandPrimaryBrush}" Margin="0,4,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseRoleEditorCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large" Command="{Binding CloseRoleEditorCommand}"/>
                         <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary" Command="{Binding ConfirmRoleCommand}"/>
                     </Grid>
                 </StackPanel>
@@ -472,15 +477,15 @@
 
         <!-- 移除成员确认弹窗 -->
         <Border Background="{StaticResource MaskBrush}" IsVisible="{Binding IsRemoveConfirmOpen}">
-            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}"
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.XL}"
                     Width="320" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <StackPanel>
                     <TextBlock Text="{Binding RemoveConfirmTitle}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="SemiBold" Margin="0,0,0,16"/>
                     <TextBlock Text="{Binding RemoveConfirmBody}" FontSize="{StaticResource FontSize.Label}" TextWrapping="Wrap"
                                Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseRemoveConfirmCommand}"/>
-                        <Button Grid.Column="2" Content="{Binding RemoveConfirmButtonText}" Classes="btn danger" Command="{Binding ConfirmRemoveCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large" Command="{Binding CloseRemoveConfirmCommand}"/>
+                        <Button Grid.Column="2" Content="{Binding RemoveConfirmButtonText}" Classes="btn danger large" Command="{Binding ConfirmRemoveCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

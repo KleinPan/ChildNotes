@@ -63,20 +63,20 @@
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}"
                                    FontSize="{StaticResource FontSize.Label}" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                        <Button Content="{DynamicResource Login_LoginBtn}" Classes="btn primary"
+                        <Button Content="{DynamicResource Login_LoginBtn}" Classes="btn primary large"
                                 Command="{Binding SubmitCommand}"
                                 IsVisible="{Binding !IsRegisterMode}"
                                 Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-                        <Button Content="{DynamicResource Login_RegisterBtn}" Classes="btn primary"
+                        <Button Content="{DynamicResource Login_RegisterBtn}" Classes="btn primary large"
                                 Command="{Binding SubmitCommand}"
                                 IsVisible="{Binding IsRegisterMode}"
                                 Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
 
-                        <Button Content="{DynamicResource Login_GoRegister}" Classes="btn secondary"
+                        <Button Content="{DynamicResource Login_GoRegister}" Classes="btn secondary large"
                                 Command="{Binding ToggleModeCommand}"
                                 IsVisible="{Binding !IsRegisterMode}"
                                 HorizontalAlignment="Stretch"/>
-                        <Button Content="{DynamicResource Login_GoLogin}" Classes="btn secondary"
+                        <Button Content="{DynamicResource Login_GoLogin}" Classes="btn secondary large"
                                 Command="{Binding ToggleModeCommand}"
                                 IsVisible="{Binding IsRegisterMode}"
                                 HorizontalAlignment="Stretch"/>

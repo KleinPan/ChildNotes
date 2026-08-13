@@ -47,6 +47,10 @@ public partial class DialogHost : UserControl
     public static readonly StyledProperty<ICommand?> ConfirmCommandProperty =
         AvaloniaProperty.Register<DialogHost, ICommand?>(nameof(ConfirmCommand));
 
+    /// <summary>确认按钮是否为危险样式（破坏性操作最终确认使用 Danger Button，见 components.md 5.1.6）。</summary>
+    public static readonly StyledProperty<bool> IsDangerConfirmProperty =
+        AvaloniaProperty.Register<DialogHost, bool>(nameof(IsDangerConfirm));
+
     private bool _wasOpen = false;
 
     public DialogHost()
@@ -71,6 +75,24 @@ public partial class DialogHost : UserControl
             }
             _wasOpen = newValue;
         }
+        else if (change.Property == IsDangerConfirmProperty)
+        {
+            UpdateConfirmButtonStyle(change.GetNewValue<bool>());
+        }
+    }
+
+    /// <summary>
+    /// 根据 IsDangerConfirm 切换确认按钮的 Visual Type：
+    /// true → btn danger large（破坏性操作最终确认）
+    /// false → btn primary large（普通确认）
+    /// 规范依据：components.md 5.1.6 Danger Button 业务场景映射（MUST）。
+    /// </summary>
+    private void UpdateConfirmButtonStyle(bool isDanger)
+    {
+        if (ConfirmButton == null) return;
+        ConfirmButton.Classes.Remove("primary");
+        ConfirmButton.Classes.Remove("danger");
+        ConfirmButton.Classes.Add(isDanger ? "danger" : "primary");
     }
 
     /// <summary>
@@ -146,8 +168,10 @@ public partial class DialogHost : UserControl
             }
 
             // 并行执行：遮罩淡出 + 卡片缩小淡出
-            var maskAnim = CreateFadeAnimation(1, 0, 200, new CubicEaseIn());
-            var cardAnim = CreateDialogExitAnimation(200, new CubicEaseIn());
+            // 退场用 fast=150ms（design-tokens.md Motion.Duration.Fast）
+            int durationFast = GetMotionDuration("Motion.Duration.Fast", 150);
+            var maskAnim = CreateFadeAnimation(1, 0, durationFast, new CubicEaseIn());
+            var cardAnim = CreateDialogExitAnimation(durationFast, new CubicEaseIn());
 
             await Task.WhenAll(
                 maskAnim.RunAsync(ModalMask),
@@ -161,6 +185,20 @@ public partial class DialogHost : UserControl
             System.Diagnostics.Debug.WriteLine($"DialogHost 关闭动画异常: {ex.Message}");
             DialogContainer.IsVisible = false;
         }
+    }
+
+    /// <summary>
+    /// 从应用资源读取 Motion.Duration.* Token 值，读取失败时回退到默认值。
+    /// 规范依据：design-tokens.md Motion 章节，动画时长必须引用 Token。
+    /// </summary>
+    private static int GetMotionDuration(string resourceKey, int fallbackMs)
+    {
+        if (Application.Current?.TryFindResource(resourceKey, out var value) == true
+            && value is double d)
+        {
+            return (int)d;
+        }
+        return fallbackMs;
     }
 
     /// <summary>创建淡入淡出动画。</summary>
@@ -270,5 +308,15 @@ public partial class DialogHost : UserControl
     {
         get => GetValue(ConfirmCommandProperty);
         set => SetValue(ConfirmCommandProperty, value);
+    }
+
+    /// <summary>
+    /// 确认按钮是否使用 Danger 样式。
+    /// 破坏性操作（删除/移除/退出/清空）的最终确认必须设为 true（components.md 5.1.6，MUST）。
+    /// </summary>
+    public bool IsDangerConfirm
+    {
+        get => GetValue(IsDangerConfirmProperty);
+        set => SetValue(IsDangerConfirmProperty, value);
     }
 }

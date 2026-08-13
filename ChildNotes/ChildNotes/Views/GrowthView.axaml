@@ -194,7 +194,7 @@
                                    TextAlignment="Center" />
                         <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint2}"
                                    TextAlignment="Center" />
-                        <Button Margin="0,8,0,0" Classes="btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
+                        <Button Margin="0,8,0,0" Classes="btn primary large" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -205,10 +205,14 @@
             <Border Classes="modal-mask" />
 
             <!--  Sheet 弹层  -->
-            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource SurfaceCardBrush}" CornerRadius="24,24,0,0">
-                <Grid RowDefinitions="Auto,*,Auto">
+            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.XLTop}">
+                <Grid RowDefinitions="Auto,Auto,*,Auto">
+                    <!-- Drag Handle（interaction.md §4 Anatomy，必须） -->
+                    <Border Grid.Row="0" Height="4" Width="40" CornerRadius="{StaticResource Radius.Pill}"
+                            Background="{StaticResource BorderSubtleBrush}"
+                            HorizontalAlignment="Center" Margin="0,8"/>
                     <!--  头部（固定）  -->
-                    <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
+                    <Border Grid.Row="1" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"
                                        Text="{Binding MilestoneEdit.SheetTitle}" />
@@ -296,12 +300,12 @@
                     </ScrollViewer>
 
                     <!--  底部按钮栏（固定）  -->
-                    <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
+                    <Border Grid.Row="3" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="btn primary"
+                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="btn primary large"
                                     Command="{Binding MilestoneEdit.SaveCommand}"
                                     Content="{DynamicResource Common_Save}" />
-                            <Button Grid.Column="1" Margin="8,0,0,0" Classes="btn danger"
+                            <Button Grid.Column="1" Margin="8,0,0,0" Classes="btn danger large"
                                     Command="{Binding MilestoneEdit.DeleteCommand}"
                                     Content="{DynamicResource Common_Delete}"
                                     IsVisible="{Binding MilestoneEdit.SheetTitle, Converter={x:Static v:GrowthView.IsEditingConverter}}" />

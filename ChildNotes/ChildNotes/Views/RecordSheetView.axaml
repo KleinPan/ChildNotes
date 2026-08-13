@@ -271,11 +271,15 @@
         -->
         <Border x:Name="SheetRoot" MaxHeight="600" VerticalAlignment="Bottom"
                 Background="{StaticResource SurfaceCardBrush}"
-                CornerRadius="24,24,0,0"
+                CornerRadius="{StaticResource Radius.XLTop}"
                 IsVisible="{Binding IsVisible}">
 
-            <Grid RowDefinitions="Auto,*,Auto">
-                <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
+            <Grid RowDefinitions="Auto,Auto,*,Auto">
+                <!-- Drag Handle（interaction.md §4 Anatomy，必须） -->
+                <Border Grid.Row="0" Height="4" Width="40" CornerRadius="{StaticResource Radius.Pill}"
+                        Background="{StaticResource BorderSubtleBrush}"
+                        HorizontalAlignment="Center" Margin="0,8"/>
+                <Border Grid.Row="1" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"
                                    Text="{Binding SheetTitle}" />
@@ -285,7 +289,7 @@
                     </Grid>
                 </Border>
 
-                <ScrollViewer x:Name="ContentScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer x:Name="ContentScroll" Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                     <StackPanel x:Name="ContentStackPanel" Margin="16,16">
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsFeed}}">
@@ -975,7 +979,7 @@
                                         <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_PreventDiseasePlaceholder}" Text="{Binding VaccineForm.CustomVaccineDisease}" />
                                     </StackPanel>
                                 </Border>
-                                <Button HorizontalAlignment="Stretch" Classes="btn primary" Click="OnAddCustomVaccine" Content="{DynamicResource RS_AddToTimeline}" />
+                                <Button HorizontalAlignment="Stretch" Classes="btn primary large" Click="OnAddCustomVaccine" Content="{DynamicResource RS_AddToTimeline}" />
                             </StackPanel>
 
                             <!--  C. 已选剂次卡片  -->
@@ -1286,11 +1290,11 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <Border Grid.Row="2" Padding="16,12"
+                <Border Grid.Row="3" Padding="16,12"
                         BorderBrush="{StaticResource SurfaceDividerBrush}"
                         BorderThickness="0,1,0,0"
                         IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.NotVaccine}}">
-                    <Button HorizontalAlignment="Stretch" Classes="btn primary" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />
+                    <Button HorizontalAlignment="Stretch" Classes="btn primary large" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />
                 </Border>
             </Grid>
         </Border>

@@ -188,7 +188,7 @@
                     <TextBlock FontSize="{StaticResource FontSize.Label}" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryBrush}" VerticalAlignment="Center"
                                Text="{Binding SelectedPlanType, Converter={x:Static views:MembershipView.PlanTypeToNameConverter}}"/>
                 </StackPanel>
-                <Button Content="{DynamicResource Membership_Subscribe}" Classes="btn primary" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource Membership_Subscribe}" Classes="btn primary large" HorizontalAlignment="Stretch"
                         Command="{Binding PayCommand}" IsEnabled="{Binding !Paying}"/>
             </StackPanel>
         </Border>
