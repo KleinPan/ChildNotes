@@ -177,8 +177,13 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
                 Log.Warn(Tag, "[PhotoPicker] ContentResolver.OpenInputStream 返回 null");
                 return null;
             }
+            // input 是 System.IO.Stream，output 是 Java.IO.FileOutputStream
+            // 不能用 CopyTo（类型不匹配），手动用缓冲区复制
             using var output = new JavaIO.FileOutputStream(target);
-            input.CopyTo(output);
+            var buffer = new byte[8192];
+            int read;
+            while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+                output.Write(buffer, 0, read);
             output.Flush();
             return target.AbsolutePath;
         }
