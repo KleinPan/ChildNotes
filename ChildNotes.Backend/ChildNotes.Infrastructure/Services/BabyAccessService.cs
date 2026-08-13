@@ -34,9 +34,13 @@ public class BabyAccessService : IBabyAccessService
     {
         // 忽略软删过滤器：同步通道需要包含已软删的 baby，以便多设备间传递删除状态。
         // 业务查询通道（GetAccessibleBabiesAsync / GetDefaultBabyAsync）仍受 HasQueryFilter 约束。
+        // 同步通道同时包含 status=removed 的 baby_member，让被移除的成员下次 Pull
+        // 能拉到自己被移除的状态（客户端 GetByUser 按 active 过滤，removed 不会出现在宝宝列表），
+        // 否则被移除成员永远看不到 baby_member 变化，本地数据无法清理。
         return await _db.Babies.IgnoreQueryFilters()
             .Where(b => b.UserId == userId
-                || _db.BabyMembers.Any(m => m.BabyId == b.Id && m.UserId == userId && m.Status == StatusConstants.BabyMember.Active))
+                || _db.BabyMembers.Any(m => m.BabyId == b.Id && m.UserId == userId
+                    && (m.Status == StatusConstants.BabyMember.Active || m.Status == StatusConstants.BabyMember.Removed)))
             .Select(b => b.Id).ToListAsync(ct);
     }
 
