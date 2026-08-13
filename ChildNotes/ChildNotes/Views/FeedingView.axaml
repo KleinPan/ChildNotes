@@ -189,7 +189,7 @@
                                 - 上层：卡片内容，通过 RenderTransform 平移露出删除按钮
                             -->
                             <Border Margin="12,4" ClipToBounds="True" CornerRadius="{StaticResource Radius.Medium}"
-                                    Background="{StaticResource SurfaceBackgroundBrush}">
+                                    Background="{StaticResource SurfaceCardBrush}">
                             <Panel>
                                 <!--  底层删除按钮：对齐小程序 delete-action，红底白字  -->
                                 <Border Width="72" HorizontalAlignment="Right" Background="{StaticResource SemanticErrorBrush}" CornerRadius="0,8,8,0"

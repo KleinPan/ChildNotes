@@ -21,5 +21,4 @@
   <Project Path="ChildNotes/ChildNotes.iOS/ChildNotes.iOS.csproj">
     <Deploy />
   </Project>
-  <Project Path="ChildNotes/ChildNotes.UiDesignCheck/ChildNotes.UiDesignCheck.csproj" />
 </Solution>
