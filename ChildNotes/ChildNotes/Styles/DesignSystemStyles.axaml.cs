@@ -3,9 +3,9 @@ using Avalonia.Styling;
 
 namespace ChildNotes.Styles;
 
-public class WeUIStyles : global::Avalonia.Styling.Styles
+public class DesignSystemStyles : global::Avalonia.Styling.Styles
 {
-    public WeUIStyles()
+    public DesignSystemStyles()
     {
         AvaloniaXamlLoader.Load(this);
     }

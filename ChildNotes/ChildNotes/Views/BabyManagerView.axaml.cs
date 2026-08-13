@@ -257,28 +257,25 @@ public partial class BabyManagerView : UserControl
             vm.SelectEditingRole(code);
     }
 
-    /// <summary>
-    /// 打开移除成员确认弹窗。
-    /// Tag 传该成员所属的 BabyFamilyDto（由 XAML 绑定到 $parent[ItemsControl].((Baby)DataContext).Family），
-    /// CommandParameter 传当前成员 BabyMemberDto。
-    /// </summary>
+    /// <summary>移除成员点击（支持 Button 和 TextBlock 两种触发源）。
+    /// Tag 传 BabyFamilyDto（family），DataContext 传 BabyMemberDto（member）。</summary>
     private void OnRemoveMemberTap(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button btn
-            && btn.Tag is BabyFamilyDto family
-            && btn.CommandParameter is BabyMemberDto member
+        if (sender is Control el
+            && el.Tag is BabyFamilyDto family
+            && el.DataContext is BabyMemberDto member
             && Vm is { } vm)
         {
             vm.OpenRemoveConfirm(family, member);
         }
     }
 
-    /// <summary>退出家庭按钮点击（自己主动离开该宝宝的家庭）。</summary>
+    /// <summary>退出家庭点击（自己主动离开该宝宝的家庭）。</summary>
     private void OnLeaveFamilyTap(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button btn
-            && btn.Tag is BabyFamilyDto family
-            && btn.CommandParameter is BabyMemberDto member
+        if (sender is Control el
+            && el.Tag is BabyFamilyDto family
+            && el.DataContext is BabyMemberDto member
             && Vm is { } vm)
         {
             // 退出家庭 = 移除自己，复用移除确认弹窗
@@ -329,15 +326,17 @@ file sealed class IsNullConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
-/// <summary>仅当当前用户是 owner 且目标成员不是自己时返回 true（用于显示"移除成员"按钮）。</summary>
+/// <summary>仅当当前用户是 owner 且目标成员不是自己且不是 owner 时返回 true（用于显示"移除成员"按钮）。
+/// Owner（创建人）不能被其他人移除，只能自己主动退出。</summary>
 file sealed class AndOwnerConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        // value 是 BabyMemberDto 的 Mine 属性（!Mine = 不是自己）
-        if (value is bool notMine && notMine)
+        // value 是 BabyMemberDto 本身（通过 DataContext 绑定传入）
+        if (value is BabyMemberDto member)
         {
-            return true; // 简化：非自己时允许显示（ViewModel 层可进一步控制）
+            // 不能移除自己（自己用"退出"），也不能移除 Owner
+            return !member.Mine && !member.Owner;
         }
         return false;
     }

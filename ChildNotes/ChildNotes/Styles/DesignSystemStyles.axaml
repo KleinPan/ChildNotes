@@ -1,9 +1,17 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChildNotes.Styles.WeUIStyles">
+        x:Class="ChildNotes.Styles.DesignSystemStyles">
 
     <!-- ==================================================================
-         通用样式：所有 Token 引用来自 DesignTokens.axaml
+         Design System 通用样式（基于 DesignTokens 语义命名）
+         原 WeUIStyles.axaml 重命名迁移，类名映射：
+           weui-btn          → btn
+           weui-btn primary  → btn primary
+           weui-btn default  → btn secondary
+           weui-btn warn     → btn primary (规范无 Danger Button，危险操作靠 Dialog 上下文表达)
+           weui-btn mini     → btn compact
+           weui-card         → card
+           weui-cell         → cell
          规范对齐:
            - Card 圆角 radius.large=16 / 阴影 shadow.card
            - Primary Button 高度 48 / 圆角 pill / 字号 label=14
@@ -24,7 +32,7 @@
 
     <!-- ============ Card 通用卡片 ============ -->
     <!-- design-tokens: 普通 Card 圆角 radius.large=16 / 阴影 shadow.card -->
-    <Style Selector="Border.weui-card">
+    <Style Selector="Border.card">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
         <Setter Property="Padding" Value="14" />
@@ -33,7 +41,7 @@
     </Style>
 
     <!-- List Cell：与 Card 同圆角，无阴影 -->
-    <Style Selector="Border.weui-cell">
+    <Style Selector="Border.cell">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
         <Setter Property="Padding" Value="14,12" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
@@ -59,16 +67,27 @@
     </Style>
 
     <!-- ============ Button 按钮交互反馈 ============ -->
+    <!-- 规范：components.md 5.1 Button
+       - 视觉类型 × 布局类型 正交
+       - 视觉类型: primary / secondary / tertiary / danger / text / icon
+       - 布局类型: 由使用方在 XAML 上通过 HorizontalAlignment/Grid 布局决定
+       - 尺寸: btn.small (32) / 默认 (40) / btn.large (48)
+       - 危险操作入口（列表内"移除/退出"）→ btn.text (红色文字)，不用红色实心
+       - 危险操作最终确认（Dialog 内）→ btn.danger (medium 圆角，红色实心) -->
     <!-- Avalonia 12 规范：Transitions + :pressed 伪类 -->
     <!-- 必须设置 RenderTransform="none" 初始值，否则首次过渡从 null 跳变 -->
-    <Style Selector="Button.weui-btn">
-        <!-- 圆角默认 medium=12（Secondary/普通控件）；Primary 通过下方专属 Selector 覆盖为 pill -->
+    <Style Selector="Button.btn">
+        <!-- 圆角默认 medium=12（Secondary/普通控件）；Primary/Danger 通过下方专属 Selector 覆盖 -->
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
         <Setter Property="FontWeight" Value="Medium" />
         <!-- Button 文字统一 label=14（design-tokens: Button 文字统一用 font.size.label） -->
         <Setter Property="FontSize" Value="{StaticResource FontSize.Label}" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <!-- 强制 MinWidth，防止按钮被压缩成圆点（components.md 5.1.2） -->
+        <Setter Property="MinWidth" Value="72" />
+        <Setter Property="MinHeight" Value="40" />
         <Setter Property="RenderTransform" Value="none"/>
         <Setter Property="Transitions">
             <Transitions>
@@ -78,52 +97,121 @@
             </Transitions>
         </Setter>
     </Style>
-    <Style Selector="Button.weui-btn:pressed">
+    <Style Selector="Button.btn:pressed">
         <Setter Property="RenderTransform" Value="scale(0.97)"/>
     </Style>
 
-    <!-- Primary Button: 高度 large=48 / 圆角 medium=12 / 品牌色底 -->
-    <Style Selector="Button.weui-btn.primary">
+    <!-- ============ 视觉类型 ============ -->
+
+    <!-- Primary Button: 品牌色底 / pill 圆角 / large=48 高度
+         用于"保存/确认/提交"等核心动作 -->
+    <Style Selector="Button.btn.primary">
         <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
         <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
         <Setter Property="Background" Value="{StaticResource ActionPrimaryDefaultBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
-    <Style Selector="Button.weui-btn.primary:pointerover /template/ ContentPresenter">
+    <Style Selector="Button.btn.primary:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource ActionPrimaryHoverBrush}" />
     </Style>
-    <Style Selector="Button.weui-btn.primary:pressed /template/ ContentPresenter">
+    <Style Selector="Button.btn.primary:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource ActionPrimaryPressedBrush}" />
     </Style>
 
-    <!-- Warn Button: 危险操作，Semantic.Error 底 -->
-    <Style Selector="Button.weui-btn.warn">
-        <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-    </Style>
-
-    <!-- Default/Secondary Button: Action.Secondary 背景 / Text.Primary 文字 / Border.Subtle 边框 -->
-    <Style Selector="Button.weui-btn.default">
+    <!-- Secondary Button: Action.Secondary 背景 / Text.Primary 文字 / Border.Subtle 边框 / medium 圆角
+         用于"取消/返回/辅助操作" -->
+    <Style Selector="Button.btn.secondary">
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
         <Setter Property="Background" Value="{StaticResource ActionSecondaryBackgroundBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ActionSecondaryForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
-    <Style Selector="Button.weui-btn.default:pointerover /template/ ContentPresenter">
+    <Style Selector="Button.btn.secondary:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource ActionSecondaryHoverBrush}" />
     </Style>
-    <Style Selector="Button.weui-btn.default:pressed /template/ ContentPresenter">
+    <Style Selector="Button.btn.secondary:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}" />
     </Style>
 
-    <!-- Mini Button: 紧凑型，字号 caption=12 -->
-    <Style Selector="Button.weui-btn.mini">
+    <!-- Tertiary Button: 透明底 / 文字 Brand Primary / medium 圆角
+         用于"第三级辅助操作"，比 Secondary 更轻量 -->
+    <Style Selector="Button.btn.tertiary">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource BrandPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.btn.tertiary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}" />
+    </Style>
+    <Style Selector="Button.btn.tertiary:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}" />
+    </Style>
+
+    <!-- Danger Button: 语义错误色底 / medium 圆角（非 pill）
+         仅用于"破坏性操作的最终确认按钮"（Dialog 内的删除/移除/退出确认） -->
+    <Style Selector="Button.btn.danger">
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
+        <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.btn.danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.btn.danger:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
+        <Setter Property="Opacity" Value="0.8" />
+    </Style>
+
+    <!-- Text Button: 无背景，仅文字 / 无圆角限制
+         用于"轻量操作"（跳过/稍后/查看协议）或"危险操作入口"（列表内"移除"链接）
+         配合 .danger 变体可呈现红色文字 -->
+    <Style Selector="Button.btn.text">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="MinHeight" Value="32" />
+    </Style>
+    <Style Selector="Button.btn.text.danger">
+        <Setter Property="Foreground" Value="{StaticResource SemanticErrorBrush}" />
+    </Style>
+    <Style Selector="Button.btn.text:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}" />
+    </Style>
+
+    <!-- ============ 尺寸变体 ============ -->
+
+    <!-- Small: 32dp 高度，紧凑场景（卡片内辅助操作） -->
+    <Style Selector="Button.btn.small">
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Small}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Small}" />
+        <Setter Property="MinWidth" Value="64" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
+    </Style>
+
+    <!-- Large: 48dp 高度，主操作（等同 Primary 高度，用于 Secondary 全宽主 CTA） -->
+    <Style Selector="Button.btn.large">
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="MinWidth" Value="88" />
+        <Setter Property="Padding" Value="20,12" />
+    </Style>
+
+    <!-- Compact: 历史兼容，等价于 small（不推荐新代码使用） -->
+    <Style Selector="Button.btn.compact">
         <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="MinHeight" Value="28" />
+        <Setter Property="MinWidth" Value="64" />
     </Style>
 
     <!-- ============ Tab Bar 底部导航 ============ -->

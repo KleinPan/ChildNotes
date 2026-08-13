@@ -58,12 +58,112 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 
 按钮代表用户主动行为，执行明确操作。一个页面应该只有一个最重要动作。
 
+#### 5.1.1 视觉类型（Visual Type）
+
+按钮的视觉风格，由内容语义决定。
+
 | 类型 | 使用场景 | 规范 |
 |---|---|---|
-| Primary | 保存、确认、提交等核心动作 | Height 48dp / Radius 24dp / Text 16sp Medium / 品牌色底 |
-| Secondary | 辅助操作 | 背景 Surface Secondary / 文字 Primary Text |
+| Primary | 保存、确认、提交等核心动作 | Height 48dp / Radius pill / Text 14sp Medium / 品牌色底 |
+| Secondary | 辅助操作 | 背景 Surface Secondary / 文字 Primary Text / Radius medium |
+| Tertiary | 第三级辅助操作 | 透明底 / 文字 Brand Primary |
+| Danger | 破坏性操作（删除、移除、退出） | 背景 Semantic Error / 文字 OnPrimary / Radius medium |
 | Text | 轻量操作，如跳过、稍后、查看协议 | 无背景，仅文字 |
 | Icon | 小型操作入口，如 + / 设置 / 关闭 | 尺寸 40×40dp / 图标 20-24dp |
+
+> **Danger Button 使用约束**：仅在"破坏性操作的最终确认按钮"上使用。日常的危险操作入口（如列表里的"移除"链接）应使用 Text Button 或 Secondary Button + 红色文字，避免大面积红色违反"温暖家庭日记"的设计方向。
+
+#### 5.1.2 尺寸体系（Size）
+
+| Size | Height | Horizontal Padding | Min Width | 用途 |
+|---|---|---|---|---|
+| Small | 32dp | 12dp | 64dp | 紧凑场景，如卡片内辅助操作 |
+| Medium（默认） | 40dp | 16dp | 72dp | 普通操作 |
+| Large | 48dp | 20dp | 88dp | 主操作 / Mobile Primary Action |
+
+**关键规则**：
+- 普通文字按钮**必须有 Min Width**，不允许仅根据父容器压缩。
+- Mobile 主操作按钮默认使用 Large（48dp），符合触控规范。
+- 重要触控操作区域不得小于 48×48dp。
+
+#### 5.1.3 布局类型（Layout Type）
+
+布局类型独立于视觉类型，决定按钮如何占用父容器空间。
+
+| 布局类型 | 说明 | 适用场景 |
+|---|---|---|
+| Content Width | 按文字宽度 + Padding 自适应 | 工具栏、行内操作、Dialog 双按钮 |
+| Fixed Width | 固定宽度 | 表单提交、特定栅格 |
+| Full Width | 占满父容器宽度 | 底部 CTA、登录页主按钮 |
+| Equal Width | 同一按钮组内多个按钮等宽 | Dialog 双按钮、底部双 CTA |
+
+**组合规则**：视觉类型 × 布局类型是正交关系。例如：
+- 删除确认弹窗：`Danger + Equal Width` 或 `Secondary + Equal Width`
+- 底部主 CTA：`Primary + Full Width`
+- 卡片内复制：`Secondary + Content Width (Small)`
+- 工具栏图标：`Icon + Content Width`
+
+**禁止**只写"删除操作使用绿色主按钮"而不指定布局类型——这会让实现方自由决定宽度，导致药丸变形。
+
+#### 5.1.4 Button Content Rules（内容规则，强制）
+
+1. 按钮文字必须单行显示。
+2. 按钮文字必须水平和垂直居中。
+3. 文字按钮不得裁剪、隐藏或缩小文字。
+4. 按钮宽度必须满足：`Text Width + Left Padding + Right Padding`。
+5. 父容器空间不足时：优先调整按钮组布局或 Dialog 宽度，**不得压缩按钮至无法显示完整文字**。
+6. Text Button 不允许退化为无文字色块。
+7. 除明确规定的 Icon Button 外，Button 不允许仅剩背景而没有可见内容。
+
+#### 5.1.5 Dialog Action Layout（弹窗操作区，强制）
+
+当 Dialog 有 2 个操作按钮时：
+
+- 按钮始终位于底部操作区。
+- 默认水平排列。
+- 两个按钮高度必须一致。
+- 两个按钮宽度使用统一策略：**Equal Width 或 Content Width，不允许混用**。
+- 按钮之间间距固定（推荐 12dp）。
+- 不允许其中一个按钮因空间不足被压缩为圆形、椭圆或无法显示文字。
+- 两个文字按钮的文字必须完整可见。
+- 如果 Dialog 宽度不足以容纳两个按钮：优先增加 Dialog 宽度；若仍不足，则改为垂直排列。
+- **不允许通过压缩 Button MinWidth 解决空间不足问题**。
+
+> **强制规则**：禁止通过缩小按钮宽度、裁剪按钮文字或隐藏按钮文字来解决 Dialog 操作区空间不足。
+
+#### 5.1.6 业务场景映射（Component Mapping）
+
+不同业务场景必须使用对应组件，禁止"看起来像小圆角块"都用 Button。
+
+| 业务场景 | 必须使用 | 禁止 |
+|---|---|---|
+| 状态信息展示（如"当前"、"主人"标记） | Tag | Button |
+| 当前身份/角色展示 | Tag | Button |
+| 信息复制（如复制 ID） | Small Secondary Button | Tag |
+| 危险/破坏性操作入口（列表里的"移除"链接） | Text Button（红色文字） | 红色实心 Button |
+| 破坏性操作的最终确认 | Danger Button 或 Secondary Button（Dialog 内） | 红色 Primary Button |
+| 主操作（保存、确认、提交） | Primary Button | Secondary Button |
+| 辅助操作（取消、返回） | Secondary Button 或 Text Button | Primary Button |
+
+#### 5.1.7 Correct / Incorrect 示例
+
+**Correct ✓**
+- Primary Button 最小宽度满足文字完整显示
+- Dialog 双按钮高度一致、宽度统一
+- 两个按钮文字始终可见
+- 空间不足时调整 Dialog 宽度或改为垂直排列
+- 状态信息使用 Tag 而非 Button
+- 列表内危险操作入口使用 Text Button
+
+**Incorrect ✗**
+- Button 被压缩成圆形或窄胶囊
+- Button 文字被裁剪
+- 只剩背景颜色但文字消失
+- 同一 Button Group 高度不一致
+- 通过减小 MinWidth 强行塞进容器
+- Dialog 双按钮一个 Full Width 一个 Content Width（混用布局策略）
+- 用绿色 Primary Button 承载删除操作
+- 把状态标签做成 Button
 
 ### 5.2 Icon 图标
 

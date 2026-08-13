@@ -90,7 +90,7 @@
                         CornerRadius="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource BrandPrimaryBrush}"
                         IsVisible="{Binding !IsToday}" />
 
-                <Border Classes="weui-card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <Border Classes="card" IsVisible="{Binding DayStats, Converter={x:Static ObjectConverters.IsNotNull}}">
                     <WrapPanel Orientation="Horizontal">
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.FeedCount}">
                             <TextBlock Classes="stat-icon" Text="🍼" />

@@ -194,7 +194,7 @@
                                    TextAlignment="Center" />
                         <TextBlock HorizontalAlignment="Center" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint2}"
                                    TextAlignment="Center" />
-                        <Button Margin="0,8,0,0" Classes="weui-btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
+                        <Button Margin="0,8,0,0" Classes="btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -298,10 +298,10 @@
                     <!--  底部按钮栏（固定）  -->
                     <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,Auto">
-                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="weui-btn primary"
+                            <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="btn primary"
                                     Command="{Binding MilestoneEdit.SaveCommand}"
                                     Content="{DynamicResource Common_Save}" />
-                            <Button Grid.Column="1" Margin="8,0,0,0" Classes="weui-btn warn"
+                            <Button Grid.Column="1" Margin="8,0,0,0" Classes="btn danger"
                                     Command="{Binding MilestoneEdit.DeleteCommand}"
                                     Content="{DynamicResource Common_Delete}"
                                     IsVisible="{Binding MilestoneEdit.SheetTitle, Converter={x:Static v:GrowthView.IsEditingConverter}}" />

@@ -31,9 +31,9 @@
                             <TextBlock Text="{Binding SummaryText}" FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextPrimaryBrush}" TextWrapping="Wrap" LineHeight="22"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
-                                <Button Content="{DynamicResource Privacy_ViewPolicy}" Classes="weui-btn mini default"
+                                <Button Content="{DynamicResource Privacy_ViewPolicy}" Classes="btn compact secondary"
                                         Command="{Binding ViewFullPolicyCommand}"/>
-                                <Button Content="{DynamicResource Privacy_ViewAgreement}" Classes="weui-btn mini default"
+                                <Button Content="{DynamicResource Privacy_ViewAgreement}" Classes="btn compact secondary"
                                         Command="{Binding ViewFullAgreementCommand}"/>
                             </StackPanel>
                         </StackPanel>
@@ -46,17 +46,17 @@
                         <StackPanel Spacing="8">
                             <!-- 顶部导航 -->
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="{DynamicResource Privacy_BackSummary}" Classes="weui-btn mini default"
+                                <Button Content="{DynamicResource Privacy_BackSummary}" Classes="btn compact secondary"
                                         Command="{Binding BackToSummaryCommand}"/>
                             </StackPanel>
 
                             <!-- Tab 切换栏 -->
                             <Grid ColumnDefinitions="*,*" Margin="0,4,0,8">
                                 <Button Grid.Column="0" Content="{DynamicResource Privacy_PolicyTab}"
-                                        Classes="weui-btn mini"
+                                        Classes="btn compact"
                                         Command="{Binding SwitchToPolicyTabCommand}"/>
                                 <Button Grid.Column="1" Content="{DynamicResource Privacy_AgreementTab}"
-                                        Classes="weui-btn mini"
+                                        Classes="btn compact"
                                         Command="{Binding SwitchToAgreementTabCommand}"/>
                             </Grid>
 
@@ -77,16 +77,16 @@
                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12"
                       IsVisible="{Binding !IsReadOnly}">
                     <Button Grid.Column="0" Content="{DynamicResource Privacy_Disagree}"
-                            Classes="weui-btn default" CornerRadius="{StaticResource Radius.Medium}" MinHeight="40"
+                            Classes="btn secondary" CornerRadius="{StaticResource Radius.Medium}" MinHeight="40"
                             Command="{Binding DisagreeCommand}"/>
                     <Button Grid.Column="1" Content="{DynamicResource Privacy_AgreeContinue}"
-                            Classes="weui-btn primary" MinHeight="40"
+                            Classes="btn primary" MinHeight="40"
                             Command="{Binding AgreeCommand}"/>
                 </Grid>
 
                 <!-- 只读模式：仅显示关闭按钮 -->
                 <Button Grid.Row="2" Content="{DynamicResource Privacy_Close}"
-                        Classes="weui-btn primary" MinHeight="40"
+                        Classes="btn primary" MinHeight="40"
                         Command="{Binding CloseCommand}"
                         IsVisible="{Binding IsReadOnly}"/>
 

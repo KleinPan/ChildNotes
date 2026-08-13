@@ -975,7 +975,7 @@
                                         <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_PreventDiseasePlaceholder}" Text="{Binding VaccineForm.CustomVaccineDisease}" />
                                     </StackPanel>
                                 </Border>
-                                <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Click="OnAddCustomVaccine" Content="{DynamicResource RS_AddToTimeline}" />
+                                <Button HorizontalAlignment="Stretch" Classes="btn primary" Click="OnAddCustomVaccine" Content="{DynamicResource RS_AddToTimeline}" />
                             </StackPanel>
 
                             <!--  C. 已选剂次卡片  -->
@@ -1290,7 +1290,7 @@
                         BorderBrush="{StaticResource SurfaceDividerBrush}"
                         BorderThickness="0,1,0,0"
                         IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.NotVaccine}}">
-                    <Button HorizontalAlignment="Stretch" Classes="weui-btn primary" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />
+                    <Button HorizontalAlignment="Stretch" Classes="btn primary" Command="{Binding SaveCommand}" Content="{DynamicResource RS_SaveRecord}" />
                 </Border>
             </Grid>
         </Border>

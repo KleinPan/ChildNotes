@@ -78,7 +78,7 @@
                     </StackPanel>
                 </Border>
 
-                <Button Content="{DynamicResource Reminder_Save}" Classes="weui-btn primary" Margin="12,16" HorizontalAlignment="Stretch"
+                <Button Content="{DynamicResource Reminder_Save}" Classes="btn primary" Margin="12,16" HorizontalAlignment="Stretch"
                         Command="{Binding SaveCommand}"/>
 
                 <!-- 说明 -->

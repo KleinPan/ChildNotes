@@ -122,7 +122,7 @@
                                                                FontFamily="Consolas,Menlo,monospace"
                                                                VerticalAlignment="Center" Margin="8,0,0,0"
                                                                TextTrimming="CharacterEllipsis"/>
-                                                    <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="weui-btn mini"
+                                                    <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn compact"
                                                             Click="OnCopyBabyIdTap" Tag="{Binding Family.BabyId}"/>
                                                 </Grid>
 
@@ -134,7 +134,7 @@
                                                         <Run Text="{Binding Family.Members.Count}"/>
                                                         <Run Text="{DynamicResource Personnel_FamilySuffix}"/>
                                                     </TextBlock>
-                                                    <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="weui-btn mini"
+                                                    <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="btn compact"
                                                             Click="OnEditRoleTap" Tag="{Binding Family}"/>
                                                 </Grid>
 
@@ -162,28 +162,21 @@
                                                                     <TextBlock Text="{Binding RoleName}" FontSize="{StaticResource FontSize.Caption}"
                                                                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                                 </StackPanel>
-                                                                <!-- 操作按钮区域 -->
-                                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                                    <!-- 自己：显示"退出家庭"（功能未实现，暂隐藏按钮避免点击报错） -->
-                                                                    <Button Content="{DynamicResource Family_LeaveFamily}"
-                                                                            Classes="weui-btn mini default"
-                                                                            IsVisible="False"
-                                                                            Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
-                                                                        <Button.CommandParameter>
-                                                                            <Binding/>
-                                                                        </Button.CommandParameter>
-                                                                    </Button>
-                                                                    <!-- Owner 看到非自己的成员：显示"移除" -->
-                                                                    <Button Content="{DynamicResource Family_RemoveMember}"
-                                                                            Classes="weui-btn mini default"
-                                                                            IsVisible="{Binding !Mine, Converter={x:Static v:BabyManagerView.AndOwnerConverter}}"
-                                                                            Click="OnRemoveMemberTap"
-                                                                            Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
-                                                                        <Button.CommandParameter>
-                                                                            <Binding/>
-                                                                        </Button.CommandParameter>
-                                                                    </Button>
-                                                                </StackPanel>
+                                                                <!-- 操作区域：使用 Text Button（规范 5.1.6：危险操作入口用 Text Button，红色文字）
+                                                                     自己：显示"退出" -->
+                                                                <Button Grid.Column="2" VerticalAlignment="Center"
+                                                                        Content="退出"
+                                                                        Classes="btn text danger small"
+                                                                        IsVisible="{Binding Mine}"
+                                                                        Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}"
+                                                                        Click="OnLeaveFamilyTap"/>
+                                                                <!-- Owner 看到非自己、非 Owner 的成员：显示"移除" -->
+                                                                <Button Grid.Column="2" VerticalAlignment="Center"
+                                                                        Content="移除"
+                                                                        Classes="btn text danger small"
+                                                                        IsVisible="{Binding Converter={x:Static v:BabyManagerView.AndOwnerConverter}}"
+                                                                        Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}"
+                                                                        Click="OnRemoveMemberTap"/>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
@@ -205,8 +198,8 @@
 
                         <!-- ===== 底部家人管理区域 ===== -->
 
-                        <!-- 申请加入新家庭按钮（所有人可见） -->
-                        <Button Content="{DynamicResource Family_JoinById}" Classes="weui-btn primary"
+                        <!-- 申请加入新家庭按钮（所有人可见，全宽底部按钮用 default 样式，避免 pill+stretch 变椭圆） -->
+                        <Button Content="{DynamicResource Family_JoinById}" Classes="btn secondary"
                                 Margin="12,12" HorizontalAlignment="Stretch"
                                 Click="OnJoinTap"/>
 
@@ -229,10 +222,10 @@
                                                     </TextBlock>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                                    <Button Content="{DynamicResource Family_Approve}" Classes="weui-btn mini primary"
+                                                    <Button Content="{DynamicResource Family_Approve}" Classes="btn compact primary"
                                                             Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).ApproveRequestCommand}"
                                                             CommandParameter="{Binding}"/>
-                                                    <Button Content="{DynamicResource Family_Reject}" Classes="weui-btn mini"
+                                                    <Button Content="{DynamicResource Family_Reject}" Classes="btn compact"
                                                             Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).RejectRequestCommand}"
                                                             CommandParameter="{Binding}"/>
                                                 </StackPanel>
@@ -271,9 +264,9 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- 底部添加宝宝按钮 -->
+                <!-- 底部添加宝宝按钮（全宽底部按钮用 default 样式，避免 pill+stretch 变椭圆） -->
                 <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0" Padding="16,12">
-                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary"
+                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="btn secondary"
                             HorizontalAlignment="Stretch"
                             Click="OnAddTapped"/>
                 </Border>
@@ -371,12 +364,14 @@
                                            FontFamily="Consolas,Menlo,monospace"
                                            VerticalAlignment="Center" Margin="8,0,0,0"
                                            TextTrimming="CharacterEllipsis"/>
-                                <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="weui-btn mini"
+                                <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn compact"
                                         Click="OnCopyEditingIdTap"/>
                             </Grid>
 
-                            <!-- 删除按钮（仅编辑模式） -->
-                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="weui-btn warn"
+                            <!-- 删除宝宝按钮（仅编辑模式）：危险操作入口
+                                 规范 5.1.6: 列表/表单内的危险入口用 Secondary + 红色文字，不用红色实心 -->
+                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="btn secondary"
+                                    Foreground="{StaticResource SemanticErrorBrush}" BorderBrush="{StaticResource SemanticErrorBrush}"
                                     IsVisible="{Binding IsEditing}"
                                     HorizontalAlignment="Stretch" Margin="0,16,0,0"
                                     Click="OnDeleteTapped"/>
@@ -386,9 +381,9 @@
                     <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
                     <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,10,*">
-                            <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default"
+                            <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary"
                                     Command="{Binding CloseEditorCommand}"/>
-                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary"
+                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary"
                                     Command="{Binding SaveCommand}"/>
                         </Grid>
                     </Border>
@@ -428,7 +423,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="sharedConst:RoleOption">
-                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                <Button Content="{Binding Name}" Classes="btn compact" Margin="0,0,6,6"
                                         Click="OnSelectJoinRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -438,8 +433,8 @@
                     <TextBlock Text="{Binding JoinError}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SemanticErrorBrush}"
                                Margin="0,0,0,8" TextWrapping="Wrap"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseJoinCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="weui-btn primary" Command="{Binding ConfirmJoinCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseJoinCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_JoinNow}" Classes="btn primary" Command="{Binding ConfirmJoinCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -460,7 +455,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="sharedConst:RoleOption">
-                                <Button Content="{Binding Name}" Classes="weui-btn mini" Margin="0,0,6,6"
+                                <Button Content="{Binding Name}" Classes="btn compact" Margin="0,0,6,6"
                                         Click="OnSelectEditingRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -468,8 +463,8 @@
                     <TextBlock Text="{Binding EditingRoleCode, Converter={x:Static vm:RoleNameConverter.Instance}}"
                                FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource BrandPrimaryBrush}" Margin="0,4,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRoleEditorCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseRoleEditorCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary" Command="{Binding ConfirmRoleCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -484,8 +479,8 @@
                     <TextBlock Text="{Binding RemoveConfirmBody}" FontSize="{StaticResource FontSize.Label}" TextWrapping="Wrap"
                                Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
-                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default" Command="{Binding CloseRemoveConfirmCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="weui-btn warn" Command="{Binding ConfirmRemoveCommand}"/>
+                        <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary" Command="{Binding CloseRemoveConfirmCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}" Classes="btn danger" Command="{Binding ConfirmRemoveCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

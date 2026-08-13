@@ -47,12 +47,12 @@
 
                 <!-- 立即同步（主操作按钮） -->
                 <Button Content="{Binding SyncButtonText}"
-                        Classes="weui-btn primary" Margin="12,8,12,8" HorizontalAlignment="Stretch"
+                        Classes="btn primary" Margin="12,8,12,8" HorizontalAlignment="Stretch"
                         Command="{Binding SyncNowCommand}" IsEnabled="{Binding !IsSyncing}"/>
 
                 <!-- 强制全量同步（修复用：重置 LastSyncAt，重新拉取/推送全部数据） -->
                 <Button Content="{DynamicResource Sync_ForceFullSync}"
-                        Classes="weui-btn default" Margin="12,0,12,4" HorizontalAlignment="Stretch"
+                        Classes="btn secondary" Margin="12,0,12,4" HorizontalAlignment="Stretch"
                         Command="{Binding ForceFullSyncCommand}" IsEnabled="{Binding !IsSyncing}"/>
                 <TextBlock Text="{DynamicResource Sync_ForceFullSyncHint}" FontSize="{StaticResource FontSize.Caption}"
                            Foreground="{StaticResource TextPlaceholderBrush}" Margin="14,0,14,12" TextWrapping="Wrap"/>
@@ -71,7 +71,7 @@
                                      PlaceholderText="https://api.example.com"
                                      VerticalAlignment="Center"
                                      BorderThickness="0" Padding="0"/>
-                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn mini primary"
+                            <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn compact primary"
                                     Command="{Binding SaveServerUrlCommand}"
                                     IsVisible="{Binding IsServerUrlDirty}"
                                     Margin="8,0,0,0"/>

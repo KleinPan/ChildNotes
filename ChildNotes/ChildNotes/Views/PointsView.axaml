@@ -57,7 +57,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="weui-card" Margin="12,-16,12,8">
+                <Border Classes="card" Margin="12,-16,12,8">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource Points_Streak}" FontSize="{StaticResource FontSize.Body}" FontWeight="SemiBold" Margin="0,0,0,12"/>
                         <ItemsControl ItemsSource="{Binding Timeline}">
@@ -80,7 +80,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <Button Content="{Binding SignButtonText}" Classes="weui-btn primary"
+                        <Button Content="{Binding SignButtonText}" Classes="btn primary"
                                 Command="{Binding SignInCommand}" IsEnabled="{Binding !TodaySigned}"
                                 Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
                         <TextBlock Text="{Binding ContinuousDays, StringFormat=您已连续签到 \{0\} 天}" FontSize="{StaticResource FontSize.Caption}"
@@ -108,7 +108,7 @@
                                     </Border>
                                     <!-- 可领取：显示"领取"按钮 -->
                                     <Button Grid.Column="1" Content="领取"
-                                            Classes="weui-btn primary" CornerRadius="{StaticResource Radius.Medium}" Padding="14,4"
+                                            Classes="btn primary" CornerRadius="{StaticResource Radius.Medium}" Padding="14,4"
                                             FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"
                                             IsVisible="{Binding CanClaim}"
                                             IsEnabled="{Binding !Claiming}"

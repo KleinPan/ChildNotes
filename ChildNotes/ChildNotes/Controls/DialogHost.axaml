@@ -14,13 +14,15 @@
                 <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
                            FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
                 <ContentControl Content="{Binding MessageContent, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
-                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                    <Button Content="{Binding CancelText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                            Classes="weui-btn default" CornerRadius="{StaticResource Radius.Medium}" MinWidth="100" MinHeight="40"
-                            Command="{Binding CancelCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
-                    <Button Content="{Binding ConfirmText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                            Classes="weui-btn warn" CornerRadius="{StaticResource Radius.Medium}" MinWidth="100" MinHeight="40"
-                            Command="{Binding ConfirmCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Stretch">
+                    <Grid ColumnDefinitions="*,12,*">
+                        <Button Grid.Column="0" Content="{Binding CancelText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
+                                Classes="btn secondary" HorizontalAlignment="Stretch"
+                                Command="{Binding CancelCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
+                        <Button Grid.Column="2" Content="{Binding ConfirmText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
+                                Classes="btn primary" HorizontalAlignment="Stretch"
+                                Command="{Binding ConfirmCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
+                    </Grid>
                 </StackPanel>
             </StackPanel>
         </Border>

@@ -227,7 +227,7 @@
                 </Border>
 
                 <!--  疫苗追踪：延迟显示（首屏构建优化，减少初始控件数 ~110→~60）  -->
-                <Border Margin="12,8,12,0" Classes="weui-card" IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
+                <Border Margin="12,8,12,0" Classes="card" IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                             <PathIcon Grid.Column="0" Width="18" Height="18" VerticalAlignment="Center"
@@ -297,7 +297,7 @@
                 </Border>
 
                 <!--  异常/生病追踪卡片：延迟显示（首屏构建优化）  -->
-                <Border Margin="12,8,12,0" BorderBrush="{StaticResource MedicineRedLightBrush}" BorderThickness="1" Classes="weui-card"
+                <Border Margin="12,8,12,0" BorderBrush="{StaticResource MedicineRedLightBrush}" BorderThickness="1" Classes="card"
                         IsVisible="{Binding IsInitialLayoutDone, FallbackValue=False}">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto">

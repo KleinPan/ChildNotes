@@ -565,6 +565,15 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Family_JoinedToast"] = "已加入，角色：{0}";
         this["Family_SaveFailed"] = "保存失败";
         this["Family_RoleUpdated"] = "角色已更新为：{0}";
+        this["Family_RemoveMember"] = "移除成员";
+        this["Family_LeaveFamily"] = "退出家庭";
+        this["Family_RemoveConfirmTitle"] = "移除家庭成员";
+        this["Family_RemoveConfirmBody"] = "确定将“{0}”从“{1}”家庭中移除？\n他们将失去该家庭数据的访问权限，再次加入需你审批。";
+        this["Family_LeaveConfirmTitle"] = "退出家庭";
+        this["Family_LeaveConfirmBody"] = "确定退出“{0}”家庭？\n你将失去该家庭所有数据的访问权限，再次加入需主人审批。";
+        this["Family_RemoveFailed"] = "移除失败，请稍后重试";
+        this["Family_RemovedToast"] = "已移除“{0}”";
+        this["Family_LeftToast"] = "已退出“{0}”家庭";
 
         // ===== DeveloperOptionsView =====
         this["Dev_Title"] = "开发者选项";
@@ -1227,8 +1236,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Family_LeaveFamily"] = "Leave";
         this["Family_RemoveConfirmTitle"] = "Remove family member";
         this["Family_RemoveConfirmBody"] = "Remove \"{0}\" from \"{1}\" family? They will lose access to family data. Re-joining requires your approval.";
+        this["Family_LeaveConfirmTitle"] = "Leave family";
+        this["Family_LeaveConfirmBody"] = "Leave \"{0}\" family? You will lose access to all family data. Re-joining requires owner approval.";
         this["Family_RemoveFailed"] = "Remove failed, try again later";
         this["Family_RemovedToast"] = "Removed \"{0}\"";
+        this["Family_LeftToast"] = "Left \"{0}\" family";
         this["Family_JoinRequestSubmitted"] = "Request submitted, waiting for owner approval";
         this["Family_JoinRequestFailed"] = "Request failed, check Baby ID or network";
         this["Family_PendingRequests"] = "Pending requests";
