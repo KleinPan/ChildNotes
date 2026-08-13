@@ -66,12 +66,16 @@ Design Token
 
 ### Semantic 语义色
 
-| Token | 用途 |
-|---|---|
-| `color.semantic.success` | 已完成/已保存/正向状态 |
-| `color.semantic.warning` | 谨慎用于需注意场景 |
-| `color.semantic.error` | 仅在需要纠正或保护时使用 |
-| `color.semantic.info` | 信息提示 |
+Semantic Token 是语义颜色的权威来源，`color.text.success/warning/error` 是它们在文本场景下的别名映射，避免开发时在两套 Token 之间产生歧义。
+
+| Token | 色值 | 用途 |
+|---|---|---|
+| `color.semantic.success` | `#16A34A` | 已完成/已保存/正向状态（Icon、Border、Background 语义颜色扩展均以此为准） |
+| `color.semantic.warning` | `#D97706` | 谨慎用于需注意场景 |
+| `color.semantic.error` | `#DC2626` | 仅在需要纠正或保护时使用 |
+| `color.semantic.info` | `#3B82F6` | 信息提示 |
+
+> 文本场景的 `color.text.success` / `color.text.warning` / `color.text.error` 分别映射到对应 Semantic Token，不再单独维护色值。
 
 ### Action 交互状态色
 
@@ -83,9 +87,10 @@ Action Token 把控件状态从 Brand/Surface 派生为明确语义，组件不�
 |---|---|---|
 | `color.action.primary.default` | `color.brand.primary` (`#00C875`) | 默认状态 |
 | `color.action.primary.pressed` | `color.brand.primaryDark` (`#00A85A`) | 按下状态 |
-| `color.action.primary.disabled` | `color.surface.disabled` (`#F3F4F6`) | 禁用背景 |
-| `color.action.primary.foreground` | `color.text.onPrimary` (`#FFFFFF`) | 主按钮文字和图标 |
-| `color.action.primary.hover` | 由平台主题基于 `default` 统一处理（Desktop） | 悬停状态 |
+| `color.action.primary.hover` | `#00B86B`（Desktop） | 悬停状态 |
+| `color.action.primary.disabledBackground` | `color.surface.disabled` (`#F3F4F6`) | 禁用背景 |
+| `color.action.primary.disabledForeground` | `color.text.placeholder` (`#9CA3AF`) | 禁用文字和图标 |
+| `color.action.primary.foreground` | `color.text.onPrimary` (`#FFFFFF`) | 主按钮文字和图标（非禁用态） |
 
 #### Secondary Action
 
@@ -93,9 +98,10 @@ Action Token 把控件状态从 Brand/Surface 派生为明确语义，组件不�
 |---|---|---|
 | `color.action.secondary.background` | `#F3F4F6` | 默认背景 |
 | `color.action.secondary.foreground` | `#374151` | 文字和图标 |
-| `color.action.secondary.hover` | 由平台主题统一处理（Desktop） | 悬停状态 |
-| `color.action.secondary.pressed` | 由 Token 统一定义，不允许组件自行计算 | 按下状态 |
-| `color.action.secondary.disabled` | 由 Token 统一定义，不允许组件自行计算 | 禁用状态 |
+| `color.action.secondary.hover` | `#E7E8EB`（Desktop） | 悬停状态 |
+| `color.action.secondary.pressed` | `#D1D3D7` | 按下状态 |
+| `color.action.secondary.disabled` | `#F3F4F6` | 禁用背景 |
+| `color.action.secondary.disabledForeground` | `color.text.placeholder` (`#9CA3AF`) | 禁用文字和图标 |
 
 Hover 规则：
 
