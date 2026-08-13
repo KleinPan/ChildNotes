@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.IO;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Data.Repositories;
@@ -142,17 +141,17 @@ public partial class MilestoneEditViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// 添加图片：由 View 调用，传入文件选择器返回的 IStorageFile。
+    /// 添加图片：由 View 调用，传入已落地的本地图片路径（由 IPhotoPicker 返回）。
     /// 流程：1) 压缩为缩略图存本地 images 目录（按会员等级选参数，原图不保留）；
     ///       2) 加入 Photos 集合立即显示；
     ///       3) 后台异步上传压缩图到服务器，成功后用 URL 替换 Source（PhotosJson 序列化为 URL）。
     /// </summary>
-    public async Task AddPhotoAsync(IStorageFile file)
+    public async Task AddPhotoAsync(string sourcePath)
     {
         if (Photos.Count >= MaxPhotos) return;
 
         // 1. 压缩为缩略图并保存到本地持久化目录
-        var localPath = await _upload.CompressAndSaveAsync(file);
+        var localPath = await _upload.CompressAndSaveFromPathAsync(sourcePath);
         if (localPath is null)
         {
             ErrorMessage = _locale.GetString("Growth_ErrPhotoSave", "图片保存失败");
@@ -168,6 +167,19 @@ public partial class MilestoneEditViewModel : ViewModelBase
         // 3. 后台异步上传到服务器（不阻塞 UI，失败静默保留本地路径）
         item.IsUploading = true;
         _ = UploadPhotoAsync(item);
+    }
+
+    /// <summary>
+    /// 批量添加多张图片：循环调用单张逻辑，达到上限时自动停止。
+    /// 供 Photo Picker 多选场景使用。
+    /// </summary>
+    public async Task AddPhotosAsync(IReadOnlyList<string> sourcePaths)
+    {
+        foreach (var path in sourcePaths)
+        {
+            if (Photos.Count >= MaxPhotos) break;
+            await AddPhotoAsync(path);
+        }
     }
 
     private async Task UploadPhotoAsync(MilestonePhotoItem item)

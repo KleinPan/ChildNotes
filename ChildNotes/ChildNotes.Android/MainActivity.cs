@@ -84,6 +84,12 @@ public class MainActivity : AvaloniaMainActivity
         // 业务层在 ScheduleAsync 前会调用 RequestPermissionAsync，但渠道必须在此处提前创建
         InitializeLocalNotification();
 
+        // 注入 Android Photo Picker：覆盖桌面端默认的 DesktopPhotoPicker
+        // Android 13+ 调起系统原生相册网格（MediaStore.ActionPickImages），无需任何运行时权限；
+        // Android 7-12 回退到 SAF Documents UI（Intent.ActionOpenDocument）。
+        // 业务层通过 ServiceProvider.Instance.PhotoPicker 调用，OnActivityResult 转发结果到 AndroidPhotoPicker。
+        InitializePhotoPicker();
+
         // 注册预测式返回回调（Android 13+ / API 33+）。
         // OnBackPressed 在 API 33+ 已废弃，当前 .NET 10 Android SDK 默认 targetSdk 为 36，
         // 系统不再调用 OnBackPressed，必须用 OnBackInvokedCallback。
@@ -203,6 +209,37 @@ public class MainActivity : AvaloniaMainActivity
 
     /// <summary>通知权限申请码（OnRequestPermissionsResult 回调用）</summary>
     private const int NotificationPermissionRequestCode = 10001;
+
+    /// <summary>Android Photo Picker 实例引用，供 OnActivityResult 转发结果。</summary>
+    private ChildNotes.Android.Services.AndroidPhotoPicker? _photoPicker;
+
+    /// <summary>
+    /// 初始化 Android Photo Picker：创建实例并注入 ServiceProvider，覆盖桌面端默认实现。
+    /// 在 OnCreate 中调用，确保业务层首次 PickImageAsync 之前已就绪。
+    /// </summary>
+    private void InitializePhotoPicker()
+    {
+        try
+        {
+            _photoPicker = new ChildNotes.Android.Services.AndroidPhotoPicker(this);
+            ChildNotes.Infrastructure.ServiceProvider.Instance.OverridePhotoPicker(_photoPicker);
+            Log.Info("ChildNotes", "[PhotoPicker] AndroidPhotoPicker injected");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("ChildNotes", $"[PhotoPicker] InitializePhotoPicker failed: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// 转发 Activity Result 到 AndroidPhotoPicker。
+    /// Photo Picker 的 StartActivityForResult 结果回调走此路径（非 AndroidX Activity Result API）。
+    /// </summary>
+    protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        _photoPicker?.OnActivityResult(requestCode, resultCode, data);
+    }
 
     /// <summary>
     /// 移除 Avalonia 根 View 的无障碍 delegate，绕过 Avalonia 12.0.5 的崩溃 bug。

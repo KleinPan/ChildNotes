@@ -8,7 +8,6 @@ using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Transformation;
-using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using ChildNotes.Infrastructure;
@@ -192,33 +191,18 @@ public partial class BabyManagerView : UserControl
     private void OnGirlTap(object? sender, RoutedEventArgs e) => Vm?.SelectGender("girl");
 
     /// <summary>
-    /// 头像点击：调用系统文件选择器选取图片。
-    /// 桌面端用 StorageProvider.OpenFilePicker；安卓端通过 Avalonia 的文件选择 API。
+    /// 头像点击：通过 IPhotoPicker 选取图片。
+    /// Android 端调起系统相册网格（AndroidX PickVisualMedia），桌面端仍用系统文件对话框。
     /// </summary>
     private async void OnAvatarTap(object? sender, RoutedEventArgs e)
     {
         try
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel?.StorageProvider is not { } provider) return;
-
-            var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
+            if (Vm is not { } vm) return;
+            var path = await ServiceProvider.Instance.PhotoPicker.PickImageAsync();
+            if (!string.IsNullOrEmpty(path))
             {
-                Title = LocaleManager.Instance.GetString("BabyMgr_PickAvatarTitle", "选择头像"),
-                AllowMultiple = false,
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType(LocaleManager.Instance.GetString("BabyMgr_PickImageFilter", "图片文件"))
-                    {
-                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp" },
-                        MimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },
-                    },
-                },
-            });
-
-            if (files.Count > 0 && Vm is { } vm)
-            {
-                await vm.LoadAvatarFromFile(files[0]);
+                await vm.LoadAvatarFromFile(path);
             }
         }
         catch (Exception ex)

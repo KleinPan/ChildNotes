@@ -4,9 +4,9 @@ using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using ChildNotes.Infrastructure;
 using ChildNotes.Services;
 using ChildNotes.ViewModels;
 
@@ -94,33 +94,25 @@ public partial class GrowthView : UserControl
     }
 
     /// <summary>
-    /// 点击"+"按钮：调用系统文件选择器选取图片。
-    /// 对齐小程序：单选、支持 jpg/jpeg/png/gif/webp、sizeType=compressed 由 Avalonia 自动处理。
+    /// 点击"+"按钮：通过 IPhotoPicker 选取图片。
+    /// Android 端调起系统相册网格（AndroidX PickVisualMedia，Android 13+ 原生相册，
+    /// 13- 自动回退 ACTION_OPEN_DOCUMENT），桌面端仍用系统文件对话框。
+    /// 一次最多可选 MaxPhotos 张（与编辑表单上限对齐），选择后批量加入。
     /// </summary>
     private async void OnAddPhotoClick(object? sender, RoutedEventArgs e)
     {
         try
         {
-            var topLevel = TopLevel.GetTopLevel(this);
-            if (topLevel?.StorageProvider is not { } provider) return;
+            if (DataContext is not GrowthViewModel vm) return;
+            // 剩余可选数量 = 上限 - 已选
+            var remaining = 4 - vm.MilestoneEdit.Photos.Count;
+            if (remaining <= 0) return;
 
-            var files = await provider.OpenFilePickerAsync(new FilePickerOpenOptions
+            var picker = ServiceProvider.Instance.PhotoPicker;
+            var paths = await picker.PickImagesAsync(remaining);
+            if (paths.Count > 0)
             {
-                Title = LocaleManager.Instance.GetString("Growth_PickPhotoTitle", "选择照片"),
-                AllowMultiple = false,
-                FileTypeFilter = new[]
-                {
-                    new FilePickerFileType(LocaleManager.Instance.GetString("BabyMgr_PickImageFilter", "图片文件"))
-                    {
-                        Patterns = new[] { "*.jpg", "*.jpeg", "*.png", "*.gif", "*.webp" },
-                        MimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" },
-                    },
-                },
-            });
-
-            if (files.Count > 0 && DataContext is GrowthViewModel vm)
-            {
-                await vm.MilestoneEdit.AddPhotoAsync(files[0]);
+                await vm.MilestoneEdit.AddPhotosAsync(paths);
             }
         }
         catch (Exception ex)

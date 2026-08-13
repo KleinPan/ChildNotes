@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
@@ -595,31 +594,35 @@ public partial class BabyManagerViewModel : ViewModelBase
         }
     }
 
-    /// <summary>从文件选择器结果加载头像图片。先存本地即时显示，再异步上传到服务器存 URL。</summary>
-    public async Task LoadAvatarFromFile(IStorageFile file)
+    /// <summary>
+    /// 从 Photo Picker 返回的本地路径加载头像图片。
+    /// 入参是已落地的本地图片路径（由 IPhotoPicker 复制到 App 私有目录），
+    /// 这里再复制到 avatars 目录持久化，加载显示后异步上传。
+    /// </summary>
+    public async Task LoadAvatarFromFile(string sourcePath)
     {
+        if (!System.IO.File.Exists(sourcePath)) return;
         try
         {
-            await using var stream = await file.OpenReadAsync();
-            // 复制到本地 AppData 目录持久化存储（即时显示 + 上传失败时的回退）
+            // 复制到本地 AppData/ChildNotes/avatars 目录持久化存储（即时显示 + 上传失败时的回退）
             var avatarDir = System.IO.Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "ChildNotes", "avatars");
             System.IO.Directory.CreateDirectory(avatarDir);
 
-            var ext = System.IO.Path.GetExtension(file.Name)?.ToLowerInvariant() ?? ".jpg";
+            var ext = System.IO.Path.GetExtension(sourcePath)?.ToLowerInvariant() ?? ".jpg";
             if (ext is not (".jpg" or ".jpeg" or ".png" or ".gif" or ".webp"))
                 ext = ".jpg";
             var fileName = $"baby_{EditingId}_{DateTime.Now:yyyyMMddHHmmss}{ext}";
             var localPath = System.IO.Path.Combine(avatarDir, fileName);
+            System.IO.File.Copy(sourcePath, localPath, overwrite: true);
 
-            // 从选择器流复制到本地文件
-            using var fileStream = System.IO.File.Create(localPath);
-            await stream.CopyToAsync(fileStream);
-
-            // 加载为 Bitmap 显示
-            fileStream.Position = 0;  // 重置位置后重新读取
-            AvatarBitmap = await Task.Run(() => Bitmap.DecodeToWidth(fileStream, 160));
+            // 加载为 Bitmap 显示（160px 宽度，头像专用）
+            AvatarBitmap = await Task.Run(() =>
+            {
+                using var fs = System.IO.File.OpenRead(localPath);
+                return Bitmap.DecodeToWidth(fs, 160);
+            });
             HasAvatar = true;
 
             // 先用本地路径，保证即使上传失败也能保存（旧设备仍可用本地路径）

@@ -46,6 +46,12 @@ public sealed class ServiceProvider
     /// <summary>本地通知：默认 NullLocalNotification，Android/iOS 平台启动时通过 OverrideLocalNotification 注入真实实现。</summary>
     public Services.Push.ILocalNotification LocalNotification { get; private set; }
     public Services.Push.IPushService PushService { get; }
+    /// <summary>
+    /// 图片选择器：默认 DesktopPhotoPicker（用 Avalonia StorageProvider 系统文件对话框），
+    /// Android 平台在 MainActivity.OnCreate 中通过 OverridePhotoPicker 注入 AndroidPhotoPicker
+    /// （调起系统相册网格 Photo Picker，无需任何运行时权限）。
+    /// </summary>
+    public Services.PhotoPicker.IPhotoPicker PhotoPicker { get; private set; }
     /// <summary>家庭加入申请本地仓储（Pull-only，同步审批状态 + 生成本地通知）。</summary>
     public Data.Repositories.FamilyJoinRequestRepository FamilyJoinRequestRepository { get; }
 
@@ -139,6 +145,11 @@ public sealed class ServiceProvider
         LocalNotification = new Services.Push.NullLocalNotification();
         PushService = new Services.Push.PushApiClient(SyncConfigRepository);
 
+        // 图片选择器：默认 DesktopPhotoPicker（桌面端系统文件对话框）。
+        // TopLevel 延迟取值：调用 PickImageAsync 时才从当前控件取，避免构造时主窗口尚未建立。
+        // Android 平台在 MainActivity.OnCreate 中通过 OverridePhotoPicker 注入 AndroidPhotoPicker。
+        PhotoPicker = new Services.PhotoPicker.DesktopPhotoPicker(() => MainView);
+
         DevLogger.Log("DI", "ServiceProvider ctor done");
     }
 
@@ -172,6 +183,18 @@ public sealed class ServiceProvider
     {
         LocalNotification = implementation;
         DevLogger.Log("DI", $"LocalNotification overridden: {implementation.GetType().Name}, IsSupported={implementation.IsSupported}");
+    }
+
+    /// <summary>
+    /// 运行时注入平台图片选择器实现。
+    /// 由 Android MainActivity.OnCreate 调用，覆盖默认的 DesktopPhotoPicker。
+    /// Android 实现使用 AndroidX PickVisualMedia（Android 13+ 原生相册网格，
+    /// 13- 自动回退 ACTION_OPEN_DOCUMENT），无需任何运行时权限。
+    /// </summary>
+    public void OverridePhotoPicker(Services.PhotoPicker.IPhotoPicker implementation)
+    {
+        PhotoPicker = implementation;
+        DevLogger.Log("DI", $"PhotoPicker overridden: {implementation.GetType().Name}");
     }
 
     /// <summary>

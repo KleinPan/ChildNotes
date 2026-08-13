@@ -68,23 +68,57 @@ public sealed class UploadService
         {
             await using var stream = await file.OpenReadAsync();
             using var srcBmp = new Bitmap(stream);
-
-            var (maxEdge, quality) = GetCompressParams();
-            var scaled = ScaleToMaxEdge(srcBmp, maxEdge);
-
-            var fileName = $"img_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}.jpg";
-            var fullPath = Path.Combine(_storageRoot, fileName);
-            await using (var fs = File.Create(fullPath))
-            {
-                scaled.Save(fs, quality);
-            }
-            scaled.Dispose();
-            return fullPath;
+            return CompressAndSave(srcBmp);
         }
         catch (Exception ex)
         {
             DevLogger.Log("Upload", $"CompressAndSaveAsync 失败: {ex.Message}");
             return null;
+        }
+    }
+
+    /// <summary>
+    /// 从本地文件路径压缩图片并保存到 images/ 目录，返回缩略图本地路径。
+    /// 与 CompressAndSaveAsync(IStorageFile) 行为一致，仅入参从 IStorageFile 改为路径，
+    /// 供 Android Photo Picker / 桌面端选择器返回的本地路径使用（避免 IStorageFile 依赖）。
+    /// </summary>
+    public async Task<string?> CompressAndSaveFromPathAsync(string sourcePath)
+    {
+        if (!File.Exists(sourcePath)) return null;
+        try
+        {
+            return await Task.Run(() =>
+            {
+                using var srcBmp = new Bitmap(sourcePath);
+                return CompressAndSave(srcBmp);
+            });
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync 失败: {ex.Message}");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 共用压缩+保存逻辑：把已解码的 Bitmap 按会员参数压缩为 JPEG 存到 images/ 目录。
+    /// 注意：调用方负责 srcBmp 的释放；此方法内部创建的 scaled Bitmap 自行释放。
+    /// </summary>
+    private string? CompressAndSave(Bitmap srcBmp)
+    {
+        var (maxEdge, quality) = GetCompressParams();
+        var scaled = ScaleToMaxEdge(srcBmp, maxEdge);
+        try
+        {
+            var fileName = $"img_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}.jpg";
+            var fullPath = Path.Combine(_storageRoot, fileName);
+            using var fs = File.Create(fullPath);
+            scaled.Save(fs, quality);
+            return fullPath;
+        }
+        finally
+        {
+            scaled.Dispose();
         }
     }
 
