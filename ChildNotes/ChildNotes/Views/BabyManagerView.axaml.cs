@@ -266,7 +266,7 @@ public partial class BabyManagerView : UserControl
             && el.DataContext is BabyMemberDto member
             && Vm is { } vm)
         {
-            vm.OpenRemoveConfirm(family, member);
+            vm.OpenRemoveConfirm(family, member, isLeave: false);
         }
     }
 
@@ -278,8 +278,8 @@ public partial class BabyManagerView : UserControl
             && el.DataContext is BabyMemberDto member
             && Vm is { } vm)
         {
-            // 退出家庭 = 移除自己，复用移除确认弹窗
-            vm.OpenRemoveConfirm(family, member);
+            // 退出家庭 = 移除自己，复用移除确认弹窗（isLeave=true 走退出文案）
+            vm.OpenRemoveConfirm(family, member, isLeave: true);
         }
     }
 

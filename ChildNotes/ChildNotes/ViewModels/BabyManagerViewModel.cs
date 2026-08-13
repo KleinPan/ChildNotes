@@ -80,6 +80,8 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private bool _isRemoveConfirmOpen;
     [ObservableProperty] private string _removeConfirmTitle = string.Empty;
     [ObservableProperty] private string _removeConfirmBody = string.Empty;
+    [ObservableProperty] private string _removeConfirmButtonText = string.Empty;
+    private bool _removeIsLeave;
     private string _removeTargetBabyId = string.Empty;
     private string _removeTargetUserId = string.Empty;
     private string _removeTargetNickName = string.Empty;
@@ -446,17 +448,33 @@ public partial class BabyManagerViewModel : ViewModelBase
 
     // ==================== 家人管理：owner 移除家庭成员 ====================
 
-    /// <summary>打开移除确认弹窗。由 View 通过成员项的"移除"按钮调用。</summary>
-    public void OpenRemoveConfirm(BabyFamilyItem family, BabyMemberDto member)
+    /// <summary>打开移除/退出确认弹窗。
+    /// isLeave=true：自己主动退出家庭，文案用"退出家庭"，不提"需审批"。
+    /// isLeave=false：owner 移除其他成员，文案用"移除成员"，提示"再次加入需审批"。</summary>
+    public void OpenRemoveConfirm(BabyFamilyItem family, BabyMemberDto member, bool isLeave)
     {
+        _removeIsLeave = isLeave;
         _removeTargetBabyId = family.BabyId;
         _removeTargetUserId = member.UserId;
         _removeTargetNickName = member.NickName;
-        RemoveConfirmTitle = _locale.GetString("Family_RemoveConfirmTitle", "移除家庭成员");
-        RemoveConfirmBody = string.Format(
-            _locale.GetString("Family_RemoveConfirmBody",
-                "确定将「{0}」从「{1}」家庭中移除？移除后该成员将无法查看本家庭数据，若需重新加入需经过你的审批。"),
-            member.NickName, family.BabyName);
+        if (isLeave)
+        {
+            RemoveConfirmTitle = _locale.GetString("Family_LeaveConfirmTitle", "退出家庭");
+            RemoveConfirmBody = string.Format(
+                _locale.GetString("Family_LeaveConfirmBody",
+                    "确定退出「{0}」家庭？退出后你将无法查看本家庭数据。"),
+                family.BabyName);
+            RemoveConfirmButtonText = _locale.GetString("Family_LeaveFamily", "退出家庭");
+        }
+        else
+        {
+            RemoveConfirmTitle = _locale.GetString("Family_RemoveConfirmTitle", "移除家庭成员");
+            RemoveConfirmBody = string.Format(
+                _locale.GetString("Family_RemoveConfirmBody",
+                    "确定将「{0}」从「{1}」家庭中移除？移除后该成员将无法查看本家庭数据，若需重新加入需经过你的审批。"),
+                member.NickName, family.BabyName);
+            RemoveConfirmButtonText = _locale.GetString("Family_RemoveMember", "移除成员");
+        }
         IsRemoveConfirmOpen = true;
     }
 
@@ -473,7 +491,14 @@ public partial class BabyManagerViewModel : ViewModelBase
             return;
         }
         IsRemoveConfirmOpen = false;
-        DisplayToast(string.Format(_locale.GetString("Family_RemovedToast", "已移除「{0}」"), _removeTargetNickName));
+        if (_removeIsLeave)
+        {
+            DisplayToast(string.Format(_locale.GetString("Family_LeftToast", "已退出「{0}」家庭"), _removeTargetNickName));
+        }
+        else
+        {
+            DisplayToast(string.Format(_locale.GetString("Family_RemovedToast", "已移除「{0}」"), _removeTargetNickName));
+        }
 
         // 乐观更新：直接从当前 Baby.Family.Members 移除该成员，立即反映 UI。
         // Baby.Family 是普通属性（无 INotifyPropertyChanged），RefreshFamiliesAsync 重新赋值
