@@ -232,7 +232,8 @@ Hover 规则：
 - 普通 Card 默认使用 `radius.large`。
 - Input 和普通控件默认使用 `radius.medium`。
 - Bottom Sheet 默认使用 `radius.xl`。
-- Primary Button 使用 `radius.pill`（不要直接写死 24px 圆角，用 Token）。
+- Button 默认使用 `radius.medium`（普通圆角）。
+- 胶囊形态才使用 `radius.pill`，由 `pill` Class 显式指定，不要直接写死 24px 圆角，用 Token。
 
 ### Image Radius
 

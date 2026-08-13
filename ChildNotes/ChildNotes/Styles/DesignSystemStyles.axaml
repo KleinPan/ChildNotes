@@ -4,21 +4,28 @@
 
     <!-- ==================================================================
          Design System 通用样式（基于 DesignTokens 语义命名）
-         原 WeUIStyles.axaml 重命名迁移，类名映射：
-           weui-btn          → btn
-           weui-btn primary  → btn primary
-           weui-btn default  → btn secondary
-           weui-btn warn     → btn primary (旧 weui warn 映射为 primary；破坏性操作改用 btn.danger)
-           weui-btn mini     → btn compact
-           weui-card         → card
-           weui-cell         → cell
-         规范对齐:
-           - Card 圆角 radius.large=16 / 阴影 shadow.card
-           - Primary Button 高度 48 / 圆角 pill / 字号 label=14
-           - Secondary Button 高度 40 / 圆角 medium=12
-           - Input 圆角 medium=12
-           - Bottom Sheet 圆角 xl=24
-           - Toast 统一样式
+
+         Button 体系（components.md 5.1，三维正交）：
+           Visual Type（视觉语义，不决定尺寸和形状）：
+             primary   品牌色底 + medium 圆角
+             secondary 浅灰底 + medium 圆角
+             tertiary  透明底 + 品牌色文字
+             danger    红色实心 + medium 圆角（仅破坏性最终确认）
+             text      无背景，仅文字
+           Size（尺寸，与 Visual Type 正交）：
+             small  = 32dp / Padding 12,6 / MinWidth 64
+             medium = 40dp / Padding 16,12 / MinWidth 72（默认）
+             large  = 48dp / Padding 20,12 / MinWidth 88
+           Shape（形状，与 Visual Type、Size 正交）：
+             （默认） = medium 圆角（12）  ← 所有 Visual Type 默认值
+             pill     = radius.pill 圆角  ← FAB/首页核心 CTA 显式指定
+           强制规则：
+             - Visual Type 不得定义 Height / MinHeight / Padding / MinWidth / CornerRadius（Shape 决定）
+             - Height / Padding / MinWidth 一律由 Size 决定
+             - CornerRadius 一律由 Shape 决定（默认 medium；需胶囊显式加 .pill）
+             - Background / Foreground / Border / 状态色一律由 Visual Type 决定
+             - Dialog/弹窗/列表底部全宽按钮 一律不加 pill（避免窄高全宽椭圆视觉）
+         Card / Cell / Toast / Tab Bar / Nav Bar 等其他组件：见各段落注释
          ================================================================== -->
 
     <Style Selector="TextBlock">
@@ -103,12 +110,13 @@
 
     <!-- ============ 视觉类型 ============ -->
 
-    <!-- Primary Button: 品牌色底 / pill 圆角 / large=48 高度
-         用于"保存/确认/提交"等核心动作 -->
+    <!-- Primary Button: 品牌色底 / 普通圆角 radius.medium / Text.OnPrimary 文字
+         用于"保存/确认/提交"等核心动作
+         视觉语义：背景/前景/圆角/边框；不决定尺寸（Size 由 small/medium/large 决定）
+         圆角策略：默认 medium 普通圆角；需胶囊形态由调用方显式加 .pill Class
+         强制规则：不绑定 pill Shape，避免弹窗全宽形成椭圆视觉 -->
     <Style Selector="Button.btn.primary">
-        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
-        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
         <Setter Property="Background" Value="{StaticResource ActionPrimaryDefaultBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
@@ -150,11 +158,10 @@
         <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}" />
     </Style>
 
-    <!-- Danger Button: 语义错误色底 / medium 圆角（非 pill）
-         仅用于"破坏性操作的最终确认按钮"（Dialog 内的删除/移除/退出确认） -->
+    <!-- Danger Button: 语义错误色底 / medium 圆角（非 pill） / Text.OnPrimary 文字
+         仅用于"破坏性操作的最终确认按钮"（Dialog 内的删除/移除/退出确认）
+         视觉语义：背景/前景/圆角/边框；不决定尺寸 -->
     <Style Selector="Button.btn.danger">
-        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
-        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
         <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
         <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
@@ -171,13 +178,11 @@
 
     <!-- Text Button: 无背景，仅文字 / 无圆角限制
          用于"轻量操作"（跳过/稍后/查看协议）或"危险操作入口"（列表内"移除"链接）
-         配合 .danger 变体可呈现红色文字 -->
+         配合 .danger 变体可呈现红色文字
+         视觉语义：背景/边框；不决定尺寸（Padding/MinWidth 由 Size 决定） -->
     <Style Selector="Button.btn.text">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="8,4" />
-        <Setter Property="MinWidth" Value="0" />
-        <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="Button.btn.text.danger">
         <Setter Property="Foreground" Value="{StaticResource SemanticErrorBrush}" />
@@ -197,7 +202,7 @@
         <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
     </Style>
 
-    <!-- Large: 48dp 高度，主操作（等同 Primary 高度，用于 Secondary 全宽主 CTA） -->
+    <!-- Large: 48dp 高度，主操作 / Mobile Primary Action -->
     <Style Selector="Button.btn.large">
         <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
         <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
@@ -205,12 +210,24 @@
         <Setter Property="Padding" Value="20,12" />
     </Style>
 
-    <!-- Compact: 历史兼容，等价于 small（不推荐新代码使用） -->
-    <Style Selector="Button.btn.compact">
-        <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
-        <Setter Property="Padding" Value="12,6" />
-        <Setter Property="MinHeight" Value="28" />
-        <Setter Property="MinWidth" Value="64" />
+    <!-- Medium: 40dp 高度（显式 medium Size，与 btn 基类默认值一致）
+         用于需要显式声明 medium 的场景（如与 small 混用时强调默认尺寸） -->
+    <Style Selector="Button.btn.medium">
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Medium}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Medium}" />
+        <Setter Property="MinWidth" Value="72" />
+        <Setter Property="Padding" Value="16,12" />
+    </Style>
+
+    <!-- ============ Shape 形状（与 Visual Type、Size 正交） ============ -->
+
+    <!-- Shape.pill: 独立 Shape 维度，由调用方显式添加 .pill Class
+         胶囊形态专用（FAB、首页核心 CTA、独立操作小药丸按钮）
+         强制规则：Visual Type 不得默认绑定 pill；
+         Dialog/弹窗/列表底部全宽按钮 一律不使用 pill
+         用法：<Button Classes="btn primary medium pill" /> -->
+    <Style Selector="Button.btn.pill">
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Pill}" />
     </Style>
 
     <!-- ============ Tab Bar 底部导航 ============ -->

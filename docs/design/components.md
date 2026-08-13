@@ -105,14 +105,14 @@ Figma 交付时还应按需覆盖 Selected / Expanded（仅适用于存在选中
 
 按钮的视觉风格，由内容语义决定。**Visual Type 只负责视觉和语义，不负责尺寸。**
 
-| 类型 | 使用场景 | 视觉规则（Token 引用） |
-|---|---|---|
-| Primary | 保存、确认、提交等核心动作 | 背景 `color.action.primary.default` / 文字 `color.action.primary.foreground` / 圆角 `radius.pill` |
-| Secondary | 辅助操作 | 背景 `color.action.secondary.background` / 文字 `color.action.secondary.foreground` / 圆角 `radius.medium` |
-| Tertiary | 第三级辅助操作 | 透明底 / 文字 `color.brand.primary` |
-| Danger | 破坏性操作最终确认 | 背景 `color.semantic.error` / 文字 `color.text.onPrimary` / 圆角 `radius.medium` |
-| Text | 轻量操作，如跳过、稍后、查看协议 | 无背景，仅文字 |
-| Icon | 小型操作入口，如 + / 设置 / 关闭 | 仅图标，无文字，详见 5.2 |
+| 类型 | 使用场景 | 视觉规则（Token 引用） | 默认圆角 | 圆角策略 |
+|---|---|---|---|---|
+| Primary | 保存、确认、提交等核心动作 | 背景 `color.action.primary.default` / 文字 `color.action.primary.foreground` | `radius.medium` | 默认普通圆角；窄高长宽可显式加 `pill` Class |
+| Secondary | 辅助操作 | 背景 `color.action.secondary.background` / 文字 `color.action.secondary.foreground` | `radius.medium` | 始终普通圆角 |
+| Tertiary | 第三级辅助操作 | 透明底 / 文字 `color.brand.primary` | `radius.medium` | 始终普通圆角 |
+| Danger | 破坏性操作最终确认 | 背景 `color.semantic.error` / 文字 `color.text.onPrimary` | `radius.medium` | 始终普通圆角 |
+| Text | 轻量操作，如跳过、稍后、查看协议 | 无背景，仅文字 | 无 | 始终无圆角 |
+| Icon | 小型操作入口，如 + / 设置 / 关闭 | 仅图标，无文字，详见 5.2 | — | 详见 5.2 |
 
 **状态**：每种 Visual Type 必须定义 Default / Pressed / Disabled（及 Desktop Hover），具体色值见 [`design-tokens.md`](design-tokens.md) 的 Action Token。组件不得自行计算状态色。
 
@@ -165,6 +165,41 @@ Secondary 永远 48dp
 Small 又尝试覆盖为 32dp
 ```
 导致最终样式优先级不确定。
+
+#### 5.1.2.1 形状（Shape）
+
+Shape 决定按钮的圆角形态，与 Visual Type、Size 完全正交，是 Button 的**第三个正交维度**。
+
+| Shape | 圆角 | 使用场景 |
+|---|---|---|
+| （默认） | `radius.medium`(12) | 普通按钮；所有 Visual Type 默认值 |
+| pill | `radius.pill`(999) | 胶囊形态：FAB、首页核心 CTA、独立操作小药丸按钮 |
+
+**强制规则**：
+
+- Visual Type **不得默认绑定** Shape。
+- Shape 必须由独立 Class（`button.pill`）使用，不得在 Visual Type 中隐式注入。
+- 不使用 `pill` Class 时，所有按钮统一为 `radius.medium`(12)。
+- 胶囊形态**仅在以下场景使用**：FAB、首页核心 CTA、独立操作小药丸按钮。
+- Dialog / 弹窗 / 列表底部全宽按钮 **一律不使用 pill**（避免窄高全宽形成椭圆视觉）。
+- 局部 `CornerRadius` 覆盖 Shape 视为违反规范。
+
+**组合示例**：
+```text
+Primary + Medium + （默认 medium 圆角）
+Primary + Medium + pill            ← 显式加 pill 才出现胶囊
+Primary + Large + （默认 medium 圆角）  ← 弹窗底部全宽，普通圆角
+Primary + Large + pill             ← 全宽 + 胶囊（不推荐，需用例登记）
+```
+
+**调用示例**：
+```xml
+<!-- 普通按钮：默认圆角 -->
+<Button Classes="btn primary large" Content="保存" />
+
+<!-- 胶囊形态：显式加 pill -->
+<Button Classes="btn primary medium pill" Content="签到" />
+```
 
 #### 5.1.3 布局类型（Layout Type）
 
