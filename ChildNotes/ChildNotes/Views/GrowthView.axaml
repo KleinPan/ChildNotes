@@ -299,13 +299,13 @@
                         </StackPanel>
                     </ScrollViewer>
 
-                    <!--  底部按钮栏（固定）  -->
+                    <!--  底部按钮栏（固定）：Equal Width 双按钮  -->
                     <Border Grid.Row="3" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
-                        <Grid ColumnDefinitions="*,Auto">
+                        <Grid ColumnDefinitions="*,8,*">
                             <Button Grid.Column="0" HorizontalAlignment="Stretch" Classes="btn primary large"
                                     Command="{Binding MilestoneEdit.SaveCommand}"
                                     Content="{DynamicResource Common_Save}" />
-                            <Button Grid.Column="1" Margin="8,0,0,0" Classes="btn danger large"
+                            <Button Grid.Column="2" HorizontalAlignment="Stretch" Classes="btn danger large"
                                     Command="{Binding MilestoneEdit.DeleteCommand}"
                                     Content="{DynamicResource Common_Delete}"
                                     IsVisible="{Binding MilestoneEdit.SheetTitle, Converter={x:Static v:GrowthView.IsEditingConverter}}" />

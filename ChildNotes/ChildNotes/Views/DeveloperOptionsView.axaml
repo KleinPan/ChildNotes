@@ -253,7 +253,7 @@
                            FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"
                            Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
                 <Button Grid.Column="1" Content="{DynamicResource Dev_ExportTxt}"
-                        Classes="btn compact primary"
+                        Classes="btn primary small"
                         Command="{Binding ExportCommand}"
                         IsEnabled="{Binding !IsExporting}"
                         IsVisible="{Binding IsLogExportVisible}"/>

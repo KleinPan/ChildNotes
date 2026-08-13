@@ -122,7 +122,7 @@
                                                                FontFamily="Consolas,Menlo,monospace"
                                                                VerticalAlignment="Center" Margin="8,0,0,0"
                                                                TextTrimming="CharacterEllipsis"/>
-                                                    <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn compact"
+                                                    <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn small"
                                                             Click="OnCopyBabyIdTap" Tag="{Binding Family.BabyId}"/>
                                                 </Grid>
 
@@ -134,7 +134,7 @@
                                                         <Run Text="{Binding Family.Members.Count}"/>
                                                         <Run Text="{DynamicResource Personnel_FamilySuffix}"/>
                                                     </TextBlock>
-                                                    <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="btn compact"
+                                                    <Button Grid.Column="1" Content="{DynamicResource Family_MyRole}" Classes="btn small"
                                                             Click="OnEditRoleTap" Tag="{Binding Family}"/>
                                                 </Grid>
 
@@ -222,10 +222,10 @@
                                                     </TextBlock>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                                    <Button Content="{DynamicResource Family_Approve}" Classes="btn compact primary"
+                                                    <Button Content="{DynamicResource Family_Approve}" Classes="btn primary small"
                                                             Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).ApproveRequestCommand}"
                                                             CommandParameter="{Binding}"/>
-                                                    <Button Content="{DynamicResource Family_Reject}" Classes="btn compact"
+                                                    <Button Content="{DynamicResource Family_Reject}" Classes="btn small"
                                                             Command="{Binding $parent[ItemsControl].((vm:BabyManagerViewModel)DataContext).RejectRequestCommand}"
                                                             CommandParameter="{Binding}"/>
                                                 </StackPanel>
@@ -286,8 +286,8 @@
                     <Border Grid.Row="1" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" Text="{Binding EditorTitle}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold"/>
-                            <Button Grid.Column="1" Content="✕" FontSize="18" Padding="8,2"
-                                    Background="Transparent" BorderThickness="0"
+                            <Button Grid.Column="1" Content="✕" FontSize="18" MinWidth="40" MinHeight="40"
+                                    Background="Transparent" BorderThickness="0" Padding="0"
                                     Command="{Binding CloseEditorCommand}"/>
                         </Grid>
                     </Border>
@@ -368,7 +368,7 @@
                                            FontFamily="Consolas,Menlo,monospace"
                                            VerticalAlignment="Center" Margin="8,0,0,0"
                                            TextTrimming="CharacterEllipsis"/>
-                                <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn compact"
+                                <Button Grid.Column="2" Content="{DynamicResource Common_Copy}" Classes="btn small"
                                         Click="OnCopyEditingIdTap"/>
                             </Grid>
 
@@ -384,7 +384,7 @@
 
                     <!-- 底部按钮区：取消 + 保存（与其他弹窗统一） -->
                     <Border Grid.Row="3" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
-                        <Grid ColumnDefinitions="*,10,*">
+                        <Grid ColumnDefinitions="*,12,*">
                             <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large"
                                     Command="{Binding CloseEditorCommand}"/>
                             <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary large"
@@ -428,7 +428,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="sharedConst:RoleOption">
-                                <Button Content="{Binding Name}" Classes="btn compact" Margin="0,0,6,6"
+                                <Button Content="{Binding Name}" Classes="btn small" Margin="0,0,6,6"
                                         Click="OnSelectJoinRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -460,7 +460,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="sharedConst:RoleOption">
-                                <Button Content="{Binding Name}" Classes="btn compact" Margin="0,0,6,6"
+                                <Button Content="{Binding Name}" Classes="btn small" Margin="0,0,6,6"
                                         Click="OnSelectEditingRoleTap" Tag="{Binding Code}"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -469,7 +469,7 @@
                                FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource BrandPrimaryBrush}" Margin="0,4,0,16"/>
                     <Grid ColumnDefinitions="*,8,*">
                         <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="btn secondary large" Command="{Binding CloseRoleEditorCommand}"/>
-                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary" Command="{Binding ConfirmRoleCommand}"/>
+                        <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="btn primary large" Command="{Binding ConfirmRoleCommand}"/>
                     </Grid>
                 </StackPanel>
             </Border>

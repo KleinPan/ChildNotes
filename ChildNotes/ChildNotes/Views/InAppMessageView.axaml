@@ -62,7 +62,7 @@
                                         <TextBlock Grid.Column="0" Text="{Binding DisplayTime}" FontSize="{StaticResource FontSize.Caption}"
                                                    Foreground="{StaticResource TextPlaceholderBrush}"/>
                                         <Button Grid.Column="1" Content="{DynamicResource Common_Delete}" FontSize="{StaticResource FontSize.Caption}"
-                                                Classes="btn compact secondary"
+                                                Classes="btn secondary small"
                                                 Command="{Binding $parent[ItemsControl].((vm:InAppMessageViewModel)DataContext).DeleteMessageCommand}"
                                                 CommandParameter="{Binding}"/>
                                     </Grid>

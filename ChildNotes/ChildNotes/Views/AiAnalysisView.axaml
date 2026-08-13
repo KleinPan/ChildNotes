@@ -55,7 +55,7 @@
                             <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
                                 <Run Text="积分 "/><Run Text="{Binding CurrentPoints}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/><Run Text="/ 消耗 "/><Run Text="{Binding AnalysisCost}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/>
                             </TextBlock>
-                            <Button Grid.Column="1" Content="签到赚积分" Classes="btn compact" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
+                            <Button Grid.Column="1" Content="签到赚积分" Classes="btn small" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
                                     Command="{Binding OpenPointsCommand}" Background="{StaticResource FeedingOrangeLightBrush}" Foreground="{StaticResource FeedingOrangeBrush}" BorderThickness="0"/>
                         </Grid>
                         <!-- 第二行：仅积分不足时显示，独占整行不被遮挡 -->
@@ -88,10 +88,10 @@
                         </Border>
 
                         <!-- 生成按钮 -->
-                        <Button Content="{Binding GenerateButtonText}" Classes="btn primary large" CornerRadius="{StaticResource Radius.Small}" Padding="0,13"
+                        <Button Content="{Binding GenerateButtonText}" Classes="btn primary large"
                                 Command="{Binding GenerateCommand}" IsEnabled="{Binding CanGenerate}"
                                 Margin="12,4" HorizontalAlignment="Stretch"/>
-                        <Button Content="取消分析" Classes="btn secondary large" CornerRadius="{StaticResource Radius.Small}" Padding="0,11"
+                        <Button Content="取消分析" Classes="btn secondary large"
                                 Command="{Binding CancelGenerateCommand}"
                                 Margin="12,0,12,2" HorizontalAlignment="Stretch"
                                 IsVisible="{Binding Generating}"/>
@@ -126,7 +126,7 @@
                         </ItemsControl>
 
                         <!-- 加载更多 -->
-                        <Button Content="{DynamicResource AiAnalysis_LoadMore}" Classes="btn secondary large" CornerRadius="{StaticResource Radius.Small}" Padding="0,9"
+                        <Button Content="{DynamicResource AiAnalysis_LoadMore}" Classes="btn secondary large"
                                 Command="{Binding LoadMoreCommand}"
                                 Margin="12,2,12,6" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}"
                                 IsVisible="{Binding HasMore}"/>
@@ -173,7 +173,7 @@
                         </Border>
 
                         <!-- 底部"返回列表"按钮（保留，兼容习惯用户） -->
-                        <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="btn secondary large" CornerRadius="{StaticResource Radius.Small}" Padding="0,11"
+                        <Button Content="{DynamicResource AiAnalysis_BackToList}" Classes="btn secondary large"
                                 Command="{Binding BackToListCommand}" Margin="12,6,12,8" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Panel>
