@@ -323,9 +323,14 @@ public sealed class ApiSyncService : BaseApiClient
                         CreatedAt = DateTime.UtcNow.ToString("O"),
                     });
                 }
-                // 规则2：申请通过通知申请人
+                // 规则2：申请通过通知申请人；同时重置 LastSyncAt 强制下次全量同步，
+                // 让新成员能拉到加入家庭前的历史记录（baby/records/milestones）。
+                // 根因：新成员在加入前可能已同步过，LastSyncAt 晚于历史记录的 updated_at，
+                // 增量同步的 since > updated_at 过滤条件会把历史数据全过滤掉。
                 else if (oldStatus == "pending" && newStatus == "approved" && isApplicant)
                 {
+                    _cfgRepo.ResetLastSyncAt();
+                    DevLogger.Log("Sync", $"JoinRequest approved, reset LastSyncAt for full pull (baby={babyIdShort})");
                     _inAppMessageService.Insert(new InAppMessage
                     {
                         UserId = myUid,
