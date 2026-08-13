@@ -235,7 +235,7 @@ public class MainActivity : AvaloniaMainActivity
     /// 转发 Activity Result 到 AndroidPhotoPicker。
     /// Photo Picker 的 StartActivityForResult 结果回调走此路径（非 AndroidX Activity Result API）。
     /// </summary>
-    protected override void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
+    protected override void OnActivityResult(int requestCode, Result resultCode, global::Android.Content.Intent? data)
     {
         base.OnActivityResult(requestCode, resultCode, data);
         _photoPicker?.OnActivityResult(requestCode, resultCode, data);
