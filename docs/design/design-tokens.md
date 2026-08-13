@@ -1,23 +1,26 @@
 # Design Tokens
 
-Design Token 是 ChildNotes 视觉系统和代码实现之间的桥梁。所有颜色、字体、间距、圆角、阴影和动效都应优先以语义 Token 表达，让设计和代码保持一致。
+Design Token 是 ChildNotes 视觉系统和代码实现之间的桥梁。本文件是所有具体视觉数值的**唯一权威来源**：色值、字号、字重、行高、间距、圆角、阴影、边框、Overlay、控件尺寸、Breakpoint。所有 UI 必须优先使用本文件定义的语义 Token。
 
 ## 设计方向
 
 视觉关键词：像一本现代化的宝宝成长手账，而不是医疗管理软件。整体方向：温暖、安全、可信赖、轻量、不制造焦虑。
 
-最终视觉目标：微信的易用性 + Notion 的信息结构 + 宝宝成长 App 的温暖感 + AI 助手的智能感。
+最终视觉目标：微信的易用性 + Notion 的信息结构 + 宝宝成长 App 的温暖感 + 恰当的智能感。
+
+> 设计哲学与品牌方向见 [`design-language.md`](design-language.md)。本文件只负责工程级数值落地。
 
 ## Token 分类
 
 ```text
 Design Token
-├── Color
-├── Typography
+├── Color（Brand / Secondary / Surface / Text / Semantic / Action / Border / Overlay）
+├── Typography（Font Family / Font Scale / Font Weight / Line Height）
 ├── Spacing
 ├── Radius
 ├── Shadow
 ├── Motion
+├── Size（Control Height / Icon）
 └── Breakpoint
 ```
 
@@ -27,7 +30,7 @@ Design Token
 
 | Token | 色值 | 用途 |
 |---|---|---|
-| `color.brand.primary` | `#00C875` | 主按钮、激活状态、AI 记录入口、重要操作 |
+| `color.brand.primary` | `#00C875` | 主按钮、激活状态、重要操作 |
 | `color.brand.primaryLight` | `#E8FFF4` | 浅底强调（如"回到今天"按钮底色） |
 | `color.brand.primaryDark` | `#00A85A` | 按下态、深色变体 |
 
@@ -51,14 +54,15 @@ Design Token
 
 ### Text 文字色
 
-| Token | 色值 | 字号 | 用途 |
-|---|---|---|---|
-| `color.text.primary` | `#1F2937` | 18-22sp | 标题、核心数据 |
-| `color.text.secondary` | `#6B7280` | 14-16sp | 描述、辅助信息 |
-| `color.text.placeholder` | `#9CA3AF` | 14-16sp | 输入提示 |
-| `color.text.success` | `#16A34A` | — | 成功文本 |
-| `color.text.warning` | `#D97706` | — | 警告文本 |
-| `color.text.error` | `#DC2626` | — | 错误文本 |
+| Token | 色值 | 用途 |
+|---|---|---|
+| `color.text.primary` | `#1F2937` | 标题、核心数据 |
+| `color.text.secondary` | `#6B7280` | 描述、辅助信息 |
+| `color.text.placeholder` | `#9CA3AF` | 输入提示 |
+| `color.text.success` | `#16A34A` | 成功文本 |
+| `color.text.warning` | `#D97706` | 警告文本 |
+| `color.text.error` | `#DC2626` | 错误文本 |
+| `color.text.onPrimary` | `#FFFFFF` | 品牌色底上的文字/图标 |
 
 ### Semantic 语义色
 
@@ -69,11 +73,70 @@ Design Token
 | `color.semantic.error` | 仅在需要纠正或保护时使用 |
 | `color.semantic.info` | 信息提示 |
 
-### AI 色
+### Action 交互状态色
 
-`color.ai.*` 用于 AI 入口、AI 总结、AI 生成中状态，与品牌色区分但保持温和可信。
+Action Token 把控件状态从 Brand/Surface 派生为明确语义，组件不得自行计算 Hover/Pressed/Disabled 色值。
 
-品牌色要求柔和、亲近、不刺激，避免侵略性饱和度。大面积使用柔和中性背景，让照片和记忆内容突出。
+#### Primary Action
+
+| Token | 值 / 来源 | 用途 |
+|---|---|---|
+| `color.action.primary.default` | `color.brand.primary` (`#00C875`) | 默认状态 |
+| `color.action.primary.pressed` | `color.brand.primaryDark` (`#00A85A`) | 按下状态 |
+| `color.action.primary.disabled` | `color.surface.disabled` (`#F3F4F6`) | 禁用背景 |
+| `color.action.primary.foreground` | `color.text.onPrimary` (`#FFFFFF`) | 主按钮文字和图标 |
+| `color.action.primary.hover` | 由平台主题基于 `default` 统一处理（Desktop） | 悬停状态 |
+
+#### Secondary Action
+
+| Token | 值 | 用途 |
+|---|---|---|
+| `color.action.secondary.background` | `#F3F4F6` | 默认背景 |
+| `color.action.secondary.foreground` | `#374151` | 文字和图标 |
+| `color.action.secondary.hover` | 由平台主题统一处理（Desktop） | 悬停状态 |
+| `color.action.secondary.pressed` | 由 Token 统一定义，不允许组件自行计算 | 按下状态 |
+| `color.action.secondary.disabled` | 由 Token 统一定义，不允许组件自行计算 | 禁用状态 |
+
+Hover 规则：
+
+- **Mobile** 不要求 Hover 状态。
+- **Desktop** 可提供 Hover 状态，Hover 色由平台主题或组件 Style 基于 `color.action.*.default` 统一处理，业务页面不得自行定义。
+
+### Border 边框色
+
+| Token | 建议初始值 | 用途 |
+|---|---|---|
+| `color.border.subtle` | `#EEF0F3` | Card、Divider、低干扰边界 |
+| `color.border.default` | `#E5E7EB` | Input、Select、普通可编辑控件 |
+| `color.border.focus` | `color.brand.primary` (`#00C875`) | Input Focus、Desktop 键盘焦点 |
+| `color.border.error` | `color.text.error` (`#DC2626`) | 输入校验错误 |
+
+使用原则：
+
+- 不要默认给所有 Card 加明显边框。优先使用 Background、Surface、Spacing 区分层级。
+- Border 仅用于需要明确边界的场景。
+- Focus 状态必须独立定义（`color.border.focus`），不得只依赖颜色变化或阴影。
+- Error 状态不能只改变文字颜色，应同时有明确状态反馈（边框 + 文字）。
+
+### Overlay 遮罩
+
+| Token | 值 | 用途 |
+|---|---|---|
+| `color.overlay.scrim` | `rgba(0, 0, 0, 0.32)` | Bottom Sheet / Modal / Dialog 背景遮罩 |
+
+规则：
+
+- Bottom Sheet、Modal、Dialog 默认复用该 Token。
+- 不允许页面自行定义 30%、40%、50% 不同遮罩。
+- 如未来确实存在特殊全屏沉浸场景，再单独定义新的 Overlay Token。
+
+### 关于 AI 色
+
+**不建立独立的 AI 品牌色体系。** AI 相关 UI 默认复用 `color.brand.*` / `color.surface.*` / `color.text.*` / `color.semantic.*`，通过 AI 图标、清晰文案、状态变化、Loading 状态、内容来源标识表达 AI 能力。
+
+禁止为了强调 AI 单独引入：高饱和紫蓝色、大面积渐变、Glow、发光边框或独立的 AI SaaS 视觉体系。
+
+> 例外：如果未来确实出现必须长期存在的 AI 专属视觉状态，再新增明确命名、明确数值、明确用途的 AI Token，不保留开放式的 `color.ai.*`。
 
 ## Typography
 
@@ -89,21 +152,38 @@ Design Token
 
 ### Font Scale
 
+字号必须是确定值，不允许 `16-18sp` 这类范围型 Token。
+
 | Token | 字号 | 字重 | 用途 |
 |---|---|---|---|
-| `font.size.largeTitle` | 24sp | Bold | 页面标题 |
-| `font.size.sectionTitle` | 20sp | Bold | 模块标题 |
-| `font.size.cardTitle` | 16-18sp | Medium | 卡片标题 |
-| `font.size.body` | 16sp | Regular | 正文 |
-| `font.size.caption` | 14sp | Regular | 时间、辅助说明 |
-| `font.size.label` | — | — | 标签、按钮文字 |
+| `font.size.largeTitle` | 24sp | Bold | 页面主标题 |
+| `font.size.sectionTitle` | 20sp | Bold | 大模块标题 |
+| `font.size.cardTitle` | 18sp | Medium | Card 标题、重要区块标题 |
+| `font.size.body` | 16sp | Regular | 正文、主要内容 |
+| `font.size.label` | 14sp | Medium | Button、Tag、Label |
+| `font.size.caption` | 12sp | Regular | 时间、日期、辅助元数据 |
 
-| Token 族 | 用途 |
+### Font Weight
+
+| Token | 用途 |
 |---|---|
-| `font.weight.*` | Regular / Medium / Bold |
-| `line.height.*` | 长文本阅读和卡片摘要 |
+| `font.weight.regular` | 正文 |
+| `font.weight.medium` | 标题、按钮、标签 |
+| `font.weight.bold` | 页面/模块主标题 |
 
-原则：优先可读性、避免信息过载、避免过小文字、中文环境优先系统字体。
+### Line Height
+
+| Token | 倍率 | 用途 |
+|---|---|---|
+| `line.height.tight` | 1.2 | 标题、单行强调内容 |
+| `line.height.normal` | 1.5 | 正文、普通说明 |
+| `line.height.relaxed` | 1.7 | 长文本、回忆内容、AI 总结 |
+
+规则：
+
+- `caption` 仅用于辅助元数据，不允许用于主要正文。
+- Button 文字统一使用 `font.size.label`，不要页面自行指定字号。
+- 中文环境优先系统字体。
 
 ## Spacing
 
@@ -129,26 +209,53 @@ Design Token
 
 ## Radius
 
-圆角体现 ChildNotes 的亲和感，整体偏大圆角。
+圆角表达层级和亲和感，不是单纯追求"可爱"。不要所有组件都使用大圆角。
 
-| Token | 值 | 推荐用途 |
+| Token | 值 | 用途 |
 |---|---|---|
-| `radius.small` | 8px | 按钮、小标签 |
-| `radius.medium` | 16px | 普通卡片 |
-| `radius.large` | 24px | Bottom Sheet |
-| `radius.pill` | — | 标签、胶囊按钮 |
+| `radius.xs` | 4px | Checkbox、Progress 内部元素等极小元素 |
+| `radius.small` | 8px | Tag、Chip、小型状态元素 |
+| `radius.medium` | 12px | Input、Secondary Button、普通控件、小型操作容器 |
+| `radius.large` | 16px | 普通 Card、List Item、主要内容容器 |
+| `radius.xl` | 24px | Bottom Sheet、大型强调 Card、特殊浮层 |
+| `radius.pill` | 999px | Pill Button、胶囊标签 |
 
-ChildNotes 推荐：卡片使用较大圆角，控件使用中等圆角，标签使用 Pill。Primary Button 高度 48px、圆角 24px。
+使用规则：
+
+- 不允许业务页面自行定义 10px、14px、18px 等圆角。
+- 普通 Card 默认使用 `radius.large`。
+- Input 和普通控件默认使用 `radius.medium`。
+- Bottom Sheet 默认使用 `radius.xl`。
+- Primary Button 使用 `radius.pill`（不要直接写死 24px 圆角，用 Token）。
+
+### Image Radius
+
+宝宝日记照片很多，图片圆角必须统一，不允许业务页面自行定义。
+
+| 场景 | Token |
+|---|---|
+| 头像 | `radius.pill` |
+| 小缩略图 | `radius.medium` |
+| 普通照片 Card | `radius.large` |
+| 全屏图片预览 | 不强制圆角 |
+
+规则：照片圆角与所在容器保持一致时，优先继承容器 Token。不要所有图片都裁成圆形。
 
 ## Shadow
 
-整体采用轻阴影，不要使用明显浮雕效果。空间优先，阴影辅助。
+Shadow 只用于表达空间层级，不用于装饰。优先使用 Surface 差异和 Spacing 表达层级，Shadow 是辅助。
 
-| Token | 参数 | 用途 |
-|---|---|---|
-| `shadow.none` | — | 默认，用空间和背景区分层级 |
-| `shadow.card` | Y:2 / Blur:8 / Opacity:8% | 卡片 |
-| `shadow.modal` | Y:8 / Blur:24 / Opacity:15% | Modal、底部操作区 |
+| Token | X | Y | Blur | Spread | Color | 用途 |
+|---|---|---|---|---|---|---|
+| `shadow.none` | 0 | 0 | 0 | 0 | transparent | 默认，用空间和背景区分层级 |
+| `shadow.card` | 0 | 2 | 8 | 0 | `rgba(0, 0, 0, 0.08)` | 普通 Card 在确实需要浮起感时使用 |
+| `shadow.floating` | 0 | 4 | 16 | 0 | `rgba(0, 0, 0, 0.12)` | Floating Action Button、悬浮操作栏、高于普通 Card 的轻量浮层 |
+| `shadow.modal` | 0 | 8 | 24 | 0 | `rgba(0, 0, 0, 0.15)` | Modal、特殊浮层 |
+
+规则：
+
+- 不要求所有 Card 都有 Shadow。默认优先使用 Surface 差异和 Spacing。
+- 禁止：大面积重阴影、多层阴影叠加、发光阴影、每张 Card 默认明显浮起。
 
 ## Motion
 
@@ -164,24 +271,23 @@ ChildNotes 推荐：卡片使用较大圆角，控件使用中等圆角，标签
 
 动效原则：Natural（自然）、Calm（平静）、Meaningful（有意义）。避免快速闪烁、强刺激动画、游戏化反馈。
 
-## Breakpoint
+## Size
 
-用于响应式布局，优先级 Mobile → Tablet → Desktop：
+### Control Height
 
-| Token | 用途 |
-|---|---|
-| `breakpoint.mobile` | 手机，主要使用场景 |
-| `breakpoint.tablet` | 平板 |
-| `breakpoint.desktop` | 桌面端，更大内容空间、键盘操作 |
+| Token | 值 | 用途 |
+|---|---|---|
+| `size.control.height.small` | 32px | 紧凑操作、辅助控件 |
+| `size.control.height.medium` | 40px | 普通 Desktop 控件 |
+| `size.control.height.large` | 48px | Mobile 主操作、Primary Button |
 
-## Button Tokens
+规则：
 
-| 类型 | 规格 |
-|---|---|
-| Primary Button | 高度 48px / 圆角 24px / 文字 16sp Medium / 品牌色底 |
-| Secondary Button | 背景 `#F3F4F6` / 文字 `#374151` |
+- Mobile Primary Action 默认使用 48px。
+- 重要触控操作区域不得小于交互规范要求。
+- 不要让业务页面自行出现 42px、44px、46px 等随机高度。
 
-## Icon Rules
+### Icon
 
 | 场景 | 尺寸 |
 |---|---|
@@ -191,6 +297,25 @@ ChildNotes 推荐：卡片使用较大圆角，控件使用中等圆角，标签
 | 大功能入口 | 40-48px |
 
 风格：圆润、简洁、低饱和。**Emoji 和 Icon 不混用**。
+
+## Breakpoint
+
+当前项目采用 Mobile → Tablet → Desktop 的响应式优先级。
+
+| Token | 用途 |
+|---|---|
+| `breakpoint.mobile` | 手机，主要使用场景 |
+| `breakpoint.tablet` | 平板 |
+| `breakpoint.desktop` | 桌面端，更大内容空间、键盘操作 |
+
+> **策略说明**：Breakpoint 的具体宽度数值必须根据 Avalonia 实际布局实现和目标设备范围统一确定，确定前不得由业务页面自行定义。如果后续确定具体宽度，再统一写入本文件（采用 `breakpoint.mobile` / `breakpoint.tablet` / `breakpoint.desktop` 或 `breakpoint.compact` / `breakpoint.medium` / `breakpoint.expanded` 其中一种命名，不允许混用）。
+
+## Button Tokens
+
+| 类型 | 规格 |
+|---|---|
+| Primary Button | 高度 `size.control.height.large` (48px) / 圆角 `radius.pill` / 文字 `font.size.label` (14sp Medium) / 底色 `color.action.primary.default` / 文字色 `color.action.primary.foreground` |
+| Secondary Button | 背景 `color.action.secondary.background` / 文字 `color.action.secondary.foreground` |
 
 ## Baby Theme Rules
 
@@ -227,14 +352,30 @@ Button
 | Avalonia（本项目） | Token → `App.axaml` 资源字典（`SolidColorBrush` / `x:Double` 等） → 控件 Style / Classes |
 | Web | Token → CSS Variables → Vue Components |
 
-### 开发规则
+## Token 使用规则
 
-所有 UI 开发必须：
+所有 UI 必须优先使用已有语义 Token。
 
-- 禁止硬编码颜色。
-- 禁止重复定义间距。
-- 优先复用组件。
-- 保持 Token 驱动。
+### 禁止
+
+- 硬编码颜色
+- 硬编码常规间距
+- 硬编码常规圆角
+- 为单个页面新增随机字号
+- 组件自行计算 Hover / Pressed / Disabled 色值
+- 业务页面自行定义 Shadow
+- 业务页面自行定义 Border 色
+- 使用未定义的视觉数值
+
+### 新增 Token 前必须确认
+
+- 现有 Token 是否可以满足；
+- 是否属于可跨页面复用的视觉语义；
+- 是否需要同步映射到 Avalonia 资源字典。
+
+### 原则
+
+**先复用 Token，再新增 Token；先表达语义，再定义数值。**
 
 AI 生成 UI 的开发规则统一见 [`components.md`](components.md) 的"AI 开发规则"章节。
 

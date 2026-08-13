@@ -82,30 +82,11 @@ ChildNotes 的设计系统回答一个问题：**设计语言通过什么视觉�
 
 ## 间距系统
 
-统一空间尺度，基础单位 4px，让所有页面拥有一致节奏。
-
-| Token | 值 | 用途 |
-|---|---|---|
-| `spacing.xs` | 4 | micro spacing |
-| `spacing.sm` | 8 | compact |
-| `spacing.md` | 12 | normal |
-| `spacing.lg` | 16 | standard |
-| `spacing.xl` | 24 | section |
-| `spacing.xxl` | 32 | large section |
-| `spacing.3xl` | 48+ | page spacing |
+统一空间尺度，基础单位 4px，让所有页面拥有一致节奏。具体间距、圆角及其他视觉数值统一以 [`design-tokens.md`](design-tokens.md) 为准，业务页面和组件不得自行定义新的视觉数值。
 
 ## 圆角系统
 
-圆角表达亲和感：
-
-| Token | 用途 |
-|---|---|
-| `radius.small` | 小控件 |
-| `radius.medium` | 按钮、输入框 |
-| `radius.large` | 卡片 |
-| `radius.pill` | 标签 |
-
-ChildNotes 推荐：卡片使用较大圆角，控件使用中等圆角，标签使用 Pill。
+圆角表达层级和亲和感，不是单纯追求"可爱"。具体 Token 与使用规则见 [`design-tokens.md`](design-tokens.md) 的"Radius"章节。
 
 ## 表面层级
 
