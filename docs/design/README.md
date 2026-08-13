@@ -24,8 +24,8 @@ Layer 4 — 具体落地（Apply）
 
 | 层 | 文档 | 定位 | 回答的问题 |
 |---|---|---|---|
-| 1 | [`design-language.md`](design-language.md) | 设计哲学 | 为什么做这个产品？产品原则是什么？AI 的定位是什么？ |
-| 2 | [`design-system.md`](design-system.md) | 视觉规则 | 色彩/字体/间距/圆角/动效/主题应该怎么用？ |
+| 1 | [`design-language.md`](design-language.md) | 设计哲学 | 我们希望用户感受到什么？为什么这么设计？品牌人格/产品原则/AI 定位/文案语气/情绪体验 |
+| 2 | [`design-system.md`](design-system.md) | 视觉规则 | 这些理念通过什么视觉系统实现？信息层级/色彩/字体/间距/圆角/表面/布局/动效/主题 |
 | 2 | [`interaction.md`](interaction.md) | 交互规则 | 页面怎么跳转？手势怎么用？状态怎么反馈？错误怎么处理？ |
 | 3 | [`components.md`](components.md) | 组件库 | 有哪些组件？每个组件的结构/状态/尺寸/命名是什么？AI 开发规则（权威源） |
 | 3 | [`design-tokens.md`](design-tokens.md) | 工程映射 | Token 的具体数值是什么？怎么映射到 Avalonia 资源字典和代码？ |
@@ -37,10 +37,15 @@ Layer 4 — 具体落地（Apply）
 
 | 主题 | 权威文档 | 其他文档的处理方式 |
 |---|---|---|
+| 设计哲学（产品定位/品牌人格/Warm·Simple·Trust/Capture First/Memory Over Data/AI As Companion） | `design-language.md` | `design-system.md` 仅引用 |
+| 文案语气 / 情绪体验 | `design-language.md` | `interaction.md` 的 Empty/Error 文案示例对齐语气，但不重复定义基调 |
+| 动效的体验哲学（为什么这么动） | `design-language.md` | `design-system.md` 落地为场景规则，`interaction.md` 给出时长数值 |
+| 视觉规则（信息层级/色彩/字体/间距/圆角/表面/布局/主题） | `design-system.md` | `components.md` / `home-page.md` 仅引用 Token 名 |
 | 设计方向（微信+Notion+温暖+智能） | `design-tokens.md` | `design-system.md` 引用 |
 | AI 开发规则（生成 UI / 新增组件 / 修改交互） | `components.md` | `design-tokens.md` / `interaction.md` / `home-page.md` 引用 |
 | Token 具体数值（色值/字号/间距） | `design-tokens.md` | `design-system.md` / `components.md` 仅引用 Token 名 |
 | 组件具体结构（字段/状态/尺寸） | `components.md` | `home-page.md` 仅引用组件名 |
+| 交互行为（跳转/手势/反馈/状态/动画时长/可访问性数值） | `interaction.md` | `design-language.md` 仅写理念级原则 |
 | 首页页面级规范 | `home-page.md` | `components.md` 仅引用 |
 
 ## 维护规则

@@ -1,6 +1,8 @@
 # Design System 设计系统
 
-ChildNotes 的设计系统负责把设计语言落到可执行的视觉规则：色彩、字体、布局、动效、组件状态和可访问性。
+ChildNotes 的设计系统回答一个问题：**设计语言通过什么视觉系统实现。**
+
+它把 [`design-language.md`](design-language.md) 的设计哲学落地为可执行的视觉规则：信息层级、色彩、字体、间距、圆角、表面、布局、动效、主题、可访问性。交互行为规范见 [`interaction.md`](interaction.md)，具体 Token 数值见 [`design-tokens.md`](design-tokens.md)。
 
 ## 系统目标
 
@@ -11,7 +13,16 @@ ChildNotes 的设计系统负责把设计语言落到可执行的视觉规则：
 
 ## 设计方向
 
-整体方向与视觉关键词见 [`design-tokens.md`](design-tokens.md) 的"设计方向"章节。本规范聚焦视觉规则的落地。
+整体方向与视觉关键词见 [`design-language.md`](design-language.md) 的"设计关键词"与"品牌人格"章节。本规范聚焦视觉规则的落地。
+
+## 视觉原则
+
+| 原则 | 说明 |
+|---|---|
+| Warm but Professional | 保留家庭温度，同时呈现长期工具的可靠感 |
+| Calm Experience | 用留白、柔和背景和低饱和强调色减少压力 |
+| Content First | 卡片、图表、AI 总结都应服务成长内容，而非装饰 |
+| Accessible | 颜色对比、字号、触控区域和状态反馈满足基础可用性 |
 
 ## 信息层级
 
@@ -39,30 +50,6 @@ ChildNotes 的设计系统负责把设计语言落到可执行的视觉规则：
 卡片用于信息分组、状态展示、操作入口。
 
 不要：无限堆叠卡片、每个数据一个大卡片、用阴影制造层级。优先通过空间和背景差异表达层级。
-
-## 视觉原则
-
-| 原则 | 说明 |
-|---|---|
-| Warm but Professional | 保留家庭温度，同时呈现长期工具的可靠感 |
-| Calm Experience | 用留白、柔和背景和低饱和强调色减少压力 |
-| Content First | 卡片、图表、AI 总结都应服务成长内容，而非装饰 |
-| Accessible | 颜色对比、字号、触控区域和状态反馈满足基础可用性 |
-
-品牌应避免：过度卡通的儿童界面、过度装饰、冰冷的企业软件感。推荐方向：现代家庭产品、平静的科技感、有情绪的简洁。
-
-## 品牌语言
-
-ChildNotes 是家庭的陪伴者，帮助捕捉、整理和理解童年记忆。品牌围绕一个简单信念：每一个微小瞬间都值得被记住。
-
-品牌个性：
-
-- **Warm**：让人感到受欢迎和安全，创造情绪舒适感而不是压力。
-- **Gentle**：尊重父母有限的时间和注意力。
-- **Trustworthy**：家庭记忆私密且重要，体验必须传达可靠性。
-- **Intelligent**：AI 应安静地帮助用户从记忆中发现意义，不替代人类情感。
-
-文案语气应亲切、简洁、鼓励；避免命令式、机械式、焦虑式。普通产品说"创建成功"，ChildNotes 说"已保存这个珍贵瞬间"。
 
 ## 色彩系统
 
@@ -152,9 +139,7 @@ Theme System
 
 主题切换不应影响信息架构、组件行为、AI 交互、记录流程，只改变视觉表达、色彩、表面样式。主题通过 Token 覆盖实现：Base Token → Theme Override → Component。
 
-## 布局与动效
-
-### 布局
+## 布局
 
 页面通用结构：Top Navigation / Main Content / Primary Action。
 
@@ -162,7 +147,9 @@ Theme System
 - 桌面端可使用双栏或宽卡片，但不改变核心信息顺序。
 - 响应式优先级：Mobile → Tablet → Desktop，保持内容宽度舒适、操作区域易触达、信息层级一致。
 
-### 动效
+平台适配的体验一致性原则见 [`design-language.md`](design-language.md) 的"Consistent Experience"。
+
+## 动效
 
 动效目的是让用户理解正在发生什么，并感受到成长记录过程的连续性。动效不是装饰，而是体验的一部分。
 
@@ -180,12 +167,16 @@ Theme System
 | AI Complete | "已整理新的成长发现" |
 | Error | 告知原因、提供下一步操作 |
 
+动效的体验哲学见 [`design-language.md`](design-language.md) 的"动效的体验哲学"。具体动画时长与禁止项见 [`interaction.md`](interaction.md) 的"Animation Rules"。
+
 ## 可访问性
 
 - 颜色对比满足基础可用性。
 - 字号避免过小。
 - 触控区域足够大。
 - 状态反馈明确，不仅依赖颜色。
+
+可访问性的交互数值（触控区域大小等）见 [`interaction.md`](interaction.md) 的"Accessibility"。
 
 ## 历史来源
 
