@@ -25,7 +25,7 @@
                                    HorizontalContentAlignment="Left"
                                    Background="{StaticResource SurfaceDisabledBrush}"
                                    BorderThickness="0"
-                                   CornerRadius="8"
+                                   CornerRadius="{StaticResource Radius.Small}"
                                    Padding="8,4"
                                    Margin="0,0,0,8"
                                    Focusable="True">
@@ -40,10 +40,10 @@
                            Placement="BottomEdgeAlignedLeft"
                            PlacementTarget="{TemplateBinding}">
                         <Border Background="{StaticResource SurfaceCardBrush}"
-                                BorderBrush="{StaticResource SurfaceDividerBrush}"
+                                BorderBrush="{StaticResource BorderSubtleBrush}"
                                 BorderThickness="1"
-                                CornerRadius="8"
-                                BoxShadow="0 4 12 #20000000"
+                                CornerRadius="{StaticResource Radius.Small}"
+                                BoxShadow="{StaticResource Shadow.Floating}"
                                 Padding="6">
                             <!-- 紧凑两列：时 : 分 -->
                             <StackPanel Orientation="Horizontal" Spacing="-2">
@@ -64,7 +64,7 @@
                                 </StackPanel>
                                 <TextBlock Text=":" FontSize="14" FontWeight="Bold"
                                            VerticalAlignment="Center" Margin="3,10,3,0"
-                                           Foreground="#6230E0" />
+                                           Foreground="{StaticResource BrandPrimaryBrush}" />
                                 <StackPanel Orientation="Vertical">
                                     <TextBlock Text="分" FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}"
                                                HorizontalAlignment="Center" Margin="0,2,0,0"/>

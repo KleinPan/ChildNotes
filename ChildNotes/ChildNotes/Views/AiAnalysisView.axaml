@@ -12,10 +12,12 @@
     <UserControl.Styles>
         <Style Selector="Border.record-card">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
-            <Setter Property="CornerRadius" Value="8"/>
+            <!-- 圆角对齐 design-tokens radius.medium=12 -->
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}"/>
             <Setter Property="Padding" Value="14"/>
             <Setter Property="Margin" Value="0,0,0,10"/>
-            <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000"/>
+            <!-- 阴影对齐 design-tokens shadow.card -->
+            <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}"/>
         </Style>
     </UserControl.Styles>
 
@@ -39,24 +41,25 @@
                 <Border Background="{StaticResource BrandPrimaryBrush}" Padding="20,16" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="宝宝喂养分析" FontSize="17" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                        <!-- Banner 副标题：复用 OnPrimary 80% 透明度（规范 color.text.onPrimary=#FFFFFF） -->
+                        <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="12" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <!-- 积分行 (仅在非详情页显示) -->
-                <Border Background="#FFF7E8" CornerRadius="8" Margin="12,8,12,0" Padding="14,10"
+                <Border Background="{StaticResource FeedingOrangeLightBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,8,12,0" Padding="14,10"
                         IsVisible="{Binding !ShowDetail}">
                     <StackPanel>
                         <!-- 第一行：余额 + 消耗 + 签到按钮 -->
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
-                                <Run Text="积分 "/><Run Text="{Binding CurrentPoints}" FontWeight="SemiBold" Foreground="#E67E22"/><Run Text="/ 消耗 "/><Run Text="{Binding AnalysisCost}" FontWeight="SemiBold" Foreground="#E67E22"/>
+                                <Run Text="积分 "/><Run Text="{Binding CurrentPoints}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/><Run Text="/ 消耗 "/><Run Text="{Binding AnalysisCost}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/>
                             </TextBlock>
                             <Button Grid.Column="1" Content="签到赚积分" Classes="weui-btn mini" Padding="10,6" FontSize="11"
-                                    Command="{Binding OpenPointsCommand}" Background="#FFF0E0" Foreground="#E67E22" BorderThickness="0"/>
+                                    Command="{Binding OpenPointsCommand}" Background="{StaticResource FeedingOrangeLightBrush}" Foreground="{StaticResource FeedingOrangeBrush}" BorderThickness="0"/>
                         </Grid>
                         <!-- 第二行：仅积分不足时显示，独占整行不被遮挡 -->
-                        <TextBlock Text="{Binding InsufficientTip}" FontSize="11" Foreground="#D32F2F" Margin="0,4,0,0"
+                        <TextBlock Text="{Binding InsufficientTip}" FontSize="11" Foreground="{StaticResource SemanticErrorBrush}" Margin="0,4,0,0"
                                    IsVisible="{Binding !PointsSufficient}"/>
                     </StackPanel>
                 </Border>

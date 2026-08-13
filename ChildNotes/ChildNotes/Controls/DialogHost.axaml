@@ -8,7 +8,7 @@
 
     <Panel x:Name="DialogContainer" IsVisible="False">
         <Border x:Name="ModalMask" Classes="modal-mask"/>
-        <Border x:Name="DialogContent" Background="White" CornerRadius="12" Padding="24,20"
+        <Border x:Name="DialogContent" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Large}" Padding="24,20"
                 MaxWidth="300" HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel Spacing="12">
                 <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
@@ -16,10 +16,10 @@
                 <ContentControl Content="{Binding MessageContent, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
                 <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
                     <Button Content="{Binding CancelText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                            Classes="weui-btn default" CornerRadius="24" MinWidth="100" MinHeight="40"
+                            Classes="weui-btn default" CornerRadius="{StaticResource Radius.Medium}" MinWidth="100" MinHeight="40"
                             Command="{Binding CancelCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
                     <Button Content="{Binding ConfirmText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
-                            Classes="weui-btn warn" CornerRadius="24" MinWidth="100" MinHeight="40"
+                            Classes="weui-btn warn" CornerRadius="{StaticResource Radius.Medium}" MinWidth="100" MinHeight="40"
                             Command="{Binding ConfirmCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"/>
                 </StackPanel>
             </StackPanel>

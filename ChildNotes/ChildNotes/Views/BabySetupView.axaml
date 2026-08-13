@@ -18,22 +18,22 @@
                     <GradientStop Offset="0.4" Color="{StaticResource Color.Surface.Disabled}"/>
                 </LinearGradientBrush>
             </Border.Background>
-            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="12" Padding="20,30"
-                    BoxShadow="0 4 20 0 #15000000">
+            <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Large}" Padding="20,30"
+                    BoxShadow="{StaticResource Shadow.Modal}">
                 <StackPanel Spacing="16">
 
                     <!-- 头部引导 -->
                     <StackPanel HorizontalAlignment="Center" Margin="0,0,0,10" Spacing="6">
                         <TextBlock Text="🍼" FontSize="40" HorizontalAlignment="Center"/>
                         <TextBlock Text="{DynamicResource BabySetup_Welcome}" FontSize="19" FontWeight="Bold"
-                                   Foreground="#222" HorizontalAlignment="Center"/>
+                                   Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{DynamicResource BabySetup_Hint}" FontSize="13"
                                    Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- 性别选择 -->
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
-                        <TextBlock Text="{DynamicResource BabySetup_Gender}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                        <TextBlock Text="{DynamicResource BabySetup_Gender}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <Button Content="{DynamicResource BabyMgr_Boy}" Classes="gender-btn"
                                 Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                 Click="OnBoyTap"/>
@@ -46,7 +46,7 @@
 
                     <!-- 姓名 -->
                     <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource BabySetup_Name}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                        <TextBlock Text="{DynamicResource BabySetup_Name}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <TextBox Text="{Binding Name}" PlaceholderText="{DynamicResource BabyMgr_NamePlaceholder}" MaxLength="20"
                                  BorderThickness="0" Background="Transparent" FontSize="15"
                                  VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
@@ -56,7 +56,7 @@
 
                     <!-- 出生日期 -->
                     <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource BabySetup_Birthday}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                        <TextBlock Text="{DynamicResource BabySetup_Birthday}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <CalendarDatePicker SelectedDate="{Binding BirthDate}"
                                             PlaceholderText="{DynamicResource BabyMgr_BirthdayPlaceholder}"
                                             HorizontalAlignment="Stretch" FontSize="15"/>
@@ -70,9 +70,9 @@
                                IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                     <!-- 保存按钮 -->
-                    <Button Content="{DynamicResource BabySetup_Start}" Classes="weui-btn primary" CornerRadius="24"
+                    <Button Content="{DynamicResource BabySetup_Start}" Classes="weui-btn primary"
                             Command="{Binding SaveCommand}" IsEnabled="{Binding !Saving}"
-                            Margin="0,16,0,0" HorizontalAlignment="Stretch" MinHeight="48"/>
+                            Margin="0,16,0,0" HorizontalAlignment="Stretch"/>
 
                     <!-- 跳过 -->
                     <Button Content="{DynamicResource BabySetup_Later}" Background="Transparent" BorderThickness="0" CornerRadius="6"

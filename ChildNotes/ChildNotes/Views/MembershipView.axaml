@@ -37,12 +37,12 @@
                 <!-- 会员状态卡片 -->
                 <Border Background="{StaticResource BrandPrimaryBrush}" Padding="24,24" CornerRadius="0,0,8,8">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock FontSize="13" Foreground="#CCFFFFFF" HorizontalAlignment="Center"
+                        <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center"
                                    Text="{Binding IsActive, Converter={x:Static views:MembershipView.IsMemberTextConverter}}"/>
 
                         <!-- AI 记次数（今日） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
+                            <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiToday}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiNoteRemainingToday}"/>
                                 <Run Text=" / "/>
@@ -52,7 +52,7 @@
 
                         <!-- AI 分析次数（本周） -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <TextBlock FontSize="13" Foreground="#CCFFFFFF" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
+                            <TextBlock FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Center" Text="{DynamicResource Membership_AiWeek}"/>
                             <TextBlock FontSize="22" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" Margin="8,0,0,0">
                                 <Run Text="{Binding AiAnalysisRemainingThisWeek}"/>
                                 <Run Text=" / "/>
@@ -60,7 +60,7 @@
                             </TextBlock>
                         </StackPanel>
 
-                        <TextBlock FontSize="12" Foreground="#CCFFFFFF" HorizontalAlignment="Center" Margin="0,10,0,0"
+                        <TextBlock FontSize="12" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,10,0,0"
                                    Text="{Binding ExpireAtText, StringFormat=会员到期：\{0\}}"
                                    IsVisible="{Binding IsActive}"/>
                     </StackPanel>

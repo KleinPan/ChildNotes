@@ -4,12 +4,12 @@
 
     <!-- ==================================================================
          ChildNotes Design Tokens
-         来源: docs/design/design-tokens.md
+         来源: docs/design/design-tokens.md（唯一权威来源）
          规范: 禁止硬编码颜色 / 重复定义间距 / 优先复用组件
          命名: <category>.<role>.<variant?> 与 design-tokens.md 一一对应
          ================================================================== -->
 
-    <!-- ============ Color / Brand ============ -->
+    <!-- ============ Color / Brand 品牌色 ============ -->
     <Color x:Key="Color.Brand.Primary">#00C875</Color>
     <Color x:Key="Color.Brand.PrimaryLight">#E8FFF4</Color>
     <Color x:Key="Color.Brand.PrimaryDark">#00A85A</Color>
@@ -21,52 +21,62 @@
     <Color x:Key="Color.Medicine.Red">#F56565</Color>
     <Color x:Key="Color.Vaccine.Yellow">#F6C344</Color>
 
-    <!-- ============ Color / Surface ============ -->
+    <!-- ============ Color / Surface 表面色 ============ -->
     <Color x:Key="Color.Surface.Background">#F5F6F8</Color>
     <Color x:Key="Color.Surface.Card">#FFFFFF</Color>
     <Color x:Key="Color.Surface.Disabled">#F3F4F6</Color>
-    <!-- 分隔线/边框淡色（替代 WeuiFg3 #1A000000 / WeuiSeparator #1A000000） -->
-    <Color x:Key="Color.Surface.Divider">#1A000000</Color>
     <!-- 按压/选中态浅灰底（替代 WeuiBgColorActive #ECECEC） -->
     <Color x:Key="Color.Surface.Active">#ECECEC</Color>
 
-    <!-- ============ Color / Text ============ -->
+    <!-- ============ Color / Text 文字色 ============ -->
     <Color x:Key="Color.Text.Primary">#1F2937</Color>
     <Color x:Key="Color.Text.Secondary">#6B7280</Color>
     <Color x:Key="Color.Text.Placeholder">#9CA3AF</Color>
     <Color x:Key="Color.Text.Success">#16A34A</Color>
     <Color x:Key="Color.Text.Warning">#D97706</Color>
     <Color x:Key="Color.Text.Error">#DC2626</Color>
+    <Color x:Key="Color.Text.OnPrimary">#FFFFFF</Color>
 
-    <!-- ============ Color / Semantic ============ -->
+    <!-- ============ Color / Semantic 语义色（权威来源） ============ -->
     <Color x:Key="Color.Semantic.Success">#16A34A</Color>
     <Color x:Key="Color.Semantic.Warning">#D97706</Color>
     <Color x:Key="Color.Semantic.Error">#DC2626</Color>
     <Color x:Key="Color.Semantic.Info">#3B82F6</Color>
 
-    <!-- ============ Color / AI ============ -->
-    <Color x:Key="Color.AI.Primary">#7C5CFF</Color>
-    <Color x:Key="Color.AI.Background">#F0FFF0</Color>
+    <!-- ============ Color / Border 边框色 ============ -->
+    <Color x:Key="Color.Border.Subtle">#EEF0F3</Color>
+    <Color x:Key="Color.Border.Default">#E5E7EB</Color>
+    <Color x:Key="Color.Border.Focus">#00C875</Color>
+    <Color x:Key="Color.Border.Error">#DC2626</Color>
 
-    <!-- ============ Color / Loading (启动页专属品牌色) ============ -->
-    <!-- 奶油色背景 + 咖啡色文字，与 Android SplashScreen #FFF8E7 保持一致，实现启动屏→LoadingView 无缝过渡 -->
+    <!-- ============ Color / Overlay 遮罩 ============ -->
+    <!-- rgba(0,0,0,0.32) ≈ #52000000，Bottom Sheet/Modal/Dialog 统一遮罩 -->
+    <Color x:Key="Color.Overlay.Scrim">#52000000</Color>
+
+    <!-- ============ Color / Action 交互状态色 ============ -->
+    <!-- Primary Action -->
+    <Color x:Key="Color.Action.Primary.Default">#00C875</Color>
+    <Color x:Key="Color.Action.Primary.Pressed">#00A85A</Color>
+    <Color x:Key="Color.Action.Primary.Hover">#00B86B</Color>
+    <Color x:Key="Color.Action.Primary.DisabledBackground">#F3F4F6</Color>
+    <Color x:Key="Color.Action.Primary.DisabledForeground">#9CA3AF</Color>
+    <Color x:Key="Color.Action.Primary.Foreground">#FFFFFF</Color>
+
+    <!-- Secondary Action -->
+    <Color x:Key="Color.Action.Secondary.Background">#F3F4F6</Color>
+    <Color x:Key="Color.Action.Secondary.Foreground">#374151</Color>
+    <Color x:Key="Color.Action.Secondary.Hover">#E7E8EB</Color>
+    <Color x:Key="Color.Action.Secondary.Pressed">#D1D3D7</Color>
+    <Color x:Key="Color.Action.Secondary.Disabled">#F3F4F6</Color>
+    <Color x:Key="Color.Action.Secondary.DisabledForeground">#9CA3AF</Color>
+
+    <!-- ============ Color / Loading (启动页专属品牌色，业务专属) ============ -->
+    <!-- 奶油色背景 + 咖啡色文字，与 Android SplashScreen #FFF8E7 保持一致 -->
     <Color x:Key="Color.Loading.Background">#FFF8E7</Color>
     <Color x:Key="Color.Loading.TextPrimary">#5D4037</Color>
     <Color x:Key="Color.Loading.TextSecondary">#8D6E63</Color>
 
-    <!-- ============ Color / Brushes (供控件直接引用) ============ -->
-    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource Color.Brand.Primary}" />
-    <SolidColorBrush x:Key="BrandPrimaryLightBrush" Color="{StaticResource Color.Brand.PrimaryLight}" />
-    <SolidColorBrush x:Key="BrandPrimaryDarkBrush" Color="{StaticResource Color.Brand.PrimaryDark}" />
-
-    <SolidColorBrush x:Key="GrowthBlueBrush" Color="{StaticResource Color.Growth.Blue}" />
-    <SolidColorBrush x:Key="FeedingOrangeBrush" Color="{StaticResource Color.Feeding.Orange}" />
-    <SolidColorBrush x:Key="SleepPurpleBrush" Color="{StaticResource Color.Sleep.Purple}" />
-    <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
-    <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
-
-    <!-- ============ Color / Vaccine Status (疫苗业务状态色) ============ -->
-    <!-- 疫苗记录卡片状态色：默认/已完成/异常/选中态。DesignTokens 未定义，临时集中管理。 -->
+    <!-- ============ Color / Vaccine Status (疫苗业务状态色，业务专属) ============ -->
     <Color x:Key="Color.Vaccine.BorderDefault">#EDF1F7</Color>
     <Color x:Key="Color.Vaccine.Done">#9EE6C1</Color>
     <Color x:Key="Color.Vaccine.Abnormal">#FFBF9B</Color>
@@ -76,17 +86,7 @@
     <Color x:Key="Color.Vaccine.SelectedBorder">#BFE8FF</Color>
     <Color x:Key="Color.Vaccine.SelectedText">#0675B8</Color>
 
-    <SolidColorBrush x:Key="VaccineBorderDefaultBrush" Color="{StaticResource Color.Vaccine.BorderDefault}" />
-    <SolidColorBrush x:Key="VaccineDoneBrush" Color="{StaticResource Color.Vaccine.Done}" />
-    <SolidColorBrush x:Key="VaccineAbnormalBrush" Color="{StaticResource Color.Vaccine.Abnormal}" />
-    <SolidColorBrush x:Key="VaccineAbnormalBgBrush" Color="{StaticResource Color.Vaccine.AbnormalBg}" />
-    <SolidColorBrush x:Key="VaccineAbnormalBorderBrush" Color="{StaticResource Color.Vaccine.AbnormalBorder}" />
-    <SolidColorBrush x:Key="VaccineSelectedBgBrush" Color="{StaticResource Color.Vaccine.SelectedBg}" />
-    <SolidColorBrush x:Key="VaccineSelectedBorderBrush" Color="{StaticResource Color.Vaccine.SelectedBorder}" />
-    <SolidColorBrush x:Key="VaccineSelectedTextBrush" Color="{StaticResource Color.Vaccine.SelectedText}" />
-
-    <!-- ============ Color / QuickAction (首页快捷动作图标背景色) ============ -->
-    <!-- QuickMenuViewModel 中 10 个快捷动作的图标背景色。ViewModel 通过 IconBg 字段存色值字符串。 -->
+    <!-- ============ Color / QuickAction (首页快捷动作图标背景色，业务专属) ============ -->
     <Color x:Key="Color.QuickAction.Feed">#FFF0E6</Color>
     <Color x:Key="Color.QuickAction.Activity">#E3F2FD</Color>
     <Color x:Key="Color.QuickAction.Complementary">#FFF3E0</Color>
@@ -97,6 +97,67 @@
     <Color x:Key="Color.QuickAction.Diaper">#FFF8E1</Color>
     <Color x:Key="Color.QuickAction.Water">#E1F5FE</Color>
     <Color x:Key="Color.QuickAction.Growth">#E0F2F1</Color>
+
+    <!-- 业务色 Light (强调态浅色底/边) -->
+    <Color x:Key="Color.Growth.BlueLight">#E0F2FE</Color>
+    <Color x:Key="Color.Feeding.OrangeLight">#FFF3E0</Color>
+    <Color x:Key="Color.Medicine.RedLight">#FED7D7</Color>
+    <Color x:Key="Color.Brand.PrimaryAlpha14">#1400C875</Color>
+    <Color x:Key="Color.Brand.PrimaryAlpha10">#1A00C875</Color>
+
+    <!-- Growth 页面棕色主题系（对齐小程序 .g-* 系列样式，design-tokens 未单独定义，作业务扩展 Token） -->
+    <Color x:Key="Color.Growth.BrownPrimary">#5D4037</Color>
+    <Color x:Key="Color.Growth.BrownSecondary">#8D6E63</Color>
+    <Color x:Key="Color.Growth.BrownText">#6D4C41</Color>
+    <Color x:Key="Color.Growth.BrownDeep">#2D1810</Color>
+    <Color x:Key="Color.Growth.BrownLight">#A1887F</Color>
+    <Color x:Key="Color.Growth.Peach">#FFAB91</Color>
+    <Color x:Key="Color.Growth.PeachDeep">#FFCC80</Color>
+    <Color x:Key="Color.Growth.Cream">#FFF8F5</Color>
+    <Color x:Key="Color.Growth.CardBorder">#7E9B8E</Color>
+    <Color x:Key="Color.Growth.HintGray">#BBB</Color>
+    <Color x:Key="Color.Growth.SemiWhite">#80FFFFFF</Color>
+    <Color x:Key="Color.Growth.SemiBlack">#80000000</Color>
+
+    <!-- ============ Brushes (供控件直接引用) ============ -->
+    <SolidColorBrush x:Key="BrandPrimaryBrush" Color="{StaticResource Color.Brand.Primary}" />
+    <SolidColorBrush x:Key="BrandPrimaryLightBrush" Color="{StaticResource Color.Brand.PrimaryLight}" />
+    <SolidColorBrush x:Key="BrandPrimaryDarkBrush" Color="{StaticResource Color.Brand.PrimaryDark}" />
+    <SolidColorBrush x:Key="BrandPrimaryAlpha14Brush" Color="{StaticResource Color.Brand.PrimaryAlpha14}" />
+    <SolidColorBrush x:Key="BrandPrimaryAlpha10Brush" Color="{StaticResource Color.Brand.PrimaryAlpha10}" />
+
+    <SolidColorBrush x:Key="GrowthBlueBrush" Color="{StaticResource Color.Growth.Blue}" />
+    <SolidColorBrush x:Key="FeedingOrangeBrush" Color="{StaticResource Color.Feeding.Orange}" />
+    <SolidColorBrush x:Key="SleepPurpleBrush" Color="{StaticResource Color.Sleep.Purple}" />
+    <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
+    <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
+
+    <SolidColorBrush x:Key="GrowthBlueLightBrush" Color="{StaticResource Color.Growth.BlueLight}" />
+    <SolidColorBrush x:Key="FeedingOrangeLightBrush" Color="{StaticResource Color.Feeding.OrangeLight}" />
+    <SolidColorBrush x:Key="MedicineRedLightBrush" Color="{StaticResource Color.Medicine.RedLight}" />
+
+    <!-- Growth 页面棕色主题系 Brush -->
+    <SolidColorBrush x:Key="GrowthBrownPrimaryBrush" Color="{StaticResource Color.Growth.BrownPrimary}" />
+    <SolidColorBrush x:Key="GrowthBrownSecondaryBrush" Color="{StaticResource Color.Growth.BrownSecondary}" />
+    <SolidColorBrush x:Key="GrowthBrownTextBrush" Color="{StaticResource Color.Growth.BrownText}" />
+    <SolidColorBrush x:Key="GrowthBrownDeepBrush" Color="{StaticResource Color.Growth.BrownDeep}" />
+    <SolidColorBrush x:Key="GrowthBrownLightBrush" Color="{StaticResource Color.Growth.BrownLight}" />
+    <SolidColorBrush x:Key="GrowthPeachBrush" Color="{StaticResource Color.Growth.Peach}" />
+    <SolidColorBrush x:Key="GrowthPeachDeepBrush" Color="{StaticResource Color.Growth.PeachDeep}" />
+    <SolidColorBrush x:Key="GrowthCreamBrush" Color="{StaticResource Color.Growth.Cream}" />
+    <SolidColorBrush x:Key="GrowthCardBorderBrush" Color="{StaticResource Color.Growth.CardBorder}" />
+    <SolidColorBrush x:Key="GrowthHintGrayBrush" Color="{StaticResource Color.Growth.HintGray}" />
+    <SolidColorBrush x:Key="GrowthSemiWhiteBrush" Color="{StaticResource Color.Growth.SemiWhite}" />
+    <SolidColorBrush x:Key="GrowthSemiBlackBrush" Color="{StaticResource Color.Growth.SemiBlack}" />
+
+    <SolidColorBrush x:Key="VaccineBorderDefaultBrush" Color="{StaticResource Color.Vaccine.BorderDefault}" />
+    <SolidColorBrush x:Key="VaccineDoneBrush" Color="{StaticResource Color.Vaccine.Done}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBrush" Color="{StaticResource Color.Vaccine.Abnormal}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBgBrush" Color="{StaticResource Color.Vaccine.AbnormalBg}" />
+    <SolidColorBrush x:Key="VaccineAbnormalBorderBrush" Color="{StaticResource Color.Vaccine.AbnormalBorder}" />
+    <SolidColorBrush x:Key="VaccineSelectedBgBrush" Color="{StaticResource Color.Vaccine.SelectedBg}" />
+    <SolidColorBrush x:Key="VaccineSelectedBorderBrush" Color="{StaticResource Color.Vaccine.SelectedBorder}" />
+    <SolidColorBrush x:Key="VaccineSelectedTextBrush" Color="{StaticResource Color.Vaccine.SelectedText}" />
 
     <SolidColorBrush x:Key="QuickActionFeedBrush" Color="{StaticResource Color.QuickAction.Feed}" />
     <SolidColorBrush x:Key="QuickActionActivityBrush" Color="{StaticResource Color.QuickAction.Activity}" />
@@ -109,24 +170,12 @@
     <SolidColorBrush x:Key="QuickActionWaterBrush" Color="{StaticResource Color.QuickAction.Water}" />
     <SolidColorBrush x:Key="QuickActionGrowthBrush" Color="{StaticResource Color.QuickAction.Growth}" />
 
-    <!-- 业务色 Light (强调态浅色底/边)
-         来源: 业务色 8% 透明叠白色 = Material Design Light 推导值
-         design-tokens.md 未明确规定,临时值,待设计确认 -->
-    <Color x:Key="Color.Growth.BlueLight">#E0F2FE</Color>
-    <Color x:Key="Color.Feeding.OrangeLight">#FFF3E0</Color>
-    <Color x:Key="Color.Medicine.RedLight">#FED7D7</Color>
-    <Color x:Key="Color.Brand.PrimaryAlpha14">#1400C875</Color>
-
-    <SolidColorBrush x:Key="GrowthBlueLightBrush" Color="{StaticResource Color.Growth.BlueLight}" />
-    <SolidColorBrush x:Key="FeedingOrangeLightBrush" Color="{StaticResource Color.Feeding.OrangeLight}" />
-    <SolidColorBrush x:Key="MedicineRedLightBrush" Color="{StaticResource Color.Medicine.RedLight}" />
-    <SolidColorBrush x:Key="BrandPrimaryAlpha14Brush" Color="{StaticResource Color.Brand.PrimaryAlpha14}" />
-
     <SolidColorBrush x:Key="SurfaceBackgroundBrush" Color="{StaticResource Color.Surface.Background}" />
     <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource Color.Surface.Card}" />
     <SolidColorBrush x:Key="SurfaceDisabledBrush" Color="{StaticResource Color.Surface.Disabled}" />
-    <SolidColorBrush x:Key="SurfaceDividerBrush" Color="{StaticResource Color.Surface.Divider}" />
     <SolidColorBrush x:Key="SurfaceActiveBrush" Color="{StaticResource Color.Surface.Active}" />
+    <!-- 兼容旧引用：SurfaceDividerBrush 已统一到 Border.Subtle（规范 color.border.subtle=#EEF0F3） -->
+    <SolidColorBrush x:Key="SurfaceDividerBrush" Color="{StaticResource Color.Border.Subtle}" />
 
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource Color.Text.Primary}" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource Color.Text.Secondary}" />
@@ -134,28 +183,39 @@
     <SolidColorBrush x:Key="TextSuccessBrush" Color="{StaticResource Color.Text.Success}" />
     <SolidColorBrush x:Key="TextWarningBrush" Color="{StaticResource Color.Text.Warning}" />
     <SolidColorBrush x:Key="TextErrorBrush" Color="{StaticResource Color.Text.Error}" />
+    <SolidColorBrush x:Key="TextOnPrimaryBrush" Color="{StaticResource Color.Text.OnPrimary}" />
 
     <SolidColorBrush x:Key="SemanticSuccessBrush" Color="{StaticResource Color.Semantic.Success}" />
     <SolidColorBrush x:Key="SemanticWarningBrush" Color="{StaticResource Color.Semantic.Warning}" />
     <SolidColorBrush x:Key="SemanticErrorBrush" Color="{StaticResource Color.Semantic.Error}" />
     <SolidColorBrush x:Key="SemanticInfoBrush" Color="{StaticResource Color.Semantic.Info}" />
 
-    <SolidColorBrush x:Key="AIPrimaryBrush" Color="{StaticResource Color.AI.Primary}" />
-    <SolidColorBrush x:Key="AIBackgroundBrush" Color="{StaticResource Color.AI.Background}" />
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="{StaticResource Color.Border.Subtle}" />
+    <SolidColorBrush x:Key="BorderDefaultBrush" Color="{StaticResource Color.Border.Default}" />
+    <SolidColorBrush x:Key="BorderFocusBrush" Color="{StaticResource Color.Border.Focus}" />
+    <SolidColorBrush x:Key="BorderErrorBrush" Color="{StaticResource Color.Border.Error}" />
+
+    <SolidColorBrush x:Key="OverlayScrimBrush" Color="{StaticResource Color.Overlay.Scrim}" />
+    <!-- 兼容旧引用：Mask 系列 = Overlay.Scrim（规范统一 32% 黑，禁止页面自行定义 30/40/50%） -->
+    <SolidColorBrush x:Key="MaskBrush" Color="{StaticResource Color.Overlay.Scrim}" />
+    <SolidColorBrush x:Key="MaskLightBrush" Color="{StaticResource Color.Overlay.Scrim}" />
+
+    <SolidColorBrush x:Key="ActionPrimaryDefaultBrush" Color="{StaticResource Color.Action.Primary.Default}" />
+    <SolidColorBrush x:Key="ActionPrimaryPressedBrush" Color="{StaticResource Color.Action.Primary.Pressed}" />
+    <SolidColorBrush x:Key="ActionPrimaryHoverBrush" Color="{StaticResource Color.Action.Primary.Hover}" />
+    <SolidColorBrush x:Key="ActionPrimaryDisabledBgBrush" Color="{StaticResource Color.Action.Primary.DisabledBackground}" />
+    <SolidColorBrush x:Key="ActionPrimaryDisabledFgBrush" Color="{StaticResource Color.Action.Primary.DisabledForeground}" />
+
+    <SolidColorBrush x:Key="ActionSecondaryBackgroundBrush" Color="{StaticResource Color.Action.Secondary.Background}" />
+    <SolidColorBrush x:Key="ActionSecondaryForegroundBrush" Color="{StaticResource Color.Action.Secondary.Foreground}" />
+    <SolidColorBrush x:Key="ActionSecondaryHoverBrush" Color="{StaticResource Color.Action.Secondary.Hover}" />
+    <SolidColorBrush x:Key="ActionSecondaryPressedBrush" Color="{StaticResource Color.Action.Secondary.Pressed}" />
+    <SolidColorBrush x:Key="ActionSecondaryDisabledBrush" Color="{StaticResource Color.Action.Secondary.Disabled}" />
+    <SolidColorBrush x:Key="ActionSecondaryDisabledFgBrush" Color="{StaticResource Color.Action.Secondary.DisabledForeground}" />
 
     <SolidColorBrush x:Key="LoadingBackgroundBrush" Color="{StaticResource Color.Loading.Background}" />
     <SolidColorBrush x:Key="LoadingTextPrimaryBrush" Color="{StaticResource Color.Loading.TextPrimary}" />
     <SolidColorBrush x:Key="LoadingTextSecondaryBrush" Color="{StaticResource Color.Loading.TextSecondary}" />
-
-    <!-- ============ Color / Mask (遮罩层) ============ -->
-    <!-- design-tokens.md 未规定, 临时值 (Material Design Dialog scrim) -->
-    <Color x:Key="Color.Mask.Default">#CC000000</Color>
-    <Color x:Key="Color.Mask.Light">#80000000</Color>
-    <Color x:Key="Color.Brand.PrimaryAlpha10">#1A00C875</Color>
-
-    <SolidColorBrush x:Key="MaskBrush" Color="{StaticResource Color.Mask.Default}" />
-    <SolidColorBrush x:Key="MaskLightBrush" Color="{StaticResource Color.Mask.Light}" />
-    <SolidColorBrush x:Key="BrandPrimaryAlpha10Brush" Color="{StaticResource Color.Brand.PrimaryAlpha10}" />
 
     <!-- ============ Spacing (基础单位 4px) ============ -->
     <x:Double x:Key="Spacing.XS">4</x:Double>
@@ -172,31 +232,48 @@
     <Thickness x:Key="Spacing.CardMargin">16,12,16,12</Thickness>
     <Thickness x:Key="Spacing.SectionSpacing">0,24,0,0</Thickness>
 
-    <!-- ============ Radius (圆角体现亲和感) ============ -->
+    <!-- ============ Radius (圆角体现亲和感) ============
+         design-tokens.md 权威值:
+         xs=4 / small=8 / medium=12 / large=16 / xl=24 / pill=999 -->
+    <CornerRadius x:Key="Radius.XS">4</CornerRadius>
     <CornerRadius x:Key="Radius.Small">8</CornerRadius>
-    <CornerRadius x:Key="Radius.Medium">16</CornerRadius>
-    <CornerRadius x:Key="Radius.Large">24</CornerRadius>
-    <CornerRadius x:Key="Radius.PrimaryButton">24</CornerRadius>
-    <CornerRadius x:Key="Radius.SecondaryButton">8</CornerRadius>
+    <CornerRadius x:Key="Radius.Medium">12</CornerRadius>
+    <CornerRadius x:Key="Radius.Large">16</CornerRadius>
+    <CornerRadius x:Key="Radius.XL">24</CornerRadius>
+    <CornerRadius x:Key="Radius.Pill">999</CornerRadius>
+    <!-- 兼容旧引用（已废弃，新代码请用上面的语义 Token） -->
+    <CornerRadius x:Key="Radius.PrimaryButton">999</CornerRadius>
+    <CornerRadius x:Key="Radius.SecondaryButton">12</CornerRadius>
 
-    <!-- ============ Typography / FontSize ============ -->
+    <!-- ============ Typography / FontSize ============
+         design-tokens.md 权威值:
+         largeTitle=24 / sectionTitle=20 / cardTitle=18 / body=16 / label=14 / caption=12 -->
     <x:Double x:Key="FontSize.LargeTitle">24</x:Double>
     <x:Double x:Key="FontSize.SectionTitle">20</x:Double>
-    <x:Double x:Key="FontSize.CardTitle">17</x:Double>
+    <x:Double x:Key="FontSize.CardTitle">18</x:Double>
     <x:Double x:Key="FontSize.Body">16</x:Double>
-    <x:Double x:Key="FontSize.Caption">14</x:Double>
-    <x:Double x:Key="FontSize.Label">13</x:Double>
+    <x:Double x:Key="FontSize.Label">14</x:Double>
+    <x:Double x:Key="FontSize.Caption">12</x:Double>
+    <!-- 兼容旧引用（已废弃，新代码请用语义 Token） -->
     <x:Double x:Key="FontSize.Minor">12</x:Double>
-    <x:Double x:Key="FontSize.Button">16</x:Double>
+    <x:Double x:Key="FontSize.Button">14</x:Double>
 
-    <!-- ============ Typography / FontWeight (Avalonia 用 FontWeight 枚举字符串) ============ -->
-    <!-- 使用 FontWeights.Normal/Medium/Bold 资源 key,值类型为 Avalonia.Media.FontWeight -->
-    <!-- 控件用 FontWeight="{StaticResource FontWeight.Medium}" 引用 -->
-
-    <!-- ============ Component / Button ============ -->
+    <!-- ============ Component / Button Size ============ -->
+    <x:Double x:Key="Size.Control.Height.Small">32</x:Double>
+    <x:Double x:Key="Size.Control.Height.Medium">40</x:Double>
+    <x:Double x:Key="Size.Control.Height.Large">48</x:Double>
+    <!-- 兼容旧引用 -->
     <x:Double x:Key="Button.Primary.Height">48</x:Double>
     <x:Double x:Key="Button.Primary.MinHeight">48</x:Double>
-    <x:Double x:Key="Button.Secondary.Height">44</x:Double>
+    <x:Double x:Key="Button.Secondary.Height">40</x:Double>
+
+    <!-- ============ Shadow ============
+         design-tokens.md 权威值:
+         none / card(0,2,8,0,8%) / floating(0,4,16,0,12%) / modal(0,8,24,0,15%) -->
+    <BoxShadows x:Key="Shadow.None">0 0 0 0 Transparent</BoxShadows>
+    <BoxShadows x:Key="Shadow.Card">0 2 8 0 #14000000</BoxShadows>
+    <BoxShadows x:Key="Shadow.Floating">0 4 16 0 #1F000000</BoxShadows>
+    <BoxShadows x:Key="Shadow.Modal">0 8 24 0 #26000000</BoxShadows>
 
     <!-- ============ Motion / Duration (毫秒) ============ -->
     <x:Double x:Key="Motion.Duration.Fast">80</x:Double>

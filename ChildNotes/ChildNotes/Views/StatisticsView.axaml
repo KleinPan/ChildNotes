@@ -201,7 +201,7 @@
                                 <!--  网格线  -->
                                 <Border Height="2" Background="{StaticResource SurfaceDisabledBrush}" VerticalAlignment="Top"/>
                                 <Border Height="2" Background="{StaticResource SurfaceDisabledBrush}" VerticalAlignment="Center"/>
-                                <Border Width="2" Background="#D9DDE3" HorizontalAlignment="Left"/>
+                                <Border Width="2" Background="{StaticResource BorderDefaultBrush}" HorizontalAlignment="Left"/>
 
                                 <!--  柱状图滚动容器（P1-3: 自动滚动到今日）  -->
                                 <ScrollViewer x:Name="ChartScrollViewer"
@@ -209,7 +209,7 @@
                                               Offset="{Binding ChartScrollLeft, Mode=OneWayToSource}">
                                     <Grid>
                                         <!--  X轴基线  -->
-                                        <Border Height="2" Background="#D9DDE3" VerticalAlignment="Bottom"/>
+                                        <Border Height="2" Background="{StaticResource BorderDefaultBrush}" VerticalAlignment="Bottom"/>
 
                                         <!--  柱子（P2-1: 柱宽自适应 BarWidth；P2-3: 今日光晕）  -->
                                         <ItemsControl ItemsSource="{Binding ChartBars}">

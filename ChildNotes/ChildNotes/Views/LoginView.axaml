@@ -13,7 +13,7 @@
             <Grid RowDefinitions="*,Auto,*">
 
                 <StackPanel Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,40">
-                    <Border Width="84" Height="84" CornerRadius="42" Background="{StaticResource BrandPrimaryBrush}"
+                    <Border Width="84" Height="84" CornerRadius="{StaticResource Radius.Pill}" Background="{StaticResource BrandPrimaryBrush}"
                             HorizontalAlignment="Center" Margin="0,0,0,16">
                         <TextBlock Text="👶" FontSize="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
@@ -29,16 +29,16 @@
                                    IsVisible="{Binding !IsRegisterMode}"/>
                         <TextBlock Text="{DynamicResource Login_SetAccount}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
                                    IsVisible="{Binding IsRegisterMode}"/>
-                        <TextBox Text="{Binding Username}" PlaceholderText="{DynamicResource Login_AccountPlaceholder}" CornerRadius="6"
+                        <TextBox Text="{Binding Username}" PlaceholderText="{DynamicResource Login_AccountPlaceholder}" CornerRadius="{StaticResource Radius.Medium}"
                                  Margin="0,0,0,12"/>
 
                         <TextBlock Text="{DynamicResource Login_Password}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                        <TextBox Text="{Binding Password}" PlaceholderText="{DynamicResource Login_PasswordPlaceholder}" PasswordChar="●" CornerRadius="6"
+                        <TextBox Text="{Binding Password}" PlaceholderText="{DynamicResource Login_PasswordPlaceholder}" PasswordChar="●" CornerRadius="{StaticResource Radius.Medium}"
                                  Margin="0,0,0,12"/>
 
                         <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
                             <TextBlock Text="{DynamicResource Login_Nickname}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                            <TextBox Text="{Binding NickName}" PlaceholderText="{DynamicResource Login_NicknamePlaceholder}" CornerRadius="6"/>
+                            <TextBox Text="{Binding NickName}" PlaceholderText="{DynamicResource Login_NicknamePlaceholder}" CornerRadius="{StaticResource Radius.Medium}"/>
                         </StackPanel>
 
                         <!-- 服务器地址配置（可折叠，默认展开让首次部署用户先填地址再注册） -->
@@ -55,7 +55,7 @@
                         <StackPanel IsVisible="{Binding ShowServerConfig}" Margin="0,0,0,12">
                             <TextBlock Text="{DynamicResource Login_ServerUrlLabel}" FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,0,0,6"/>
                             <TextBox Text="{Binding ServerUrl}" PlaceholderText="https://your-server.com"
-                                     CornerRadius="6"/>
+                                     CornerRadius="{StaticResource Radius.Medium}"/>
                             <TextBlock Text="{DynamicResource Login_ServerUrlHint}" FontSize="11"
                                        Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,4,0,0"/>
                         </StackPanel>

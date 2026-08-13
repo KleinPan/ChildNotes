@@ -16,30 +16,33 @@
         <!--  日记卡片：成长记录条目（冷调灰绿色系，与暖橘色时间轴形成视觉层次）  -->
         <Style Selector="Border.growth-card">
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="CornerRadius" Value="8" />
+            <!-- 圆角对齐 design-tokens radius.medium=12 -->
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
             <Setter Property="Padding" Value="14,12" />
-            <Setter Property="BorderBrush" Value="#7E9B8E" />
+            <Setter Property="BorderBrush" Value="{StaticResource GrowthCardBorderBrush}" />
             <Setter Property="BorderThickness" Value="3,0,0,0" />
-            <Setter Property="BoxShadow" Value="0 2 10 0 #0A000000" />
+            <!-- 阴影对齐 design-tokens shadow.card -->
+            <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}" />
         </Style>
         <Style Selector="Border.growth-card-add">
             <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
-            <Setter Property="CornerRadius" Value="8" />
+            <!-- 圆角对齐 design-tokens radius.medium=12 -->
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
             <Setter Property="Padding" Value="14,12" />
-            <Setter Property="BorderBrush" Value="#DDDDDD" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderDefaultBrush}" />
             <Setter Property="BorderThickness" Value="3,0,0,0" />
         </Style>
         <!--  标题：深棕黑、15px SemiBold，视觉权重最高  -->
         <Style Selector="TextBlock.growth-title">
             <Setter Property="FontSize" Value="15" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="#2D1810" />
+            <Setter Property="Foreground" Value="{StaticResource GrowthBrownDeepBrush}" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
         <!--  日期徽章：橘粉色背景白字（与左侧时间轴同色系，呼应时间轴主题）  -->
         <Style Selector="Border.growth-date-badge">
-            <Setter Property="Background" Value="#FFCC80" />
-            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Background" Value="{StaticResource GrowthPeachDeepBrush}" />
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}" />
             <Setter Property="Padding" Value="8,3" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
@@ -54,7 +57,7 @@
         <Style Selector="TextBlock.growth-content">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Regular" />
-            <Setter Property="Foreground" Value="#6D4C41" />
+            <Setter Property="Foreground" Value="{StaticResource GrowthBrownTextBrush}" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="LineHeight" Value="20" />
         </Style>
@@ -63,17 +66,17 @@
             <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="14" />
             <Setter Property="CornerRadius" Value="7" />
-            <Setter Property="Background" Value="#FFAB91" />
+            <Setter Property="Background" Value="{StaticResource GrowthPeachBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource SurfaceCardBrush}" />
             <Setter Property="BorderThickness" Value="3" />
-            <Setter Property="BoxShadow" Value="0 1 4 0 #20000000" />
+            <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}" />
         </Style>
         <Style Selector="Border.timeline-dot-add">
             <Setter Property="Width" Value="14" />
             <Setter Property="Height" Value="14" />
             <Setter Property="CornerRadius" Value="7" />
             <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-            <Setter Property="BorderBrush" Value="#CCC" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
             <Setter Property="BorderThickness" Value="2" />
         </Style>
 
@@ -91,7 +94,7 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.photo-del-btn:pointerover /template/ ContentPresenter">
-            <Setter Property="Background" Value="#A0000000" />
+            <Setter Property="Background" Value="{StaticResource OverlayScrimBrush}" />
             <Setter Property="BorderThickness" Value="0" />
         </Style>
         <Style Selector="Button.photo-del-btn:pressed /template/ ContentPresenter">
@@ -102,9 +105,9 @@
         <!--  照片添加按钮：虚线边框浅灰底（对齐小程序 .g-photo-add）  -->
         <Style Selector="Button.photo-add-btn">
             <Setter Property="Background" Value="{StaticResource SurfaceBackgroundBrush}" />
-            <Setter Property="BorderBrush" Value="#D0D0D0" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
@@ -113,7 +116,7 @@
         </Style>
         <Style Selector="Button.photo-add-btn:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{StaticResource SurfaceDisabledBrush}" />
-            <Setter Property="BorderBrush" Value="#CCC" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -122,9 +125,9 @@
             <StackPanel>
                 <StackPanel Margin="0,40,0,32" HorizontalAlignment="Center">
                     <TextBlock Margin="0,0,0,8" HorizontalAlignment="Center" FontSize="40" Text="📆" />
-                    <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="#5D4037"
+                    <TextBlock HorizontalAlignment="Center" FontSize="18" FontWeight="Bold" Foreground="{StaticResource GrowthBrownPrimaryBrush}"
                                Text="{DynamicResource Growth_Title}" />
-                    <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F"
+                    <TextBlock Margin="0,4,0,0" HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}"
                                Text="{DynamicResource Growth_Subtitle}" />
                 </StackPanel>
 
@@ -132,8 +135,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:MilestoneDisplayItem">
                             <Grid Margin="16,0,16,20" ColumnDefinitions="32,*">
-                                <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="{StaticResource SurfaceCardBrush}" DotBorderThickness="3" DotBrush="#FFAB91"
-                                                       DotSize="14" DotTopMargin="10" HalfSpacing="10" LineBrush="#FFAB91"
+                                <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="{StaticResource SurfaceCardBrush}" DotBorderThickness="3" DotBrush="{StaticResource GrowthPeachBrush}"
+                                                       DotSize="14" DotTopMargin="10" HalfSpacing="10" LineBrush="{StaticResource GrowthPeachBrush}"
                                                        LineWidth="2" />
                                 <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card" PointerPressed="OnMilestoneTap"
                                         Tag="{Binding .}">
@@ -172,24 +175,24 @@
                 </ItemsControl>
 
                 <Grid Margin="16,0,16,40" ColumnDefinitions="32,*">
-                    <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="#CCC" DotBorderThickness="2" DotBrush="{StaticResource SurfaceCardBrush}"
-                                           DotSize="14" DotTopMargin="10" HalfSpacing="20" LineBrush="#EEE"
+                    <ctrl:TimelineAxisItem Grid.Column="0" DotBorderBrush="{StaticResource BorderSubtleBrush}" DotBorderThickness="2" DotBrush="{StaticResource SurfaceCardBrush}"
+                                           DotSize="14" DotTopMargin="10" HalfSpacing="20" LineBrush="{StaticResource BorderSubtleBrush}"
                                            LineWidth="2" />
                     <Border Grid.Column="1" Margin="8,0,0,0" Classes="growth-card-add" PointerPressed="OnAddMilestone">
-                        <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="#BBB" Text="{DynamicResource Growth_AddMoment}" />
+                        <TextBlock HorizontalAlignment="Center" FontSize="13" Foreground="{StaticResource GrowthHintGrayBrush}" Text="{DynamicResource Growth_AddMoment}" />
                     </Border>
                 </Grid>
 
                 <Border MaxWidth="280" Margin="16,8,16,40" Padding="24,28" HorizontalAlignment="Center"
-                        Background="#FFF8F5" CornerRadius="6"
+                        Background="{StaticResource GrowthCreamBrush}" CornerRadius="{StaticResource Radius.Small}"
                         IsVisible="{Binding Milestones.Count, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=0}">
                     <StackPanel HorizontalAlignment="Center" Spacing="10">
                         <TextBlock HorizontalAlignment="Center" FontSize="36" Text="🌱" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="15" FontWeight="SemiBold" Foreground="#8D6E63"
+                        <TextBlock HorizontalAlignment="Center" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource GrowthBrownSecondaryBrush}"
                                    Text="{DynamicResource Growth_EmptyTitle}" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="{DynamicResource Growth_EmptyHint1}"
+                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint1}"
                                    TextAlignment="Center" />
-                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="#A1887F" Text="{DynamicResource Growth_EmptyHint2}"
+                        <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource GrowthBrownLightBrush}" Text="{DynamicResource Growth_EmptyHint2}"
                                    TextAlignment="Center" />
                         <Button Margin="0,8,0,0" Classes="weui-btn primary" Command="{Binding AddMilestoneCommand}" Content="{DynamicResource Growth_AddNow}" />
                     </StackPanel>
@@ -202,7 +205,7 @@
             <Border Classes="modal-mask" />
 
             <!--  Sheet 弹层  -->
-            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource SurfaceCardBrush}" CornerRadius="8,8,0,0">
+            <Border MaxHeight="720" VerticalAlignment="Bottom" Background="{StaticResource SurfaceCardBrush}" CornerRadius="24,24,0,0">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!--  头部（固定）  -->
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
@@ -284,7 +287,7 @@
                                             Classes="photo-add-btn"
                                             Click="OnAddPhotoClick"
                                             IsVisible="{Binding MilestoneEdit.CanAddPhoto}">
-                                        <TextBlock FontSize="28" Foreground="#CCC" Text="+" />
+                                        <TextBlock FontSize="28" Foreground="{StaticResource GrowthHintGrayBrush}" Text="+" />
                                     </Button>
                                 </WrapPanel>
                             </StackPanel>
@@ -318,25 +321,25 @@
                 <!--  关闭按钮  -->
                 <Button Width="44" Height="44" Margin="0,24,24,0"
                         HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
                         Command="{Binding ClosePreviewCommand}"
                         Content="✕" FontSize="18" Foreground="Black" />
                 <!--  上一张  -->
                 <Button Width="44" Height="44" Margin="24,0"
                         HorizontalAlignment="Left" VerticalAlignment="Center"
-                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
                         Command="{Binding PreviewPrevCommand}"
                         Content="‹" FontSize="24" Foreground="Black" />
                 <!--  下一张  -->
                 <Button Width="44" Height="44" Margin="24,0"
                         HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Background="#80FFFFFF" BorderThickness="0" CornerRadius="22"
+                        Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="22"
                         Command="{Binding PreviewNextCommand}"
                         Content="›" FontSize="24" Foreground="Black" />
                 <!--  计数  -->
                 <Border Margin="0,0,0,24" Padding="12,6"
                         HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                        Background="#80000000" CornerRadius="12">
+                        Background="{StaticResource GrowthSemiBlackBrush}" CornerRadius="{StaticResource Radius.Medium}">
                     <TextBlock Foreground="{StaticResource SurfaceCardBrush}" FontSize="13"
                                Text="{Binding PreviewCountText}" />
                 </Border>

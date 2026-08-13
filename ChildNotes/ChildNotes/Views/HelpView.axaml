@@ -30,7 +30,7 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="{DynamicResource Help_BannerTitle}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"
                                    HorizontalAlignment="Center"/>
-                        <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="13" Foreground="#E6FFFFFF"
+                        <TextBlock Text="{DynamicResource Help_BannerSubtitle}" FontSize="13" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.9"
                                    HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>

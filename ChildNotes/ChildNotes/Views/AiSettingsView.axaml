@@ -97,7 +97,7 @@
 
                 <!-- 连接测试 -->
                 <Button Content="{Binding TestButtonText}" Classes="weui-btn default" Margin="12,12"
-                        HorizontalAlignment="Stretch" CornerRadius="24" MinHeight="40"
+                        HorizontalAlignment="Stretch"
                         Command="{Binding TestConnectionCommand}"
                         IsEnabled="{Binding !IsTesting}"/>
 

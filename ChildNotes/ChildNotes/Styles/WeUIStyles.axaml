@@ -2,46 +2,71 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ChildNotes.Styles.WeUIStyles">
 
+    <!-- ==================================================================
+         通用样式：所有 Token 引用来自 DesignTokens.axaml
+         规范对齐:
+           - Card 圆角 radius.large=16 / 阴影 shadow.card
+           - Primary Button 高度 48 / 圆角 pill / 字号 label=14
+           - Secondary Button 高度 40 / 圆角 medium=12
+           - Input 圆角 medium=12
+           - Bottom Sheet 圆角 xl=24
+           - Toast 统一样式
+         ================================================================== -->
+
     <Style Selector="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
     </Style>
 
     <!-- 去掉所有 Button 在按下/悬停时出现的阴影（Fluent 主题默认会有 elevation 投影） -->
     <Style Selector="Button /template/ ContentPresenter">
-        <Setter Property="BoxShadow" Value="0 0 0 0 Transparent" />
+        <Setter Property="BoxShadow" Value="{StaticResource Shadow.None}" />
     </Style>
 
+    <!-- ============ Card 通用卡片 ============ -->
+    <!-- design-tokens: 普通 Card 圆角 radius.large=16 / 阴影 shadow.card -->
     <Style Selector="Border.weui-card">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
         <Setter Property="Padding" Value="14" />
         <Setter Property="Margin" Value="12,8" />
-        <!-- 原版阴影: 0 2rpx 16rpx rgba(0,0,0,0.04) -->
-        <Setter Property="BoxShadow" Value="0 1 8 0 #0A000000" />
+        <Setter Property="BoxShadow" Value="{StaticResource Shadow.Card}" />
     </Style>
 
+    <!-- List Cell：与 Card 同圆角，无阴影 -->
     <Style Selector="Border.weui-cell">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
         <Setter Property="Padding" Value="14,12" />
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Large}" />
     </Style>
 
-    <!-- 模态遮罩：统一各弹层/对话框的半透明黑色背景（50% black） -->
+    <!-- 模态遮罩：统一各弹层/对话框的半透明黑色背景（Overlay.Scrim 32% 黑） -->
     <Style Selector="Border.modal-mask">
-        <Setter Property="Background" Value="{StaticResource MaskLightBrush}" />
+        <Setter Property="Background" Value="{StaticResource OverlayScrimBrush}" />
     </Style>
 
-    <!-- 注：Border.mini-card / Border.quick-action-bg / Border.chip(.active) 原 Style 已删除，
-         经全项目 grep 验证从未被任何 axaml 引用（HomeView/StatisticsView/RecordSheetView 均自定义了局部样式）。
-         若后续需统一这些样式，应在 View 内显式声明 Classes，避免死代码堆积。 -->
+    <!-- Toast 浮层：统一各页面 Toast 样式（避免 8+ 处重复定义） -->
+    <!-- 用法: <Border Classes="toast" IsVisible="..."><TextBlock .../></Border> -->
+    <Style Selector="Border.toast">
+        <Setter Property="Background" Value="{StaticResource OverlayScrimBrush}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}" />
+        <Setter Property="Padding" Value="20,10" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.toast TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Label}" />
+        <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
 
-    <!-- 按钮交互反馈（Avalonia 12 规范）：Transitions + :pressed 伪类 -->
+    <!-- ============ Button 按钮交互反馈 ============ -->
+    <!-- Avalonia 12 规范：Transitions + :pressed 伪类 -->
     <!-- 必须设置 RenderTransform="none" 初始值，否则首次过渡从 null 跳变 -->
     <Style Selector="Button.weui-btn">
-        <!-- 圆角遵循 design-tokens: 控件使用中等圆角 8;Primary/Secondary 通过下方专属 Selector 覆盖 -->
-        <Setter Property="CornerRadius" Value="{StaticResource Radius.PrimaryButton}" />
+        <!-- 圆角默认 medium=12（Secondary/普通控件）；Primary 通过下方专属 Selector 覆盖为 pill -->
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
         <Setter Property="FontWeight" Value="Medium" />
-        <Setter Property="FontSize" Value="15" />
+        <!-- Button 文字统一 label=14（design-tokens: Button 文字统一用 font.size.label） -->
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Label}" />
         <Setter Property="Padding" Value="16,12" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="RenderTransform" Value="none"/>
@@ -57,51 +82,63 @@
         <Setter Property="RenderTransform" Value="scale(0.97)"/>
     </Style>
 
+    <!-- Primary Button: 高度 large=48 / 圆角 medium=12 / 品牌色底 -->
     <Style Selector="Button.weui-btn.primary">
-        <!-- Primary Button 规范: 高度 48 / 圆角 24 (pill) / 品牌色底 -->
-        <Setter Property="Height" Value="48" />
-        <Setter Property="MinHeight" Value="48" />
-        <Setter Property="CornerRadius" Value="24" />
-        <Setter Property="FontSize" Value="16" />
-        <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="MinHeight" Value="{StaticResource Size.Control.Height.Large}" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Medium}" />
+        <Setter Property="Background" Value="{StaticResource ActionPrimaryDefaultBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="Button.weui-btn.primary:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource BrandPrimaryDarkBrush}" />
+        <Setter Property="Background" Value="{StaticResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.weui-btn.primary:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource ActionPrimaryPressedBrush}" />
     </Style>
 
+    <!-- Warn Button: 危险操作，Semantic.Error 底 -->
     <Style Selector="Button.weui-btn.warn">
         <Setter Property="Background" Value="{StaticResource SemanticErrorBrush}" />
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="Foreground" Value="{StaticResource TextOnPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
+    <!-- Default/Secondary Button: Action.Secondary 背景 / Text.Primary 文字 / Border.Subtle 边框 -->
     <Style Selector="Button.weui-btn.default">
-        <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}" />
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource ActionSecondaryForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
         <Setter Property="BorderThickness" Value="1" />
     </Style>
+    <Style Selector="Button.weui-btn.default:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.weui-btn.default:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}" />
+    </Style>
 
+    <!-- Mini Button: 紧凑型，字号 caption=12 -->
     <Style Selector="Button.weui-btn.mini">
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}" />
         <Setter Property="Padding" Value="12,6" />
         <Setter Property="MinHeight" Value="28" />
     </Style>
 
+    <!-- ============ Tab Bar 底部导航 ============ -->
     <Style Selector="Border.tab-bar">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}" />
         <Setter Property="BorderThickness" Value="0,1,0,0" />
-        <!-- 原版阴影: 0 -2rpx 12rpx rgba(0,0,0,0.04) -->
+        <!-- 顶部阴影（特殊方向，保留）：原版 0 -2rpx 12rpx rgba(0,0,0,0.04) -->
         <Setter Property="BoxShadow" Value="0 -1 6 0 #0A000000" />
     </Style>
 
     <Style Selector="Button.tab-item">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}" />
         <Setter Property="Padding" Value="0,6" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
@@ -109,7 +146,6 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <!-- 原版 tabBar 高度 100rpx ≈ 50px -->
         <Setter Property="MinHeight" Value="50" />
-        <!-- Tab 交互反馈：Transitions + :pressed -->
         <Setter Property="RenderTransform" Value="none"/>
         <Setter Property="Transitions">
             <Transitions>
@@ -138,28 +174,28 @@
         <Setter Property="FontWeight" Value="Medium" />
     </Style>
 
-    <!-- 注：原 Border.chip / Border.chip.active / Border.chip TextBlock 系列 Style 已删除，
-         全项目 grep 验证从未引用（StatisticsView/RecordSheetView 各自定义 stat-chip/abn-chip 局部样式）。 -->
-
+    <!-- ============ Section Title 区块标题 ============ -->
     <Style Selector="Border.section-title">
         <Setter Property="Margin" Value="16,12,16,4" />
     </Style>
     <Style Selector="Border.section-title TextBlock">
-        <Setter Property="FontSize" Value="20" />
+        <!-- 模块标题 sectionTitle=20 Bold -->
+        <Setter Property="FontSize" Value="{StaticResource FontSize.SectionTitle}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
     </Style>
 
-    <!-- 统一顶栏（方案 C） -->
+    <!-- ============ Navigation Bar 顶栏 ============ -->
     <Style Selector="Border.nav-bar">
         <Setter Property="Background" Value="{StaticResource SurfaceCardBrush}"/>
-        <Setter Property="Height" Value="48"/>
+        <Setter Property="Height" Value="{StaticResource Size.Control.Height.Large}"/>
         <Setter Property="Padding" Value="4,0"/>
-        <Setter Property="BorderBrush" Value="{StaticResource SurfaceDividerBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtleBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
     </Style>
     <Style Selector="Border.nav-bar TextBlock.nav-title">
-        <Setter Property="FontSize" Value="17"/>
+        <!-- 卡片标题 cardTitle=18 Medium（顶栏标题层级） -->
+        <Setter Property="FontSize" Value="{StaticResource FontSize.CardTitle}"/>
         <Setter Property="FontWeight" Value="Medium"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -171,7 +207,7 @@
         <Setter Property="Padding" Value="12,8"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="FontSize" Value="22"/>
         <Setter Property="FontWeight" Value="Normal"/>
@@ -185,7 +221,7 @@
         <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}"/>
     </Style>
     <Style Selector="Button.nav-back:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SurfaceDividerBrush}"/>
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}"/>
     </Style>
 
     <!-- 纯图标按钮（顶栏操作图标，如扫把/设置） -->
@@ -193,7 +229,7 @@
         <Setter Property="Padding" Value="8"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         <Setter Property="MinWidth" Value="36"/>
         <Setter Property="MinHeight" Value="36"/>
@@ -204,10 +240,10 @@
         <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}"/>
     </Style>
     <Style Selector="Button.icon-only:pressed /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SurfaceDividerBrush}"/>
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}"/>
     </Style>
 
-    <!-- 开发者选项 / 设置页通用可点击行：图标 + 标题 + 描述 + 右箭头 -->
+    <!-- ============ 开发者选项 / 设置页通用可点击行 ============ -->
     <!-- 注意：ColumnDefinitions 不是 StyledProperty，无法在 Style 中设置，须在 Grid 上直接声明 -->
     <Style Selector="Grid.dev-cell">
         <Setter Property="Margin" Value="14,12"/>
@@ -222,7 +258,7 @@
         <Setter Property="Background" Value="{StaticResource SurfaceActiveBrush}"/>
     </Style>
     <Style Selector="Grid.dev-cell:pressed">
-        <Setter Property="Background" Value="{StaticResource SurfaceDividerBrush}"/>
+        <Setter Property="Background" Value="{StaticResource ActionSecondaryPressedBrush}"/>
     </Style>
     <!-- dev-cell 内：左图标列 -->
     <Style Selector="Grid.dev-cell > TextBlock.dev-icon">
@@ -232,12 +268,14 @@
     </Style>
     <!-- dev-cell 内：主标题 -->
     <Style Selector="Grid.dev-cell > StackPanel > TextBlock.dev-title">
-        <Setter Property="FontSize" Value="15"/>
+        <!-- 正文 body=16 -->
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Body}"/>
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
     </Style>
     <!-- dev-cell 内：副描述 -->
     <Style Selector="Grid.dev-cell > StackPanel > TextBlock.dev-desc">
-        <Setter Property="FontSize" Value="12"/>
+        <!-- 辅助元数据 caption=12 -->
+        <Setter Property="FontSize" Value="{StaticResource FontSize.Caption}"/>
         <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
         <Setter Property="Margin" Value="0,2,0,0"/>
         <Setter Property="TextWrapping" Value="Wrap"/>

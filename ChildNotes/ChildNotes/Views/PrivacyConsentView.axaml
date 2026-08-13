@@ -10,10 +10,10 @@
 
     <!-- 隐私协议弹窗：模态遮罩 + 居中白底卡片，覆盖在整个应用之上 -->
     <Panel>
-        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="16" Padding="24,20"
+        <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Large}" Padding="24,20"
                 MaxWidth="340" MaxHeight="520"
                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                BoxShadow="0 4 24 0 #40000000">
+                BoxShadow="{StaticResource Shadow.Modal}">
 
             <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
 
@@ -77,16 +77,16 @@
                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="12"
                       IsVisible="{Binding !IsReadOnly}">
                     <Button Grid.Column="0" Content="{DynamicResource Privacy_Disagree}"
-                            Classes="weui-btn default" CornerRadius="24" MinHeight="44"
+                            Classes="weui-btn default" CornerRadius="{StaticResource Radius.Medium}" MinHeight="40"
                             Command="{Binding DisagreeCommand}"/>
                     <Button Grid.Column="1" Content="{DynamicResource Privacy_AgreeContinue}"
-                            Classes="weui-btn primary" CornerRadius="24" MinHeight="44"
+                            Classes="weui-btn primary" MinHeight="40"
                             Command="{Binding AgreeCommand}"/>
                 </Grid>
 
                 <!-- 只读模式：仅显示关闭按钮 -->
                 <Button Grid.Row="2" Content="{DynamicResource Privacy_Close}"
-                        Classes="weui-btn primary" CornerRadius="24" MinHeight="44"
+                        Classes="weui-btn primary" MinHeight="40"
                         Command="{Binding CloseCommand}"
                         IsVisible="{Binding IsReadOnly}"/>
 

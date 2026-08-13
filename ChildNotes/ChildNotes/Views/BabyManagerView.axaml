@@ -73,7 +73,7 @@
                                 IsVisible="{Binding !HasBaby}">
                             <StackPanel HorizontalAlignment="Center" Spacing="8">
                                 <TextBlock Text="🍼" FontSize="48" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{DynamicResource BabyMgr_EmptyTitle}" FontSize="16" FontWeight="SemiBold" Foreground="#222" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_EmptyTitle}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}" HorizontalAlignment="Center"/>
                                 <TextBlock Text="{DynamicResource BabyMgr_EmptyHint}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" TextAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -98,7 +98,7 @@
                                                     </Panel>
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="#222"/>
+                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" Foreground="{StaticResource TextPrimaryBrush}"/>
                                                     <TextBlock Text="{Binding BirthDateText}" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                 </StackPanel>
                                                 <Border Grid.Column="2" Background="{StaticResource BrandPrimaryAlpha10Brush}" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Margin="8,0,4,0"
@@ -261,8 +261,8 @@
 
                 <!-- 底部添加宝宝按钮 -->
                 <Border Grid.Row="2" Background="{StaticResource SurfaceCardBrush}" BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1,0,0" Padding="16,12">
-                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary" CornerRadius="24"
-                            HorizontalAlignment="Stretch" MinHeight="48"
+                    <Button Content="{DynamicResource BabyMgr_AddBaby}" Classes="weui-btn primary"
+                            HorizontalAlignment="Stretch"
                             Click="OnAddTapped"/>
                 </Border>
             </Grid>
@@ -271,7 +271,7 @@
         <!-- 编辑/添加表单（统一为：标题栏 ✕ 关闭 + 底部 保存按钮，与 RecordSheetView 一致） -->
         <!-- 抽屉动画：mask 淡入淡出 + panel 从底部滑入，由 code-behind 控制 open class -->
         <Border x:Name="EditorSheet" Classes="drawer-mask" IsVisible="{Binding IsEditorOpen}">
-            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="12,12,0,0" VerticalAlignment="Bottom" MaxHeight="600">
+            <Border x:Name="DrawerPanel" Classes="drawer-panel" Background="{StaticResource SurfaceCardBrush}" CornerRadius="24,24,0,0" VerticalAlignment="Bottom" MaxHeight="600">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 标题栏：左标题 + 右关闭按钮（与其他弹窗统一） -->
                     <Border Grid.Row="0" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,0,0,1">
@@ -326,7 +326,7 @@
 
                             <!-- 姓名 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource BabyMgr_Name}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_Name}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <TextBox x:Name="BabyNameTextBox" Text="{Binding Name}" PlaceholderText="{DynamicResource BabyMgr_NamePlaceholder}" MaxLength="20"
                                          BorderThickness="0" Background="Transparent" FontSize="15"
                                          VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
@@ -336,7 +336,7 @@
 
                             <!-- 出生日期 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource BabyMgr_Birthday}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="#333"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_Birthday}" FontSize="15" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <CalendarDatePicker SelectedDate="{Binding BirthDate}"
                                                     PlaceholderText="{DynamicResource BabyMgr_BirthdayPlaceholder}"
                                                     HorizontalAlignment="Stretch" FontSize="15"/>
@@ -364,9 +364,9 @@
                             </Grid>
 
                             <!-- 删除按钮（仅编辑模式） -->
-                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="weui-btn warn" CornerRadius="24"
+                            <Button Content="{DynamicResource BabyMgr_DeleteBaby}" Classes="weui-btn warn"
                                     IsVisible="{Binding IsEditing}"
-                                    HorizontalAlignment="Stretch" MinHeight="44" Margin="0,16,0,0"
+                                    HorizontalAlignment="Stretch" Margin="0,16,0,0"
                                     Click="OnDeleteTapped"/>
                         </StackPanel>
                     </ScrollViewer>
@@ -375,10 +375,8 @@
                     <Border Grid.Row="2" Padding="16,12" BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
                         <Grid ColumnDefinitions="*,10,*">
                             <Button Grid.Column="0" Content="{DynamicResource Common_Cancel}" Classes="weui-btn default"
-                                    CornerRadius="24" MinHeight="40"
                                     Command="{Binding CloseEditorCommand}"/>
                             <Button Grid.Column="2" Content="{DynamicResource Common_Save}" Classes="weui-btn primary"
-                                    CornerRadius="24" MinHeight="40"
                                     Command="{Binding SaveCommand}"/>
                         </Grid>
                     </Border>

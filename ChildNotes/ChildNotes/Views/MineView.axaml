@@ -69,8 +69,8 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <Border Grid.Column="0" Width="24" Height="24"
-                                Background="#FFB84D"
-                                CornerRadius="6">
+                                Background="{StaticResource FeedingOrangeBrush}"
+                                CornerRadius="{StaticResource Radius.XS}">
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="13" Foreground="{StaticResource SurfaceCardBrush}"
                                        Text="V" />
                         </Border>

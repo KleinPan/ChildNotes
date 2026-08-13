@@ -271,7 +271,7 @@
         -->
         <Border x:Name="SheetRoot" MaxHeight="600" VerticalAlignment="Bottom"
                 Background="{StaticResource SurfaceCardBrush}"
-                CornerRadius="16,16,0,0"
+                CornerRadius="24,24,0,0"
                 IsVisible="{Binding IsVisible}">
 
             <Grid RowDefinitions="Auto,*,Auto">
@@ -1011,8 +1011,8 @@
                                         CornerRadius="6">
                                     <TextBlock HorizontalAlignment="Center" FontSize="12" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_TimeAxis}" />
                                 </Border>
-                                <Border Grid.Column="2" Padding="8,6" Background="{StaticResource FeedingOrangeLightBrush}" CornerRadius="6">
-                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="#B45309"
+                                <Border Grid.Column="2" Padding="8,6" Background="{StaticResource FeedingOrangeLightBrush}" CornerRadius="{StaticResource Radius.Small}">
+                                    <TextBlock HorizontalAlignment="Center" FontSize="12" FontWeight="Medium" Foreground="{StaticResource TextWarningBrush}"
                                                Text="{DynamicResource RS_PaidVaccine}" />
                                 </Border>
                             </Grid>
@@ -1303,7 +1303,7 @@
                          IsOpen="{Binding ShowVaccineEditConfirm}">
             <ctrl:DialogHost.MessageContent>
                 <StackPanel Margin="0,8,0,0" Spacing="12">
-                    <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineEditConfirmTitle}" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding VaccineEditConfirmTitle}" TextAlignment="Center" />
                     <Border Classes="form-section">
                         <StackPanel>
                             <TextBlock Classes="form-label" Text="{DynamicResource RS_VaccineDate}" />
@@ -1330,9 +1330,9 @@
                          IsOpen="{Binding ShowVaccineCancelConfirm}">
             <ctrl:DialogHost.MessageContent>
                 <StackPanel HorizontalAlignment="Center" Spacing="6">
-                    <TextBlock FontSize="13" Foreground="#666" Text="{DynamicResource RS_ConfirmCancelMsg}" TextAlignment="Center" />
-                    <TextBlock FontSize="13" Foreground="#999" Text="{Binding VaccineCancelConfirmTitle}" TextAlignment="Center" />
-                    <TextBlock FontSize="12" Foreground="#999" Text="{DynamicResource RS_ConfirmCancelHint}" TextAlignment="Center"
+                    <TextBlock FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" Text="{DynamicResource RS_ConfirmCancelMsg}" TextAlignment="Center" />
+                    <TextBlock FontSize="13" Foreground="{StaticResource TextPlaceholderBrush}" Text="{Binding VaccineCancelConfirmTitle}" TextAlignment="Center" />
+                    <TextBlock FontSize="12" Foreground="{StaticResource TextPlaceholderBrush}" Text="{DynamicResource RS_ConfirmCancelHint}" TextAlignment="Center"
                                TextWrapping="Wrap" />
                 </StackPanel>
             </ctrl:DialogHost.MessageContent>
