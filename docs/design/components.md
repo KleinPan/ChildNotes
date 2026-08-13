@@ -44,13 +44,56 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 所有组件必须使用 Design Tokens，详见 [`design-tokens.md`](design-tokens.md)。
 
 - **Color**：禁止直接写色值，必须用 `color.*` Token。
-- **Spacing**：统一使用 4/8/12/16/20/24/32/40/48，禁止随意定义 13px / 17px / 27px 等。
-- **Radius**：Small 8dp / Medium 16dp / Large 24dp / Pill。
-- **Typography**：5 级字号层级（LargeTitle 24 / SectionTitle 20 / CardTitle 16-18 / Body 16 / Caption 14）。
+- **Spacing**：统一使用 `spacing.*` Token，禁止随意定义 13px / 17px / 27px 等。
+- **Radius**：使用 `radius.*` Token（xs / small / medium / large / xl / pill），具体数值以 `design-tokens.md` 为准。**禁止在组件文档重复维护圆角数值。**
+- **Typography**：使用 `font.size.*` Token，具体数值（LargeTitle 24 / SectionTitle 20 / CardTitle 18 / Body 16 / Label 14 / Caption 12）以 `design-tokens.md` 为准。**禁止使用 16-18sp 这类范围型定义。**
 
 ## 4. 组件状态
 
-所有组件必须定义以下状态：Default / Pressed / Disabled / Loading / Error / Empty。Figma 交付时还应覆盖 Selected / Expanded。
+组件必须定义**适用状态**，而非机械套用全部状态。不同组件类型的状态要求不同：
+
+### 交互组件（Button / Icon Button / Tag.Clickable 等）
+
+按需定义：
+
+```text
+Default
+Pressed
+Disabled
+Focus
+Hover（Desktop）
+```
+
+### 异步操作组件（含网络请求的 Button / 表单提交等）
+
+按需定义：
+
+```text
+Loading
+Success
+Error
+```
+
+### 数据展示组件（Record Card / Timeline / Insight Card 等）
+
+按需定义：
+
+```text
+Loading
+Empty
+Error
+Content
+```
+
+### 纯展示组件（Static Card / Tag / Badge 等）
+
+只定义实际存在的状态。
+
+**原则**：
+
+> 不得为了满足规范机械给组件增加不合理状态。例如纯展示的 Tag 不需要 Loading / Error 状态；Static Card 不需要 Pressed 状态。
+
+Figma 交付时还应按需覆盖 Selected / Expanded（仅适用于存在选中/展开行为的组件）。
 
 ## 5. Basic Components 基础组件
 
@@ -60,18 +103,20 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 
 #### 5.1.1 视觉类型（Visual Type）
 
-按钮的视觉风格，由内容语义决定。
+按钮的视觉风格，由内容语义决定。**Visual Type 只负责视觉和语义，不负责尺寸。**
 
-| 类型 | 使用场景 | 规范 |
+| 类型 | 使用场景 | 视觉规则（Token 引用） |
 |---|---|---|
-| Primary | 保存、确认、提交等核心动作 | Height 48dp / Radius pill / Text 14sp Medium / 品牌色底 |
-| Secondary | 辅助操作 | 背景 Surface Secondary / 文字 Primary Text / Radius medium |
-| Tertiary | 第三级辅助操作 | 透明底 / 文字 Brand Primary |
-| Danger | 破坏性操作（删除、移除、退出） | 背景 Semantic Error / 文字 OnPrimary / Radius medium |
+| Primary | 保存、确认、提交等核心动作 | 背景 `color.action.primary.default` / 文字 `color.action.primary.foreground` / 圆角 `radius.pill` |
+| Secondary | 辅助操作 | 背景 `color.action.secondary.background` / 文字 `color.action.secondary.foreground` / 圆角 `radius.medium` |
+| Tertiary | 第三级辅助操作 | 透明底 / 文字 `color.brand.primary` |
+| Danger | 破坏性操作最终确认 | 背景 `color.semantic.error` / 文字 `color.text.onPrimary` / 圆角 `radius.medium` |
 | Text | 轻量操作，如跳过、稍后、查看协议 | 无背景，仅文字 |
-| Icon | 小型操作入口，如 + / 设置 / 关闭 | 尺寸 40×40dp / 图标 20-24dp |
+| Icon | 小型操作入口，如 + / 设置 / 关闭 | 仅图标，无文字，详见 5.2 |
 
-> **Danger Button 使用约束**：仅在"破坏性操作的最终确认按钮"上使用。日常的危险操作入口（如列表里的"移除"链接）应使用 Text Button 或 Secondary Button + 红色文字，避免大面积红色违反"温暖家庭日记"的设计方向。
+**状态**：每种 Visual Type 必须定义 Default / Pressed / Disabled（及 Desktop Hover），具体色值见 [`design-tokens.md`](design-tokens.md) 的 Action Token。组件不得自行计算状态色。
+
+> **Danger Button 使用约束**：仅在"破坏性操作的最终确认按钮"上使用。日常的危险操作入口（如列表里的"移除"链接）必须使用 Text Button（红色文字），不得使用红色实心 Button，避免大面积红色违反"温暖家庭日记"的设计方向。
 
 #### 5.1.2 尺寸体系（Size）
 
@@ -86,6 +131,41 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 - Mobile 主操作按钮默认使用 Large（48dp），符合触控规范。
 - 重要触控操作区域不得小于 48×48dp。
 
+**Size 与 Visual Type 正交（强制）**：
+
+> Size 与 Visual Type 必须正交。Visual Type 不得自行覆盖 Size 的 Height、MinHeight、Padding、MinWidth。Height/Padding/MinWidth 一律由 Size 决定，Background/Foreground/Border/状态色一律由 Visual Type 决定。
+
+合法组合示例：
+
+```text
+Primary + Small
+Secondary + Medium
+Danger + Large
+```
+
+组合矩阵（✓ 允许 / ✗ 禁止）：
+
+| Visual Type \ Size | Small | Medium | Large |
+|---|---|---|---|
+| Primary | ✓ | ✓ | ✓ |
+| Secondary | ✓ | ✓ | ✓ |
+| Tertiary | ✓ | ✓ | ✓ |
+| Danger | ✓ | ✓ | ✓ |
+| Text | ✓ | ✓ | ✗ |
+| Icon | ✓ | ✓ | ✓ |
+
+禁止组合：
+- `Text + Large`：Text Button 是轻量操作，不需要 Large 尺寸的强视觉权重。
+- 未列出的组合一律禁止。如未来确需新组合，必须先在本表登记再使用。
+
+禁止出现：
+```text
+Primary 永远 48dp
+Secondary 永远 48dp
+Small 又尝试覆盖为 32dp
+```
+导致最终样式优先级不确定。
+
 #### 5.1.3 布局类型（Layout Type）
 
 布局类型独立于视觉类型，决定按钮如何占用父容器空间。
@@ -98,7 +178,7 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 | Equal Width | 同一按钮组内多个按钮等宽 | Dialog 双按钮、底部双 CTA |
 
 **组合规则**：视觉类型 × 布局类型是正交关系。例如：
-- 删除确认弹窗：`Danger + Equal Width` 或 `Secondary + Equal Width`
+- 删除确认弹窗：确认按钮 `Danger + Equal Width`，取消按钮 `Secondary + Equal Width`（两者同组等宽）
 - 底部主 CTA：`Primary + Full Width`
 - 卡片内复制：`Secondary + Content Width (Small)`
 - 工具栏图标：`Icon + Content Width`
@@ -141,9 +221,30 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 | 当前身份/角色展示 | Tag | Button |
 | 信息复制（如复制 ID） | Small Secondary Button | Tag |
 | 危险/破坏性操作入口（列表里的"移除"链接） | Text Button（红色文字） | 红色实心 Button |
-| 破坏性操作的最终确认 | Danger Button 或 Secondary Button（Dialog 内） | 红色 Primary Button |
+| 破坏性操作的最终确认 | Danger Button | Secondary Button / 红色 Primary Button |
 | 主操作（保存、确认、提交） | Primary Button | Secondary Button |
-| 辅助操作（取消、返回） | Secondary Button 或 Text Button | Primary Button |
+| 辅助操作（取消、返回） | Secondary Button | Primary Button |
+
+**Danger Button 业务场景清单（确定规则，无"或"）**：
+
+以下场景的**最终确认按钮**必须使用 Danger Button：
+
+```text
+删除
+移除家庭成员
+退出家庭
+清空数据
+不可逆操作确认
+```
+
+以下场景的**取消/返回按钮**必须使用 Secondary Button：
+
+```text
+取消
+返回
+```
+
+**默认规则**：AI 不得自行将 Danger Button 降级为 Primary 或 Secondary。如存在例外，必须在本清单中明确登记具体场景，AI 不得自行判断例外。
 
 #### 5.1.7 Correct / Incorrect 示例
 
@@ -173,14 +274,50 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 
 - Emoji 和专业 Icon 混用。
 - 不同风格图标混搭。
+- 用无语义图标代替文字操作（如用 ❌ 图标代替"删除"文字而不提供 accessible label）。
 
-**尺寸规范**：
+#### 5.2.1 Icon Size（图标视觉尺寸）
 
-| 场景 | 尺寸 |
+图标自身的视觉大小，不等同于点击区域。
+
+| Token / 值 | 用途 |
 |---|---|
-| 导航 | 24dp |
-| 普通操作 | 20-32dp |
-| 功能入口 | 40-48dp |
+| 16dp | 辅助图标（如 Card 内的小标记） |
+| 20dp | 普通操作图标 |
+| 24dp | 导航默认 |
+| 32dp | 强调图标 / 功能入口 |
+
+#### 5.2.2 Icon Button（图标按钮）
+
+Icon Button 是 Visual Type 的一种（见 5.1.1），只含图标不含文字。
+
+**Visual Size**（复用 Button Size 体系，不得自定义新尺寸）：
+
+| Size | Touch Target | Icon Size |
+|---|---|---|
+| Small | 32×32dp | 16-20dp |
+| Medium（默认） | 40×40dp | 20-24dp |
+| Large | 48×48dp | 24dp |
+
+**Touch Target ≠ Icon Size（强制）**：
+
+> 图标尺寸不等于点击区域。24dp 的图标可以放在 40×40dp 或 48×48dp 的 Touch Target 中。点击区域由 Button Size 决定，不由图标大小决定。
+
+Touch Target 最低要求（详见 [`interaction.md`](interaction.md) 的 Accessibility）：
+
+- 普通移动端交互目标 ≥ 40×40dp
+- 重要核心操作 ≥ 48×48dp
+
+**内容与可访问性**：
+
+- Icon Button 可以只有图标，但必须提供 Tooltip（Desktop）或 Accessible Label（无障碍标签），用于屏幕阅读器朗读。
+- Pressed / Disabled / Focus（Desktop）状态必须定义，规则同 Button Visual Type。
+- Mobile 端不要求 Hover；Desktop 端 Hover 由平台主题统一处理。
+
+**禁止**：
+
+- 用无语义图标代替文字操作而不提供 accessible label。
+- 让图标视觉大小决定点击区域大小。
 
 ### 5.3 Card 通用卡片
 
@@ -190,12 +327,154 @@ Page Components（页面：Home / Timeline / Record Detail / AI Experience）
 
 | 属性 | 值 |
 |---|---|
-| 背景 | Surface（`color.surface.card`） |
-| 圆角 | 16dp（`radius.medium`） |
-| 内边距 | 16dp |
-| 阴影 | 轻微（`shadow.card`） |
+| 背景 | `color.surface.card` |
+| 圆角 | `radius.large` |
+| 内边距 | `spacing.lg` |
+| 阴影 | `shadow.card`（仅在需要浮起感时使用，默认可不加） |
 
 **禁止**：强阴影、大面积悬浮效果。不要用阴影制造层级，优先用空间和背景差异。
+
+#### 5.3.1 交互行为分类（强制）
+
+Card 必须明确属于以下三种之一，不得处于"看起来可点但又没有明确行为"的中间态。
+
+**Static Card（静态卡片）**：
+
+- 用途：信息展示，不可点击。
+- 状态：无 Pressed、无 Hover 交互反馈。
+- 禁止：添加 Pressed 反馈或点击事件。
+
+**Interactive Card（可交互卡片）**：
+
+- 用途：整卡点击，有明确导航目标。
+- 必须定义：Pressed / Hover（Desktop）/ Focus 状态。
+- 必须有明确点击结果（跳转、展开、选中），禁止没有明确目的的整卡可点击。
+
+**Action Card（含子操作卡片）**：
+
+- 用途：Card 内存在独立操作（如 Button / Icon Button）。
+- 事件规则：Card 内 Button 点击不得误触 Card 点击。子操作与父 Card 点击的事件必须明确隔离（事件冒泡阻断或独立命中区域）。
+- 若 Card 本身也可点击，须同时满足 Interactive Card 的规则。
+
+#### 5.3.2 嵌套规则
+
+- 禁止过度 Card 嵌套，默认限制嵌套层级 ≤ 2 层。
+- 如需表达层级，优先使用 Surface 差异和 Spacing，不通过嵌套 Card 表达。
+
+### 5.4 Tag / Badge 标签
+
+**用途**：状态信息展示（如"当前"、"主人"标记、身份/角色展示）。**不是操作组件。**
+
+> 已在 5.1.6 业务场景映射中明确：状态信息使用 Tag，不使用 Button。
+
+#### 5.4.1 Variant
+
+| Variant | 用途 | 颜色 |
+|---|---|---|
+| Neutral | 默认/中性状态 | `color.surface.disabled` 底 / `color.text.secondary` 字 |
+| Success | 已完成/正向状态 | `color.semantic.success` 系 |
+| Info | 信息提示 | `color.semantic.info` 系 |
+| Warning | 需注意 | `color.semantic.warning` 系 |
+| Error | 异常/错误 | `color.semantic.error` 系 |
+
+#### 5.4.2 Size
+
+复用 Token，不自定义新尺寸：
+
+| Size | Padding | Font Size |
+|---|---|---|
+| Small | `spacing.xs` `spacing.sm` | `font.size.caption` (12sp) |
+| Medium（默认） | `spacing.sm` `spacing.md` | `font.size.label` (14sp) |
+
+圆角统一使用 `radius.small`。
+
+#### 5.4.3 Content
+
+- 单行，不换行。
+- 可选 Icon（放文字前），Icon Size 16dp。
+- 文本字体：`font.weight.medium`。
+- 最大长度：建议 ≤ 6 个中文字符。超出时使用省略号（`…`）截断，不得换行。
+- 禁止因空间不足压缩到文字不可读。
+
+#### 5.4.4 Behavior
+
+> 默认 Tag 是**非交互展示组件**，不得使用 Button 的 Hover / Pressed 行为。
+
+如需可点击 Tag，必须定义为独立 Variant（如 `Tag.Clickable`）或独立组件，不得默认所有 Tag 都可点击。可点击 Tag 必须定义 Pressed / Focus 状态。
+
+#### 5.4.5 禁止事项
+
+- Tag 不承担主要操作（用 Button）。
+- Tag 不替代 Button。
+- Tag 不自行定义新尺寸。
+- Tag 不因空间不足压缩到文字不可读。
+
+### 5.5 Dialog 对话框
+
+**用途**：高风险确认、权限说明、不可恢复操作。**不是普通信息展示容器。**
+
+> 普通信息展示用页面内反馈、Toast 或 Bottom Sheet。Dialog 只用于需要用户明确决策的场景。
+
+#### 5.5.1 Anatomy
+
+```text
+Dialog
+├── Title（标题，必须）
+├── Content（内容，必须）
+└── Action Area（操作区，必须）
+```
+
+#### 5.5.2 Layout
+
+| 属性 | 规则 |
+|---|---|
+| 宽度 | Mobile 默认占屏宽减去左右各 `spacing.lg` (16dp)；Desktop 居中，宽度由内容决定但不超过最大宽度 |
+| 最小宽度 | 不低于 280dp |
+| 最大宽度 | Mobile 不超过屏宽；Desktop 不超过 480dp |
+| Padding | 外边距 `spacing.lg` (16dp) |
+| Title 与 Content 间距 | `spacing.md` (12dp) |
+| Content 与 Action 间距 | `spacing.xl` (24dp) |
+| 最大高度 | 不超过屏高 80% |
+| 长内容 Overflow | Content 区域可滚动（`ScrollViewer`），Title 和 Action Area 固定不滚动 |
+| 圆角 | `radius.xl` (24dp) |
+| 遮罩 | `color.overlay.scrim` |
+
+#### 5.5.3 Action Layout（操作区布局，强制）
+
+**1 个操作**：
+
+- Full Width（占满操作区宽度）。
+- 或 Content Width + 居中对齐，二选一，由具体场景在规范中登记，不得由页面自行决定。
+
+**2 个操作**：
+
+- 默认水平排列，Equal Width（等宽）。
+- 按钮之间间距 `spacing.md` (12dp)。
+- 空间不足以满足两个按钮的 MinWidth：优先增加 Dialog 宽度；若仍不足，自动改为垂直排列。
+- **禁止**压缩 Button 至低于其 MinWidth。
+- **禁止**裁剪或隐藏 Button 文字。
+- **禁止**一个 Full Width 一个 Content Width（混用布局策略）。
+
+**3 个及以上操作**：
+
+- **禁止**横向硬塞。
+- 优先重新设计操作流程，减少操作数量。
+- 若无法减少，必须垂直排列，每个按钮 Full Width。
+
+#### 5.5.4 Close Behavior（关闭规则，强制）
+
+不同 Dialog 类型的关闭规则不同，页面不得自行决定：
+
+| Dialog 类型 | 点击遮罩关闭 | 返回键关闭 | 说明 |
+|---|---|---|---|
+| 普通提示 Dialog | ✓ 允许 | ✓ 允许 | 信息确认类，无破坏性 |
+| 危险确认 Dialog | ✗ 禁止 | ✗ 禁止 | 必须明确点击"取消"或"确认"，避免误触遮罩导致操作丢失或误执行 |
+| Loading / Submitting | ✗ 禁止 | ✗ 禁止 | 禁止重复点击操作按钮；禁止在提交完成前关闭 |
+
+**Loading / Submitting 额外规则**：
+
+- 操作按钮点击后立即进入 Loading 状态，禁止重复触发同一操作。
+- Loading 期间 Action Area 不可关闭 Dialog（除非有明确的"取消操作"逻辑且后端支持取消）。
 
 ## 6. Business Components 业务组件
 
@@ -374,12 +653,19 @@ AI 自动分类
 
 ### 6.11 Sheet / Dialog
 
+Sheet 与 Dialog 的完整规范见：
+
+- **Bottom Sheet**：[`interaction.md`](interaction.md) 的"Bottom Sheet 规范"（Anatomy / 高度 / 滚动 / 关闭规则 / Loading / 嵌套）。
+- **Dialog**：本文件 [`5.5 Dialog`](#55-dialog-对话框)（Anatomy / Layout / Action Layout / Close Behavior）。
+
+使用场景区分：
+
 | 组件 | 用途 |
 |---|---|
-| Sheet | 记录表单、快捷选择、上下文操作 |
+| Bottom Sheet | 记录表单、快捷选择、上下文操作 |
 | Dialog | 高风险确认、权限说明、不可恢复操作 |
 
-不应把复杂长流程塞入 Dialog。Bottom Sheet 用于新增记录：点击 + 后出现，默认隐藏，类似微信操作体验。
+不应把复杂长流程塞入 Dialog。
 
 ### 6.12 Empty State
 

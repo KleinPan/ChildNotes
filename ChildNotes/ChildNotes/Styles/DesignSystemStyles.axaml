@@ -8,7 +8,7 @@
            weui-btn          → btn
            weui-btn primary  → btn primary
            weui-btn default  → btn secondary
-           weui-btn warn     → btn primary (规范无 Danger Button，危险操作靠 Dialog 上下文表达)
+           weui-btn warn     → btn primary (旧 weui warn 映射为 primary；破坏性操作改用 btn.danger)
            weui-btn mini     → btn compact
            weui-card         → card
            weui-cell         → cell

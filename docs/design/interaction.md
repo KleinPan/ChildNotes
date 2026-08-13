@@ -50,16 +50,61 @@
 **使用场景**：
 
 - 适合：新增记录、快捷操作、选择类型
-- 不适合：展示大量内容、长流程编辑
+- 不适合：展示大量内容、长流程编辑（改用独立页面）
 
-**动画**：从底部滑入，200-300ms。
+### Anatomy
 
-**样式**：
+```text
+Bottom Sheet
+├── Drag Handle（拖拽条，必须）
+├── Header（标题区，可选）
+│   ├── Title
+│   └── Close Action（可选）
+└── Content（内容区）
+    └── [Primary Action]（可选，固定底部或随内容滚动）
+```
 
-| 项 | 规范 |
+### Layout
+
+| 属性 | 规则 |
 |---|---|
-| 顶部圆角 | 24dp |
-| 顶部 | 拖拽条 |
+| 顶部圆角 | `radius.xl` (24dp) |
+| 顶部 Drag Handle | 宽 40dp / 高 4dp / 圆角 `radius.pill` / 色 `color.border.subtle` / 距顶 `spacing.sm` (8dp) |
+| 最大高度 | 不超过屏高 80% |
+| 内容超过高度 | Content 区域可滚动（`ScrollViewer`），Drag Handle 和 Header 固定不滚动 |
+| 遮罩 | `color.overlay.scrim` |
+| 动画 | 从底部滑入，`motion.duration.normal` (200-300ms) |
+
+### Header 规则
+
+- Header 非必须。如 Content 本身已表达清晰（如 Quick Record Sheet 的图标网格），可不设 Header。
+- 如设 Header，Title 使用 `font.size.cardTitle` (18sp Medium)。
+- Close Action（关闭按钮）可选，放 Header 右侧；若不设，用户通过下滑或返回键关闭。
+
+### 关闭规则（强制）
+
+| 关闭方式 | 规则 |
+|---|---|
+| 点击遮罩 | ✓ 允许（默认） |
+| 下滑 | ✓ 允许（默认） |
+| 返回键 | ✓ 允许（默认） |
+| Loading / Submitting 期间 | ✗ 禁止上述三种关闭方式，除非有明确"取消操作"逻辑且后端支持取消 |
+
+### Primary Action 位置
+
+- 若 Sheet 内有 Primary Action（如"保存"）：默认固定在底部，不随内容滚动。
+- 若内容很短不会滚动，Primary Action 可随内容放在 Content 末尾。
+- 禁止 Primary Action 既不固定也不在可见区域内（用户需要滚动才能找到主操作）。
+
+### 嵌套规则
+
+- **禁止** Sheet 内嵌 Dialog。需要二次确认时，关闭 Sheet 后再弹 Dialog，或直接在 Sheet 内用 inline 确认（如二次确认按钮变 Danger）。
+- **禁止** Sheet 内嵌另一个 Sheet。需要进一步选择时，用页面跳转或 inline 展开。
+
+### Loading 状态
+
+- Sheet 内异步操作（如保存记录）：操作按钮进入 Loading 状态，禁止重复触发。
+- Loading 期间按上述"关闭规则"禁止关闭。
 
 ## 5. + 按钮交互规范
 
@@ -141,7 +186,7 @@ AI 可以是重点入口，但产品能力层级仍然是"记录优先，AI 辅�
 
 ### 删除
 
-不要直接删除。推荐轻提示确认："删除这条记录？"
+不要直接删除。必须轻提示确认："删除这条记录？"。确认按钮使用 Danger Button（见 [`components.md`](components.md) 5.1.6）。
 
 ## 9. 手势规范
 
@@ -195,9 +240,30 @@ AI 可以是重点入口，但产品能力层级仍然是"记录优先，AI 辅�
 
 交互元素必须：
 
-- 可点击区域 ≥ 40dp
+- 可点击区域 ≥ 40×40dp
+- 重要核心操作可点击区域 ≥ 48×48dp
 - 文字清晰
 - 颜色不能作为唯一提示
+
+### Visual Size ≠ Touch Target（强制）
+
+> 视觉尺寸不等于实际点击区域。允许视觉尺寸小于实际点击区域。
+
+```text
+32dp Button
+外部实际点击区域达到 40×40dp
+```
+
+- Visual Size：控件自身的视觉大小，可以为 32 / 40 / 48dp。
+- Touch Target：实际可点击区域，必须满足上述最低要求。
+- 实现时通过 Padding / HitTest 区域扩大 Touch Target，不必放大视觉尺寸。
+
+### 其他可访问性要求
+
+- **桌面端鼠标操作**：鼠标 Hover 须有视觉反馈（由平台主题统一处理，业务页面不自行定义 Hover 色）。
+- **键盘 Focus**：所有可交互组件必须支持键盘 Focus，Focus 状态使用 `color.border.focus`，不得只依赖颜色变化或阴影。
+- **最小文字可读性**：正文不得低于 `font.size.body` (16sp)，辅助信息不得低于 `font.size.caption` (12sp)。
+- **Icon Button Accessible Label**：Icon Button 必须提供 Tooltip（Desktop）或 Accessible Label，供屏幕阅读器朗读。
 
 ## 15. AI Development Rules
 

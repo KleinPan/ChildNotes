@@ -61,7 +61,8 @@ ChildNotes 的设计系统回答一个问题：**设计语言通过什么视觉�
 | Surface 表面色 | 背景、卡片、浮层、遮罩 | 大面积使用柔和中性背景，让照片和记忆内容突出 |
 | Text 文字色 | 主文本、次文本、禁用文本、反色文本 | 保证阅读舒适度 |
 | Semantic 语义色 | 成功、警告、错误、信息 | Success 用于已完成/已保存/正向状态；Warning 谨慎用于需注意场景；Error 仅在需要纠正或保护时使用 |
-| AI 色 | AI 入口、AI 总结、AI 生成中状态 | 与品牌色区分但保持温和可信 |
+
+> AI 相关 UI 不建立独立品牌色，复用上述 Token，通过图标/文案/状态表达 AI 能力。详见 [`design-tokens.md`](design-tokens.md) 的"关于 AI 色"。
 
 详细 Token 见 [`design-tokens.md`](design-tokens.md)。
 
