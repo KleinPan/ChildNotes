@@ -203,8 +203,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<AdminAuthMiddleware>();
 
-// 静态文件（本地上传文件访问）
+// 静态文件：默认 wwwroot + 上传目录映射到 /uploads 路径
+// 上传文件物理位置在 ContentRootPath/uploads/（不在 wwwroot 下），
+// 必须用 PhysicalFileProvider 显式映射，否则 GET /uploads/xxx.jpg 会 404
 app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "uploads")),
+    RequestPath = "/uploads"
+});
 
 app.MapControllers();
 

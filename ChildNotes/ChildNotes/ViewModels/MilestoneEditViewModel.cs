@@ -247,7 +247,8 @@ public partial class MilestoneEditViewModel : ViewModelBase
         // 保存逻辑（含等待图片上传 + DB 写入）移到后台线程
         await Task.Run(() =>
         {
-            WaitForUploads(TimeSpan.FromSeconds(5));
+            // 等待图片上传完成：弱网下 5 秒太短会回退本地路径（跨设备不可达），提高到 30 秒
+            WaitForUploads(TimeSpan.FromSeconds(30));
 
             var photos = Photos.Select(p => p.ToStoredPath()).ToList();
             var m = new Milestone
