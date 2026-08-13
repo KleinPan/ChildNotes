@@ -470,12 +470,36 @@ public partial class BabyManagerViewModel : ViewModelBase
         var ok = await _familyApi.RemoveMemberAsync(_removeTargetBabyId, _removeTargetUserId);
         if (!ok)
         {
-            DisplayToast(_locale.GetString("Family_RemoveFailed", "移除失败，请稀后再试"));
+            DisplayToast(_locale.GetString("Family_RemoveFailed", "移除失败，请稍后再试"));
             return;
         }
         IsRemoveConfirmOpen = false;
         DisplayToast(string.Format(_locale.GetString("Family_RemovedToast", "已移除「{0}」"), _removeTargetNickName));
-        await RefreshFamiliesAsync();
+
+        // 乐观更新：直接从当前 Baby.Family.Members 移除该成员，立即反映 UI。
+        // Baby.Family 是普通属性（无 INotifyPropertyChanged），RefreshFamiliesAsync 重新赋值
+        // 不会触发 Members 绑定刷新；但 Members 是 List<BabyMemberDto>，直接 Remove 会修改
+        // 集合内容。由于 ItemsControl 绑定 List 不会监听 CollectionChanged，需替换整个 List
+        // 并通过 Family 属性重新赋值触发更新——而 Baby 不是 INPC，所以最可靠的方式是
+        // 重建 Members 列表引用并触发 BabyList 集合的 Replace。
+        var baby = BabyList.FirstOrDefault(b => b.Id == _removeTargetBabyId);
+        if (baby?.Family?.Members is { } members)
+        {
+            var updated = members.Where(m => m.UserId != _removeTargetUserId).ToList();
+            // 直接修改 List 内容（ItemsControl 不会自动刷新），但替换引用 + 重新触发 BabyList
+            // 的 Replace 会让 DataTemplate 重新应用，从而显示最新 Members。
+            members.Clear();
+            foreach (var m in updated) members.Add(m);
+            // 触发 BabyList 集合的 Replace：让该 Baby 项重新绑定，强制 UI 刷新
+            var idx = BabyList.IndexOf(baby);
+            if (idx >= 0)
+            {
+                BabyList[idx] = baby;
+            }
+        }
+
+        // 后台静默刷新（拉取最新状态 + 同步待审/我的申请），不阻塞 UI
+        _ = RefreshFamiliesAsync();
     }
 
     // ==================== 家人管理：owner 审批加入申请 ====================
@@ -487,11 +511,17 @@ public partial class BabyManagerViewModel : ViewModelBase
         var result = await _familyApi.ProcessJoinRequestAsync(req.Id, approve: true);
         if (result is null)
         {
-            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稀后再试"));
+            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稍后再试"));
             return;
         }
         DisplayToast(string.Format(_locale.GetString("Family_RequestApprovedToast", "已通过「{0}」的申请"), req.ApplicantNickName));
-        await RefreshFamiliesAsync();
+
+        // 乐观更新：从待审列表移除该项，立即反映 UI
+        PendingRequests.Remove(req);
+        HasPendingRequests = PendingRequests.Count > 0;
+
+        // 后台静默刷新（拉取最新成员列表 + 待审/我的申请），不阻塞 UI
+        _ = RefreshFamiliesAsync();
     }
 
     [RelayCommand]
@@ -501,11 +531,17 @@ public partial class BabyManagerViewModel : ViewModelBase
         var result = await _familyApi.ProcessJoinRequestAsync(req.Id, approve: false);
         if (result is null)
         {
-            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稀后再试"));
+            DisplayToast(_locale.GetString("Family_ProcessFailed", "操作失败，请稍后再试"));
             return;
         }
         DisplayToast(string.Format(_locale.GetString("Family_RequestRejectedToast", "已拒绝「{0}」的申请"), req.ApplicantNickName));
-        await RefreshFamiliesAsync();
+
+        // 乐观更新：从待审列表移除该项，立即反映 UI
+        PendingRequests.Remove(req);
+        HasPendingRequests = PendingRequests.Count > 0;
+
+        // 后台静默刷新（拉取最新状态 + 待审/我的申请），不阻塞 UI
+        _ = RefreshFamiliesAsync();
     }
 
     // ==================== 头像相关方法 ====================

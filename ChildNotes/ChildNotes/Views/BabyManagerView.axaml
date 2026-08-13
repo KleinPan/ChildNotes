@@ -164,7 +164,7 @@
                                                                 </StackPanel>
                                                                 <!-- 移除按钮：仅 owner 可见，且不能移除自己 -->
                                                                 <Button Grid.Column="2" Content="{DynamicResource Family_RemoveMember}"
-                                                                        Classes="weui-btn mini"
+                                                                        Classes="weui-btn mini warn"
                                                                         IsVisible="{Binding !Mine}"
                                                                         Click="OnRemoveMemberTap"
                                                                         Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}">
