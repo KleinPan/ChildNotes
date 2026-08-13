@@ -7,6 +7,7 @@ using Android.Content;
 using Android.OS;
 using Android.Provider;
 using Android.Util;
+using JavaIO = Java.IO;
 using AndroidUri = Android.Net.Uri;
 
 namespace ChildNotes.Android.Services;
@@ -133,8 +134,9 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
             intent.SetType("image/*");
             if (maxCount > 1)
             {
-                // 多选上限：Android 13 Photo Picker 支持，最多 MediaStore.GetPickImagesMaxLimit()
-                var platformMax = MediaStore.GetPickImagesMaxLimit();
+                // 多选上限：Android 13 Photo Picker 最多支持 MediaStore.GetPickImagesMaxLimit()
+                // 该 API 在 .NET Android 绑定中不可用，用硬编码上限 100（Android 规范值）
+                const int platformMax = 100;
                 var actual = Math.Min(maxCount, platformMax);
                 intent.PutExtra(MediaStore.ExtraPickImagesMax, actual);
             }
@@ -175,7 +177,7 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
                 Log.Warn(Tag, "[PhotoPicker] ContentResolver.OpenInputStream 返回 null");
                 return null;
             }
-            using var output = new FileOutputStream(target);
+            using var output = new JavaIO.FileOutputStream(target);
             input.CopyTo(output);
             output.Flush();
             return target.AbsolutePath;
