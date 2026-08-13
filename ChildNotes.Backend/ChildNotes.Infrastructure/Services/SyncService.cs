@@ -48,8 +48,8 @@ public class SyncService : ISyncService
             ? r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc && (r.UpdatedAt > cursorTime!.Value || (r.UpdatedAt == cursorTime.Value && string.Compare(r.Id, cursorId) > 0))
             : r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc;
         Expression<Func<Milestone, bool>> msCursor = hasCursor
-            ? m => m.UserId == uid && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
-            : m => m.UserId == uid && m.UpdatedAt > sinceUtc;
+            ? m => ((m.BabyId != null && babyIds.Contains(m.BabyId)) || m.UserId == uid) && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
+            : m => ((m.BabyId != null && babyIds.Contains(m.BabyId)) || m.UserId == uid) && m.UpdatedAt > sinceUtc;
         Expression<Func<SignInRecord, bool>> siCursor = hasCursor
             ? s => s.UserId == uid && s.CreatedAt > sinceUtc && (s.CreatedAt > cursorTime!.Value || (s.CreatedAt == cursorTime.Value && string.Compare(s.Id, cursorId) > 0))
             : s => s.UserId == uid && s.CreatedAt > sinceUtc;
@@ -80,8 +80,10 @@ public class SyncService : ISyncService
                 .Take(pageLimit)
                 .ToListAsync(ct);
 
-        // 里程碑：仅同步当前用户自己创建的（不受 baby_member 跨用户共享约束，与小程序一致）
-        var milestones = await _db.Milestones.AsNoTracking().IgnoreQueryFilters()
+        // 里程碑：按 baby_id 家庭共享（家庭成员可拉到他人创建的里程碑），
+        // 兜底 m.UserId == uid 以兼容 BabyId 为 null 的历史数据
+        var milestones = babyIds.Count == 0 ? new() :
+            await _db.Milestones.AsNoTracking().IgnoreQueryFilters()
             .Where(msCursor)
             .OrderBy(m => m.UpdatedAt).ThenBy(m => m.Id)
             .Take(pageLimit)
@@ -221,8 +223,9 @@ public class SyncService : ISyncService
         var milestonesUpserted = 0;
         foreach (var item in req.Milestones ?? new())
         {
-            // 权限：只能 upsert 自己创建的里程碑
-            if (item.UserId != uid) continue;
+            // 权限：里程碑必须属于当前用户可访问的宝宝（与 ChildRecord 一致），
+            // 允许家庭成员 push 自己创建的里程碑（UserId 保留为创建者，不强制覆盖）
+            if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId)) continue;
 
             var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
             if (existing is null)

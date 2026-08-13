@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using ChildNotes.Services;
 
 namespace ChildNotes.Controls;
 
@@ -61,6 +62,14 @@ public sealed class AvatarImage : Image
         Bitmap? bmp = null;
         try
         {
+            // 服务器相对路径（如 /uploads/2024/01/01/xxx.jpg）：拼接当前主服务器地址后走 HTTP 下载。
+            // 后端 UploadService 返回的是相对路径，跨设备同步后本地无此文件，必须拼成完整 URL 才能加载。
+            if (path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+            {
+                path = ServerEndpoints.Primary.TrimEnd('/') + path;
+            }
+
             // URL：真 async HTTP 下载（不占用 ThreadPool 线程等待）+ 后台 CPU 解码
             if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
