@@ -13,12 +13,12 @@
 
         <!-- 品牌文案：紧跟插画下方 -->
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,460,0,0" Spacing="8">
-            <TextBlock Text="宝宝日记"
+            <TextBlock Text="{DynamicResource Loading_AppName}"
                        FontSize="28"
                        FontWeight="Bold"
                        Foreground="{StaticResource LoadingTextPrimaryBrush}"
                        HorizontalAlignment="Center"/>
-            <TextBlock Text="每一次成长，都值得被记录。"
+            <TextBlock Text="{DynamicResource Loading_Slogan}"
                        FontSize="{StaticResource FontSize.Label}"
                        Foreground="{StaticResource LoadingTextSecondaryBrush}"
                        HorizontalAlignment="Center"/>

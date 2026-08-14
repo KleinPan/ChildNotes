@@ -144,7 +144,7 @@
                                                         <DataTemplate x:DataType="shared:BabyMemberDto">
                                                             <Grid Margin="14,8" ColumnDefinitions="Auto,*,Auto">
                                                                 <Border Grid.Column="0" Width="36" Height="36" CornerRadius="{StaticResource Radius.Pill}"
-                                                                        Background="{StaticResource AvatarGradientBrush}"
+                                                                        Background="{StaticResource BrandPrimaryBrush}"
                                                                         VerticalAlignment="Center">
                                                                     <TextBlock Text="👤" FontSize="18" Foreground="{StaticResource SurfaceCardBrush}"
                                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -165,14 +165,14 @@
                                                                 <!-- 操作区域：使用 Text Button（规范 5.1.6：危险操作入口用 Text Button，红色文字）
                                                                      自己且非 Owner：显示"退出"（Owner 不能退出，只能删除宝宝） -->
                                                                 <Button Grid.Column="2" VerticalAlignment="Center"
-                                                                        Content="退出"
+                                                                        Content="{DynamicResource Family_LeaveButton}"
                                                                         Classes="btn text danger small"
                                                                         IsVisible="{Binding Converter={x:Static v:BabyManagerView.MineAndNotOwnerConverter}}"
                                                                         Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}"
                                                                         Click="OnLeaveFamilyTap"/>
                                                                 <!-- Owner 看到非自己、非 Owner 的成员：显示"移除" -->
                                                                 <Button Grid.Column="2" VerticalAlignment="Center"
-                                                                        Content="移除"
+                                                                        Content="{DynamicResource Family_RemoveButton}"
                                                                         Classes="btn text danger small"
                                                                         IsVisible="{Binding Converter={x:Static v:BabyManagerView.AndOwnerConverter}}"
                                                                         Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}"
@@ -334,8 +334,8 @@
                             <Border BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1"/>
 
                             <!-- 姓名 -->
-                            <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource BabyMgr_Name}" FontSize="{StaticResource FontSize.Body}" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Height="{StaticResource Size.Form.Field.Height}" VerticalAlignment="Center">
+                                <TextBlock Text="{DynamicResource BabyMgr_Name}" FontSize="{StaticResource FontSize.Body}" Width="{StaticResource Size.Form.Label.Width}" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <TextBox x:Name="BabyNameTextBox" Text="{Binding Name}" PlaceholderText="{DynamicResource BabyMgr_NamePlaceholder}" MaxLength="20"
                                          BorderThickness="0" Background="Transparent" FontSize="{StaticResource FontSize.Body}"
                                          VerticalContentAlignment="Center" HorizontalAlignment="Stretch"/>
@@ -345,7 +345,7 @@
 
                             <!-- 出生日期 -->
                             <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                                <TextBlock Text="{DynamicResource BabyMgr_Birthday}" FontSize="{StaticResource FontSize.Body}" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{DynamicResource BabyMgr_Birthday}" FontSize="{StaticResource FontSize.Body}" Width="{StaticResource Size.Form.Label.Width}" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                                 <CalendarDatePicker SelectedDate="{Binding BirthDate}"
                                                     PlaceholderText="{DynamicResource BabyMgr_BirthdayPlaceholder}"
                                                     HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Body}"/>
@@ -403,11 +403,8 @@
                              ConfirmCommand="{Binding ConfirmDeleteCommand}"
                              IsDangerConfirm="True">
             <controls:DialogHost.MessageContent>
-                <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap">
-                    <Run Text="确定要删除"/>
-                    <Run Text="{Binding DeleteConfirmName}" FontWeight="Bold"/>
-                    <Run Text="吗？相关记录将保留，但宝宝信息将无法恢复。"/>
-                </TextBlock>
+                <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"
+                           Text="{Binding DeleteConfirmName, StringFormat={DynamicResource BabyMgr_DeleteConfirm}}"/>
             </controls:DialogHost.MessageContent>
         </controls:DialogHost>
 

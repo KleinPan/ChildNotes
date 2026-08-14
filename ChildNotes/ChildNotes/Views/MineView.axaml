@@ -17,7 +17,7 @@
                 <Grid ColumnDefinitions="Auto,*">
                     <!--  原版头像: 绿色渐变背景  -->
                     <Border Grid.Column="0" Width="56" Height="56"
-                            Background="{StaticResource AvatarGradientBrush}"
+                            Background="{StaticResource BrandPrimaryBrush}"
                             CornerRadius="{StaticResource Radius.Pill}">
                         <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" Foreground="{StaticResource SurfaceCardBrush}"
                                    Text="👤" />
@@ -95,7 +95,7 @@
                                 Background="{StaticResource GrowthBlueBrush}"
                                 CornerRadius="{StaticResource Radius.Small}">
                             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
-                                       Text="析" />
+                                       Text="{DynamicResource Mine_AiAnalysis_Badge}" />
                         </Border>
                         <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
                                    Text="{DynamicResource Mine_AiAnalysis}" />

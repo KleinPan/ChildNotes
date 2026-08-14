@@ -38,9 +38,9 @@
             <StackPanel>
 
                 <!-- 顶部 Banner：紧凑型 -->
-                <Border Background="{StaticResource BrandPrimaryBrush}" Padding="20,16" CornerRadius="0,0,8,8">
+                <Border Classes="page-header-banner">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="宝宝喂养分析" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource AiAnalysis_BannerTitle}" FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}" HorizontalAlignment="Center"/>
                         <!-- Banner 副标题：复用 OnPrimary 80% 透明度（规范 color.text.onPrimary=#FFFFFF） -->
                         <TextBlock Text="{Binding BabyName, StringFormat=\{0\}}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,2,0,0"/>
                     </StackPanel>
@@ -53,9 +53,9 @@
                         <!-- 第一行：余额 + 消耗 + 签到按钮 -->
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
-                                <Run Text="积分 "/><Run Text="{Binding CurrentPoints}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/><Run Text="/ 消耗 "/><Run Text="{Binding AnalysisCost}" FontWeight="SemiBold" Foreground="{StaticResource FeedingOrangeBrush}"/>
+                                <Run Text="{DynamicResource AiAnalysis_PointsFormat}"><Run.Text><Binding Path="AiAnalysis_PointsFormat" Converter="{x:Static StringConverters.IsNotNullOrEmpty}"/></Run.Text></Run>
                             </TextBlock>
-                            <Button Grid.Column="1" Content="签到赚积分" Classes="btn small" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
+                            <Button Grid.Column="1" Content="{DynamicResource AiAnalysis_CheckInForPoints}" Classes="btn small" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
                                     Command="{Binding OpenPointsCommand}" Background="{StaticResource FeedingOrangeLightBrush}" Foreground="{StaticResource FeedingOrangeBrush}" BorderThickness="0"/>
                         </Grid>
                         <!-- 第二行：仅积分不足时显示，独占整行不被遮挡 -->
@@ -71,16 +71,16 @@
                         <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Small}" Margin="12,8" Padding="14">
                             <StackPanel>
                                 <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,6">
-                                    <Run Text="选择连续 7 天范围生成 AI 分析"/>
-                                    <Run Text="(每次消耗积分)" Foreground="{StaticResource FeedingOrangeBrush}"/>
+                                    <Run Text="{DynamicResource AiAnalysis_RangeTip}"/>
+                                    <Run Text="{DynamicResource AiAnalysis_CostTip}" Foreground="{StaticResource FeedingOrangeBrush}"/>
                                 </TextBlock>
                                 <Grid ColumnDefinitions="*,Auto,*" Margin="0,0,0,4">
                                     <StackPanel Grid.Column="0">
-                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="开始"/>
+                                        <CalendarDatePicker SelectedDate="{Binding StartDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="{DynamicResource AiAnalysis_StartPlaceholder}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="至" VerticalAlignment="Bottom" Margin="8,0" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                    <TextBlock Grid.Column="1" Text="{DynamicResource AiAnalysis_To}" VerticalAlignment="Bottom" Margin="8,0" Foreground="{StaticResource TextSecondaryBrush}"/>
                                     <StackPanel Grid.Column="2">
-                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="结束"/>
+                                        <CalendarDatePicker SelectedDate="{Binding EndDate}" HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Label}" PlaceholderText="{DynamicResource AiAnalysis_EndPlaceholder}"/>
                                     </StackPanel>
                                 </Grid>
                                 <TextBlock Text="{Binding RangeTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"/>
@@ -91,7 +91,7 @@
                         <Button Content="{Binding GenerateButtonText}" Classes="btn primary large"
                                 Command="{Binding GenerateCommand}" IsEnabled="{Binding CanGenerate}"
                                 Margin="12,4" HorizontalAlignment="Stretch"/>
-                        <Button Content="取消分析" Classes="btn secondary large"
+                        <Button Content="{DynamicResource AiAnalysis_Cancel}" Classes="btn secondary large"
                                 Command="{Binding CancelGenerateCommand}"
                                 Margin="12,0,12,2" HorizontalAlignment="Stretch"
                                 IsVisible="{Binding Generating}"/>
@@ -102,7 +102,7 @@
 
                         <!-- 分析记录标题 -->
                         <Border Classes="section-title" Margin="16,12,16,2">
-                            <TextBlock Text="分析记录"/>
+                            <TextBlock Text="{DynamicResource AiAnalysis_History}"/>
                         </Border>
 
                         <!-- 分析记录卡片列表 -->
@@ -160,9 +160,9 @@
                                     <TextBlock Text="{Binding DetailQualityTip}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource FeedingOrangeBrush}" Margin="0,2,0,0"
                                                IsVisible="{Binding DetailQualityTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="⌃" FontSize="18" Padding="8,2" MinWidth="32"
+                                <Button Grid.Column="1" Content="⌃" FontSize="18" MinWidth="32"
                                         Background="Transparent" BorderThickness="0" Foreground="{StaticResource TextSecondaryBrush}"
-                                        ToolTip.Tip="收起返回" Command="{Binding BackToListCommand}"
+                                        ToolTip.Tip="{DynamicResource AiAnalysis_Collapse}" Command="{Binding BackToListCommand}"
                                         VerticalAlignment="Top"/>
                             </Grid>
                         </Border>

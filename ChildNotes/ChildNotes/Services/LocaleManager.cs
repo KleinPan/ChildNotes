@@ -226,7 +226,6 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Home_FeedCountNoMl"] = "{0}次";
         this["Home_DiaperCount"] = "{0}次";
         this["Home_DiaperDetail"] = "便{0} 尿{1}";
-        // AiStatusViewModel
         this["Home_Ai_GoodTitle"] = "{0}状态良好";
         this["Home_Ai_FeverTitle"] = "{0}体温偏高";
         this["Home_Ai_DiarrheaTitle"] = "{0}肠胃需呵护";
@@ -814,6 +813,51 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
 
         // ===== Complementary default items (kept in Chinese as food names) =====
         // Note: Food names are proper nouns, kept as-is in both languages
+
+        // ===== 补全缺失键（v0.7.3 规范整改） =====
+        // AI 分析
+        this["AiAnalysis_BannerTitle"] = "宝宝喂养分析";
+        this["AiAnalysis_PointsFormat"] = "积分 {0} / 消耗 {1}";
+        this["AiAnalysis_RangeTip"] = "选择连续 7 天范围生成 AI 分析";
+        this["AiAnalysis_CostTip"] = "(每次消耗积分)";
+        this["AiAnalysis_StartPlaceholder"] = "开始";
+        this["AiAnalysis_EndPlaceholder"] = "结束";
+        this["AiAnalysis_History"] = "分析记录";
+        this["AiAnalysis_CheckInForPoints"] = "签到赚积分";
+        this["AiAnalysis_Collapse"] = "收起返回";
+        // AI 设置
+        this["AiSettings_ModelSection"] = "大模型配置";
+        this["AiSettings_ModelName"] = "模型名称";
+        this["AiSettings_BackendAddr"] = "后端地址";
+        this["AiSettings_Hint"] = "提示";
+        this["AiSettings_BackendHint"] = "后端地址需在同步设置中配置";
+        this["AiSettings_ParamSection"] = "生成参数";
+        this["AiSettings_Temperature"] = "温度";
+        this["AiSettings_MaxTokens"] = "最大 Token 数";
+        this["AiSettings_Description"] = "说明";
+        // AI Settings 补充
+        this["AiSettings_ApiAddress"] = "API 地址";
+        this["AiSettings_ApiKey"] = "API Key";
+        this["AiSettings_ApiKeyPlaceholder"] = "sk-...";
+        this["AiSettings_ApiAddressPlaceholder"] = "https://api.openai.com";
+        this["AiSettings_ApiModelPlaceholder"] = "gpt-4o-mini";
+        this["AiSettings_LocalModel"] = "本地大模型";
+        this["AiSettings_ServerService"] = "后端服务";
+        // 宝宝删除确认
+        this["BabyMgr_DeleteAsk"] = "确定要删除";
+        // 喂养页统计
+        this["Feeding_SleepLabel"] = "睡眠";
+        this["Feeding_SleepUnit"] = "分钟";
+        // 启动页
+        this["Loading_AppName"] = "宝宝日记";
+        this["Loading_Slogan"] = "每一次成长，都值得被记录。";
+        // 积分页
+        this["Points_TotalEarnSpent"] = "累计获得 {0} 分 · 已使用 {1} 分";
+        this["Points_Claimed"] = "已领取";
+        this["Points_ClaimButton"] = "领取";
+        // 家人管理按钮
+        this["Family_LeaveButton"] = "退出";
+        this["Family_RemoveButton"] = "移除";
     }
 
     // ===== English =====
@@ -849,6 +893,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Membership"] = "Membership";
         this["Mine_AiAnalysis"] = "Feeding Analysis";
         this["Mine_AiAnalysis_Sub"] = "Last Week";
+        this["Mine_AiAnalysis_Badge"] = "AI";
         this["Mine_Statistics"] = "Statistics";
         this["Mine_Points"] = "Points & Tasks";
         this["Mine_AiSettings"] = "AI Settings";
@@ -1489,5 +1534,51 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Form_ErrUnitName"] = "Please enter unit";
         this["Form_ErrUnitDuplicate"] = "This unit already exists";
         this["Form_ErrSupplementNameOrSelect"] = "Please enter or select name";
+
+        // ===== v0.7.3 spec refactor =====
+        // AI Analysis
+        this["AiAnalysis_BannerTitle"] = "Baby Feeding Analysis";
+        this["AiAnalysis_PointsFormat"] = "Points {0} / Cost {1}";
+        this["AiAnalysis_RangeTip"] = "Select a 7-day range to generate AI analysis";
+        this["AiAnalysis_CostTip"] = "(costs points each time)";
+        this["AiAnalysis_StartPlaceholder"] = "Start";
+        this["AiAnalysis_EndPlaceholder"] = "End";
+        this["AiAnalysis_History"] = "Analysis history";
+        this["AiAnalysis_CheckInForPoints"] = "Check in for points";
+        this["AiAnalysis_Collapse"] = "Collapse";
+        // AI Settings
+        this["AiSettings_ModelSection"] = "Model config";
+        this["AiSettings_ModelName"] = "Model name";
+        this["AiSettings_BackendAddr"] = "Backend address";
+        this["AiSettings_Hint"] = "Hint";
+        this["AiSettings_BackendHint"] = "Backend address is configured in sync settings";
+        this["AiSettings_ParamSection"] = "Generation params";
+        this["AiSettings_Temperature"] = "Temperature";
+        this["AiSettings_MaxTokens"] = "Max tokens";
+        this["AiSettings_Description"] = "Description";
+        // Baby delete confirm
+        this["BabyMgr_DeleteAsk"] = "Are you sure to delete";
+        // Feeding
+        this["Feeding_SleepLabel"] = "Sleep";
+        this["Feeding_SleepUnit"] = "min";
+        // Loading
+        this["Loading_AppName"] = "ChildNotes";
+        this["Loading_Slogan"] = "Every moment of growth is worth recording.";
+        // Points
+        this["Points_TotalEarnSpent"] = "Total earned {0} pts · Used {1} pts";
+        this["Points_Claimed"] = "Claimed";
+        this["Points_ClaimButton"] = "Claim";
+        // Family management buttons
+        this["Family_LeaveButton"] = "Leave";
+        this["Family_RemoveButton"] = "Remove";
+        // Calendar heat map
+        this["Calendar_DefaultBadge"] = "Current Type";
+        this["Calendar_WeekDay_Sun"] = "Sun";
+        this["Calendar_WeekDay_Mon"] = "Mon";
+        this["Calendar_WeekDay_Tue"] = "Tue";
+        this["Calendar_WeekDay_Wed"] = "Wed";
+        this["Calendar_WeekDay_Thu"] = "Thu";
+        this["Calendar_WeekDay_Fri"] = "Fri";
+        this["Calendar_WeekDay_Sat"] = "Sat";
     }
 }

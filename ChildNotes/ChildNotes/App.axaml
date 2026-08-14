@@ -13,7 +13,6 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceInclude Source="avares://ChildNotes/Styles/DesignTokens.axaml"/>
-                <ResourceInclude Source="avares://ChildNotes/Styles/WeUIColors.axaml"/>
                 <ResourceInclude Source="avares://ChildNotes/Styles/AppIcons.axaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

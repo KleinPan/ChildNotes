@@ -33,7 +33,7 @@
 
                     <!-- 性别选择 -->
                     <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
-                        <TextBlock Text="{DynamicResource BabySetup_Gender}" FontSize="{StaticResource FontSize.Body}" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                        <TextBlock Text="{DynamicResource BabySetup_Gender}" FontSize="{StaticResource FontSize.Body}" Width="{StaticResource Size.Form.Label.Width}" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <Button Content="{DynamicResource BabyMgr_Boy}" Classes="gender-btn"
                                 Classes.active="{Binding Gender, Converter={x:Static v:AppConverters.IsBoy}}"
                                 Click="OnBoyTap"/>
@@ -55,8 +55,8 @@
                     <Border BorderBrush="{StaticResource SurfaceDisabledBrush}" BorderThickness="0,1"/>
 
                     <!-- 出生日期 -->
-                    <StackPanel Orientation="Horizontal" Height="48" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource BabySetup_Birthday}" FontSize="{StaticResource FontSize.Body}" Width="60" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <StackPanel Orientation="Horizontal" Height="{StaticResource Size.Form.Field.Height}" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource BabySetup_Birthday}" FontSize="{StaticResource FontSize.Body}" Width="{StaticResource Size.Form.Label.Width}" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
                         <CalendarDatePicker SelectedDate="{Binding BirthDate}"
                                             PlaceholderText="{DynamicResource BabyMgr_BirthdayPlaceholder}"
                                             HorizontalAlignment="Stretch" FontSize="{StaticResource FontSize.Body}"/>

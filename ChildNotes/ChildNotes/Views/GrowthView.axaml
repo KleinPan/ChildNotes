@@ -327,7 +327,7 @@
                         HorizontalAlignment="Right" VerticalAlignment="Top"
                         Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="{StaticResource Radius.Pill}"
                         Command="{Binding ClosePreviewCommand}"
-                        Content="✕" FontSize="18" Foreground="Black" />
+                        Content="✕" FontSize="18" Foreground="{StaticResource TextPrimaryBrush}" />
                 <!--  上一张  -->
                 <Button Width="44" Height="44" Margin="24,0"
                         HorizontalAlignment="Left" VerticalAlignment="Center"
@@ -339,7 +339,7 @@
                         HorizontalAlignment="Right" VerticalAlignment="Center"
                         Background="{StaticResource GrowthSemiWhiteBrush}" BorderThickness="0" CornerRadius="{StaticResource Radius.Pill}"
                         Command="{Binding PreviewNextCommand}"
-                        Content="›" FontSize="24" Foreground="Black" />
+                        Content="›" FontSize="24" Foreground="{StaticResource TextPrimaryBrush}" />
                 <!--  计数  -->
                 <Border Margin="0,0,0,24" Padding="12,6"
                         HorizontalAlignment="Center" VerticalAlignment="Bottom"

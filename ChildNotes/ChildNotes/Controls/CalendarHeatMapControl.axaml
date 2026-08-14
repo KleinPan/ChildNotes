@@ -45,7 +45,7 @@
 
     <!-- 类型标签样式 -->
     <Style Selector="Border.type-badge">
-      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.Small}"/>
       <Setter Property="Padding" Value="8,3"/>
       <Setter Property="Background" Value="{StaticResource BrandPrimaryLightBrush}"/>
     </Style>
@@ -65,7 +65,7 @@
   </UserControl.Styles>
 
   <Border x:Name="PART_Root"
-          CornerRadius="12"
+          CornerRadius="{StaticResource Radius.Medium}"
           Background="{StaticResource SurfaceCardBrush}"
           BorderBrush="{StaticResource SurfaceDividerBrush}"
           BorderThickness="1"
@@ -94,13 +94,13 @@
           <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
           <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="0" Classes="week-day" Text="日" TextAlignment="Center"/>
-        <TextBlock Grid.Column="1" Classes="week-day" Text="一" TextAlignment="Center"/>
-        <TextBlock Grid.Column="2" Classes="week-day" Text="二" TextAlignment="Center"/>
-        <TextBlock Grid.Column="3" Classes="week-day" Text="三" TextAlignment="Center"/>
-        <TextBlock Grid.Column="4" Classes="week-day" Text="四" TextAlignment="Center"/>
-        <TextBlock Grid.Column="5" Classes="week-day" Text="五" TextAlignment="Center"/>
-        <TextBlock Grid.Column="6" Classes="week-day" Text="六" TextAlignment="Center"/>
+        <TextBlock Grid.Column="0" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Sun}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="1" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Mon}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="2" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Tue}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="3" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Wed}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="4" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Thu}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="5" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Fri}" TextAlignment="Center"/>
+        <TextBlock Grid.Column="6" Classes="week-day" Text="{DynamicResource Calendar_WeekDay_Sat}" TextAlignment="Center"/>
       </Grid>
 
       <!-- 单元格网格（UniformGrid 天然支持网格布局） -->

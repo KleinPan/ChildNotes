@@ -129,6 +129,8 @@
     <SolidColorBrush x:Key="GrowthBlueBrush" Color="{StaticResource Color.Growth.Blue}" />
     <SolidColorBrush x:Key="FeedingOrangeBrush" Color="{StaticResource Color.Feeding.Orange}" />
     <SolidColorBrush x:Key="SleepPurpleBrush" Color="{StaticResource Color.Sleep.Purple}" />
+    <SolidColorBrush x:Key="DiaperYellowBrush" Color="{StaticResource Color.Diaper.Yellow}" />
+    <SolidColorBrush x:Key="GrowthTealBrush" Color="{StaticResource Color.Growth.Teal}" />
     <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
     <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
 
@@ -266,6 +268,11 @@
     <x:Double x:Key="Size.Control.Height.Small">32</x:Double>
     <x:Double x:Key="Size.Control.Height.Medium">40</x:Double>
     <x:Double x:Key="Size.Control.Height.Large">48</x:Double>
+
+    <!-- ============ Component / Form Field Size ============ -->
+    <x:Double x:Key="Size.Form.Field.Height">48</x:Double>
+    <x:Double x:Key="Size.Form.Label.Width">60</x:Double>
+    <x:Double x:Key="Size.Nav.Spacer">40</x:Double>
     <!-- 兼容旧引用 -->
     <x:Double x:Key="Button.Primary.Height">48</x:Double>
     <x:Double x:Key="Button.Primary.MinHeight">48</x:Double>

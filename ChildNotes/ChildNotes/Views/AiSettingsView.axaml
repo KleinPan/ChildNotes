@@ -36,7 +36,7 @@
 
                 <!-- 模型配置 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="大模型配置"/>
+                    <TextBlock Text="{DynamicResource AiSettings_ModelSection}"/>
                 </Border>
 
                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
@@ -54,7 +54,7 @@
                         </Grid>
                         <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,10" ColumnDefinitions="80,*">
-                            <TextBlock Grid.Column="0" Text="模型名称" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_ModelName}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="1" Text="{Binding ConfigModelName}" PlaceholderText="gpt-4o-mini"
                                      Background="Transparent" BorderThickness="0"/>
                         </Grid>
@@ -76,20 +76,20 @@
                             </StackPanel>
                         </Grid>
                         <Grid Margin="14,0,14,12" ColumnDefinitions="*,*">
-                            <RadioButton Grid.Column="0" Content="本地大模型" IsChecked="{Binding UseLocalSource, Mode=TwoWay}"
+                            <RadioButton Grid.Column="0" Content="{DynamicResource AiSettings_LocalModel}" IsChecked="{Binding UseLocalSource, Mode=TwoWay}"
                                          IsEnabled="{Binding !IsTesting}"/>
-                            <RadioButton Grid.Column="1" Content="后端服务" IsChecked="{Binding UseServerSource, Mode=TwoWay}"
+                            <RadioButton Grid.Column="1" Content="{DynamicResource AiSettings_ServerService}" IsChecked="{Binding UseServerSource, Mode=TwoWay}"
                                          IsEnabled="{Binding !IsTesting}"/>
                         </Grid>
                         <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
                         <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
-                            <TextBlock Grid.Column="0" Text="后端地址" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_BackendAddr}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="1" Text="{Binding ServerUrl}" FontSize="{StaticResource FontSize.Label}"
                                        Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                         </Grid>
                         <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding IsServerSource}">
-                            <TextBlock Grid.Column="0" Text="提示" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Top"/>
-                            <TextBlock Grid.Column="1" Text="后端地址需在同步设置中配置" FontSize="{StaticResource FontSize.Caption}"
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_Hint}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource AiSettings_BackendHint}" FontSize="{StaticResource FontSize.Caption}"
                                        Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
                         </Grid>
                     </StackPanel>
@@ -114,19 +114,19 @@
 
                 <!-- 生成参数 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="生成参数"/>
+                    <TextBlock Text="{DynamicResource AiSettings_ParamSection}"/>
                 </Border>
 
                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4">
                     <StackPanel Margin="14,12">
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="温度" FontSize="{StaticResource FontSize.Label}"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_Temperature}" FontSize="{StaticResource FontSize.Label}"/>
                             <TextBlock Grid.Column="1" Text="{Binding ConfigTemperature, StringFormat=\{0:F1\}}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="0" Maximum="2" Value="{Binding ConfigTemperature}" TickFrequency="0.1" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
 
                         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
-                            <TextBlock Grid.Column="0" Text="最大 Token 数" FontSize="{StaticResource FontSize.Label}"/>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_MaxTokens}" FontSize="{StaticResource FontSize.Label}"/>
                             <TextBlock Grid.Column="1" Text="{Binding ConfigMaxTokens}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}"/>
                         </Grid>
                         <Slider Minimum="512" Maximum="8192" Value="{Binding ConfigMaxTokens}" TickFrequency="256" IsSnapToTickEnabled="True"/>
@@ -138,7 +138,7 @@
 
                 <!-- 说明 -->
                 <Border Classes="section-title">
-                    <TextBlock Text="说明"/>
+                    <TextBlock Text="{DynamicResource AiSettings_Description}"/>
                 </Border>
                 <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4,12,24">
                     <StackPanel Margin="14,12" Spacing="6">

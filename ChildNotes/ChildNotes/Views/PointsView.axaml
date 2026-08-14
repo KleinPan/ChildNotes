@@ -44,15 +44,20 @@
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
-                <Border Background="{StaticResource BrandPrimaryBrush}" Padding="24,28" CornerRadius="0,0,8,8">
+                <Border Classes="page-header-banner">
                     <StackPanel HorizontalAlignment="Center">
                         <TextBlock Text="{DynamicResource Points_YourPoints}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,0">
                             <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"/>
                             <TextBlock Text="{DynamicResource Points_Unit}" FontSize="{StaticResource FontSize.Body}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
                         </StackPanel>
-                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <Run Text="累计获得 "/><Run Text="{Binding TotalEarned}"/><Run Text=" 分 · 已使用 "/><Run Text="{Binding TotalSpent}"/><Run Text=" 分"/>
+                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,8,0,0" TextAlignment="Center">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{DynamicResource Points_TotalEarnSpent}">
+                                    <Binding Path="TotalEarned"/>
+                                    <Binding Path="TotalSpent"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
                         </TextBlock>
                     </StackPanel>
                 </Border>
@@ -104,10 +109,10 @@
                                     <!-- 已领取：显示"已领取"灰色标签 -->
                                     <Border Grid.Column="1" Background="{StaticResource SurfaceDisabledBrush}" CornerRadius="{StaticResource Radius.Medium}" Padding="10,4"
                                             VerticalAlignment="Center" IsVisible="{Binding IsClaimed}">
-                                        <TextBlock Text="已领取" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"/>
+                                        <TextBlock Text="{DynamicResource Points_Claimed}" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"/>
                                     </Border>
                                     <!-- 可领取：显示"领取"按钮 -->
-                                    <Button Grid.Column="1" Content="领取"
+                                    <Button Grid.Column="1" Content="{DynamicResource Points_ClaimButton}"
                                             Classes="btn primary large"
                                             FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Center"
                                             IsVisible="{Binding CanClaim}"

@@ -37,6 +37,15 @@
         <Setter Property="BoxShadow" Value="{StaticResource Shadow.None}" />
     </Style>
 
+    <!-- ============ Page Header Banner 页面顶部品牌色横幅 ============ -->
+    <!-- 用途：AI 详情/会员/积分等页面顶部品牌色 Header。
+         圆角仅底部 8dp（贴卡片上沿），Padding 统一 24,24。 -->
+    <Style Selector="Border.page-header-banner">
+        <Setter Property="Background" Value="{StaticResource BrandPrimaryBrush}" />
+        <Setter Property="Padding" Value="24,24" />
+        <Setter Property="CornerRadius" Value="0,0,8,8" />
+    </Style>
+
     <!-- ============ Card 通用卡片 ============ -->
     <!-- design-tokens: 普通 Card 圆角 radius.large=16 / 阴影 shadow.card -->
     <Style Selector="Border.card">

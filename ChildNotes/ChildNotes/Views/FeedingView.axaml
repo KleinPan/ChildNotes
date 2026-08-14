@@ -114,9 +114,7 @@
                         </StackPanel>
                         <StackPanel Classes="stat-item" IsVisible="{Binding DayStats.SleepTotalMin}">
                             <TextBlock Classes="stat-icon" Text="😴" />
-                            <TextBlock Classes="stat-text">
-                                <Run Text="睡眠" /><Run Text="{Binding DayStats.SleepTotalMin}" /><Run Text="分钟" />
-                            </TextBlock>
+                            <TextBlock Classes="stat-text" Text="{Binding DayStats.SleepTotalMin, StringFormat={DynamicResource Feeding_StatsSleep}}"/>
                         </StackPanel>
                     </WrapPanel>
                 </Border>
