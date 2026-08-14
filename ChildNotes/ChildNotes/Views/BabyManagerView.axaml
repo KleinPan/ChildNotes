@@ -163,11 +163,11 @@
                                                                                Foreground="{StaticResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                                                                 </StackPanel>
                                                                 <!-- 操作区域：使用 Text Button（规范 5.1.6：危险操作入口用 Text Button，红色文字）
-                                                                     自己：显示"退出" -->
+                                                                     自己且非 Owner：显示"退出"（Owner 不能退出，只能删除宝宝） -->
                                                                 <Button Grid.Column="2" VerticalAlignment="Center"
                                                                         Content="退出"
                                                                         Classes="btn text danger small"
-                                                                        IsVisible="{Binding Mine}"
+                                                                        IsVisible="{Binding Converter={x:Static v:BabyManagerView.MineAndNotOwnerConverter}}"
                                                                         Tag="{Binding $parent[ItemsControl].((m:Baby)DataContext).Family}"
                                                                         Click="OnLeaveFamilyTap"/>
                                                                 <!-- Owner 看到非自己、非 Owner 的成员：显示"移除" -->

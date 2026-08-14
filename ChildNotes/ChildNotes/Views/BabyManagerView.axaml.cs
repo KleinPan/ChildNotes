@@ -177,6 +177,8 @@ public partial class BabyManagerView : UserControl
 
     /// <summary>仅当当前用户是 owner 且目标成员不是自己时返回 true（用于显示"移除成员"按钮）。</summary>
     public static readonly IValueConverter AndOwnerConverter = new AndOwnerConverter();
+    /// <summary>自己且非 Owner 时显示"退出"按钮（Owner 不能退出，只能删除宝宝）。</summary>
+    public static readonly IValueConverter MineAndNotOwnerConverter = new MineAndNotOwnerConverter();
 
     private BabyManagerViewModel? Vm => DataContext as BabyManagerViewModel;
 
@@ -337,6 +339,26 @@ file sealed class AndOwnerConverter : IValueConverter
         {
             // 不能移除自己（自己用"退出"），也不能移除 Owner
             return !member.Mine && !member.Owner;
+        }
+        return false;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
+/// 自己且非 Owner 时返回 true（用于显示"退出家庭"按钮）。
+/// 业务规则：Owner（宝宝创建者）不能退出家庭，只能删除宝宝；
+/// 非 Owner 成员可主动退出家庭。
+/// </summary>
+file sealed class MineAndNotOwnerConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is BabyMemberDto member)
+        {
+            return member.Mine && !member.Owner;
         }
         return false;
     }
