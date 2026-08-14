@@ -220,19 +220,18 @@ public class MainActivity : AvaloniaMainActivity
     /// <summary>
     /// v5：注入 Android Keystore SecureStorage，覆盖桌面端默认的 DpapiSecureStorage。
     /// AuthService 依赖 SecureStorage 读写 AccessToken/RefreshToken，必须在任何 API 调用前完成注入。
+    ///
+    /// 失败处理（关键）：
+    ///   - DPAPI 是 Windows 专属，Android 上完全不可用
+    ///   - 若 AndroidSecureStorage 注入失败却悄悄降级到 DpapiSecureStorage，
+    ///     会导致 Token 永远写不进也读不出 → 用户被误判为未登录 → 同步永远不工作
+    ///   - 因此注入失败必须向上抛出，让进程在明确错误下退出，而不是进入诡异降级状态
     /// </summary>
     private void InitializeSecureStorage()
     {
-        try
-        {
-            ChildNotes.Infrastructure.ServiceProvider.Instance.OverrideSecureStorage(
-                new ChildNotes.Android.Services.AndroidSecureStorage(this));
-            Log.Info("ChildNotes", "[SecureStorage] AndroidSecureStorage injected");
-        }
-        catch (Exception ex)
-        {
-            Log.Error("ChildNotes", $"[SecureStorage] InitializeSecureStorage failed: {ex}");
-        }
+        ChildNotes.Infrastructure.ServiceProvider.Instance.OverrideSecureStorage(
+            new ChildNotes.Android.Services.AndroidSecureStorage(this));
+        Log.Info("ChildNotes", "[SecureStorage] AndroidSecureStorage injected");
     }
 
     /// <summary>

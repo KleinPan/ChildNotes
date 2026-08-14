@@ -42,6 +42,42 @@ public sealed class AndroidSecureStorage : ISecureStorage
     public AndroidSecureStorage(Context context)
     {
         _context = context;
+
+        // 构造时做一次 Keystore round-trip 自检：SetAsync → GetAsync → DeleteAsync。
+        // 目的：在 MainActivity 启动阶段尽早暴露 Keystore 不可用问题（provider 异常/权限被禁/系统 ROM 问题等），
+        // 而不是等到用户登录保存 Token 时才发现 → 那时已经无法回滚到"未登录态"。
+        // 自检失败必须向上抛出，让 MainActivity.OnCreate 直接崩在明确错误下，
+        // 避免 AndroidSecureStorage 静默降级到 DpapiSecureStorage（DPAPI 在 Android 完全不可用）。
+        //
+        // 注：SetAsync/GetAsync 内部吞异常返回 null/空，自检通过包装捕获原始异常后 rethrow，
+        // 让崩在 MainActivity 的异常栈里能看到真实根因（而不是 "数据不一致" 这种二手信息）。
+        const string probeKey = "__probe__";
+        var probeValue = Guid.NewGuid().ToString("N");
+        try
+        {
+            // 同步等待：构造阶段不能 async，且自检必须阻塞 MainActivity 启动流程
+            SetAsync(probeKey, probeValue, default).GetAwaiter().GetResult();
+            var probeBack = GetAsync(probeKey, default).GetAwaiter().GetResult();
+            if (!string.Equals(probeValue, probeBack, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "AndroidSecureStorage 自检失败：Keystore round-trip 数据不一致 " +
+                    $"(expected={probeValue.Substring(0, 8)}..., actual={(probeBack?.Substring(0, 8) ?? "null")}...)。" +
+                    "可能原因：AndroidKeyStore provider 不可用 / KeyGenParameterSpec 参数不兼容 / ROM 限制。");
+            }
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            // 自检本身抛出的异常（Keystore provider 异常/KeyGenParameterSpec 不支持等）
+            throw new InvalidOperationException(
+                "AndroidSecureStorage 自检失败：Keystore 初始化或加解密异常。" +
+                "可能原因：AndroidKeyStore provider 不可用 / KeyGenParameterSpec 参数不兼容 / ROM 限制。", ex);
+        }
+        finally
+        {
+            try { DeleteAsync(probeKey, default).GetAwaiter().GetResult(); }
+            catch { /* 自检清理失败不影响构造判定 */ }
+        }
     }
 
     public Task<string?> GetAsync(string key, CancellationToken ct = default)
