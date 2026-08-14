@@ -9,7 +9,7 @@ using Android.Security;
 using Android.Security.Keystore;
 using ChildNotes.Services.Storage;
 using Javax.Crypto;
-using Javax.Crypto.Spec;
+using Javax.Crypto.Spec; // GCMParameterSpec 所在命名空间
 
 namespace ChildNotes.Android.Services;
 
@@ -54,12 +54,17 @@ public sealed class AndroidSecureStorage : ISecureStorage
 
             var cipher = GetDecryptCipher();
             var bytes = Convert.FromBase64String(stored);
-            // 前 12 字节为 IV，后面是密文（含 auth tag）
+            // 前 12 字节为 IV，后面是密文（GCM 模式下 auth tag 由 cipher.DoFinal 自动处理/校验）
             var iv = new byte[GcmIvLength];
             var cipherText = new byte[bytes.Length - GcmIvLength];
             Buffer.BlockCopy(bytes, 0, iv, 0, GcmIvLength);
             Buffer.BlockCopy(bytes, GcmIvLength, cipherText, 0, cipherText.Length);
-            cipher.Init(CipherMode.DecryptMode, GetOrCreateKey(), new IvParameterSpec(iv));
+            // GCM 必须用 GCMParameterSpec（不能用 IvParameterSpec）：
+            //   - Javax.Crypto 对 AES/GCM/NoPadding 强制要求 GCMParameterSpec
+            //   - 用 IvParameterSpec 会抛 InvalidAlgorithmParameterException
+            //   - 否则会出现 SetAsync 成功 → 重启 → GetAsync 解密失败 → Token 丢失 → 用户被登出
+            // GcmTagLength=128 是 GCM 标准 tag 长度（16 字节），与加密时默认值对齐
+            cipher.Init(CipherMode.DecryptMode, GetOrCreateKey(), new GCMParameterSpec(GcmTagLength, iv));
 
             var plain = cipher.DoFinal(cipherText);
             return Task.FromResult<string?>(Encoding.UTF8.GetString(plain));
