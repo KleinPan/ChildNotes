@@ -41,9 +41,7 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.Email).HasColumnName("email").HasMaxLength(256);
             // v5 重构：email 列在 Migration 中为 nullable，让旧用户 email=NULL
-            // NOT NULL 约束 + 唯一索引由运维在回填现有用户邮箱后手动添加：
-            //   ALTER TABLE app_user ALTER COLUMN email SET NOT NULL;
-            //   CREATE UNIQUE INDEX IX_app_user_email ON app_user (email);
+            // NOT NULL 约束 + 唯一索引由 scripts/email-auth-phase2.sql 在回填现有用户邮箱后创建
             // EF 模型保持 nullable，避免与数据库状态不一致导致 SaveChanges 失败
             e.Property(x => x.EmailVerifiedAt).HasColumnName("email_verified_at");
             e.Property(x => x.NickName).HasColumnName("nick_name").HasMaxLength(64);

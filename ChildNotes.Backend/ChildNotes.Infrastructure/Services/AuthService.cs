@@ -49,11 +49,25 @@ public class AuthService : IAuthService
         string code = RandomNumberGenerator.GetInt32(0, (int)Math.Pow(10, _opt.CodeLength))
             .ToString($"D{_opt.CodeLength}");
 
-        // 并发安全：事务内完成"限流检查 + 旧码失效 + 新码入库"
-        // PostgreSQL 在事务内的 UPDATE 会对行加行锁，防止并发请求同时通过限流
+        // 并发安全：事务内完成"行级锁 + 限流检查 + 旧码失效 + 新码入库"
+        // 关键修复：原方案首次发送时 SELECT 到 NULL，无行可锁，两个并发事务都能通过限流
+        //   修复方案：PostgreSQL 用事务级 advisory lock（按 email hash），串行化同邮箱请求
+        //   InMemory 测试无并发，跳过 advisory lock 直接走原逻辑
         await _db.ExecuteInTransactionAsync(async () =>
         {
-            // 限流：同邮箱 60 秒内只能发一次
+            // PostgreSQL 事务级 advisory lock：同邮箱的并发请求在此排队
+            // 事务提交/回滚时锁自动释放，无需手动 unlock
+            // 锁 key 用 email 的稳定 hash（C# 端算，避免 SQL 注入）
+            if (_db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                var key = StableEmailHashKey(email);
+                // pg_advisory_xact_lock(bigint)：负数 key 避免与系统保留段冲突
+                await _db.Database.ExecuteSqlRawAsync(
+                    "SELECT pg_advisory_xact_lock({0})", -key, ct);
+            }
+
+            // 限流：同邮箱 ResendIntervalSeconds 内只能发一次
+            // 此时同邮箱的并发请求已被 advisory lock 串行化，可安全 SELECT
             var lastCode = await _db.EmailVerificationCodes
                 .Where(c => c.Email == email && c.ConsumedAt == null)
                 .OrderByDescending(c => c.CreatedAt)
@@ -97,6 +111,20 @@ public class AuthService : IAuthService
         return new SendCodeResponse { Sent = true };
     }
 
+    /// <summary>
+    /// 计算 email 的稳定 64 位 hash（用于 PostgreSQL advisory lock key）。
+    /// 用 XOR 折叠 SHA256 字节，避免不同邮箱碰撞到同一 key。
+    /// </summary>
+    private static long StableEmailHashKey(string email)
+    {
+        var bytes = System.Security.Cryptography.SHA256.HashData(
+            System.Text.Encoding.UTF8.GetBytes(email));
+        // 取前 8 字节作为 long，再 XOR 后 8 字节，降低碰撞概率
+        long lo = BitConverter.ToInt64(bytes, 0);
+        long hi = BitConverter.ToInt64(bytes, 8);
+        return lo ^ hi;
+    }
+
     public async Task<AuthResponse> VerifyCodeAsync(VerifyCodeRequest req, CancellationToken ct = default)
     {
         // 邮箱格式 + 长度校验
@@ -115,74 +143,113 @@ public class AuthService : IAuthService
         var resultHolder = new List<(AppUser user, bool newUser, string? newUserId)>();
         // 用于后续积分注入（必须在事务外执行，避免跨服务调用占用长事务）
 
-        // 并发安全：事务内完成"查未消费码 → 校验 → 原子消费 → 查找/创建用户 → 生成 RefreshToken"
+        // 并发安全：事务内完成"行锁 → 查未消费码 → 校验 → 原子消费 → 查找/创建用户 → 生成 RefreshToken"
         // 防止同一验证码被并发消费两次、同一邮箱被并发创建两个 AppUser
-        await _db.ExecuteInTransactionAsync(async () =>
+        try
         {
-            // 查未消费的验证码（行锁：FOR UPDATE，PostgreSQL 在事务内自动加锁）
-            var record = await _db.EmailVerificationCodes
-                .Where(c => c.Email == email && c.ConsumedAt == null)
-                .OrderByDescending(c => c.CreatedAt)
-                .FirstOrDefaultAsync(ct)
-                ?? throw new BusinessException("验证码不存在或已使用，请重新发送", 400, "CODE_NOT_FOUND");
-
-            // 检查过期
-            if (record.ExpiresAt < DateTime.UtcNow)
-                throw new BusinessException("验证码已过期，请重新发送", 400, "CODE_EXPIRED");
-
-            // 检查尝试次数
-            if (record.AttemptCount >= _opt.MaxAttempts)
-                throw new BusinessException("验证码错误次数过多，请重新发送", 400, "CODE_MAX_ATTEMPTS");
-
-            // 校验验证码
-            if (!_jwt.VerifyToken(req.Code, record.CodeHash))
+            await _db.ExecuteInTransactionAsync(async () =>
             {
-                record.AttemptCount++;
-                await _db.SaveChangesAsync(ct);
-                throw new BusinessException($"验证码错误，剩余尝试次数 {_opt.MaxAttempts - record.AttemptCount} 次", 400, "CODE_WRONG");
-            }
-
-            // 验证成功，消费验证码：
-            // 事务内 tracked entity + SELECT 后二次校验 ConsumedAt
-            // PostgreSQL 事务内的 UPDATE 会对行加行锁，防止并发请求重复消费
-            // 同一事务内先 SELECT 拿到行锁，再修改 ConsumedAt 并 SaveChanges
-            // InMemory 测试无并发场景，tracked entity 即可
-            if (record.ConsumedAt is not null)
-            {
-                // 并发场景下被其他请求先消费了（虽然前面已过滤，事务内可能已被改）
-                throw new BusinessException("验证码已被使用，请重新发送", 409, "CODE_CONSUMED_BY_ANOTHER");
-            }
-            record.ConsumedAt = DateTime.UtcNow;
-
-            // 查找或创建用户
-            var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Email == email, ct);
-            var newUser = false;
-            string? newUserId = null;
-            if (user is null)
-            {
-                user = new AppUser
+                // PostgreSQL 事务级 advisory lock：同邮箱的并发请求在此排队
+                // 防止 SELECT 拿不到行锁的并发请求同时进入校验逻辑
+                if (_db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
                 {
-                    Id = Guid.NewGuid().ToString("N"),
-                    Email = email,
-                    EmailVerifiedAt = DateTime.UtcNow,
-                    NickName = "用户" + email.Split('@')[0],
-                };
-                _db.AppUsers.Add(user);
-                newUser = true;
-            }
-            else if (user.EmailVerifiedAt is null)
-            {
-                user.EmailVerifiedAt = DateTime.UtcNow;
-            }
+                    var key = StableEmailHashKey(email);
+                    await _db.Database.ExecuteSqlRawAsync(
+                        "SELECT pg_advisory_xact_lock({0})", -key, ct);
+                }
 
-            await _db.SaveChangesAsync(ct);
+                // 查未消费的验证码（advisory lock 已串行化同邮箱请求，可安全 SELECT）
+                var record = await _db.EmailVerificationCodes
+                    .Where(c => c.Email == email && c.ConsumedAt == null)
+                    .OrderByDescending(c => c.CreatedAt)
+                    .FirstOrDefaultAsync(ct)
+                    ?? throw new BusinessException("验证码不存在或已使用，请重新发送", 400, "CODE_NOT_FOUND");
 
-            if (newUser)
-            {
-                newUserId = user.Id;
-            }
-            resultHolder.Add((user, newUser, newUserId));
-        }, ct);
+                // 检查过期
+                if (record.ExpiresAt < DateTime.UtcNow)
+                    throw new BusinessException("验证码已过期，请重新发送", 400, "CODE_EXPIRED");
+
+                // 检查尝试次数（防御性，原子自增会再校验）
+                if (record.AttemptCount >= _opt.MaxAttempts)
+                    throw new BusinessException("验证码错误次数过多，请重新发送", 400, "CODE_MAX_ATTEMPTS");
+
+                // 校验验证码
+                if (!_jwt.VerifyToken(req.Code, record.CodeHash))
+                {
+                    // 原子自增 AttemptCount：relational provider 走 ExecuteUpdateAsync
+                    // 生成 UPDATE ... SET attempt_count = attempt_count + 1
+                    //   WHERE id = @p0 AND consumed_at IS NULL AND attempt_count < @max
+                    // 并发场景下多个错误请求不会丢失更新（DB 层原子）
+                    // InMemory 不支持 ExecuteUpdateAsync，降级为 tracked entity（测试无并发）
+                    if (_db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+                    {
+                        record.AttemptCount++;
+                        await _db.SaveChangesAsync(ct);
+                    }
+                    else
+                    {
+                        var updated = await _db.EmailVerificationCodes
+                            .Where(c => c.Id == record.Id
+                                && c.ConsumedAt == null
+                                && c.AttemptCount < _opt.MaxAttempts)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(c => c.AttemptCount, c => c.AttemptCount + 1), ct);
+                        if (updated == 0)
+                        {
+                            // 已达上限或被并发消费
+                            throw new BusinessException("验证码错误次数过多，请重新发送", 400, "CODE_MAX_ATTEMPTS");
+                        }
+                        // 同步 tracked entity 状态（避免后续 if 命中时状态不一致）
+                        record.AttemptCount++;
+                    }
+                    throw new BusinessException($"验证码错误，剩余尝试次数 {_opt.MaxAttempts - record.AttemptCount} 次", 400, "CODE_WRONG");
+                }
+
+                // 验证成功，消费验证码：
+                // [ConcurrencyCheck] on ConsumedAt 生成 UPDATE ... WHERE ConsumedAt IS NULL
+                // 并发请求中只有一个能成功，其他抛 DbUpdateConcurrencyException
+                if (record.ConsumedAt is not null)
+                {
+                    throw new BusinessException("验证码已被使用，请重新发送", 409, "CODE_CONSUMED_BY_ANOTHER");
+                }
+                record.ConsumedAt = DateTime.UtcNow;
+
+                // 查找或创建用户
+                var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Email == email, ct);
+                var newUser = false;
+                string? newUserId = null;
+                if (user is null)
+                {
+                    user = new AppUser
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        Email = email,
+                        EmailVerifiedAt = DateTime.UtcNow,
+                        NickName = "用户" + email.Split('@')[0],
+                    };
+                    _db.AppUsers.Add(user);
+                    newUser = true;
+                }
+                else if (user.EmailVerifiedAt is null)
+                {
+                    user.EmailVerifiedAt = DateTime.UtcNow;
+                }
+
+                await _db.SaveChangesAsync(ct);  // [ConcurrencyCheck] 生成原子 CAS
+
+                if (newUser)
+                {
+                    newUserId = user.Id;
+                }
+                resultHolder.Add((user, newUser, newUserId));
+            }, ct);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // 并发场景下被其他请求先消费了验证码
+            // 不返回 500，转换成明确的业务异常
+            throw new BusinessException("验证码已被使用，请重新发送", 409, "CODE_CONSUMED_BY_ANOTHER");
+        }
 
         var (resultUser, resultNewUser, resultNewUserId) = resultHolder[0];
 

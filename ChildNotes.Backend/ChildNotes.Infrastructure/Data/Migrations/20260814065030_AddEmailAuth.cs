@@ -15,12 +15,14 @@ namespace ChildNotes.Infrastructure.Data.Migrations
     /// 修复策略：分两阶段迁移
     ///   阶段 1（本 Migration）：AddColumn(email, nullable:true) + AddColumn(email_verified_at)
     ///     旧用户 email=NULL，不强制 NOT NULL，不建唯一索引，让现有数据安全保留
-    ///   阶段 2（人工 SQL，迁移现有真实用户后执行）：
-    ///     UPDATE app_user SET email = '正式邮箱' WHERE id = '原 AppUser.Id';
-    ///     UPDATE app_user SET email_verified_at = NOW() WHERE id = '原 AppUser.Id';
-    ///     ALTER TABLE app_user ALTER COLUMN email SET NOT NULL;
-    ///     CREATE UNIQUE INDEX IX_app_user_email ON app_user (email);
-    ///     本阶段不在 Migration 中自动化，必须由运维按实际邮箱回填后手动执行
+    ///   阶段 2（自动化 SQL 脚本，迁移现有真实用户后执行）：
+    ///     脚本位置：ChildNotes.Backend/scripts/email-auth-phase2.sql
+    ///     执行流程：
+    ///       a) 运维通过业务流程或手工 SQL 为现有 app_user 回填真实 email
+    ///       b) 执行 scripts/email-auth-phase2.sql（幂等，含前置校验 + ALTER NOT NULL + CREATE UNIQUE INDEX）
+    ///     脚本特性：
+    ///       - 幂等：可重复执行（CREATE INDEX IF NOT EXISTS、ALTER 重复无副作用）
+    ///       - 安全：email IS NULL 或有重复值时 DO 块抛 check_violation 拒绝继续
     ///
     /// 这样保证：
     ///   - 现有 AppUser.Id 不变（不重建表，仅 ALTER ADD COLUMN）
@@ -98,8 +100,9 @@ namespace ChildNotes.Infrastructure.Data.Migrations
             // 注意：IX_app_user_email 唯一索引不在本 Migration 中创建
             // 原因：旧用户 email=NULL，PostgreSQL 默认允许多个 NULL 共存（NULLS NOT DISTINCT 关闭）
             //       但当前数据库可能有多个旧用户，强行建唯一索引会失败
-            //       唯一索引由运维在回填现有用户邮箱后手动执行：
-            //         CREATE UNIQUE INDEX IX_app_user_email ON app_user (email);
+            // 唯一索引由 scripts/email-auth-phase2.sql 在回填现有用户邮箱后创建：
+            //   CREATE UNIQUE INDEX IF NOT EXISTS IX_app_user_email ON app_user (email);
+            // 脚本含前置校验：email IS NULL 或重复值时拒绝继续，避免运维误执行
 
             migrationBuilder.CreateIndex(
                 name: "IX_email_verification_code_email_consumed_at",
