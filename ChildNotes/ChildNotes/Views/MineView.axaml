@@ -65,44 +65,19 @@
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
-                <StackPanel>
-                    <Grid Margin="14,12" PointerPressed="OnAiAnalysisTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="24" Height="24"
-                                Background="{StaticResource GrowthBlueBrush}"
-                                CornerRadius="{StaticResource Radius.Small}">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
-                                       Text="{DynamicResource Mine_AiAnalysis_Badge}" />
-                        </Border>
-                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
-                                   Text="{DynamicResource Mine_AiAnalysis}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="{DynamicResource Mine_AiAnalysis_Sub}" />
-                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
-                    <Grid Margin="14,12" PointerPressed="OnStatisticsTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="📊" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_Statistics}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                </StackPanel>
+                <Grid Margin="14,12" PointerPressed="OnDataInsightTap">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                               Text="📊" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource DataInsight_Title}" />
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                               Foreground="{StaticResource TextPlaceholderBrush}"
+                               Text="›" />
+                </Grid>
             </Border>
 
             <Border Classes="section-title">

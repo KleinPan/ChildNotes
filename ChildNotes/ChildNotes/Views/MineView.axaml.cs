@@ -22,14 +22,9 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenBabyManager();
     }
 
-    private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
+    private void OnDataInsightTap(object? sender, PointerPressedEventArgs e)
     {
-        if (FindShell() is { } vm) vm.OpenAiAnalysis();
-    }
-
-    private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenStatistics();
+        if (FindShell() is { } vm) vm.OpenDataInsight();
     }
 
     private void OnAppSettingsTap(object? sender, PointerPressedEventArgs e)

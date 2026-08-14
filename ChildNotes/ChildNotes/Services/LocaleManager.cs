@@ -205,6 +205,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["About_AppName"] = "宝宝日记";
         this["About_Section_Legal"] = "法律信息";
 
+        // ===== DataInsightView =====
+        this["DataInsight_Title"] = "数据洞察";
+        this["DataInsight_Section_Analysis"] = "数据分析";
+        this["DataInsight_Statistics_Sub"] = "日/周/月趋势图表";
+
         // ===== LanguageSettingsView =====
         this["Language_Title"] = "语言";
         this["Language_ZhHans"] = "简体中文";
@@ -943,6 +948,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["About_Title"] = "About Baby Diary";
         this["About_AppName"] = "Baby Diary";
         this["About_Section_Legal"] = "Legal";
+
+        // ===== DataInsightView =====
+        this["DataInsight_Title"] = "Data Insights";
+        this["DataInsight_Section_Analysis"] = "Data Analysis";
+        this["DataInsight_Statistics_Sub"] = "Daily/Weekly/Monthly trends";
 
         // ===== LanguageSettingsView =====
         this["Language_Title"] = "Language";

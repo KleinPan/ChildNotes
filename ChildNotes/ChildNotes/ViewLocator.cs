@@ -53,6 +53,7 @@ public class ViewLocator : IDataTemplate
                 AccountCenterViewModel => new AccountCenterView(),
                 AppSettingsViewModel => new AppSettingsView(),
                 AboutViewModel => new AboutView(),
+                DataInsightViewModel => new DataInsightView(),
                 // MilestoneEditViewModel 是 GrowthView 内嵌表单，不独立导航
                 _ => new TextBlock { Text = "View Not Mapped: " + typeName }
             };

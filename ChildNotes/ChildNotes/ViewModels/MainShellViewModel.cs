@@ -97,6 +97,10 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isAboutOpen;
     private AboutViewModel? _about;
 
+    /// <summary>数据洞察弹层（收纳统计图表 + AI 区间分析报告，见 interaction.md"我的"页二级页归属）。</summary>
+    [ObservableProperty] private bool _isDataInsightOpen;
+    private DataInsightViewModel? _dataInsight;
+
     // ===== 弹层 VM 懒加载访问器 =====
     // 首次访问时创建实例并注册到 _overlays（系统返回键关闭优先级表）。
     // 后续访问直接返回缓存实例。
@@ -194,6 +198,14 @@ public partial class MainShellViewModel : ViewModelBase
             vm.OpenPrivacyPolicyRequested += OpenPrivacyPolicy;
         },
         () => IsAboutOpen = false, () => IsAboutOpen);
+    public DataInsightViewModel DataInsight => _dataInsight ??= CreateAndRegisterOverlay(
+        () => new DataInsightViewModel(),
+        vm =>
+        {
+            vm.OpenStatisticsRequested += OpenStatistics;
+            vm.OpenAiAnalysisRequested += OpenAiAnalysis;
+        },
+        () => IsDataInsightOpen = false, () => IsDataInsightOpen);
 
     /// <summary>
     /// 创建弹层 VM 并注册到 _overlays（返回键关闭优先级表）。
@@ -669,6 +681,12 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenAbout()
     {
         IsAboutOpen = true;  // 懒加载：About 属性在 View 绑定时才创建
+    }
+
+    /// <summary>打开数据洞察页（收纳统计图表 + AI 区间分析报告）。</summary>
+    public void OpenDataInsight()
+    {
+        IsDataInsightOpen = true;  // 懒加载：DataInsight 属性在 View 绑定时才创建
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>
