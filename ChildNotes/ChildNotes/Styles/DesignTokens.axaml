@@ -129,7 +129,6 @@
     <SolidColorBrush x:Key="GrowthBlueBrush" Color="{StaticResource Color.Growth.Blue}" />
     <SolidColorBrush x:Key="FeedingOrangeBrush" Color="{StaticResource Color.Feeding.Orange}" />
     <SolidColorBrush x:Key="SleepPurpleBrush" Color="{StaticResource Color.Sleep.Purple}" />
-    <SolidColorBrush x:Key="DiaperYellowBrush" Color="{StaticResource Color.Diaper.Yellow}" />
     <SolidColorBrush x:Key="GrowthTealBrush" Color="{StaticResource Color.Growth.Teal}" />
     <SolidColorBrush x:Key="MedicineRedBrush" Color="{StaticResource Color.Medicine.Red}" />
     <SolidColorBrush x:Key="VaccineYellowBrush" Color="{StaticResource Color.Vaccine.Yellow}" />
