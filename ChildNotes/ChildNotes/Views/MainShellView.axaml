@@ -39,6 +39,23 @@
         <ContentControl Grid.Row="0" Content="{Binding BabyManager}" IsTabStop="False"
                         IsVisible="{Binding IsBabyManagerOpen}"/>
 
+        <!-- 中间导航页（"我的"二级页）：必须在叶子页之前声明，
+             确保从这些页面进入叶子页时，叶子页能盖在它们之上（z-order 由 XAML 声明顺序决定）。 -->
+        <ContentControl Grid.Row="0" Content="{Binding AccountCenter}" IsTabStop="False"
+                        IsVisible="{Binding IsAccountCenterOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding AppSettings}" IsTabStop="False"
+                        IsVisible="{Binding IsAppSettingsOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding About}" IsTabStop="False"
+                        IsVisible="{Binding IsAboutOpen}"/>
+
+        <ContentControl Grid.Row="0" Content="{Binding DataInsight}" IsTabStop="False"
+                        IsVisible="{Binding IsDataInsightOpen}"/>
+
+        <!-- 叶子页（三级页）：从中间导航页进入，z-order 高于导航页。
+             SyncSettings/InAppMessage/Help/DeveloperOptions/LanguageSettings 也在此层，
+             它们从 MineView 直接进入，但 MineView 是 Tab（最底层），所以这些叶子页盖住 MineView 即可。 -->
         <ContentControl Grid.Row="0" Content="{Binding Statistics}" IsTabStop="False"
                         IsVisible="{Binding IsStatisticsOpen}"/>
 
@@ -74,18 +91,6 @@
 
         <ContentControl Grid.Row="0" Content="{Binding LanguageSettings}" IsTabStop="False"
                         IsVisible="{Binding IsLanguageSettingsOpen}"/>
-
-        <ContentControl Grid.Row="0" Content="{Binding AccountCenter}" IsTabStop="False"
-                        IsVisible="{Binding IsAccountCenterOpen}"/>
-
-        <ContentControl Grid.Row="0" Content="{Binding AppSettings}" IsTabStop="False"
-                        IsVisible="{Binding IsAppSettingsOpen}"/>
-
-        <ContentControl Grid.Row="0" Content="{Binding About}" IsTabStop="False"
-                        IsVisible="{Binding IsAboutOpen}"/>
-
-        <ContentControl Grid.Row="0" Content="{Binding DataInsight}" IsTabStop="False"
-                        IsVisible="{Binding IsDataInsightOpen}"/>
 
         <!-- 首页底部快捷输入栏：仅在首页显示 且 未打开底部抽屉。
              内含 [输入框][发送按钮(有内容时)] [+ 按钮(无内容时)]，互斥切换。
