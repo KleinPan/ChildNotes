@@ -12,24 +12,14 @@ public partial class MineView : UserControl
         InitializeComponent();
     }
 
+    private void OnAccountCenterTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenAccountCenter();
+    }
+
     private void OnBabyManagerTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenBabyManager();
-    }
-
-    private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenStatistics();
-    }
-
-    private void OnPointsTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenPoints();
-    }
-
-    private void OnMembershipTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenMembership();
     }
 
     private void OnAiAnalysisTap(object? sender, PointerPressedEventArgs e)
@@ -37,34 +27,19 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenAiAnalysis();
     }
 
-    private void OnAiSettingsTap(object? sender, PointerPressedEventArgs e)
+    private void OnStatisticsTap(object? sender, PointerPressedEventArgs e)
     {
-        if (FindShell() is { } vm) vm.OpenAiSettings();
+        if (FindShell() is { } vm) vm.OpenStatistics();
     }
 
-    private void OnReminderSettingsTap(object? sender, PointerPressedEventArgs e)
+    private void OnAppSettingsTap(object? sender, PointerPressedEventArgs e)
     {
-        if (FindShell() is { } vm) vm.OpenReminderSettings();
+        if (FindShell() is { } vm) vm.OpenAppSettings();
     }
 
     private void OnSyncSettingsTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenSyncSettings();
-    }
-
-    private void OnDeveloperOptionsTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenDeveloperOptions();
-    }
-
-    private void OnPrivacyPolicyTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenPrivacyPolicy();
-    }
-
-    private void OnUserAgreementTap(object? sender, PointerPressedEventArgs e)
-    {
-        if (FindShell() is { } vm) vm.OpenUserAgreement();
     }
 
     private void OnInAppMessageTap(object? sender, PointerPressedEventArgs e)
@@ -77,9 +52,14 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenHelp();
     }
 
-    private void OnLanguageSettingsTap(object? sender, PointerPressedEventArgs e)
+    private void OnAboutTap(object? sender, PointerPressedEventArgs e)
     {
-        if (FindShell() is { } vm) vm.OpenLanguageSettings();
+        if (FindShell() is { } vm) vm.OpenAbout();
+    }
+
+    private void OnDeveloperOptionsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenDeveloperOptions();
     }
 
     private MainShellViewModel? FindShell()

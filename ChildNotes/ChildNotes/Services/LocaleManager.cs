@@ -164,11 +164,15 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Baby"] = "宝宝";
         this["Mine_Section_Tools"] = "工具";
         this["Mine_Section_Settings"] = "设置";
+        this["Mine_Section_Growth"] = "成长与数据";
+        this["Mine_Section_App"] = "应用";
+        this["Mine_Section_Other"] = "其他";
         this["Mine_BabyManager"] = "人员管理";
         this["Mine_BabyCount_Suffix"] = "个宝宝";
         this["Mine_Family"] = "家人管理";
         this["Mine_Membership"] = "会员中心";
         this["Mine_AiAnalysis"] = "宝宝喂养分析";
+        this["Mine_AiAnalysis_Badge"] = "AI";
         this["Mine_AiAnalysis_Sub"] = "最近一周";
         this["Mine_Statistics"] = "统计分析";
         this["Mine_Points"] = "积分任务";
@@ -187,6 +191,19 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_NotLoggedIn"] = "未登录";
         this["Mine_Membership_Active"] = "会员";
         this["Mine_Membership_Regular"] = "普通用户";
+
+        // ===== AccountCenterView =====
+        this["Account_Title"] = "账户中心";
+        this["Account_Section_Assets"] = "账户资产";
+
+        // ===== AppSettingsView =====
+        this["AppSettings_Title"] = "应用设置";
+        this["AppSettings_Section_General"] = "通用";
+
+        // ===== AboutView =====
+        this["About_Title"] = "关于宝宝日记";
+        this["About_AppName"] = "宝宝日记";
+        this["About_Section_Legal"] = "法律信息";
 
         // ===== LanguageSettingsView =====
         this["Language_Title"] = "语言";
@@ -887,6 +904,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Baby"] = "Baby";
         this["Mine_Section_Tools"] = "Tools";
         this["Mine_Section_Settings"] = "Settings";
+        this["Mine_Section_Growth"] = "Growth & Data";
+        this["Mine_Section_App"] = "App";
+        this["Mine_Section_Other"] = "Other";
         this["Mine_BabyManager"] = "Personnel";
         this["Mine_BabyCount_Suffix"] = " babies";
         this["Mine_Family"] = "Family Management";
@@ -910,6 +930,19 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_NotLoggedIn"] = "Not Logged In";
         this["Mine_Membership_Active"] = "Member";
         this["Mine_Membership_Regular"] = "Regular User";
+
+        // ===== AccountCenterView =====
+        this["Account_Title"] = "Account Center";
+        this["Account_Section_Assets"] = "Account Assets";
+
+        // ===== AppSettingsView =====
+        this["AppSettings_Title"] = "App Settings";
+        this["AppSettings_Section_General"] = "General";
+
+        // ===== AboutView =====
+        this["About_Title"] = "About Baby Diary";
+        this["About_AppName"] = "Baby Diary";
+        this["About_Section_Legal"] = "Legal";
 
         // ===== LanguageSettingsView =====
         this["Language_Title"] = "Language";

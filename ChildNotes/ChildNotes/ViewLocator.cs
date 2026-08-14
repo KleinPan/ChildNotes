@@ -50,6 +50,9 @@ public class ViewLocator : IDataTemplate
                 PrivacyConsentViewModel => new PrivacyConsentView(),
                 InAppMessageViewModel => new InAppMessageView(),
                 LanguageSettingsViewModel => new LanguageSettingsView(),
+                AccountCenterViewModel => new AccountCenterView(),
+                AppSettingsViewModel => new AppSettingsView(),
+                AboutViewModel => new AboutView(),
                 // MilestoneEditViewModel 是 GrowthView 内嵌表单，不独立导航
                 _ => new TextBlock { Text = "View Not Mapped: " + typeName }
             };

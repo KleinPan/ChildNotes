@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ChildNotes.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
+             x:Class="ChildNotes.Views.AppSettingsView"
+             x:DataType="vm:AppSettingsViewModel"
+             Background="{StaticResource SurfaceBackgroundBrush}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- 顶栏 -->
+        <Border Grid.Row="0" Classes="nav-bar">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Grid.Column="0" Classes="nav-back" Command="{Binding BackCommand}"/>
+                <TextBlock Grid.Column="1" Classes="nav-title" Text="{DynamicResource AppSettings_Title}"/>
+                <TextBlock Grid.Column="2" Text=" " Width="40"/>
+            </Grid>
+        </Border>
+
+        <!-- 内容区 -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <Border Classes="section-title">
+                    <TextBlock Text="{DynamicResource AppSettings_Section_General}"/>
+                </Border>
+
+                <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
+                    <StackPanel>
+                        <!-- 语言 -->
+                        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto,Auto"
+                              PointerPressed="OnLanguageTap">
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                       Text="🌐"/>
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
+                                       Text="{DynamicResource Language_Title}"/>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Text="{Binding LanguageDisplayText}"/>
+                            <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
+                                       Text="›"/>
+                        </Grid>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
+                        <!-- AI 设置 -->
+                        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto"
+                              PointerPressed="OnAiSettingsTap">
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                       Text="🤖"/>
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
+                                       Text="{DynamicResource Mine_AiSettings}"/>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
+                                       Text="›"/>
+                        </Grid>
+                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
+                        <!-- 提醒设置 -->
+                        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto"
+                              PointerPressed="OnReminderTap">
+                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                       Text="🔔"/>
+                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
+                                       Text="{DynamicResource Mine_ReminderSettings}"/>
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                       Foreground="{StaticResource TextPlaceholderBrush}"
+                                       Text="›"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

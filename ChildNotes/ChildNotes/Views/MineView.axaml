@@ -13,8 +13,10 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel>
 
-            <Border Margin="0,0,0,8" Padding="14,16" Background="{StaticResource SurfaceCardBrush}">
-                <Grid ColumnDefinitions="Auto,*">
+            <!-- 顶部用户卡：点击进入账户中心 -->
+            <Border Margin="0,0,0,8" Padding="14,16" Background="{StaticResource SurfaceCardBrush}"
+                    PointerPressed="OnAccountCenterTap">
+                <Grid ColumnDefinitions="Auto,*,Auto">
                     <!--  原版头像: 绿色渐变背景  -->
                     <Border Grid.Column="0" Width="56" Height="56"
                             Background="{StaticResource BrandPrimaryBrush}"
@@ -26,6 +28,9 @@
                         <TextBlock FontSize="{StaticResource FontSize.CardTitle}" FontWeight="Bold" Foreground="{StaticResource TextPrimaryBrush}" Text="{Binding NickName}" />
                         <TextBlock Margin="0,4,0,0" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}" Text="{Binding RoleText}" />
                     </StackPanel>
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                               Foreground="{StaticResource TextPlaceholderBrush}"
+                               Text="›" />
                 </Grid>
             </Border>
 
@@ -56,34 +61,11 @@
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="{DynamicResource Mine_Section_Tools}" />
+                <TextBlock Text="{DynamicResource Mine_Section_Growth}" />
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
                 <StackPanel>
-                    <Grid Margin="14,12" PointerPressed="OnMembershipTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Width="24" Height="24"
-                                Background="{StaticResource FeedingOrangeBrush}"
-                                CornerRadius="{StaticResource Radius.XS}">
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
-                                       Text="V" />
-                        </Border>
-                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
-                                   Text="{DynamicResource Mine_Membership}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="{Binding MembershipStatusText}" />
-                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
                     <Grid Margin="14,12" PointerPressed="OnAiAnalysisTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -120,71 +102,24 @@
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
-                    <Grid Margin="14,12" PointerPressed="OnPointsTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="🎁" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_Points}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
                 </StackPanel>
             </Border>
 
             <Border Classes="section-title">
-                <TextBlock Text="{DynamicResource Mine_Section_Settings}" />
+                <TextBlock Text="{DynamicResource Mine_Section_App}" />
             </Border>
 
             <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
                 <StackPanel>
-                    <Grid Margin="14,12" PointerPressed="OnLanguageSettingsTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="🌐" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
-                                   Text="{DynamicResource Language_Title}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                   Text="{Binding LanguageDisplayText}" />
-                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
-                    <Grid Margin="14,12" PointerPressed="OnAiSettingsTap">
+                    <Grid Margin="14,12" PointerPressed="OnAppSettingsTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="🤖" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_AiSettings}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
-                    <Grid Margin="14,12" PointerPressed="OnReminderSettingsTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="🔔" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_ReminderSettings}" />
+                                   Text="⚙️" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource AppSettings_Title}" />
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
@@ -203,52 +138,15 @@
                                    Foreground="{StaticResource TextPlaceholderBrush}"
                                    Text="›" />
                     </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"
-                            IsVisible="{Binding IsDeveloperOptionsVisible}" />
-                    <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap"
-                          IsVisible="{Binding IsDeveloperOptionsVisible}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="🔧" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_DeveloperOptions}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"
-                            IsVisible="{Binding IsDeveloperOptionsVisible}"/>
-                    <Grid Margin="14,12" PointerPressed="OnPrivacyPolicyTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="📜" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_PrivacyPolicy}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
-                    <Grid Margin="14,12" PointerPressed="OnUserAgreementTap">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                   Text="📑" />
-                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_UserAgreement}" />
-                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                   Foreground="{StaticResource TextPlaceholderBrush}"
-                                   Text="›" />
-                    </Grid>
-                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="section-title">
+                <TextBlock Text="{DynamicResource Mine_Section_Other}" />
+            </Border>
+
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
+                <StackPanel>
                     <Grid Margin="14,12" PointerPressed="OnInAppMessageTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -287,10 +185,11 @@
                                    Text="›" />
                     </Grid>
                     <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
-                    <Grid Margin="14,12">
+                    <Grid Margin="14,12" PointerPressed="OnAboutTap">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
@@ -299,16 +198,30 @@
                         <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    Text="{Binding AppVersion}" />
+                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
+                                   Text="›" />
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <!--  原版退出登录: 白底红字  -->
-            <Button Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Classes="btn secondary large"
-                    Command="{Binding LogoutCommand}"
-                    Content="{DynamicResource Mine_Logout}"
-                    Foreground="{StaticResource SemanticErrorBrush}" />
+            <!-- 开发者选项：仅开发版可见，独立卡片放在最底部 -->
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}"
+                    IsVisible="{Binding IsDeveloperOptionsVisible}">
+                <Grid Margin="14,12" PointerPressed="OnDeveloperOptionsTap">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                               Text="🔧" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}" Text="{DynamicResource Mine_DeveloperOptions}" />
+                    <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                               Foreground="{StaticResource TextPlaceholderBrush}"
+                               Text="›" />
+                </Grid>
+            </Border>
 
         </StackPanel>
     </ScrollViewer>

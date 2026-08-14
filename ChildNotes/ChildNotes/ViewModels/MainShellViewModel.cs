@@ -85,6 +85,18 @@ public partial class MainShellViewModel : ViewModelBase
     [ObservableProperty] private bool _isLanguageSettingsOpen;
     private LanguageSettingsViewModel? _languageSettings;
 
+    /// <summary>账户中心弹层（从"我的"页顶部用户卡进入，收纳会员/积分/退出登录）。</summary>
+    [ObservableProperty] private bool _isAccountCenterOpen;
+    private AccountCenterViewModel? _accountCenter;
+
+    /// <summary>应用设置弹层（收纳语言/AI 设置/提醒设置）。</summary>
+    [ObservableProperty] private bool _isAppSettingsOpen;
+    private AppSettingsViewModel? _appSettings;
+
+    /// <summary>关于弹层（展示应用信息 + 用户协议/隐私政策入口）。</summary>
+    [ObservableProperty] private bool _isAboutOpen;
+    private AboutViewModel? _about;
+
     // ===== 弹层 VM 懒加载访问器 =====
     // 首次访问时创建实例并注册到 _overlays（系统返回键关闭优先级表）。
     // 后续访问直接返回缓存实例。
@@ -156,6 +168,32 @@ public partial class MainShellViewModel : ViewModelBase
         () => new LanguageSettingsViewModel(),
         _ => { },
         () => IsLanguageSettingsOpen = false, () => IsLanguageSettingsOpen);
+    public AccountCenterViewModel AccountCenter => _accountCenter ??= CreateAndRegisterOverlay(
+        () => new AccountCenterViewModel(),
+        vm =>
+        {
+            vm.OpenMembershipRequested += OpenMembership;
+            vm.OpenPointsRequested += OpenPoints;
+            vm.LogoutRequested += OnLogout;
+        },
+        () => IsAccountCenterOpen = false, () => IsAccountCenterOpen);
+    public AppSettingsViewModel AppSettings => _appSettings ??= CreateAndRegisterOverlay(
+        () => new AppSettingsViewModel(),
+        vm =>
+        {
+            vm.OpenLanguageRequested += OpenLanguageSettings;
+            vm.OpenAiSettingsRequested += OpenAiSettings;
+            vm.OpenReminderRequested += OpenReminderSettings;
+        },
+        () => IsAppSettingsOpen = false, () => IsAppSettingsOpen);
+    public AboutViewModel About => _about ??= CreateAndRegisterOverlay(
+        () => new AboutViewModel(),
+        vm =>
+        {
+            vm.OpenUserAgreementRequested += OpenUserAgreement;
+            vm.OpenPrivacyPolicyRequested += OpenPrivacyPolicy;
+        },
+        () => IsAboutOpen = false, () => IsAboutOpen);
 
     /// <summary>
     /// 创建弹层 VM 并注册到 _overlays（返回键关闭优先级表）。
@@ -613,6 +651,24 @@ public partial class MainShellViewModel : ViewModelBase
     public void OpenLanguageSettings()
     {
         IsLanguageSettingsOpen = true;  // 懒加载：LanguageSettings 属性在 View 绑定时才创建
+    }
+
+    /// <summary>打开账户中心页（从"我的"页顶部用户卡进入）。</summary>
+    public void OpenAccountCenter()
+    {
+        IsAccountCenterOpen = true;  // 懒加载：AccountCenter 属性在 View 绑定时才创建
+    }
+
+    /// <summary>打开应用设置页（收纳语言/AI 设置/提醒设置）。</summary>
+    public void OpenAppSettings()
+    {
+        IsAppSettingsOpen = true;  // 懒加载：AppSettings 属性在 View 绑定时才创建
+    }
+
+    /// <summary>打开关于页（展示应用信息 + 用户协议/隐私政策入口）。</summary>
+    public void OpenAbout()
+    {
+        IsAboutOpen = true;  // 懒加载：About 属性在 View 绑定时才创建
     }
 
     /// <summary>OnRecordSaved 防抖取消令牌：100ms 内多次保存只触发一次刷新链。</summary>
