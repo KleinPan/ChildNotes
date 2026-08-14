@@ -37,13 +37,14 @@ public class Phase3FlowTests
 
     private static async Task RegisterUserAsync(ApiFactory factory, string username)
     {
+        var email = $"{username}@test.local";
         var client = factory.CreateClient();
-        await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
-        {
-            Username = username,
-            Password = "pass123",
-            NickName = username + "-nick",
-        });
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
+        resp.EnsureSuccessStatusCode();
+        var code = factory.GetLastCode(email) ?? throw new InvalidOperationException($"未捕获到 {email} 的验证码");
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        verifyResp.EnsureSuccessStatusCode();
     }
 
     private static string? GetState(JsonElement body) => body.GetProperty("state").GetString();

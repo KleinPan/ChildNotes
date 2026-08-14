@@ -78,9 +78,12 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<IReferrerCodeUtil>(new ReferrerCodeUtil(jwtSecret));
-// 密码哈希：统一用 Pbkdf2PasswordHasher（单字段格式 iterations:salt:hash）
+// 密码哈希：Admin 仍需要（Admin 独立认证体系），用户端不再使用
 builder.Services.Configure<PasswordHashOptions>(builder.Configuration.GetSection("PasswordHash"));
 builder.Services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+// 邮箱认证：SMTP + 验证码 + RefreshToken
+builder.Services.Configure<EmailAuthOptions>(builder.Configuration.GetSection("EmailAuth"));
+builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 // 宝宝访问权限校验：消除 AiAnalysisService/BabyService/RecordService/SyncService 中的重复
 builder.Services.AddScoped<IBabyAccessService, BabyAccessService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

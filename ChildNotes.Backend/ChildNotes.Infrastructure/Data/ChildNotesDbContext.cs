@@ -27,6 +27,8 @@ public class ChildNotesDbContext : DbContext
     public DbSet<MembershipOrder> MembershipOrders => Set<MembershipOrder>();
     public DbSet<AiUsageRecord> AiUsageRecords => Set<AiUsageRecord>();
     public DbSet<FamilyJoinRequest> FamilyJoinRequests => Set<FamilyJoinRequest>();
+    public DbSet<EmailVerificationCode> EmailVerificationCodes => Set<EmailVerificationCode>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,8 +39,8 @@ public class ChildNotesDbContext : DbContext
             e.ToTable("app_user");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
-            e.Property(x => x.Username).HasColumnName("username").IsRequired().HasMaxLength(64);
-            e.Property(x => x.PasswordHash).HasColumnName("password_hash").IsRequired();
+            e.Property(x => x.Email).HasColumnName("email").IsRequired().HasMaxLength(256);
+            e.Property(x => x.EmailVerifiedAt).HasColumnName("email_verified_at");
             e.Property(x => x.NickName).HasColumnName("nick_name").HasMaxLength(64);
             e.Property(x => x.AvatarUrl).HasColumnName("avatar_url");
             e.Property(x => x.Gender).HasColumnName("gender");
@@ -47,7 +49,7 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.MembershipExpireAt).HasColumnName("membership_expire_at");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-            e.HasIndex(x => x.Username).IsUnique();
+            e.HasIndex(x => x.Email).IsUnique();
             e.HasIndex(x => x.ReferrerUserId);
             e.HasIndex(x => x.MembershipExpireAt);
         });
@@ -376,6 +378,35 @@ public class ChildNotesDbContext : DbContext
             // 同一申请人 + 同一宝宝 + 同一非终态 只能有一条 pending；终态后允许重新申请（不同 Id）
             e.HasIndex(x => new { x.BabyId, x.ApplicantUserId, x.Status });
             e.HasIndex(x => x.UpdatedAt);
+        });
+
+        modelBuilder.Entity<EmailVerificationCode>(e =>
+        {
+            e.ToTable("email_verification_code");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Email).HasColumnName("email").IsRequired();
+            e.Property(x => x.CodeHash).HasColumnName("code_hash").IsRequired();
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
+            e.Property(x => x.ConsumedAt).HasColumnName("consumed_at");
+            e.Property(x => x.AttemptCount).HasColumnName("attempt_count").HasDefaultValue(0);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.HasIndex(x => new { x.Email, x.ConsumedAt });
+        });
+
+        modelBuilder.Entity<RefreshToken>(e =>
+        {
+            e.ToTable("refresh_token");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
+            e.Property(x => x.RevokedAt).HasColumnName("revoked_at");
+            e.Property(x => x.DeviceId).HasColumnName("device_id");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.TokenHash);
         });
     }
 }

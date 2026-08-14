@@ -1,22 +1,30 @@
 namespace ChildNotes.Core.Dtos;
 
-public class RegisterRequest
+/// <summary>发送验证码请求。</summary>
+public class SendCodeRequest
 {
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public string? NickName { get; set; }
+    public string Email { get; set; } = string.Empty;
 }
 
-public class LoginRequest
+/// <summary>验证验证码请求（统一注册+登录）。</summary>
+public class VerifyCodeRequest
 {
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
 }
 
-public class LoginResponse
+/// <summary>刷新 Token 请求。</summary>
+public class RefreshRequest
 {
-    public string Token { get; set; } = string.Empty;
-    public DateTime ExpireAt { get; set; }
+    public string RefreshToken { get; set; } = string.Empty;
+}
+
+/// <summary>认证响应（verify-code / refresh 返回）。</summary>
+public class AuthResponse
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public int ExpiresIn { get; set; }
     public LoginUserDto User { get; set; } = new();
     public bool NewUser { get; set; }
 }
@@ -24,7 +32,7 @@ public class LoginResponse
 public class LoginUserDto
 {
     public string Id { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
     public string NickName { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
     public int Gender { get; set; }

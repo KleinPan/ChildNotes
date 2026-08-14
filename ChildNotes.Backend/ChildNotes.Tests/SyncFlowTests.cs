@@ -23,18 +23,18 @@ public class SyncFlowTests
 {
     private static ApiFactory NewFactory() => new();
 
-    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username, string password = "pass123")
+    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username)
     {
+        var email = $"{username}@test.local";
         var client = factory.CreateClient();
-        var resp = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
-        {
-            Username = username,
-            Password = password,
-            NickName = username + "-nick",
-        });
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
         resp.EnsureSuccessStatusCode();
-        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var token = body.GetProperty("data").GetProperty("token").GetString()!;
+        var code = factory.GetLastCode(email) ?? throw new InvalidOperationException($"未捕获到 {email} 的验证码");
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        verifyResp.EnsureSuccessStatusCode();
+        var body = await verifyResp.Content.ReadFromJsonAsync<JsonElement>();
+        var token = body.GetProperty("data").GetProperty("accessToken").GetString()!;
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return client;
     }

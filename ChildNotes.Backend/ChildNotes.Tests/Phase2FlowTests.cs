@@ -15,18 +15,18 @@ public class Phase2FlowTests
 {
     private static ApiFactory NewFactory() => new();
 
-    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username, string password = "pass123")
+    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username)
     {
+        var email = $"{username}@test.local";
         var client = factory.CreateClient();
-        var resp = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
-        {
-            Username = username,
-            Password = password,
-            NickName = username + "-nick",
-        });
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
         resp.EnsureSuccessStatusCode();
-        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var token = body.GetProperty("data").GetProperty("token").GetString()!;
+        var code = factory.GetLastCode(email) ?? throw new InvalidOperationException($"未捕获到 {email} 的验证码");
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        verifyResp.EnsureSuccessStatusCode();
+        var body = await verifyResp.Content.ReadFromJsonAsync<JsonElement>();
+        var token = body.GetProperty("data").GetProperty("accessToken").GetString()!;
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return client;
     }
@@ -121,14 +121,15 @@ public class Phase2FlowTests
         var referrerCode = dash.GetProperty("data").GetProperty("shareReferrerId").GetString()!;
 
         // 被邀请人注册后调用绑定
-        var invitedClient = await NewAuthClientAsync(factory, "inv_" + Guid.NewGuid().ToString("N")[..6]);
+        var invitedEmailPrefix = "inv_" + Guid.NewGuid().ToString("N")[..6];
+        var invitedClient = await NewAuthClientAsync(factory, invitedEmailPrefix);
         // 通过 AuthController 没有直接绑定接口，这里直接调用 IInviteService.BindReferrerAsync
         using (var scope = factory.Services.CreateScope())
         {
             var sp = scope.ServiceProvider;
             var db = sp.GetRequiredService<ChildNotesDbContext>();
             var inviteSvc = sp.GetRequiredService<Core.Services.IInviteService>();
-            var invitedUser = await db.AppUsers.FirstAsync(u => u.Username.StartsWith("inv_"));
+            var invitedUser = await db.AppUsers.FirstAsync(u => u.Email == $"{invitedEmailPrefix}@test.local");
             await inviteSvc.BindReferrerAsync(invitedUser.Id, referrerCode, newUser: true);
         }
 

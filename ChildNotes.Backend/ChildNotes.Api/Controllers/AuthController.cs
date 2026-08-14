@@ -12,14 +12,19 @@ public class AuthController : AppBaseController
     public AuthController(IAuthService auth) => _auth = auth;
 
     [AllowAnonymous]
-    [HttpPost("register")]
-    public async Task<LoginResponse> Register([FromBody] RegisterRequest req, CancellationToken ct)
-        => await _auth.RegisterAsync(req, ct);
+    [HttpPost("send-code")]
+    public async Task<SendCodeResponse> SendCode([FromBody] SendCodeRequest req, CancellationToken ct)
+        => await _auth.SendCodeAsync(req, ct);
 
     [AllowAnonymous]
-    [HttpPost("login")]
-    public async Task<LoginResponse> Login([FromBody] LoginRequest req, CancellationToken ct)
-        => await _auth.LoginAsync(req, ct);
+    [HttpPost("verify-code")]
+    public async Task<AuthResponse> VerifyCode([FromBody] VerifyCodeRequest req, CancellationToken ct)
+        => await _auth.VerifyCodeAsync(req, ct);
+
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<AuthResponse> Refresh([FromBody] RefreshRequest req, CancellationToken ct)
+        => await _auth.RefreshAsync(req, ct);
 
     [HttpGet("me")]
     public async Task<LoginUserDto> Me(CancellationToken ct)

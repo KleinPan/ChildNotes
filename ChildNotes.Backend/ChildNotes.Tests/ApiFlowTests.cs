@@ -1,5 +1,6 @@
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
+using ChildNotes.Core.Services;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 using Microsoft.AspNetCore.Hosting;
@@ -20,48 +21,54 @@ public class ApiFlowTests
 {
     private static ApiFactory NewFactory() => new();
 
-    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username, string password = "pass123")
+    private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username)
     {
+        // 邮箱验证码登录：username 作为 email 前缀，生成唯一邮箱
+        var email = $"{username}@test.local";
         var client = factory.CreateClient();
-        var resp = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
-        {
-            Username = username,
-            Password = password,
-            NickName = username + "-nick",
-        });
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
         resp.EnsureSuccessStatusCode();
-        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        var token = body.GetProperty("data").GetProperty("token").GetString()!;
+        // 从 stub EmailSender 取出验证码
+        var code = factory.GetLastCode(email) ?? throw new InvalidOperationException($"未捕获到 {email} 的验证码");
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        verifyResp.EnsureSuccessStatusCode();
+        var body = await verifyResp.Content.ReadFromJsonAsync<JsonElement>();
+        var token = body.GetProperty("data").GetProperty("accessToken").GetString()!;
         client.DefaultRequestHeaders.Authorization = new("Bearer", token);
         return client;
     }
 
     [Fact]
-    public async Task Register_ReturnsTokenAndUser()
+    public async Task VerifyCode_NewEmail_CreatesUserAndReturnsTokens()
     {
         using var factory = NewFactory();
         var client = factory.CreateClient();
-        var resp = await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest
-        {
-            Username = "user_reg_" + Guid.NewGuid().ToString("N")[..6],
-            Password = "pass123",
-            NickName = "Reg",
-        });
+        var email = "user_reg_" + Guid.NewGuid().ToString("N")[..6] + "@test.local";
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
         Assert.True(resp.IsSuccessStatusCode, await resp.Content.ReadAsStringAsync());
-        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var code = factory.GetLastCode(email)!;
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        var verifyBody = await verifyResp.Content.ReadAsStringAsync();
+        Assert.True(verifyResp.IsSuccessStatusCode, verifyBody);
+        var body = await verifyResp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("000000", body.GetProperty("state").GetString());
-        Assert.False(string.IsNullOrEmpty(body.GetProperty("data").GetProperty("token").GetString()));
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("data").GetProperty("accessToken").GetString()));
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("data").GetProperty("refreshToken").GetString()));
         Assert.True(body.GetProperty("data").GetProperty("newUser").GetBoolean());
     }
 
     [Fact]
-    public async Task Login_WithWrongPassword_Fails()
+    public async Task VerifyCode_WrongCode_Fails()
     {
         using var factory = NewFactory();
         var client = factory.CreateClient();
-        var username = "user_login_" + Guid.NewGuid().ToString("N")[..6];
-        await client.PostAsJsonAsync("/api/auth/register", new RegisterRequest { Username = username, Password = "pass123" });
-        var resp = await client.PostAsJsonAsync("/api/auth/login", new LoginRequest { Username = username, Password = "wrong" });
+        var email = "user_login_" + Guid.NewGuid().ToString("N")[..6] + "@test.local";
+        await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
+        // 用错误验证码
+        var resp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = "000000" });
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("000520", body.GetProperty("state").GetString());
     }
@@ -249,6 +256,12 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>测试用 Admin 密码（与 Program.cs 中开发环境回退值解耦）</summary>
     public const string TestAdminPassword = "test-admin-pass-123";
 
+    /// <summary>测试用 Stub EmailSender：捕获最新验证码到邮箱索引（线程安全）</summary>
+    private readonly TestEmailSender _emailSender = new();
+
+    /// <summary>获取指定邮箱最后一次发送的验证码明文（仅测试 stub 场景）。</summary>
+    public string? GetLastCode(string email) => _emailSender.GetLastCode(email);
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -259,6 +272,15 @@ public class ApiFactory : WebApplicationFactory<Program>
             {
                 opt.InitPassword = TestAdminPassword;
             });
+            // 测试环境覆盖 EmailAuth：缩短重发间隔，避免 60s 限流影响测试
+            services.PostConfigure<Core.Config.EmailAuthOptions>(opt =>
+            {
+                opt.ResendIntervalSeconds = 0;
+                opt.CodeTtlSeconds = 600;
+            });
+            // 替换 IEmailSender 为测试 Stub，避免真实 SMTP 调用
+            services.RemoveAll<Core.Services.IEmailSender>();
+            services.AddSingleton<Core.Services.IEmailSender>(_ => _emailSender);
             services.RemoveAll<DbContextOptions<ChildNotesDbContext>>();
             services.RemoveAll<ChildNotesDbContext>();
             services.AddDbContext<ChildNotesDbContext>(opt =>
@@ -268,5 +290,35 @@ public class ApiFactory : WebApplicationFactory<Program>
             var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
             db.Database.EnsureCreated();
         });
+    }
+}
+
+/// <summary>
+/// 测试用 EmailSender：从 HTML body 中提取 6 位验证码，按邮箱索引保存。
+/// 验证码 HTML 模板由 AuthService 生成，含一个 letter-spacing:8px 的 div 包裹纯数字验证码。
+/// </summary>
+public class TestEmailSender : Core.Services.IEmailSender
+{
+    private readonly Dictionary<string, string> _codes = new();
+    private readonly object _lock = new();
+
+    public Task SendAsync(string to, string subject, string htmlBody, CancellationToken cancellationToken = default)
+    {
+        // 从 HTML 中提取 6 位数字验证码（AuthService 模板固定 6 位）
+        var match = System.Text.RegularExpressions.Regex.Match(htmlBody, @"\b(\d{6})\b");
+        var code = match.Success ? match.Groups[1].Value : "000000";
+        lock (_lock)
+        {
+            _codes[to.Trim().ToLowerInvariant()] = code;
+        }
+        return Task.CompletedTask;
+    }
+
+    public string? GetLastCode(string email)
+    {
+        lock (_lock)
+        {
+            return _codes.TryGetValue(email.Trim().ToLowerInvariant(), out var code) ? code : null;
+        }
     }
 }

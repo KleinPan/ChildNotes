@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
 using ChildNotes.Core.Dtos;
@@ -7,6 +8,7 @@ using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Auth;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Infrastructure.Services;
 
@@ -15,55 +17,175 @@ public class AuthService : IAuthService
     private readonly ChildNotesDbContext _db;
     private readonly JwtTokenService _jwt;
     private readonly ICurrentUserService _current;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IEmailSender _emailSender;
+    private readonly EmailAuthOptions _opt;
     private readonly PointsWalletService _wallet;
 
-    public AuthService(ChildNotesDbContext db, JwtTokenService jwt, ICurrentUserService current, IPasswordHasher passwordHasher, PointsWalletService wallet)
+    public AuthService(
+        ChildNotesDbContext db,
+        JwtTokenService jwt,
+        ICurrentUserService current,
+        IEmailSender emailSender,
+        IOptions<EmailAuthOptions> opt,
+        PointsWalletService wallet)
     {
         _db = db;
         _jwt = jwt;
         _current = current;
-        _passwordHasher = passwordHasher;
+        _emailSender = emailSender;
+        _opt = opt.Value;
         _wallet = wallet;
     }
 
-    public async Task<LoginResponse> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
+    public async Task<SendCodeResponse> SendCodeAsync(SendCodeRequest req, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
-            throw new BusinessException("用户名和密码不能为空", 400, "INVALID_CREDENTIALS");
-        if (req.Username.Length < 3) throw new BusinessException("用户名至少 3 个字符", 400, "USERNAME_TOO_SHORT");
-        if (req.Password.Length < 6) throw new BusinessException("密码至少 6 个字符", 400, "PASSWORD_TOO_SHORT");
+        var email = req.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(email))
+            throw new BusinessException("邮箱不能为空", 400, "EMAIL_EMPTY");
 
-        var exists = await _db.AppUsers.AnyAsync(u => u.Username == req.Username, ct);
-        if (exists) throw new BusinessException("用户名已存在", 400, "USERNAME_TAKEN");
+        // 限流：同邮箱 60 秒内只能发一次
+        var lastCode = await _db.EmailVerificationCodes
+            .Where(c => c.Email == email && c.ConsumedAt == null)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+        if (lastCode is not null && lastCode.CreatedAt > DateTime.UtcNow.AddSeconds(-_opt.ResendIntervalSeconds))
+            throw new BusinessException($"验证码发送过于频繁，请{_opt.ResendIntervalSeconds}秒后重试", 429, "RATE_LIMITED");
 
-        var user = new AppUser
+        // 使同邮箱未消费的旧码失效
+        if (lastCode is not null)
+        {
+            lastCode.ConsumedAt = DateTime.UtcNow;
+        }
+
+        // 生成验证码
+        var code = RandomNumberGenerator.GetInt32(0, (int)Math.Pow(10, _opt.CodeLength))
+            .ToString($"D{_opt.CodeLength}");
+
+        var codeHash = _jwt.HashToken(code);
+        var record = new EmailVerificationCode
         {
             Id = Guid.NewGuid().ToString("N"),
-            Username = req.Username,
-            PasswordHash = _passwordHasher.Hash(req.Password),
-            NickName = string.IsNullOrWhiteSpace(req.NickName) ? req.Username : req.NickName,
+            Email = email,
+            CodeHash = codeHash,
+            ExpiresAt = DateTime.UtcNow.AddSeconds(_opt.CodeTtlSeconds),
+            CreatedAt = DateTime.UtcNow,
         };
-        _db.AppUsers.Add(user);
+        _db.EmailVerificationCodes.Add(record);
         await _db.SaveChangesAsync(ct);
 
-        await EnsureUserPointsAsync(user.Id, ct);
-        return await BuildLoginResponseAsync(user, true, ct);
+        // 发送邮件
+        var subject = "ChildNotes 验证码";
+        var htmlBody = $@"
+<div style='font-family:sans-serif;max-width:400px;margin:0 auto;padding:20px;'>
+  <h2 style='color:#e83e8c;'>ChildNotes</h2>
+  <p>您的验证码是：</p>
+  <div style='font-size:32px;font-weight:bold;letter-spacing:8px;color:#e83e8c;padding:16px 0;text-align:center;'>
+    {code}
+  </div>
+  <p style='color:#999;font-size:12px;'>验证码 {_opt.CodeTtlSeconds / 60} 分钟内有效，请勿泄露给他人。</p>
+</div>";
+        await _emailSender.SendAsync(email, subject, htmlBody, ct);
+
+        return new SendCodeResponse { Sent = true };
     }
 
-    public async Task<LoginResponse> LoginAsync(LoginRequest req, CancellationToken ct = default)
+    public async Task<AuthResponse> VerifyCodeAsync(VerifyCodeRequest req, CancellationToken ct = default)
     {
-        var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Username == req.Username, ct)
-            ?? throw new BusinessException("用户不存在", 400, "USER_NOT_FOUND");
-        if (!_passwordHasher.Verify(req.Password, user.PasswordHash))
-            throw new BusinessException("密码错误", 400, "WRONG_PASSWORD");
-        // 自动迁移历史明文密码到 PBKDF2 格式
-        if (_passwordHasher.NeedsUpgrade(user.PasswordHash))
+        var email = req.Email.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(req.Code))
+            throw new BusinessException("邮箱和验证码不能为空", 400, "INVALID_INPUT");
+
+        // 查未消费的验证码
+        var record = await _db.EmailVerificationCodes
+            .Where(c => c.Email == email && c.ConsumedAt == null)
+            .OrderByDescending(c => c.CreatedAt)
+            .FirstOrDefaultAsync(ct)
+            ?? throw new BusinessException("验证码不存在或已使用，请重新发送", 400, "CODE_NOT_FOUND");
+
+        // 检查过期
+        if (record.ExpiresAt < DateTime.UtcNow)
+            throw new BusinessException("验证码已过期，请重新发送", 400, "CODE_EXPIRED");
+
+        // 检查尝试次数
+        if (record.AttemptCount >= _opt.MaxAttempts)
+            throw new BusinessException("验证码错误次数过多，请重新发送", 400, "CODE_MAX_ATTEMPTS");
+
+        // 校验验证码
+        if (!_jwt.VerifyToken(req.Code, record.CodeHash))
         {
-            user.PasswordHash = _passwordHasher.Hash(req.Password);
+            record.AttemptCount++;
             await _db.SaveChangesAsync(ct);
+            throw new BusinessException($"验证码错误，剩余尝试次数 {_opt.MaxAttempts - record.AttemptCount} 次", 400, "CODE_WRONG");
         }
-        return await BuildLoginResponseAsync(user, false, ct);
+
+        // 验证成功，消费验证码
+        record.ConsumedAt = DateTime.UtcNow;
+
+        // 查找或创建用户
+        var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Email == email, ct);
+        var newUser = false;
+        if (user is null)
+        {
+            user = new AppUser
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Email = email,
+                EmailVerifiedAt = DateTime.UtcNow,
+                NickName = "用户" + email.Split('@')[0],
+            };
+            _db.AppUsers.Add(user);
+            newUser = true;
+        }
+        else if (user.EmailVerifiedAt is null)
+        {
+            user.EmailVerifiedAt = DateTime.UtcNow;
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        if (newUser)
+        {
+            await EnsureUserPointsAsync(user.Id, ct);
+        }
+
+        return await BuildAuthResponseAsync(user, newUser, ct);
+    }
+
+    public async Task<AuthResponse> RefreshAsync(RefreshRequest req, CancellationToken ct = default)
+    {
+        if (string.IsNullOrEmpty(req.RefreshToken))
+            throw new BusinessException("RefreshToken 不能为空", 400, "INVALID_INPUT");
+
+        // 计算提交 token 的 hash
+        // 由于 PBKDF2 每次 hash 带 random salt，不能直接 hash 后查数据库
+        // 需要遍历未撤销的 token 逐一验证
+        var activeTokens = await _db.RefreshTokens
+            .Where(t => t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync(ct);
+
+        RefreshToken? matchedToken = null;
+        foreach (var t in activeTokens)
+        {
+            if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+            {
+                matchedToken = t;
+                break;
+            }
+        }
+
+        if (matchedToken is null)
+            throw new BusinessException("RefreshToken 无效或已过期", 401, "REFRESH_TOKEN_INVALID");
+
+        // Rotation：撤销旧 token
+        matchedToken.RevokedAt = DateTime.UtcNow;
+
+        // 查用户
+        var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == matchedToken.UserId, ct)
+            ?? throw new UnauthorizedException();
+
+        await _db.SaveChangesAsync(ct);
+
+        return await BuildAuthResponseAsync(user, false, ct);
     }
 
     public async Task<LoginUserDto> GetCurrentUserAsync(CancellationToken ct = default)
@@ -86,23 +208,32 @@ public class AuthService : IAuthService
         return ToLoginUserDto(user);
     }
 
-    private async Task<LoginResponse> BuildLoginResponseAsync(AppUser user, bool newUser, CancellationToken ct)
+    private async Task<AuthResponse> BuildAuthResponseAsync(AppUser user, bool newUser, CancellationToken ct)
     {
-        var (token, expireAt) = _jwt.CreateToken(user);
-        return new LoginResponse
+        var (accessToken, accessExpireAt) = _jwt.CreateAccessToken(user);
+        var (refreshTokenRaw, refreshExpireAt) = _jwt.CreateRefreshToken(out var refreshHash);
+
+        // 存储 refreshToken hash
+        _db.RefreshTokens.Add(new RefreshToken
         {
-            Token = token,
-            ExpireAt = expireAt,
+            Id = Guid.NewGuid().ToString("N"),
+            UserId = user.Id,
+            TokenHash = refreshHash,
+            ExpiresAt = refreshExpireAt,
+            CreatedAt = DateTime.UtcNow,
+        });
+        await _db.SaveChangesAsync(ct);
+
+        return new AuthResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshTokenRaw,
+            ExpiresIn = _opt.AccessTokenExpireMinutes * 60,
             User = ToLoginUserDto(user),
             NewUser = newUser,
         };
     }
 
-    /// <summary>
-    /// 确保用户积分记录存在（幂等），并为新用户赠送 <see cref="PointsConstants.NewUserBonusPoints"/> 积分。
-    /// 修复原版 bug：原版 AnyAsync 后未重查直接 Add，并发场景下异常被吞但调用方误以为已创建。
-    /// 现统一为失败后重查，保证返回存在记录。
-    /// </summary>
     private async Task EnsureUserPointsAsync(string userId, CancellationToken ct)
     {
         var p = await _db.UserPoints.FirstOrDefaultAsync(x => x.UserId == userId, ct);
@@ -112,19 +243,17 @@ public class AuthService : IAuthService
         try { await _db.SaveChangesAsync(ct); }
         catch (DbUpdateException)
         {
-            // 并发幂等：重查确保记录存在
             await _db.UserPoints.FirstOrDefaultAsync(x => x.UserId == userId, ct);
             return;
         }
-        // 新用户赠送积分（原子增减，幂等：仅首次创建记录时触发）
         try { await _wallet.ChangeAsync(userId, PointsConstants.NewUserBonusPoints, ct); }
-        catch (BusinessException) { /* 并发竞争已创建，忽略 */ }
+        catch (BusinessException) { }
     }
 
     private static LoginUserDto ToLoginUserDto(AppUser u) => new()
     {
         Id = u.Id,
-        Username = u.Username,
+        Email = u.Email,
         NickName = u.NickName,
         AvatarUrl = u.AvatarUrl,
         Gender = u.Gender,
