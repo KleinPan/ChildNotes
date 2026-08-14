@@ -95,8 +95,10 @@ public sealed class ApiSyncService : BaseApiClient
         if (IsRunning) return new SyncResult { Success = false, Message = "同步进行中，请稍候" };
         var cfg = _cfgRepo.Get();
         if (!cfg.Enabled) return new SyncResult { Success = false, Message = "同步未启用" };
-        if (string.IsNullOrWhiteSpace(cfg.Username))
-            return new SyncResult { Success = false, Message = "同步配置不完整" };
+        // v5：未登录（CloudUserId 为空）直接跳过同步，不强制登录。
+        // 离线模式可永久使用本地 SQLite，登录的作用是开启云同步。
+        if (string.IsNullOrWhiteSpace(cfg.CloudUserId))
+            return new SyncResult { Success = false, Message = "未登录，请先邮箱验证码登录" };
 
         // 服务器地址从 sync_config 读取（用户可在数据同步页配置），为空时回退到默认地址
         var serverUrl = ServerEndpoints.Primary;
@@ -124,17 +126,19 @@ public sealed class ApiSyncService : BaseApiClient
                 }
             }
 
-            // 1. 确保有 token，失效则重新登录（带重试）
+            // 1. 确保有可用 AccessToken，缺失则尝试 RefreshToken 续期（v5：不再用户名密码登录）
             var token = await EnsureTokenAsync(cfg, serverUrl, ct);
             if (token is null)
-                return Finish(false, "登录失败，请检查用户名/密码", cfg, SyncErrorKind.Auth);
+                return Finish(false, "登录已失效，请重新邮箱验证码登录", cfg, SyncErrorKind.Auth);
 
             // 2. Pull：以 last_sync_at 为起点分页拉取远端增量（带重试与切备用地址）
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
             //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
-            DevLogger.Log("Sync", $"Pull since={since:O} (LastSyncAt={(cfg.LastSyncAt?.ToString("O") ?? "null")})");
+            var isFirstLogin = cfg.LastSyncAt is null; // v5 规则(6)：首次登录以云端为准，只 Full Pull 不 Push
+            DevLogger.Log("Sync", $"Pull since={since:O} (LastSyncAt={(cfg.LastSyncAt?.ToString("O") ?? "null")}, isFirstLogin={isFirstLogin})");
             int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pulledSignIns = 0, pullPages = 0;
+            DateTime pullServerTime = DateTime.UtcNow; // 最后一页的 ServerTime，用于 Full Pull Only 的 LastSyncAt 基准
             SyncCursor? cursor = null; // null 表示第一页，用 since 过滤
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
@@ -176,6 +180,7 @@ public sealed class ApiSyncService : BaseApiClient
                     if (pageResp.UserPoints is not null)
                         _pointsRepo.UpsertUserPointsFromSync(MapToUserPoints(pageResp.UserPoints), pullConn, pullTx);
 
+                    pullServerTime = pageResp.ServerTime; // 每页都更新，最终为最后一页的 ServerTime
                     pullPages++;
                     DevLogger.Log("Sync",
                         $"Pull page {pullPages}: babies={pageResp.Babies.Count}, records={pageResp.Records.Count}, milestones={pageResp.Milestones.Count}, signIns={pageResp.SignIns.Count}, babyMembers={pageResp.BabyMembers.Count}, joinRequests={pageResp.FamilyJoinRequests.Count}, hasMore={pageResp.HasMore}");
@@ -192,6 +197,28 @@ public sealed class ApiSyncService : BaseApiClient
             // 2.1 处理 join_request 状态变化，生成本地 InAppMessage 通知
             //     事务已提交，本地仓储可读到最新状态；通知仅生成一次
             ProcessJoinRequestNotifications();
+
+            // v5 规则(6)：首次正式登录以云端为准，只 Full Pull 不 Push。
+            //   首次登录时本地 SQLite 为空（新装 App），Push 无意义且可能引入不必要行为。
+            //   LastSyncAt 用 Pull 最后一页的 ServerTime 作为基准，后续正常同步走 Pull→Merge→Push。
+            if (isFirstLogin)
+            {
+                cfg.LastSyncAt = pullServerTime;
+                cfg.LastSyncStatus = "ok";
+                cfg.LastSyncMsg = $"首次同步：拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到（Full Pull Only）";
+                _cfgRepo.Save(cfg);
+                NetworkMonitor?.ProbeNow();
+                DevLogger.Log("Sync", $"First login full pull done: LastSyncAt={pullServerTime:O}");
+                return new SyncResult
+                {
+                    Success = true,
+                    Message = cfg.LastSyncMsg!,
+                    PulledBabies = pulledBabies,
+                    PulledRecords = pulledRecords,
+                    PulledMilestones = pulledMilestones,
+                    PulledSignIns = pulledSignIns,
+                };
+            }
 
             // 3. Push：把本地 updated_at > since 的数据上送（带重试与切备用地址）
             //     注：使用 pushResp.ServerTime 作为新的 last_sync_at 基准，
@@ -370,170 +397,30 @@ public sealed class ApiSyncService : BaseApiClient
 
     private async Task<string?> EnsureTokenAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
     {
-        // 本地有 token 就直接复用，不做主动 me 探活以减少请求次数；
-        // token 失效由后续 Pull 触发的 401 重新登录处理（SyncPolicy 对 Auth 错误重试一次）。
-        // 但复用 token 时需主动调用一次 /api/auth/me 获取后端 user.id 并做本地迁移：
-        // 修复 v0.5.10 之前本地注册生成的 user.id 与后端不一致，导致 PushAsync
-        // 的 `item.UserId != uid` 校验静默跳过所有数据，推送 0 条。
-        // 迁移逻辑只在登录时触发，已有 token 缓存的用户不会重新登录，所以这里补一次。
-        if (!string.IsNullOrWhiteSpace(cfg.Token))
+        // v5 重构：登录态由 CloudUserId 标识，Token 从 SecureStorage 读取。
+        // SyncAsync 入口已检查 CloudUserId 非空，这里只负责获取可用 AccessToken。
+        var auth = ServiceProvider.Instance.AuthService;
+        var token = await auth.GetAccessTokenAsync(ct);
+        if (!string.IsNullOrWhiteSpace(token))
         {
-            await VerifyRemoteUserIdAsync(cfg, serverUrl, ct);
-            return cfg.Token;
-        }
-
-        try
-        {
-            return await SyncPolicy.ExecuteAsync(
-                (attempt, server) => LoginAsync(cfg, server, ct),
-                serverUrl, ct);
-        }
-        catch (SyncException ex)
-        {
-            DevLogger.Log("Sync", $"Login failed after retry: {ex.Kind} {ex.Message}");
-            // 离线注册的用户后端没有账号，登录会报"用户不存在"。
-            // 自动用 sync_config 的凭据调 /api/auth/register 创建后端账号，再登录一次。
-            if (!string.IsNullOrWhiteSpace(cfg.Username) && !string.IsNullOrWhiteSpace(cfg.Password))
-            {
-                DevLogger.Log("Sync", "Attempting auto-register on backend...");
-                var regToken = await TryRegisterAndLoginAsync(cfg, serverUrl, ct);
-                if (regToken is not null)
-                    return regToken;
-            }
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 离线注册用户的后端账号补建：调 /api/auth/register 创建账号并直接拿到 token。
-    /// 注册成功后同样做 user.id 迁移（与 LoginAsync 一致）。
-    /// 若注册也失败（如用户名已被他人占用），返回 null。
-    /// </summary>
-    private async Task<string?> TryRegisterAndLoginAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
-    {
-        try
-        {
-            var url = serverUrl.TrimEnd('/') + "/api/auth/register";
-            var nickName = ServiceProvider.Instance.AuthService.CurrentUser?.NickName;
-            if (string.IsNullOrWhiteSpace(nickName)) nickName = cfg.Username;
-            var body = Serialize(new { username = cfg.Username, password = cfg.Password, nickName });
-            using var req = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json"),
-            };
-            using var resp = await Http.SendAsync(req, ct);
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("Sync", $"Auto-register fail: {(int)resp.StatusCode} {json}");
-                return null;
-            }
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("data", out var data) ||
-                !data.TryGetProperty("token", out var tokenEl) ||
-                string.IsNullOrWhiteSpace(tokenEl.GetString()))
-            {
-                DevLogger.Log("Sync", "Auto-register fail: 响应缺少 data.token");
-                return null;
-            }
-            var token = tokenEl.GetString()!;
-            _cfgRepo.UpdateToken(token);
-            DevLogger.Log("Sync", "Auto-register ok, token updated");
-            // 注册响应也带 user.id，做本地迁移
-            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
-            {
-                var remoteUserId = idEl.GetString();
-                if (!string.IsNullOrEmpty(remoteUserId))
-                    MigrateLocalUserIdIfNeeded(remoteUserId);
-            }
+            // 不主动调 /api/auth/me 探活：401 由后续 Pull 触发 Refresh 处理（减少请求次数）。
+            // user.id 迁移逻辑已废弃（旧逻辑修复本地注册 id 与后端不一致的问题，
+            // v5 后用户 id 由云端权威管理，不存在本地生成的 user.id 与云端不一致的情况）。
             return token;
         }
-        catch (Exception ex)
-        {
-            DevLogger.Log("Sync", "Auto-register exception: " + ex.Message);
-            return null;
-        }
-    }
 
-    /// <summary>
-    /// 调用 /api/auth/me 获取后端 user.id，与本地不一致则触发迁移。
-    /// 失败静默处理（不阻塞同步主流程，后续 Push 校验失败会在日志中体现）。
-    /// </summary>
-    private async Task VerifyRemoteUserIdAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
-    {
-        try
+        // AccessToken 缺失：尝试用 RefreshToken 续期（Rotation）
+        var refreshed = await auth.RefreshAccessTokenAsync(ct);
+        if (!string.IsNullOrEmpty(refreshed))
         {
-            var url = serverUrl.TrimEnd('/') + "/api/auth/me";
-            using var req = new HttpRequestMessage(HttpMethod.Get, url);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Token);
-            using var resp = await Http.SendAsync(req, ct);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("Sync", $"VerifyRemoteUserId /api/auth/me HTTP {(int)resp.StatusCode}");
-                return;
-            }
-            using var doc = JsonDocument.Parse(await resp.Content.ReadAsStringAsync(ct));
-            if (doc.RootElement.TryGetProperty("id", out var idEl))
-            {
-                var remoteId = idEl.GetString();
-                if (!string.IsNullOrEmpty(remoteId))
-                    BaseApiClient.MigrateLocalUserIdIfNeeded(remoteId);
-            }
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("Sync", "VerifyRemoteUserId exception: " + ex.Message);
-        }
-    }
-
-    private async Task<string> LoginAsync(SyncConfig cfg, string serverUrl, CancellationToken ct)
-    {
-        // 登录无 Bearer token，且需从 data.token 取值，不走 SendWithTokenV2Async。
-        var url = serverUrl.TrimEnd('/') + "/api/auth/login";
-        var body = Serialize(new { username = cfg.Username, password = cfg.Password });
-        using var req = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
-        HttpResponseMessage resp;
-        try
-        {
-            resp = await Http.SendAsync(req, ct);
-        }
-        catch (TaskCanceledException ex)
-        {
-            if (ct.IsCancellationRequested) throw;
-            throw new SyncException(SyncErrorKind.Timeout, "登录超时", null, ex);
-        }
-        catch (HttpRequestException ex)
-        {
-            throw SyncException.FromHttpRequestException(ex);
+            DevLogger.Log("Sync", "EnsureToken: AccessToken refreshed");
+            return refreshed;
         }
 
-        using (resp)
-        {
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("Sync", $"Login fail: {(int)resp.StatusCode} {json}");
-                throw SyncException.FromHttpStatus((int)resp.StatusCode, "登录失败: " + resp.StatusCode);
-            }
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("data", out var data))
-                throw new SyncException(SyncErrorKind.Business, "登录响应缺少 data 字段");
-            if (!data.TryGetProperty("token", out var tokenEl) || string.IsNullOrWhiteSpace(tokenEl.GetString()))
-                throw new SyncException(SyncErrorKind.Business, "登录响应缺少 token");
-            var token = tokenEl.GetString()!;
-            _cfgRepo.UpdateToken(token);
-            // 读取后端 user.id 并做本地迁移（修复本地注册 id 与后端 id 不一致导致推送 0 条的问题）
-            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
-            {
-                var remoteUserId = idEl.GetString();
-                if (!string.IsNullOrEmpty(remoteUserId))
-                    MigrateLocalUserIdIfNeeded(remoteUserId);
-            }
-            return token;
-        }
+        // RefreshToken 也失效：停止同步，但保留 CloudUserId 和所有 SQLite 业务数据。
+        // 用户需在 UI 上重新邮箱登录（不删除业务数据，登录后可继续同步）。
+        DevLogger.Log("Sync", "EnsureToken: AccessToken 和 RefreshToken 均失效，需重新登录");
+        return null;
     }
 
     private async Task<SyncPullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, SyncCursor? cursor, CancellationToken ct)
@@ -548,7 +435,7 @@ public sealed class ApiSyncService : BaseApiClient
                     if (cursor is not null)
                         path += "&cursorTime=" + Uri.EscapeDataString(cursor.Timestamp.ToUniversalTime().ToString("O"))
                              + "&cursorId=" + Uri.EscapeDataString(cursor.Id);
-                    using var resp = await SendWithTokenV2Async(_cfgRepo, server, token, HttpMethod.Get, path, null, ct);
+                    using var resp = await SendWithTokenV2Async(server, token, HttpMethod.Get, path, null, ct);
                     return await ReadDataAsync<SyncPullResponse>(resp, ct)
                         ?? throw new SyncException(SyncErrorKind.Business, "Pull 响应解析失败");
                 },
@@ -556,13 +443,19 @@ public sealed class ApiSyncService : BaseApiClient
         }
         catch (SyncException ex)
         {
-            // Auth 错误特殊处理：清 token 后重登一次再 Pull
-            if (ex.Kind == SyncErrorKind.Auth && string.IsNullOrWhiteSpace(_cfgRepo.Get().Token))
+            // v5：Auth 错误（401）已由 SendWithTokenV2Async 清空 AccessToken；
+            // 尝试用 RefreshToken 续期后重试一次，仍失败则停止同步（保留业务数据）。
+            if (ex.Kind == SyncErrorKind.Auth)
             {
-                var cfg = _cfgRepo.Get();
-                var newToken = await LoginAsync(cfg, serverUrl, ct);
-                // 递归一次（已无 token，不会再触发 Auth 重试分支）
-                return await PullWithRetryAsync(serverUrl, newToken, since, limit, cursor, ct);
+                var auth = ServiceProvider.Instance.AuthService;
+                var newToken = await auth.RefreshAccessTokenAsync(ct);
+                if (!string.IsNullOrEmpty(newToken))
+                {
+                    // 递归一次（新 token 已写入 SecureStorage，不会再触发 Auth 重试分支）
+                    return await PullWithRetryAsync(serverUrl, newToken, since, limit, cursor, ct);
+                }
+                DevLogger.Log("Sync", "Pull Auth 失败且 Refresh 失败，停止同步");
+                return null;
             }
             DevLogger.Log("Sync", $"Pull failed: {ex.Kind} {ex.Message}");
             return null;
@@ -577,7 +470,7 @@ public sealed class ApiSyncService : BaseApiClient
                 async (attempt, server) =>
                 {
                     var body = Serialize(req);
-                    using var resp = await SendWithTokenV2Async(_cfgRepo, server, token, HttpMethod.Post, "/api/sync/push", body, ct);
+                    using var resp = await SendWithTokenV2Async(server, token, HttpMethod.Post, "/api/sync/push", body, ct);
                     return await ReadDataAsync<SyncBatchResponse>(resp, ct)
                         ?? throw new SyncException(SyncErrorKind.Business, "Push 响应解析失败");
                 },

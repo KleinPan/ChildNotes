@@ -12,8 +12,11 @@ public static class DbInitializer
     /// v1→v2：新增 reminder_config 表。
     /// v2→v3：数据归一 — 维D类补充剂名称统一为"维生素D3"（child_record.payload_json + user_supplement_item.name）。
     /// v3→v4：新增 family_join_request 表（加入家庭申请/审批状态机）。
+    /// v4→v5：邮箱验证码认证重构 — app_user 表删除 username/password_hash，新增 email/email_verified_at/membership_expire_at；
+    ///        sync_config 表删除 username/password/token，新增 cloud_user_id/local_user_id；
+    ///        user_session 表删除（改用 SecureStorage + CloudUserId）。
     /// </summary>
-    private const int CurrentSchemaVersion = 4;
+    public const int CurrentSchemaVersion = 5;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -39,14 +42,21 @@ public static class DbInitializer
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS app_user (
     id TEXT PRIMARY KEY NOT NULL,
-    username TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
+    email TEXT NOT NULL DEFAULT '',
+    email_verified_at TEXT,
     nick_name TEXT,
     avatar_url TEXT,
     gender INTEGER,
+    membership_expire_at TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );");
+        // v5 schema 迁移：app_user 表新增 email/email_verified_at/membership_expire_at，删除 username/password_hash
+        AddColumnIfNotExists(conn, "app_user", "email", "TEXT NOT NULL DEFAULT ''");
+        AddColumnIfNotExists(conn, "app_user", "email_verified_at", "TEXT");
+        AddColumnIfNotExists(conn, "app_user", "membership_expire_at", "TEXT");
+        DropColumnIfExists(conn, "app_user", "username");
+        DropColumnIfExists(conn, "app_user", "password_hash");
 
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS baby (
@@ -227,21 +237,30 @@ CREATE INDEX IF NOT EXISTS idx_ai_analysis_baby
         AddColumnIfNotExists(conn, "ai_analysis_record", "synced_at", "TEXT");
 
         // ===== 在线同步配置表 =====
+        // v5 schema：移除 username/password/token，新增 cloud_user_id/local_user_id。
+        //   - 登录态由 CloudUserId 标识（空=未登录离线模式，非空=已登录可同步）
+        //   - AccessToken/RefreshToken 走 ISecureStorage，不再以明文存 SQLite
         conn.ExecuteNonQuery(@"
 CREATE TABLE IF NOT EXISTS sync_config (
     id INTEGER PRIMARY KEY,
     enabled INTEGER NOT NULL DEFAULT 0,
     server_url TEXT NOT NULL DEFAULT '',
-    username TEXT NOT NULL DEFAULT '',
-    password TEXT NOT NULL DEFAULT '',
-    token TEXT NOT NULL DEFAULT '',
+    cloud_user_id TEXT NOT NULL DEFAULT '',
+    local_user_id TEXT NOT NULL DEFAULT '',
     last_sync_at TEXT,
     last_sync_status TEXT,
     last_sync_msg TEXT
 );");
+        // v5 schema 迁移：已有 sync_config 表添加 cloud_user_id/local_user_id 列
+        AddColumnIfNotExists(conn, "sync_config", "cloud_user_id", "TEXT NOT NULL DEFAULT ''");
+        AddColumnIfNotExists(conn, "sync_config", "local_user_id", "TEXT NOT NULL DEFAULT ''");
+        // v5 schema 迁移：删除 username/password/token 列（SQLite 3.35+ 支持 DROP COLUMN）
+        DropColumnIfExists(conn, "sync_config", "username");
+        DropColumnIfExists(conn, "sync_config", "password");
+        DropColumnIfExists(conn, "sync_config", "token");
         conn.ExecuteNonQuery(@"
-INSERT OR IGNORE INTO sync_config (id, enabled, server_url, username, password, token)
-VALUES (1, 0, '', '', '', '');
+INSERT OR IGNORE INTO sync_config (id, enabled, server_url, cloud_user_id, local_user_id)
+VALUES (1, 0, '', '', '');
 ");
 
         // sync_config 增量迁移：device_id 字段（用于设备级追踪与冲突归因）
@@ -274,15 +293,13 @@ CREATE TABLE IF NOT EXISTS sync_log (
         // milestone 增量索引：updated_at 用于增量上送查询
         conn.ExecuteNonQuery("CREATE INDEX IF NOT EXISTS idx_milestone_updated ON milestone (updated_at);");
 
-        // ===== 登录会话持久化表（单行，id=1）=====
-        // 用于实现关闭应用后自动登录；30 天滑动过期，每次启动续期。
-        conn.ExecuteNonQuery(@"
-CREATE TABLE IF NOT EXISTS user_session (
-    id INTEGER PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    issued_at TEXT NOT NULL,
-    expire_at TEXT NOT NULL
-);");
+        // ===== v5 schema：删除 user_session 表 =====
+        // 登录态不再用 SQLite 持久化会话：
+        //   - 登录态由 sync_config.cloud_user_id 标识（非空=已登录）
+        //   - AccessToken/RefreshToken 走 ISecureStorage（Android Keystore / Windows DPAPI）
+        //   - 未登录时使用 sync_config.local_user_id 作为本地业务数据的 user_id
+        // 此表已不再使用，删除以避免歧义。
+        conn.ExecuteNonQuery("DROP TABLE IF EXISTS user_session;");
 
         // ===== 应用内消息表（轻量推送替代方案）=====
         // 用于存储后端推送下发的消息（家庭成员加入/AI 报告生成完成/运营活动等）。
@@ -527,6 +544,30 @@ CREATE INDEX IF NOT EXISTS idx_family_join_request_updated
         alter.CommandText = $"ALTER TABLE {table} ADD COLUMN {column} {definition};";
         alter.ExecuteNonQuery();
         DevLogger.Log("DB", $"Migrated: {table}.{column} added");
+    }
+
+    /// <summary>
+    /// 删除指定表的列（如不存在则跳过）。SQLite 3.35.0（2021-03-06）起支持 ALTER TABLE DROP COLUMN。
+    /// .NET 10 + Microsoft.Data.Sqlite 10.x 自带的 SQLite 通常为 3.40+，支持 DROP COLUMN。
+    /// 用 PRAGMA table_info 探测列是否存在，避免盲目 DROP 报错。
+    /// </summary>
+    private static void DropColumnIfExists(SqliteConnection conn, string table, string column)
+    {
+        bool exists = false;
+        using (var check = conn.CreateCommand())
+        {
+            check.CommandText = $"PRAGMA table_info({table});";
+            using var reader = check.ExecuteReader();
+            while (reader.Read())
+            {
+                if (reader.GetString(1) == column) { exists = true; break; }
+            }
+        }
+        if (!exists) return;
+        using var alter = conn.CreateCommand();
+        alter.CommandText = $"ALTER TABLE {table} DROP COLUMN {column};";
+        alter.ExecuteNonQuery();
+        DevLogger.Log("DB", $"Migrated: {table}.{column} dropped");
     }
 }
 

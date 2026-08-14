@@ -6,18 +6,36 @@ using ChildNotes.Services;
 
 namespace ChildNotes.ViewModels;
 
+/// <summary>
+/// 邮箱验证码登录 ViewModel（v5 重构）。
+/// 流程：
+///   1) 输入邮箱 → 点"发送验证码"按钮 → SendCodeCommand
+///   2) 60 秒倒计时（防止频繁发送）→ 倒计时结束后可重发
+///   3) 输入验证码 → 点"登录"按钮 → VerifyCodeCommand
+///   4) 验证成功 → App.RaiseLoginSucceeded → 进入主界面 → 触发首次同步
+/// 不区分注册/登录：后端 verify-code 自动判断邮箱是否已存在，不存在则自动创建账号。
+/// </summary>
 public partial class LoginViewModel : ViewModelBase
 {
     private readonly AuthService _auth = ServiceProvider.Instance.AuthService;
     private readonly Data.Repositories.SyncConfigRepository _cfgRepo = ServiceProvider.Instance.SyncConfigRepository;
     private readonly LocaleManager _locale = LocaleManager.Instance;
 
-    [ObservableProperty] private string _username = string.Empty;
-    [ObservableProperty] private string _password = string.Empty;
-    [ObservableProperty] private string _nickName = string.Empty;
-    [ObservableProperty] private bool _isRegisterMode;
+    [ObservableProperty] private string _email = string.Empty;
+    [ObservableProperty] private string _code = string.Empty;
     [ObservableProperty] private string _serverUrl = string.Empty;
     [ObservableProperty] private bool _showServerConfig;
+
+    /// <summary>发送验证码倒计时（秒）。> 0 时按钮禁用并显示倒计时文本。</summary>
+    [ObservableProperty] private int _countdownSeconds;
+
+    /// <summary>是否正在发送验证码（防重复点击）。</summary>
+    [ObservableProperty] private bool _isSendingCode;
+
+    /// <summary>是否正在验证登录。</summary>
+    [ObservableProperty] private bool _isVerifying;
+
+    private CancellationTokenSource? _countdownCts;
 
     public event Action? LoginSucceeded;
 
@@ -32,12 +50,27 @@ public partial class LoginViewModel : ViewModelBase
         catch { /* 首次启动表还没建，忽略 */ }
     }
 
-    [RelayCommand]
-    private void ToggleMode()
+    /// <summary>发送验证码按钮是否可点击。</summary>
+    public bool CanSendCode => !IsSendingCode && CountdownSeconds <= 0 && !string.IsNullOrWhiteSpace(Email);
+
+    /// <summary>发送验证码按钮显示文本。</summary>
+    public string SendCodeButtonText =>
+        CountdownSeconds > 0
+            ? string.Format(_locale.GetString("Login_ResendIn", "{0}s 后重发"), CountdownSeconds)
+            : _locale.GetString("Login_SendCode", "发送验证码");
+
+    /// <summary>登录按钮是否可点击。</summary>
+    public bool CanVerify => !IsVerifying && !string.IsNullOrWhiteSpace(Email) && !string.IsNullOrWhiteSpace(Code);
+
+    partial void OnEmailChanged(string value) => OnPropertyChanged(nameof(CanSendCode));
+    partial void OnCodeChanged(string value) => OnPropertyChanged(nameof(CanVerify));
+    partial void OnCountdownSecondsChanged(int value)
     {
-        IsRegisterMode = !IsRegisterMode;
-        ErrorMessage = string.Empty;
+        OnPropertyChanged(nameof(CanSendCode));
+        OnPropertyChanged(nameof(SendCodeButtonText));
     }
+    partial void OnIsSendingCodeChanged(bool value) => OnPropertyChanged(nameof(CanSendCode));
+    partial void OnIsVerifyingChanged(bool value) => OnPropertyChanged(nameof(CanVerify));
 
     [RelayCommand]
     private void ToggleServerConfig()
@@ -45,35 +78,93 @@ public partial class LoginViewModel : ViewModelBase
         ShowServerConfig = !ShowServerConfig;
     }
 
+    /// <summary>
+    /// 发送邮箱验证码。
+    /// 成功后启动 60 秒倒计时（防止频繁发送）。
+    /// 失败显示错误信息，不启动倒计时（允许立即重试）。
+    /// </summary>
     [RelayCommand]
-    private async Task Submit()
+    private async Task SendCode()
     {
         ErrorMessage = string.Empty;
+        var trimmed = Email.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || !trimmed.Contains('@'))
+        {
+            ErrorMessage = _locale.GetString("Login_InvalidEmail", "请输入有效的邮箱");
+            return;
+        }
+
+        // 先保存服务器地址到 sync_config，确保 AuthService 能拿到地址
+        if (!SaveServerUrlToSyncConfig()) return;
+
+        IsSendingCode = true;
         try
         {
-            DevLogger.Log("Login", $"Submit start: Mode={IsRegisterMode}, User='{Username}', PwdLen={Password?.Length ?? 0}, Nick='{NickName}'");
-            // 先把服务器地址写入 sync_config，让 Register 里的 TryRegisterOnServerAsync 能拿到地址同步到后端
-            SaveServerUrlToSyncConfig();
-            // PBKDF2 哈希 + DB 查询放后台线程，避免阻塞 UI 30-80ms
-            var result = await Task.Run(() => IsRegisterMode
-                ? _auth.Register(Username, Password, NickName)
-                : _auth.Login(Username, Password));
-
-            DevLogger.Log("Login", $"Result: Success={result.Success}, Msg='{result.Message}', UserId={result.User?.Id}");
+            DevLogger.Log("Login", $"SendCode start: email={trimmed}");
+            var result = await _auth.SendCodeAsync(trimmed);
+            DevLogger.Log("Login", $"SendCode result: success={result.Success}, msg={result.Message}");
 
             if (result.Success)
             {
-                // 登录/注册成功后把凭据写入 sync_config，供 ApiSyncService 调用 /api/auth/login 取 token。
-                // 这样同步页无需再单独输入账号密码，凭据随登录自动同步。
-                SaveCredentialsToSyncConfig();
+                // 启动 60 秒倒计时
+                StartCountdown(60);
+            }
+            else
+            {
+                ErrorMessage = result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Login", "SendCode exception: " + ex.Message);
+            ErrorMessage = string.Format(_locale.GetString("Login_OperationFailed", "操作失败：{0}"), ex.Message);
+        }
+        finally
+        {
+            IsSendingCode = false;
+        }
+    }
+
+    /// <summary>
+    /// 验证邮箱验证码并完成登录/自动注册。
+    /// 成功 → App.RaiseLoginSucceeded → 进入主界面 → 触发首次同步（Full Pull Only）。
+    /// 失败显示错误信息，保留验证码输入（用户可修改后重试）。
+    /// </summary>
+    [RelayCommand]
+    private async Task Verify()
+    {
+        ErrorMessage = string.Empty;
+        var trimmedEmail = Email.Trim();
+        var trimmedCode = Code.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedEmail) || !trimmedEmail.Contains('@'))
+        {
+            ErrorMessage = _locale.GetString("Login_InvalidEmail", "请输入有效的邮箱");
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(trimmedCode))
+        {
+            ErrorMessage = _locale.GetString("Login_InvalidCode", "请输入验证码");
+            return;
+        }
+
+        IsVerifying = true;
+        try
+        {
+            DevLogger.Log("Login", $"Verify start: email={trimmedEmail}");
+            var result = await _auth.VerifyCodeAsync(trimmedEmail, trimmedCode);
+            DevLogger.Log("Login", $"Verify result: success={result.Success}, msg={result.Message}, userId={result.User?.Id}, newUser={result.NewUser}");
+
+            if (result.Success)
+            {
                 ServiceProvider.Instance.BindUserToState();
                 DevLogger.Log("Login", "BindUserToState done");
-                // 登录成功后确保欢迎消息存在（仅当用户从未有过任何消息时注入一次）
+                // 登录成功后确保欢迎消息存在
                 ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
                 ServiceProvider.Instance.BabyService.LoadBabyList();
                 DevLogger.Log("Login", "LoadBabyList done");
-                // 新用户注册成功：注入"赠送 100 积分"欢迎消息（首次登录明确提示）
-                if (IsRegisterMode)
+
+                // 新用户：注入"赠送积分"欢迎消息（首次登录明确提示）
+                if (result.NewUser)
                 {
                     try
                     {
@@ -91,6 +182,7 @@ public partial class LoginViewModel : ViewModelBase
                     }
                     catch (Exception msgEx) { DevLogger.Log("Login", "Insert bonus message failed: " + msgEx.Message); }
                 }
+
                 var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
                 DevLogger.Log("Login", $"LoginSucceeded subscribers={subscribers}");
                 // 直接调用 App 静态方法，绕过事件订阅可能丢失的问题（安卓 Activity 重建）
@@ -98,20 +190,18 @@ public partial class LoginViewModel : ViewModelBase
                 // 兼容备份：如果 App 的订阅还在，也触发事件
                 LoginSucceeded?.Invoke();
                 DevLogger.Log("Login", "LoginSucceeded invoked");
-                // 登录成功后主动触发首次同步，避免等待 8 秒启动定时器或 15 分钟保活
+                // 登录成功后主动触发首次同步（Full Pull Only：LastSyncAt=null 时只 Pull 不 Push）
                 // fire-and-forget：同步失败不影响登录流程，下次触发会再试
                 _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
                 DevLogger.Log("Login", "Initial sync triggered");
 
 #if DEV_BUILD
                 // 开发版 APK：自动激活永不过期会员（后端需开启 EnableDevAutoActivate）
-                // fire-and-forget：失败静默忽略，不影响登录流程
                 DevLogger.Log("Login", "[DevActivate] DEV_BUILD 已定义，准备激活会员");
                 _ = Task.Run(async () =>
                 {
                     try
                     {
-                        // 给同步配置写入一点时间（SyncConfigRepository 可能在登录回调里才写入 token）
                         await Task.Delay(500);
                         var ok = await ServiceProvider.Instance.MembershipApiClient.DevActivatePermanentAsync();
                         DevLogger.Log("Login", $"[DevActivate] 结果：{(ok ? "success" : "skipped/failed")}");
@@ -128,67 +218,64 @@ public partial class LoginViewModel : ViewModelBase
         catch (Exception ex)
         {
             DevLogger.Log("Login", ex);
-            // 避免被 App.axaml.cs 的全局 UnhandledException 处理器静默吞掉，
-            // 让用户在登录页直接看到完整错误（含类型/消息/内层异常），便于安卓真机排查
             var detail = ex.ToString();
             if (ex.InnerException is not null)
                 detail += "\n---> " + ex.InnerException;
             ErrorMessage = string.Format(_locale.GetString("Login_OperationFailed", "操作失败：{0}"), detail);
         }
+        finally
+        {
+            IsVerifying = false;
+        }
     }
 
     /// <summary>
-    /// 把当前登录的用户名/明文密码写入 sync_config。
-    /// 同步功能（ApiSyncService）会以此凭据向服务器换取 token，
-    /// 因此登录后同步页不再需要单独输入账号密码。
+    /// 启动倒计时：每秒递减，到 0 时停止并允许重新发送。
     /// </summary>
-    private void SaveCredentialsToSyncConfig()
+    private void StartCountdown(int seconds)
     {
-        try
+        _countdownCts?.Cancel();
+        _countdownCts = new CancellationTokenSource();
+        var token = _countdownCts.Token;
+        CountdownSeconds = seconds;
+        _ = Task.Run(async () =>
         {
-            var cfg = _cfgRepo.Get();
-            cfg.Username = Username.Trim();
-            cfg.Password = Password;
-            // 清空旧 token，避免使用上一账号的失效 token
-            cfg.Token = string.Empty;
-            _cfgRepo.Save(cfg);
-            DevLogger.Log("Login", $"SyncConfig credentials updated: user={cfg.Username}");
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("Login", "SaveCredentialsToSyncConfig failed: " + ex.Message);
-        }
+            while (!token.IsCancellationRequested && CountdownSeconds > 0)
+            {
+                await Task.Delay(1000, token);
+                if (token.IsCancellationRequested) break;
+                CountdownSeconds--;
+            }
+        }, token);
     }
 
     /// <summary>
     /// 把登录页输入的服务器地址写入 sync_config。
-    /// 必须在 Register/Login 之前调用，让 AuthService.TryRegisterOnServerAsync 能拿到地址。
+    /// 必须在 SendCode 之前调用，让 AuthService 能拿到地址。
     /// 空值也保存（=纯本地模式，不同步到后端）。
+    /// 返回 false 表示地址校验失败（ErrorMessage 已设置）。
     /// </summary>
-    private void SaveServerUrlToSyncConfig()
+    private bool SaveServerUrlToSyncConfig()
     {
         try
         {
             var cfg = _cfgRepo.Get();
             var url = (ServerUrl ?? string.Empty).Trim();
-            // 简单校验：非空时必须以 http:// 或 https:// 开头
             if (!string.IsNullOrEmpty(url) && !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
                                            && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             {
                 ErrorMessage = _locale.GetString("Login_ErrServerUrl", "服务器地址必须以 http:// 或 https:// 开头");
-                throw new InvalidOperationException("Invalid server url");
+                return false;
             }
             cfg.ServerUrl = url;
             _cfgRepo.Save(cfg);
             DevLogger.Log("Login", $"SyncConfig server url updated: {url}");
-        }
-        catch (InvalidOperationException)
-        {
-            throw; // 让 Submit 的 catch 捕获，显示 ErrorMessage
+            return true;
         }
         catch (Exception ex)
         {
             DevLogger.Log("Login", "SaveServerUrlToSyncConfig failed: " + ex.Message);
+            return true; // 不阻断登录流程，AuthService 会用默认地址
         }
     }
 }

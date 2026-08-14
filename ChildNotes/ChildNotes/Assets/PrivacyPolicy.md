@@ -70,7 +70,8 @@
 
 ### 3.3 安全措施
 
-- 密码使用 **PBKDF2-SHA256（600,000 次迭代）** 加密存储，明文不可逆
+- 认证使用邮箱验证码方式，不存储任何密码
+- AccessToken / RefreshToken 使用平台安全存储（Android Keystore / Windows DPAPI），不入明文数据库
 - 同步传输强制使用 **HTTPS** 加密
 - 日志自动脱敏 Token / 手机号等敏感字段
 - 数据库操作前自动本地备份

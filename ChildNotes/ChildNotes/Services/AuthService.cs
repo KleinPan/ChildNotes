@@ -1,293 +1,517 @@
-using System.Security.Cryptography;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Services.Storage;
 
 namespace ChildNotes.Services;
 
+/// <summary>
+/// 邮箱验证码认证服务（客户端）。
+///
+/// 重构后（v5 schema）：
+///   - 移除 PBKDF2 密码哈希、用户名密码登录、本地 user_session 表
+///   - 统一走邮箱验证码流程：SendCodeAsync → VerifyCodeAsync（注册+登录合一）
+///   - AccessToken / RefreshToken 走 ISecureStorage（Android Keystore / Windows DPAPI）
+///   - 身份权威来源：sync_config.cloud_user_id（空 = 未登录离线模式）
+///   - 未登录可永久离线使用本地 SQLite，user_id 使用 sync_config.local_user_id
+///   - 登录失败不删除业务数据，仅清空 SecureStorage 与 CloudUserId
+///
+/// 后端契约：
+///   - POST /api/auth/send-code  → ApiResponse&lt;SendCodeResponse&gt;{Sent:true}
+///   - POST /api/auth/verify-code → ApiResponse&lt;AuthResponse&gt;{AccessToken,RefreshToken,ExpiresIn,User,NewUser}
+///   - POST /api/auth/refresh    → ApiResponse&lt;AuthResponse&gt;（RefreshToken Rotation）
+///   - GET  /api/auth/me        → ApiResponse&lt;LoginUserDto&gt;（Bearer 鉴权）
+///   - 后端通过 ApiResponseWrapperFilter 统一包装为 {state,msg,data} 信封
+/// </summary>
 public sealed class AuthService
 {
     private readonly UserRepository _users;
-    private readonly SessionRepository _sessions;
     private readonly AppState _state;
     private readonly SyncConfigRepository _cfgRepo;
+    private readonly ISecureStorage _secureStorage;
 
-    /// <summary>会话有效期 30 天（滑动过期：每次启动自动续期）。</summary>
-    public static readonly TimeSpan SessionLifetime = TimeSpan.FromDays(30);
+    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
+    private static readonly JsonSerializerOptions JsonOpts = new()
+    {
+        PropertyNamingPolicy = null,
+        // 后端 camelCase（accessToken/refreshToken 等），前端 DTO 用 PascalCase
+        PropertyNameCaseInsensitive = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    /// <summary>当前登录用户（本地缓存）。未登录时为 null。</summary>
     public AppUser? CurrentUser { get; private set; }
 
-    public AuthService(UserRepository users, SessionRepository sessions, AppState state, SyncConfigRepository cfgRepo)
+    /// <summary>是否已登录（CloudUserId 非空）。</summary>
+    public bool IsLoggedIn => !string.IsNullOrWhiteSpace(_cfgRepo.Get().CloudUserId);
+
+    public AuthService(
+        UserRepository users,
+        AppState state,
+        SyncConfigRepository cfgRepo,
+        ISecureStorage secureStorage)
     {
         _users = users;
-        _sessions = sessions;
         _state = state;
         _cfgRepo = cfgRepo;
+        _secureStorage = secureStorage;
     }
 
-    public bool IsLoggedIn => CurrentUser is not null;
+    // ===== 邮箱验证码流程 =====
 
-    public LoginResult Register(string username, string password, string nickName)
+    /// <summary>
+    /// 发送邮箱验证码。
+/// </summary>
+    /// <param name="email">目标邮箱</param>
+    /// <param name="ct"></param>
+    /// <returns>成功返回 true；失败返回 false 并在 Message 中携带原因。</returns>
+    public async Task<SendCodeResult> SendCodeAsync(string email, CancellationToken ct = default)
     {
-        DevLogger.Log("Auth", $"Register start: user='{username}', nick='{nickName}'");
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return Fail("用户名和密码不能为空");
-        if (username.Length < 3)
-            return Fail("用户名至少 3 个字符");
-        if (password.Length < 6)
-            return Fail("密码至少 6 个字符");
+        var trimmed = email.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || !trimmed.Contains('@'))
+            return new SendCodeResult(false, "请输入有效的邮箱");
 
+        var cfg = _cfgRepo.Get();
+        var serverUrl = ResolveServerUrl(cfg.ServerUrl);
+        if (serverUrl is null)
+            return new SendCodeResult(false, "服务器地址未配置");
+
+        var url = serverUrl.TrimEnd('/') + "/api/auth/send-code";
+        var body = Serialize(new { email = trimmed });
         try
         {
-            var existing = _users.FindByUsername(username);
-            DevLogger.Log("Auth", $"FindByUsername returned: {(existing is null ? "null" : existing.Username + "(id=" + existing.Id + ")")}");
-            if (existing is not null)
-                return Fail("用户名已存在");
+            using var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
+            using var resp = await Http.SendAsync(req, ct);
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var msg = ExtractMessage(json);
+                DevLogger.Log("Auth", $"SendCode fail: {(int)resp.StatusCode} {msg}");
+                return new SendCodeResult(false, msg ?? $"发送失败（HTTP {(int)resp.StatusCode}）");
+            }
+            // 后端包装为 {state,msg,data}；data.Sent=true 表示已发送
+            var sent = ExtractData<SendCodeDto>(json)?.Sent ?? false;
+            DevLogger.Log("Auth", $"SendCode ok: email={trimmed}, sent={sent}");
+            return new SendCodeResult(true, "验证码已发送");
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Auth", ex);
-            throw;
+            DevLogger.Log("Auth", "SendCode exception: " + ex.Message);
+            return new SendCodeResult(false, "网络异常，请稍后重试");
         }
-
-        var user = new AppUser
-        {
-            Username = username,
-            PasswordHash = HashPassword(password),
-            NickName = string.IsNullOrWhiteSpace(nickName) ? username : nickName,
-        };
-        try
-        {
-            user.Id = _users.Insert(user);
-            DevLogger.Log("Auth", $"Insert success: new id={user.Id}");
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("Auth", ex);
-            throw;
-        }
-        CurrentUser = user;
-        SaveSession(user.Id);
-        DevLogger.Log("Auth", $"Register success: user={username}, id={user.Id}");
-        // 本地注册成功后，尝试同步到后端（失败不阻塞，同步时还会重试登录）
-        _ = TryRegisterOnServerAsync(username, password, nickName);
-        return LoginResult.Ok(user);
     }
 
     /// <summary>
-    /// 尝试在远端服务器创建同名账号。失败不影响本地注册（fire-and-forget），
-    /// 后续同步时 ApiSyncService 会再次尝试登录，用户感知不到。
+    /// 验证邮箱验证码并完成登录/自动注册。
+    /// 成功条件：后端返回 AuthResponse（含 AccessToken/RefreshToken/User）。
+    /// 成功后：
+    ///   1) AccessToken / RefreshToken 写入 ISecureStorage
+    ///   2) CloudUserId 写入 sync_config
+    ///   3) app_user 表缓存用户 profile（Upsert）
+    ///   4) CurrentUser 与 AppState.User 同步设置
     /// </summary>
-    private async Task TryRegisterOnServerAsync(string username, string password, string? nickName)
+    public async Task<VerifyCodeResult> VerifyCodeAsync(string email, string code, CancellationToken ct = default)
     {
+        var trimmedEmail = email.Trim();
+        var trimmedCode = code.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedEmail) || !trimmedEmail.Contains('@'))
+            return new VerifyCodeResult(false, "请输入有效的邮箱");
+        if (string.IsNullOrWhiteSpace(trimmedCode))
+            return new VerifyCodeResult(false, "请输入验证码");
+
+        var cfg = _cfgRepo.Get();
+        var serverUrl = ResolveServerUrl(cfg.ServerUrl);
+        if (serverUrl is null)
+            return new VerifyCodeResult(false, "服务器地址未配置");
+
+        var url = serverUrl.TrimEnd('/') + "/api/auth/verify-code";
+        var body = Serialize(new { email = trimmedEmail, code = trimmedCode });
         try
         {
-            var cfg = _cfgRepo.Get();
-            var serverUrl = cfg.ServerUrl;
-            if (string.IsNullOrWhiteSpace(serverUrl))
+            using var req = new HttpRequestMessage(HttpMethod.Post, url)
             {
-                DevLogger.Log("Auth", "Skip remote register: server url not configured");
-                return;
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
+            using var resp = await Http.SendAsync(req, ct);
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var msg = ExtractMessage(json);
+                DevLogger.Log("Auth", $"VerifyCode fail: {(int)resp.StatusCode} {msg}");
+                return new VerifyCodeResult(false, msg ?? $"验证失败（HTTP {(int)resp.StatusCode}）");
             }
 
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var body = JsonSerializer.Serialize(new
+            var auth = ExtractData<AuthResponseDto>(json);
+            if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
             {
-                username,
-                password,
-                nickName = string.IsNullOrWhiteSpace(nickName) ? username : nickName,
-            });
-            using var resp = await http.PostAsync(
-                serverUrl.TrimEnd('/') + "/api/auth/register",
-                new StringContent(body, Encoding.UTF8, "application/json"));
+                DevLogger.Log("Auth", "VerifyCode fail: 响应缺少 data.accessToken");
+                return new VerifyCodeResult(false, "登录失败：响应数据不完整");
+            }
 
-            var text = await resp.Content.ReadAsStringAsync();
-            if (resp.IsSuccessStatusCode)
-                DevLogger.Log("Auth", $"Remote register ok: user={username}, status={resp.StatusCode}");
-            else
-                DevLogger.Log("Auth", $"Remote register non-2xx: status={resp.StatusCode}, body={text}");
+            // 账号切换保护：MVP 不支持同一 SQLite 切换不同云端账号
+            var currentCloudUserId = _cfgRepo.Get().CloudUserId;
+            if (!string.IsNullOrEmpty(currentCloudUserId) &&
+                !string.IsNullOrEmpty(auth.User?.Id) &&
+                !string.Equals(currentCloudUserId, auth.User.Id, StringComparison.Ordinal))
+            {
+                // 不清理 token，提示用户必须清除本地数据后重新登录
+                DevLogger.Log("Auth", $"Account switch blocked: current={currentCloudUserId}, new={auth.User?.Id}");
+                return new VerifyCodeResult(false, "当前已绑定其他账号，请先清除本地数据后再登录");
+            }
+
+            // 1) Token 写入 SecureStorage（非明文）
+            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+            await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+
+            // 2) CloudUserId 写入 sync_config（唯一身份权威来源）
+            if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
+            {
+                _cfgRepo.UpdateCloudUserId(auth.User.Id);
+            }
+
+            // 3) app_user 表缓存 profile（Upsert），供 UI 展示昵称/头像等
+            var user = ToAppUser(auth.User!);
+            _users.Upsert(user);
+
+            // 4) 设置 CurrentUser 与 AppState
+            CurrentUser = user;
+            _state.User = user;
+
+            DevLogger.Log("Auth", $"VerifyCode ok: email={trimmedEmail}, userId={auth.User?.Id}, newUser={auth.NewUser}");
+            return new VerifyCodeResult(true, "登录成功", user, auth.NewUser);
         }
         catch (Exception ex)
         {
-            // 常见原因：服务器未启动/地址未配置/网络不通。仅记日志，不抛出。
-            DevLogger.Log("Auth", $"Remote register failed (non-fatal): {ex.Message}");
+            DevLogger.Log("Auth", "VerifyCode exception: " + ex.Message);
+            return new VerifyCodeResult(false, "网络异常，请稍后重试");
         }
     }
 
-    public LoginResult Login(string username, string password)
+    // ===== 启动恢复 =====
+
+    /// <summary>
+    /// 启动时尝试恢复登录态（离线优先）。
+    /// 逻辑：
+    ///   1) 读取 sync_config.cloud_user_id；空 → 未登录，直接返回 false（离线模式可用）
+    ///   2) 读取 SecureStorage.AccessToken；空 → 已登录但 token 丢失，仍恢复 CurrentUser
+    ///   3) 从 app_user 表读取 profile 缓存设置 CurrentUser 与 AppState.User
+    /// 失败时不删除业务数据，仅返回 false。
+    /// </summary>
+    public async Task<bool> TryRestoreSessionAsync(CancellationToken ct = default)
     {
-        DevLogger.Log("Auth", $"Login start: user='{username}'");
-        AppUser? user;
+        var cfg = _cfgRepo.Get();
+        if (string.IsNullOrWhiteSpace(cfg.CloudUserId))
+        {
+            DevLogger.Log("Auth", "RestoreSession: cloud_user_id 为空，离线模式");
+            return false;
+        }
+
+        // 确保 LocalUserId 已生成（离线模式的业务数据需要）
+        EnsureLocalUserId(cfg);
+
+        var user = _users.FindById(cfg.CloudUserId);
+        if (user is not null)
+        {
+            CurrentUser = user;
+            _state.User = user;
+            DevLogger.Log("Auth", $"RestoreSession success: cloud_user_id={cfg.CloudUserId}, email={user.Email}");
+        }
+        else
+        {
+            // app_user 表无缓存（首次登录后 DB 重建等场景），仅设置 AppState.UserId
+            // 通过 AppState.UserId 计算（cloud_user_id 优先，否则 local_user_id）兜底
+            DevLogger.Log("Auth", $"RestoreSession: cloud_user_id={cfg.CloudUserId} 但 app_user 表无缓存，仍视为已登录");
+        }
+
+        // 检查 SecureStorage 是否有 AccessToken（不影响登录态判断）
         try
         {
-            user = _users.FindByUsername(username);
+            var token = await _secureStorage.GetAsync(SecureStorageKeys.AccessToken, ct);
+            if (string.IsNullOrEmpty(token))
+            {
+                DevLogger.Log("Auth", "RestoreSession: AccessToken 缺失，下次同步需 RefreshToken 续期或重新登录");
+            }
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Auth", ex);
-            throw;
+            DevLogger.Log("Auth", "RestoreSession: 读取 SecureStorage 失败: " + ex.Message);
         }
 
-        if (user is null)
-        {
-            DevLogger.Log("Auth", "Login fail: user not found");
-            return Fail("用户不存在");
-        }
-        DevLogger.Log("Auth", $"User found: id={user.Id}, hashLen={user.PasswordHash?.Length ?? 0}");
+        return true;
+    }
 
-        bool ok;
+    // ===== 登出 =====
+
+    /// <summary>
+    /// 登出：清空 SecureStorage 的 Token + sync_config 的 CloudUserId。
+    /// 不删除业务数据（Baby/Record/Milestone 等），用户可继续离线使用。
+    /// 切换账号前需先调用此方法。
+    /// </summary>
+    public async Task LogoutAsync(CancellationToken ct = default)
+    {
         try
         {
-            ok = VerifyPassword(password, user.PasswordHash);
+            await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
+            await _secureStorage.DeleteAsync(SecureStorageKeys.RefreshToken, ct);
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Auth", ex);
-            throw;
+            DevLogger.Log("Auth", "Logout: 清空 SecureStorage 失败（继续）: " + ex.Message);
         }
-        if (!ok)
-        {
-            DevLogger.Log("Auth", "Login fail: password mismatch");
-            return Fail("密码错误");
-        }
-        // 自动迁移历史明文密码到 PBKDF2 格式
-        if (PasswordNeedsUpgrade(user.PasswordHash))
-        {
-            user.PasswordHash = HashPassword(password);
-            _users.UpdatePassword(user.Id, user.PasswordHash);
-            DevLogger.Log("Auth", $"Password upgraded to PBKDF2 for user={username}");
-        }
-        CurrentUser = user;
-        SaveSession(user.Id);
-        DevLogger.Log("Auth", $"Login success: user={username}, id={user.Id}");
-        return LoginResult.Ok(user);
-    }
 
-    private static LoginResult Fail(string msg)
-    {
-        DevLogger.Log("Auth", "Fail: " + msg);
-        return LoginResult.Fail(msg);
-    }
-
-    public void Logout()
-    {
-        _sessions.Clear();
+        _cfgRepo.UpdateCloudUserId(string.Empty);
         CurrentUser = null;
         _state.Clear();
+
         // 登出时取消所有本地提醒，避免切换账号后仍收到旧账号的喂奶/睡眠提醒
         try
         {
-            var localNoti = Infrastructure.ServiceProvider.Instance.LocalNotification;
+            var localNoti = ServiceProvider.Instance.LocalNotification;
             if (localNoti.IsSupported)
             {
                 _ = localNoti.CancelAllAsync();
             }
         }
         catch { /* 提醒取消失败不影响登出 */ }
+
+        DevLogger.Log("Auth", "Logout ok: token + cloud_user_id cleared");
     }
 
+    // ===== Token 访问（供 BaseApiClient / ApiSyncService 使用） =====
+
+    /// <summary>从 SecureStorage 读取 AccessToken（可能为空）。</summary>
+    public Task<string?> GetAccessTokenAsync(CancellationToken ct = default)
+        => _secureStorage.GetAsync(SecureStorageKeys.AccessToken, ct);
+
+    /// <summary>从 SecureStorage 读取 RefreshToken（可能为空）。</summary>
+    public Task<string?> GetRefreshTokenAsync(CancellationToken ct = default)
+        => _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
+
+    /// <summary>
+    /// 用 RefreshToken 换取新的 AccessToken + RefreshToken（Rotation）。
+    /// 旧 RefreshToken 在服务端已撤销；新 Token 写入 SecureStorage。
+    /// 失败返回 null，调用方应提示用户重新邮箱登录（不删除业务数据）。
+    /// </summary>
+    public async Task<string?> RefreshAccessTokenAsync(CancellationToken ct = default)
+    {
+        var cfg = _cfgRepo.Get();
+        var serverUrl = ResolveServerUrl(cfg.ServerUrl);
+        if (serverUrl is null) return null;
+
+        var refreshToken = await _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            DevLogger.Log("Auth", "Refresh: RefreshToken 缺失");
+            return null;
+        }
+
+        var url = serverUrl.TrimEnd('/') + "/api/auth/refresh";
+        var body = Serialize(new { refreshToken });
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, url)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "application/json"),
+            };
+            using var resp = await Http.SendAsync(req, ct);
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            if (!resp.IsSuccessStatusCode)
+            {
+                DevLogger.Log("Auth", $"Refresh fail: {(int)resp.StatusCode}");
+                return null;
+            }
+            var auth = ExtractData<AuthResponseDto>(json);
+            if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
+            {
+                DevLogger.Log("Auth", "Refresh fail: 响应缺少 data.accessToken");
+                return null;
+            }
+
+            // Rotation：写入新的 Token 对
+            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+            await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+
+            // 若返回了新的 User（profile 更新），更新本地缓存
+            if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
+            {
+                var user = ToAppUser(auth.User);
+                _users.Upsert(user);
+                CurrentUser = user;
+                _state.User = user;
+            }
+
+            DevLogger.Log("Auth", "Refresh ok: new AccessToken + RefreshToken saved");
+            return auth.AccessToken;
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", "Refresh exception: " + ex.Message);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 标记 AccessToken 已失效（401 触发）：删除 SecureStorage 中的 AccessToken。
+    /// 不删除 RefreshToken（仍可尝试 Refresh）；若 Refresh 也失败，调用 LogoutAsync 不删业务数据。
+    /// </summary>
+    public async Task InvalidateAccessTokenAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
+            DevLogger.Log("Auth", "AccessToken invalidated (401)");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", "InvalidateAccessToken failed: " + ex.Message);
+        }
+    }
+
+    // ===== 离线用户 Id =====
+
+    /// <summary>
+    /// 确保 sync_config.local_user_id 已生成（首次启动）。
+    /// 未登录时作为本地业务数据的 user_id，永久不变。
+    /// </summary>
+    public string EnsureLocalUserId()
+    {
+        var cfg = _cfgRepo.Get();
+        return EnsureLocalUserId(cfg);
+    }
+
+    private string EnsureLocalUserId(SyncConfig cfg)
+    {
+        if (!string.IsNullOrWhiteSpace(cfg.LocalUserId))
+            return cfg.LocalUserId;
+
+        var localId = Guid.NewGuid().ToString("N");
+        // 直接写库（无 UpdateLocalUserId 方法，用 Save 全量更新）
+        cfg.LocalUserId = localId;
+        _cfgRepo.Save(cfg);
+        DevLogger.Log("Auth", $"local_user_id generated: {localId}");
+        return localId;
+    }
+
+    // ===== Profile 更新 =====
+
+    /// <summary>更新本地 profile 缓存（昵称/头像/性别）。仅本地，不主动同步到后端。</summary>
     public void UpdateProfile(string nickName, string avatarUrl, int gender)
     {
         if (CurrentUser is null) return;
         CurrentUser.NickName = nickName;
         CurrentUser.AvatarUrl = avatarUrl;
         CurrentUser.Gender = gender;
-        _users.UpdateProfile(CurrentUser);
+        _users.Upsert(CurrentUser);
     }
 
-    /// <summary>
-    /// 启动时尝试从持久化会话恢复登录态。
-    /// 成功条件：存在会话记录 + 用户存在 + 未过期。
-    /// 成功则滑动续期 30 天；失败（无会话/用户不存在/已过期）则清除会话并返回 false。
-    /// </summary>
-    public bool TryRestoreSession()
+    // ===== 辅助方法 =====
+
+    private static string? ResolveServerUrl(string configured)
+        => string.IsNullOrWhiteSpace(configured) ? ServerEndpoints.Primary : configured;
+
+    private static string Serialize<T>(T obj) => JsonSerializer.Serialize(obj, JsonOpts);
+
+    private static T? ExtractData<T>(string json)
     {
-        var session = _sessions.Get();
-        if (session is null)
+        try
         {
-            DevLogger.Log("Auth", "RestoreSession: no session record");
-            return false;
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("data", out var data)) return default;
+            return JsonSerializer.Deserialize<T>(data.GetRawText(), JsonOpts);
         }
-
-        if (DateTime.UtcNow >= session.ExpireAt)
+        catch (Exception ex)
         {
-            DevLogger.Log("Auth", $"RestoreSession: expired (expireAt={session.ExpireAt:O})");
-            _sessions.Clear();
-            return false;
+            DevLogger.Log("Auth", "ExtractData parse fail: " + ex.Message);
+            return default;
         }
+    }
 
-        var user = _users.FindById(session.UserId);
-        if (user is null)
+    private static string? ExtractMessage(string json)
+    {
+        try
         {
-            DevLogger.Log("Auth", $"RestoreSession: user not found (id={session.UserId})");
-            _sessions.Clear();
-            return false;
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("msg", out var msg) &&
+                msg.ValueKind == JsonValueKind.String)
+                return msg.GetString();
         }
-
-        CurrentUser = user;
-        SaveSession(user.Id); // 滑动续期
-        DevLogger.Log("Auth", $"RestoreSession success: user={user.Username}, id={user.Id}, renewed expireAt={DateTime.UtcNow + SessionLifetime:O}");
-        return true;
+        catch { }
+        return null;
     }
 
-    private void SaveSession(string userId)
+    private static AppUser ToAppUser(LoginUserDto dto) => new()
     {
-        var now = DateTime.UtcNow;
-        _sessions.Save(userId, now, now + SessionLifetime);
+        Id = dto.Id,
+        Email = dto.Email,
+        NickName = dto.NickName,
+        AvatarUrl = dto.AvatarUrl,
+        Gender = dto.Gender,
+        MembershipExpireAt = ParseIsoDate(dto.MembershipExpireAt),
+        UpdatedAt = DateTime.UtcNow,
+    };
+
+    private static DateTime? ParseIsoDate(string? iso)
+    {
+        if (string.IsNullOrWhiteSpace(iso)) return null;
+        if (DateTime.TryParse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind, out var dt))
+            return dt;
+        return null;
     }
 
-    /// <summary>PBKDF2-SHA256 密码哈希（格式：iterations:salt:hash，Base64 编码）。
-    /// 兼容历史明文密码：VerifyPassword 自动识别，登录成功后自动迁移。</summary>
-    public static string HashPassword(string password)
+    // ===== DTO（与后端 ChildNotes.Core.Dtos 对齐，前端独立定义避免依赖后端程序集） =====
+
+    private sealed class SendCodeDto
     {
-        var iterations = 600_000;
-        var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, 32);
-        return $"{iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+        public bool Sent { get; set; }
     }
 
-    public static bool VerifyPassword(string password, string stored)
+    private sealed class AuthResponseDto
     {
-        if (string.IsNullOrEmpty(stored)) return false;
-        // PBKDF2 格式：iterations:salt:hash（三段，首段为整数）
-        var parts = stored.Split(':');
-        if (parts.Length == 3 && int.TryParse(parts[0], out var iterations))
-        {
-            try
-            {
-                var salt = Convert.FromBase64String(parts[1]);
-                var expectedHash = Convert.FromBase64String(parts[2]);
-                var computedHash = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, expectedHash.Length);
-                return CryptographicOperations.FixedTimeEquals(computedHash, expectedHash);
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
-        }
-        // 历史明文格式：恒定时间比较
-        return CryptographicOperations.FixedTimeEquals(
-            Encoding.UTF8.GetBytes(password),
-            Encoding.UTF8.GetBytes(stored));
-    }
-
-    /// <summary>判断存储的密码是否需要升级到 PBKDF2 格式。</summary>
-    public static bool PasswordNeedsUpgrade(string stored)
-    {
-        if (string.IsNullOrEmpty(stored)) return false;
-        var parts = stored.Split(':');
-        return parts.Length != 3 || !int.TryParse(parts[0], out _);
+        public string AccessToken { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
+        public LoginUserDto? User { get; set; }
+        public bool NewUser { get; set; }
     }
 }
 
-public sealed class LoginResult
+/// <summary>发送验证码结果。</summary>
+public sealed class SendCodeResult
 {
-    public bool Success { get; init; }
-    public string Message { get; init; } = string.Empty;
-    public AppUser? User { get; init; }
+    public bool Success { get; }
+    public string Message { get; }
+    public SendCodeResult(bool success, string message) { Success = success; Message = message; }
+}
 
-    public static LoginResult Ok(AppUser u) => new() { Success = true, User = u };
-    public static LoginResult Fail(string msg) => new() { Success = false, Message = msg };
+/// <summary>验证验证码结果。</summary>
+public sealed class VerifyCodeResult
+{
+    public bool Success { get; }
+    public string Message { get; }
+    public AppUser? User { get; }
+    public bool NewUser { get; }
+    public VerifyCodeResult(bool success, string message, AppUser? user = null, bool newUser = false)
+    {
+        Success = success; Message = message; User = user; NewUser = newUser;
+    }
+}
+
+/// <summary>与后端 LoginUserDto 对齐的前端 DTO（仅用于反序列化 AuthResponse.User）。</summary>
+public sealed class LoginUserDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string NickName { get; set; } = string.Empty;
+    public string AvatarUrl { get; set; } = string.Empty;
+    public int Gender { get; set; }
+    public string? MembershipExpireAt { get; set; }
+    public bool IsMember { get; set; }
 }

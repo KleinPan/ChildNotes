@@ -7,14 +7,16 @@ namespace ChildNotes.Data.Repositories;
 /// sync_config 表的访问器。该表只有一行（id=1）。
 /// ServerUrl 由用户在同步设置页配置并持久化到此表。
 /// 优化：单行配置表加内存缓存，避免 ApiSyncService 单次同步流程 4-6 次 Get() 各开连接 + PRAGMA 往返。
-///      任何写操作（Save/UpdateSyncResult/UpdateToken/UpdateDeviceId）自动失效缓存。
+///      任何写操作（Save/UpdateSyncResult/UpdateCloudUserId/UpdateDeviceId）自动失效缓存。
+/// v5 schema 重构：移除 username/password/token，新增 cloud_user_id/local_user_id。
+///   AccessToken/RefreshToken 走 ISecureStorage（Android Keystore / Windows DPAPI）。
 /// </summary>
 public sealed class SyncConfigRepository : BaseRepository
 {
     public SyncConfigRepository(DbConnectionFactory factory) : base(factory) { }
 
     private const string SelectSql =
-        "SELECT id, enabled, server_url, username, password, token, " +
+        "SELECT id, enabled, server_url, cloud_user_id, local_user_id, " +
         "last_sync_at, last_sync_status, last_sync_msg, device_id FROM sync_config WHERE id=1";
 
     /// <summary>内存缓存：单行配置表极少变化，仅在写操作后失效。</summary>
@@ -41,9 +43,8 @@ public sealed class SyncConfigRepository : BaseRepository
         Id = c.Id,
         Enabled = c.Enabled,
         ServerUrl = c.ServerUrl,
-        Username = c.Username,
-        Password = c.Password,
-        Token = c.Token,
+        CloudUserId = c.CloudUserId,
+        LocalUserId = c.LocalUserId,
         LastSyncAt = c.LastSyncAt,
         LastSyncStatus = c.LastSyncStatus,
         LastSyncMsg = c.LastSyncMsg,
@@ -65,17 +66,16 @@ public sealed class SyncConfigRepository : BaseRepository
     {
         ExecuteNonQuery(
             @"INSERT OR REPLACE INTO sync_config
-              (id, enabled, server_url, username, password, token,
+              (id, enabled, server_url, cloud_user_id, local_user_id,
                last_sync_at, last_sync_status, last_sync_msg, device_id)
-              VALUES (@id, @e, @u, @un, @p, @t, @lsa, @lss, @lsm, @did)",
+              VALUES (@id, @e, @u, @cuid, @luid, @lsa, @lss, @lsm, @did)",
             cmd =>
             {
                 cmd.Add("@id", 1)
                    .Add("@e", cfg.Enabled ? 1 : 0)
                    .AddString("@u", cfg.ServerUrl, emptyAsNull: true)
-                   .AddString("@un", cfg.Username, emptyAsNull: true)
-                   .AddString("@p", cfg.Password, emptyAsNull: true)
-                   .AddString("@t", cfg.Token, emptyAsNull: true)
+                   .AddString("@cuid", cfg.CloudUserId, emptyAsNull: true)
+                   .AddString("@luid", cfg.LocalUserId, emptyAsNull: true)
                    .Add("@lsa", cfg.LastSyncAt is null ? DBNull.Value : (object)ToUtcO(cfg.LastSyncAt.Value))
                    .AddString("@lss", cfg.LastSyncStatus, emptyAsNull: true)
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
@@ -118,14 +118,12 @@ public sealed class SyncConfigRepository : BaseRepository
         InvalidateCache();
     }
 
-    public void UpdateToken(string token)
+    /// <summary>更新云端用户 Id（登录成功后写入；退出登录传空串）。</summary>
+    public void UpdateCloudUserId(string cloudUserId)
     {
-        // token 列有 NOT NULL 约束，空 token 必须写空字符串而非 NULL。
-        // 401 清 token 时会传 ""，若 emptyAsNull=true 会写成 DBNull 撞约束抛 SqliteException，
-        // 导致整个请求链路中断（连自动重新登录重试都走不到）。
         ExecuteNonQuery(
-            "UPDATE sync_config SET token=@t WHERE id=1",
-            cmd => cmd.AddString("@t", token ?? string.Empty, emptyAsNull: false));
+            "UPDATE sync_config SET cloud_user_id=@c WHERE id=1",
+            cmd => cmd.AddString("@c", cloudUserId ?? string.Empty, emptyAsNull: false));
         InvalidateCache();
     }
 
@@ -148,12 +146,11 @@ public sealed class SyncConfigRepository : BaseRepository
         Id = r.GetInt32(0),
         Enabled = r.GetInt32(1) == 1,
         ServerUrl = r.GetString(2),
-        Username = r.GetString(3),
-        Password = r.GetString(4),
-        Token = r.GetString(5),
-        LastSyncAt = r.IsDBNull(6) ? null : DateTimeExtensions.ParseDb(r.GetString(6)),
-        LastSyncStatus = r.IsDBNull(7) ? null : r.GetString(7),
-        LastSyncMsg = r.IsDBNull(8) ? null : r.GetString(8),
-        DeviceId = r.IsDBNull(9) ? string.Empty : r.GetString(9),
+        CloudUserId = r.IsDBNull(3) ? string.Empty : r.GetString(3),
+        LocalUserId = r.IsDBNull(4) ? string.Empty : r.GetString(4),
+        LastSyncAt = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
+        LastSyncStatus = r.IsDBNull(6) ? null : r.GetString(6),
+        LastSyncMsg = r.IsDBNull(7) ? null : r.GetString(7),
+        DeviceId = r.IsDBNull(8) ? string.Empty : r.GetString(8),
     };
 }

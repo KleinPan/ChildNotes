@@ -6,12 +6,17 @@ using System.Text.Json.Serialization;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
+using ChildNotes.Services.Storage;
 
 namespace ChildNotes.Services;
 
 /// <summary>
 /// HTTP API 客户端基类：统一 HttpClient、Bearer 鉴权、{state,msg,data} 信封解析与 401 处理。
-/// 派生类仅需实现具体业务方法，复用 SendAsync/SendWithTokenV2Async/ExtractData 等工具方法。
+/// v5 重构：
+///   - 移除 sync_config.username/password 自动登录（/api/auth/login）
+///   - AccessToken 从 ISecureStorage 读取（非明文 SQLite）
+///   - 401 时触发 RefreshToken Rotation（/api/auth/refresh），仍失败则清空登录态并返回 null
+///   - 认证失败不删除业务数据，仅清空 SecureStorage 与 CloudUserId（由 AuthService.LogoutAsync 处理）
 /// </summary>
 public abstract class BaseApiClient
 {
@@ -27,13 +32,10 @@ public abstract class BaseApiClient
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
-    /// <summary>使用配置中的 ServerUrl/Token 发送请求；401 时自动清空 token 并返回 null。</summary>
-    /// <remarks>
-    /// 与仅做"有 token 就发、没有就放弃"的早期实现不同，现在 token 为空时会尝试用
-    /// sync_config 中的 username/password 自动登录换取 token，避免同步流程已登录、
-    /// 但其它在线功能（如家人管理）因读到的缓存 token 仍为空而报"未配置"。
-    /// 登录失败仍返回 null，由调用方决定如何提示。
-    /// </remarks>
+    /// <summary>
+    /// 使用 SecureStorage 中的 AccessToken 发送请求。
+    /// 401 时自动尝试 RefreshToken Rotation；仍失败则返回 null（登录态已清空，业务数据保留）。
+    /// </summary>
     protected async Task<HttpResponseMessage?> SendAsync(
         SyncConfigRepository cfgRepo,
         HttpMethod method, string path, string? body, CancellationToken ct)
@@ -44,125 +46,40 @@ public abstract class BaseApiClient
             DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
             return null;
         }
-        var token = cfg.Token;
+        var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
+            ? ServerEndpoints.Primary
+            : cfg.ServerUrl!;
+
+        var auth = ServiceProvider.Instance.AuthService;
+        var token = await auth.GetAccessTokenAsync(ct);
         if (string.IsNullOrWhiteSpace(token))
         {
-            token = await TryLoginAsync(cfgRepo, cfg, ct);
+            // AccessToken 缺失：尝试用 RefreshToken 续期
+            token = await auth.RefreshAccessTokenAsync(ct);
             if (string.IsNullOrEmpty(token))
             {
-                DevLogger.Log(GetType().Name, $"{method} {path}: token 未配置且自动登录失败");
+                DevLogger.Log(GetType().Name, $"{method} {path}: token 缺失且 Refresh 失败");
                 return null;
             }
         }
-        var resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, token, method, path, body, ct);
-        // 401 时 SendCoreAsync 已清空 token，这里再尝试重新登录重试一次，
-        // 覆盖"token 在 DB 中已过期、但本地缓存还在用旧值"的场景。
-        if (resp is null && string.IsNullOrEmpty(cfgRepo.Get().Token))
+
+        var resp = await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess: true);
+        // 401 时 SendCoreAsync 已删除 AccessToken，这里尝试 Refresh 续期重试一次
+        if (resp is null && string.IsNullOrEmpty(await auth.GetAccessTokenAsync(ct)))
         {
-            var newToken = await TryLoginAsync(cfgRepo, cfg, ct);
+            var newToken = await auth.RefreshAccessTokenAsync(ct);
             if (!string.IsNullOrEmpty(newToken))
             {
-                resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, newToken, method, path, body, ct);
+                resp = await SendCoreAsync(serverUrl, newToken, method, path, body, ct, swallowNonSuccess: true);
             }
         }
         return resp;
     }
 
     /// <summary>
-    /// 用 sync_config 中的 username/password 向服务器登录换取 token，
-    /// 成功后写回 DB（UpdateToken）并返回 token；失败返回 null。
-    /// 供 <see cref="SendAsync"/> 在 token 缺失时自动补救，以及派生类按需调用。
-    /// 同时读取响应中的 data.user.id，若与本地 user.id 不一致会触发全量迁移。
-    /// </summary>
-    protected static async Task<string?> TryLoginAsync(
-        SyncConfigRepository cfgRepo, SyncConfig cfg, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(cfg.Username) || string.IsNullOrWhiteSpace(cfg.Password))
-            return null;
-
-        var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
-            ? ServerEndpoints.Primary
-            : cfg.ServerUrl!;
-        var url = serverUrl.TrimEnd('/') + "/api/auth/login";
-        var body = Serialize(new { username = cfg.Username, password = cfg.Password });
-        using var req = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = new StringContent(body, Encoding.UTF8, "application/json"),
-        };
-        try
-        {
-            using var resp = await Http.SendAsync(req, ct);
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("ApiClient", $"Auto-login fail: {(int)resp.StatusCode} {json}");
-                return null;
-            }
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("data", out var data) ||
-                !data.TryGetProperty("token", out var tokenEl) ||
-                string.IsNullOrWhiteSpace(tokenEl.GetString()))
-            {
-                DevLogger.Log("ApiClient", "Auto-login fail: 响应缺少 data.token");
-                return null;
-            }
-            var token = tokenEl.GetString()!;
-            cfgRepo.UpdateToken(token);
-            // 读取后端 user.id 并做本地迁移
-            if (data.TryGetProperty("user", out var userEl) && userEl.TryGetProperty("id", out var idEl))
-            {
-                var remoteUserId = idEl.GetString();
-                if (!string.IsNullOrEmpty(remoteUserId))
-                    MigrateLocalUserIdIfNeeded(remoteUserId);
-            }
-            DevLogger.Log("ApiClient", "Auto-login ok, token updated");
-            return token;
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("ApiClient", "Auto-login exception: " + ex.Message);
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// 若本地 CurrentUser.Id 与后端返回的 remoteUserId 不一致，
-    /// 全量替换本地 user_id 及所有关联表（baby/child_record/milestone/ai_analysis_record）。
-    /// 这是首次同步推送 0 条数据的根因：本地注册生成的 id 与后端 id 不同，
-    /// 后端 PushAsync 的 `item.UserId != uid` 校验会静默跳过所有数据。
-    /// </summary>
-    internal static void MigrateLocalUserIdIfNeeded(string remoteUserId)
-    {
-        try
-        {
-            var localUser = ServiceProvider.Instance.AuthService.CurrentUser;
-            if (localUser is null || localUser.Id == remoteUserId)
-                return;
-            var userRepo = ServiceProvider.Instance.UserRepository;
-            if (userRepo.UpdateIdIfDifferent(localUser.Id, remoteUserId))
-            {
-                // localUser 与 AppState.User 是同一引用，更新 Id 后两边都生效
-                localUser.Id = remoteUserId;
-                DevLogger.Log("ApiClient", $"Local user_id migrated: -> {remoteUserId}");
-            }
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("ApiClient", "MigrateLocalUserId failed: " + ex.Message);
-        }
-    }
-
-    /// <summary>使用显式 token 发送（用于登录或暂未持久化 token 的多步流程）。</summary>
-    protected static async Task<HttpResponseMessage?> SendWithTokenAsync(
-        SyncConfigRepository cfgRepo, string serverUrl, string token,
-        HttpMethod method, string path, string? body, CancellationToken ct)
-        => await SendCoreAsync(cfgRepo, serverUrl, token, method, path, body, ct);
-
-    /// <summary>
-    /// 与 <see cref="SendAsync"/> 行为一致（token 自动登录、401 重试），但非 2xx 响应
-    /// 会返回 <see cref="HttpResponseMessage"/> 而非 null，供调用方读取后端业务错误体
-    /// （<c>{state,msg,data}</c> 信封中的 msg/code）。
-    /// 仅以下情况返回 null：server 未配置、token 缺失且自动登录失败、网络异常、401 重试仍失败。
+    /// 与 <see cref="SendAsync"/> 行为一致，但非 2xx 响应会返回 <see cref="HttpResponseMessage"/>
+    /// 而非 null，供调用方读取后端业务错误体（{state,msg,data} 信封中的 msg/code）。
+    /// 仅以下情况返回 null：server 未配置、token 缺失且 Refresh 失败、网络异常、401 重试仍失败。
     /// </summary>
     protected async Task<HttpResponseMessage?> SendWithErrorAsync(
         SyncConfigRepository cfgRepo,
@@ -174,32 +91,42 @@ public abstract class BaseApiClient
             DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
             return null;
         }
-        var token = cfg.Token;
+        var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
+            ? ServerEndpoints.Primary
+            : cfg.ServerUrl!;
+
+        var auth = ServiceProvider.Instance.AuthService;
+        var token = await auth.GetAccessTokenAsync(ct);
         if (string.IsNullOrWhiteSpace(token))
         {
-            token = await TryLoginAsync(cfgRepo, cfg, ct);
+            token = await auth.RefreshAccessTokenAsync(ct);
             if (string.IsNullOrEmpty(token))
             {
-                DevLogger.Log(GetType().Name, $"{method} {path}: token 未配置且自动登录失败");
+                DevLogger.Log(GetType().Name, $"{method} {path}: token 缺失且 Refresh 失败");
                 return null;
             }
         }
-        var resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, token, method, path, body, ct, swallowNonSuccess: false);
-        // 401 时 SendCoreAsync 已清空 token，这里再尝试重新登录重试一次，
-        // 覆盖"token 在 DB 中已过期、但本地缓存还在用旧值"的场景。
-        if (resp is null && string.IsNullOrEmpty(cfgRepo.Get().Token))
+
+        var resp = await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess: false);
+        if (resp is null && string.IsNullOrEmpty(await auth.GetAccessTokenAsync(ct)))
         {
-            var newToken = await TryLoginAsync(cfgRepo, cfg, ct);
+            var newToken = await auth.RefreshAccessTokenAsync(ct);
             if (!string.IsNullOrEmpty(newToken))
             {
-                resp = await SendCoreAsync(cfgRepo, cfg.ServerUrl!, newToken, method, path, body, ct, swallowNonSuccess: false);
+                resp = await SendCoreAsync(serverUrl, newToken, method, path, body, ct, swallowNonSuccess: false);
             }
         }
         return resp;
     }
 
+    /// <summary>使用显式 token 发送（用于暂未持久化 token 的多步流程，如登录验证码验证）。</summary>
+    protected static async Task<HttpResponseMessage?> SendWithTokenAsync(
+        string serverUrl, string token,
+        HttpMethod method, string path, string? body, CancellationToken ct)
+        => await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess: true);
+
     private static async Task<HttpResponseMessage?> SendCoreAsync(
-        SyncConfigRepository cfgRepo, string serverUrl, string token,
+        string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct,
         bool swallowNonSuccess = true)
     {
@@ -213,8 +140,9 @@ public abstract class BaseApiClient
             var resp = await Http.SendAsync(req, ct);
             if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                cfgRepo.UpdateToken("");
-                DevLogger.Log("ApiClient", $"{method} {path}: 401 Unauthorized, token cleared");
+                // 401：删除 AccessToken（不删 RefreshToken，外层可尝试 Refresh）
+                _ = ServiceProvider.Instance.AuthService.InvalidateAccessTokenAsync(ct);
+                DevLogger.Log("ApiClient", $"{method} {path}: 401 Unauthorized, AccessToken invalidated");
                 return null;
             }
             if (!resp.IsSuccessStatusCode)
@@ -269,10 +197,10 @@ public abstract class BaseApiClient
     /// <summary>
     /// V2 版本：与 <see cref="SendWithTokenAsync"/> 行为一致，但失败时抛出
     /// <see cref="SyncException"/> 而非返回 null，便于 <see cref="SyncPolicy"/> 做重试分类。
-    /// 401 仍会清空 token，并抛 <see cref="SyncException"/>（Kind=Auth）。
+    /// 401 仍会清 AccessToken，并抛 <see cref="SyncException"/>（Kind=Auth）。
     /// </summary>
     protected static async Task<HttpResponseMessage> SendWithTokenV2Async(
-        SyncConfigRepository cfgRepo, string serverUrl, string token,
+        string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct)
     {
         var url = serverUrl.TrimEnd('/') + path;
@@ -299,8 +227,9 @@ public abstract class BaseApiClient
 
         if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            cfgRepo.UpdateToken("");
-            DevLogger.Log("ApiClient", $"{method} {path}: 401 Unauthorized, token cleared");
+            // 401：删除 AccessToken（不删 RefreshToken，外层 EnsureTokenAsync 可尝试 Refresh）
+            _ = ServiceProvider.Instance.AuthService.InvalidateAccessTokenAsync(ct);
+            DevLogger.Log("ApiClient", $"{method} {path}: 401 Unauthorized, AccessToken invalidated");
             resp.Dispose();
             throw new SyncException(SyncErrorKind.Auth, "鉴权失败", 401);
         }

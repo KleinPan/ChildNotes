@@ -55,7 +55,7 @@ public sealed class MembershipApiClient : BaseApiClient
         try
         {
             var cfg = _cfgRepo.Get();
-            DevLogger.Log("Membership", $"[DevActivate] 开始：ServerUrl={cfg.ServerUrl ?? "(空)"}, Token长度={cfg.Token?.Length ?? 0}");
+            DevLogger.Log("Membership", $"[DevActivate] 开始：ServerUrl={cfg.ServerUrl ?? "(空)"}");
             if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
             {
                 DevLogger.Log("Membership", "[DevActivate] 跳过：ServerUrl 未配置", DevLogger.Level.Warn);
@@ -64,7 +64,7 @@ public sealed class MembershipApiClient : BaseApiClient
             using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/membership/dev/activate", null, ct);
             if (resp is null)
             {
-                DevLogger.Log("Membership", "[DevActivate] 失败：SendAsync 返回 null（token 未配置/自动登录失败/网络异常）", DevLogger.Level.Warn);
+                DevLogger.Log("Membership", "[DevActivate] 失败：SendAsync 返回 null（token 缺失/Refresh 失败/网络异常）", DevLogger.Level.Warn);
                 return false;
             }
             var body = resp.IsSuccessStatusCode ? "(成功)" : await resp.Content.ReadAsStringAsync(ct);

@@ -147,7 +147,7 @@ public sealed class UploadService
 
     /// <summary>
     /// 异步上传本地图片到后端 /api/upload。成功返回服务器 URL，失败返回 null（不抛异常）。
-    /// 需要 _cfgRepo 已注入；未配置同步或无 token 时返回 null。
+    /// v5：AccessToken 从 ISecureStorage 读取（非明文 SQLite）；缺失/401 尝试 RefreshToken 续期。
     /// </summary>
     public async Task<string?> UploadToServerAsync(string localPath, CancellationToken ct = default)
     {
@@ -156,7 +156,19 @@ public sealed class UploadService
 
         var cfg = _cfgRepo.Get();
         var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl) ? ServerEndpoints.Primary : cfg.ServerUrl;
-        if (string.IsNullOrWhiteSpace(cfg.Token)) return null;
+
+        // v5：从 SecureStorage 读取 AccessToken；缺失时尝试 Refresh 续期
+        var auth = Infrastructure.ServiceProvider.Instance.AuthService;
+        var token = await auth.GetAccessTokenAsync(ct);
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            token = await auth.RefreshAccessTokenAsync(ct);
+            if (string.IsNullOrEmpty(token))
+            {
+                DevLogger.Log("Upload", "UploadToServer skip: token 缺失且 Refresh 失败");
+                return null;
+            }
+        }
 
         var url = serverUrl.TrimEnd('/') + "/api/upload";
         using var form = new MultipartFormDataContent();
@@ -175,31 +187,45 @@ public sealed class UploadService
         form.Add(fileContent, "file", fileName);
 
         using var req = new HttpRequestMessage(HttpMethod.Post, url) { Content = form };
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Token);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         try
         {
             using var resp = await Http.SendAsync(req, ct);
+            if (resp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                // 401：删除 AccessToken，尝试 Refresh。
+                // 不自动重试上传（StreamContent 已被消费，需调用方重新调用 UploadToServerAsync）。
+                await auth.InvalidateAccessTokenAsync(ct);
+                _ = await auth.RefreshAccessTokenAsync(ct);
+                DevLogger.Log("Upload", "UploadToServer 401，已 Refresh token，请稍后重试上传");
+                return null;
+            }
             if (!resp.IsSuccessStatusCode)
             {
                 DevLogger.Log("Upload", $"UploadToServer fail: {(int)resp.StatusCode}");
                 return null;
             }
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            // 后端响应信封：{ state, msg, data: { url } }
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("data", out var data) &&
-                data.TryGetProperty("url", out var urlEl))
-            {
-                return urlEl.GetString();
-            }
-            DevLogger.Log("Upload", "Upload response missing data.url");
-            return null;
+            return await ExtractUrlAsync(resp, ct);
         }
         catch (Exception ex)
         {
             DevLogger.Log("Upload", "UploadToServer ex: " + ex.Message);
             return null;
         }
+    }
+
+    private static async Task<string?> ExtractUrlAsync(System.Net.Http.HttpResponseMessage resp, CancellationToken ct)
+    {
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        // 后端响应信封：{ state, msg, data: { url } }
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        if (doc.RootElement.TryGetProperty("data", out var data) &&
+            data.TryGetProperty("url", out var urlEl))
+        {
+            return urlEl.GetString();
+        }
+        DevLogger.Log("Upload", "Upload response missing data.url");
+        return null;
     }
 
     private static string NormalizeExt(string? ext)

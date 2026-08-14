@@ -186,63 +186,65 @@ public partial class App : Application
         // 原 1.5s 过长，导致 500ms 完成初始化后仍空等 1s，拖慢启动感知。
         const int minLoadingMs = 500;
         var initStart = Stopwatch.GetTimestamp();
-        _ = Task.Run(() =>
+        _ = Task.Run(async () =>
         {
-            var restored = TryRestoreSession();
+            var restored = await TryRestoreSessionAsync();
             var initElapsed = Stopwatch.GetElapsedTime(initStart);
             var waitMs = Math.Max(0, minLoadingMs - (int)initElapsed.TotalMilliseconds);
             if (waitMs > 0) Thread.Sleep(waitMs);
-            DevLogger.Log("Startup", $"TryRestoreSession (restored={restored}, init={initElapsed.TotalMilliseconds}ms, waited={waitMs}ms)");
+            DevLogger.Log("Startup", $"TryRestoreSessionAsync (restored={restored}, init={initElapsed.TotalMilliseconds}ms, waited={waitMs}ms)");
 
             Dispatcher.UIThread.Post(() =>
             {
+                // v5：未登录也进入主界面（离线模式可用），登录从 Mine 页等入口触发
                 if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
                     && desktop.MainWindow is not null)
                 {
-                    if (restored) EnterMainShell(desktop.MainWindow);
-                    else ShowLogin(desktop.MainWindow);
+                    EnterMainShell(desktop.MainWindow);
                 }
                 else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
                 {
-                    if (restored) EnterMainShell(null);
-                    else ShowLogin(singleViewPlatform);
+                    EnterMainShell(null);
                 }
             });
         });
     }
 
     /// <summary>
-    /// 启动时尝试从持久化会话恢复登录态。
-    /// 成功则同步 AppState / BabyList，失败返回 false（走登录页）。
-    /// 任何异常都吞掉并回退到登录页，避免恢复逻辑阻断启动。
+    /// 启动时尝试从持久化会话恢复登录态（离线优先）。
+    /// v5：未登录（CloudUserId 空）直接返回 true 进入主界面（离线模式可用）。
+    /// 已登录则恢复 CurrentUser；任何异常都吞掉进入主界面，避免阻断启动。
+    /// 登录不再是使用 App 的前置条件，登录的作用是开启云同步。
     /// </summary>
-    private bool TryRestoreSession()
+    private async Task<bool> TryRestoreSessionAsync()
     {
         try
         {
-            if (!ServiceProvider.Instance.AuthService.TryRestoreSession())
-            {
-                ReleaseLogger.Info("App", "Session restore: no valid session, will show login");
-                return false;
-            }
+            // 离线优先：无论是否登录都进入主界面。TryRestoreSessionAsync 内部：
+            //   - CloudUserId 空 → 返回 false（离线模式），但仍生成 LocalUserId
+            //   - CloudUserId 非空 → 恢复 CurrentUser 返回 true
+            var loggedIn = await ServiceProvider.Instance.AuthService.TryRestoreSessionAsync();
             ServiceProvider.Instance.BindUserToState();
             // 会话恢复时确保欢迎消息存在（仅当用户从未有过任何消息时注入一次）
             ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
             ServiceProvider.Instance.BabyService.LoadBabyList();
-            ReleaseLogger.Info("App", "Session restored successfully");
+            ReleaseLogger.Info("App", loggedIn ? "Session restored (logged in)" : "Offline mode (not logged in)");
+            // v5：未登录也进入主界面（离线模式），不强制跳登录页
             return true;
         }
         catch (Exception ex)
         {
             DevLogger.Log("App", "TryRestoreSession EXCEPTION: " + ex);
-            ReleaseLogger.Warn("App", ex, "Session restore failed, falling back to login");
-            return false;
+            ReleaseLogger.Warn("App", ex, "Session restore failed, entering offline mode");
+            // 即使恢复失败也进入主界面（离线模式），不阻断用户使用
+            return true;
         }
     }
 
     /// <summary>
-    /// 恢复登录成功后直接进入主界面（复用 OnLoginSucceeded 的初始化逻辑）。
+    /// 进入主界面（离线模式或已登录均走此入口）。
     /// desktopHost 为 MainWindow 类型时设为 desktop.MainWindow.Content；否则走 RootContainer 模式（移动端）。
+    /// v5：未登录也走此方法（离线模式可用），登录从 Mine 页等入口触发。
     /// </summary>
     private void EnterMainShell(object? desktopHost)
     {
@@ -262,16 +264,15 @@ public partial class App : Application
             {
                 _rootContainer.SetContent(_shellView);
             }
-            DevLogger.Log("App", "EnterMainShell done (session restored)");
-            ReleaseLogger.Info("App", "EnterMainShell done (session restored)");
+            DevLogger.Log("App", "EnterMainShell done");
+            ReleaseLogger.Info("App", "EnterMainShell done");
         }
         catch (Exception ex)
         {
             DevLogger.Log("App", "EnterMainShell EXCEPTION: " + ex);
-            ReleaseLogger.Error("App", ex, "EnterMainShell failed, falling back to login");
-            // 恢复失败时回退到登录页
-            if (desktopHost is MainWindow w) ShowLogin(w);
-            else if (ApplicationLifetime is ISingleViewApplicationLifetime sv) ShowLogin(sv);
+            ReleaseLogger.Error("App", ex, "EnterMainShell failed");
+            // v5：不再回退到登录页（登录是可选的），抛出异常便于排查
+            throw;
         }
     }
 
@@ -387,7 +388,7 @@ public partial class App : Application
         }
     }
 
-    private void OnLogout()
+    private async void OnLogout()
     {
         DevLogger.Log("App", "OnLogout");
         ReleaseLogger.Info("App", "User logout");
@@ -399,15 +400,40 @@ public partial class App : Application
         }
         _shellView = null;
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-            && desktop.MainWindow is not null)
+        // v5：登出 = 清空 Token + CloudUserId，但保留业务数据，返回主界面（离线模式）。
+        // 不跳登录页：登录是可选的，登出后用户可继续离线使用本地 SQLite。
+        try
         {
-            ShowLogin(desktop.MainWindow);
+            await ServiceProvider.Instance.AuthService.LogoutAsync();
         }
-        else if (ApplicationLifetime is ISingleViewApplicationLifetime single)
+        catch (Exception ex)
         {
-            ShowLogin(single);
+            DevLogger.Log("App", "LogoutAsync failed (non-fatal): " + ex.Message);
         }
+
+        // 进入主界面（离线模式），清空 BabyList 后重新加载本地数据
+        ServiceProvider.Instance.AppState.Clear();
+        try
+        {
+            ServiceProvider.Instance.BabyService.LoadBabyList();
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("App", "LoadBabyList after logout failed: " + ex.Message);
+        }
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                && desktop.MainWindow is not null)
+            {
+                EnterMainShell(desktop.MainWindow);
+            }
+            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+            {
+                EnterMainShell(null);
+            }
+        });
     }
 
     /// <summary>系统返回键入口：优先关闭当前弹层，返回 false 表示无弹层可关。</summary>

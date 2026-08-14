@@ -9,8 +9,8 @@ namespace ChildNotes.Services.Push;
 /// <summary>
 /// 后端推送 API 的默认实现：调用 /api/push/register-token 与 /api/push/unregister-token。
 ///
-/// 当前后端接口尚未实现，调用失败时静默吞掉异常（推送为辅助功能，不应阻塞主流程）。
-/// 后端 PushController 实现后，本类无需修改即可正常工作。
+/// v5：AccessToken 从 ISecureStorage 读取（非明文 SQLite）；缺失时尝试 RefreshToken 续期。
+/// 后端接口未实现时静默吞掉异常（推送为辅助功能，不应阻塞主流程）。
 /// </summary>
 public sealed class PushApiClient : IPushService
 {
@@ -28,10 +28,19 @@ public sealed class PushApiClient : IPushService
         {
             var cfg = _cfgRepo.Get();
             var serverUrl = cfg.ServerUrl;
-            if (string.IsNullOrWhiteSpace(serverUrl) || string.IsNullOrWhiteSpace(cfg.Token))
+            if (string.IsNullOrWhiteSpace(serverUrl)) return;
+
+            // v5：从 SecureStorage 读取 AccessToken
+            var auth = ServiceProvider.Instance.AuthService;
+            var accessToken = await auth.GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(accessToken))
             {
-                DevLogger.Log("Push", $"RegisterToken skipped: serverUrl/token empty");
-                return;
+                accessToken = await auth.RefreshAccessTokenAsync();
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    DevLogger.Log("Push", "RegisterToken skipped: token 缺失且 Refresh 失败");
+                    return;
+                }
             }
 
             var url = $"{serverUrl.TrimEnd('/')}/api/push/register-token";
@@ -40,7 +49,7 @@ public sealed class PushApiClient : IPushService
             {
                 Content = new StringContent(body, Encoding.UTF8, "application/json")
             };
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Token);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             req.Headers.Add("X-Device-Id", cfg.DeviceId ?? string.Empty);
 
             using var resp = await Http.SendAsync(req);
@@ -66,11 +75,19 @@ public sealed class PushApiClient : IPushService
         {
             var cfg = _cfgRepo.Get();
             var serverUrl = cfg.ServerUrl;
-            if (string.IsNullOrWhiteSpace(serverUrl) || string.IsNullOrWhiteSpace(cfg.Token)) return;
+            if (string.IsNullOrWhiteSpace(serverUrl)) return;
+
+            var auth = ServiceProvider.Instance.AuthService;
+            var accessToken = await auth.GetAccessTokenAsync();
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                accessToken = await auth.RefreshAccessTokenAsync();
+                if (string.IsNullOrEmpty(accessToken)) return;
+            }
 
             var url = $"{serverUrl.TrimEnd('/')}/api/push/unregister-token";
             using var req = new HttpRequestMessage(HttpMethod.Post, url);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", cfg.Token);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             if (!string.IsNullOrEmpty(cfg.DeviceId))
             {
                 req.Headers.Add("X-Device-Id", cfg.DeviceId);

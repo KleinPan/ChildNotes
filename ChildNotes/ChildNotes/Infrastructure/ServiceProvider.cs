@@ -4,6 +4,7 @@ using ChildNotes.Data;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Services;
 using ChildNotes.Services.Push;
+using ChildNotes.Services.Storage;
 
 namespace ChildNotes.Infrastructure;
 
@@ -13,9 +14,15 @@ public sealed class ServiceProvider
 
     public DbConnectionFactory DbFactory { get; }
     public AppState AppState { get; }
-    public SessionRepository SessionRepository { get; }
     public UserRepository UserRepository { get; }
-    public AuthService AuthService { get; }
+    public AuthService AuthService { get; private set; }
+    /// <summary>
+    /// 平台安全存储：默认 DpapiSecureStorage（Windows DPAPI），
+    /// Android/iOS 平台启动时通过 OverrideSecureStorage 注入平台实现
+    /// （Android Keystore / iOS Keychain）。
+    /// AccessToken/RefreshToken 不再以明文保存到 SQLite。
+    /// </summary>
+    public ISecureStorage SecureStorage { get; private set; }
     public BabyService BabyService { get; }
     public RecordService RecordService { get; }
     public StatisticsService StatisticsService { get; }
@@ -88,11 +95,14 @@ public sealed class ServiceProvider
         EnsureDeviceId();
 
         AppState = new AppState();
+        // SecureStorage 默认用 Windows DPAPI（桌面端调试用）；Android/iOS 在平台启动时通过 OverrideSecureStorage 注入
+        SecureStorage = new DpapiSecureStorage();
         UserRepository = new UserRepository(DbFactory);
         var babyRepo = new BabyRepository(DbFactory);
         var recordRepo = new RecordRepository(DbFactory);
-        SessionRepository = new SessionRepository(DbFactory);
-        AuthService = new AuthService(UserRepository, SessionRepository, AppState, SyncConfigRepository);
+        AuthService = new AuthService(UserRepository, AppState, SyncConfigRepository, SecureStorage);
+        // AppState 需要读 SyncConfigRepository 计算 UserId（已登录=CloudUserId / 未登录=LocalUserId）
+        AppState.BindSyncConfigRepository(SyncConfigRepository);
         BabyService = new BabyService(babyRepo, AppState);
         RecordService = new RecordService(recordRepo, AppState);
         StatisticsService = new StatisticsService(RecordService);
@@ -150,6 +160,10 @@ public sealed class ServiceProvider
         // Android 平台在 MainActivity.OnCreate 中通过 OverridePhotoPicker 注入 AndroidPhotoPicker。
         PhotoPicker = new Services.PhotoPicker.DesktopPhotoPicker(() => MainView);
 
+        // v5：首次启动生成 local_user_id（离线模式业务数据的 user_id，永久不变）。
+        // 已存在则跳过。必须在 AuthService 构造之后调用（AuthService.EnsureLocalUserId 内部会读 SyncConfigRepository）。
+        AuthService.EnsureLocalUserId();
+
         DevLogger.Log("DI", "ServiceProvider ctor done");
     }
 
@@ -171,7 +185,22 @@ public sealed class ServiceProvider
     public void BindUserToState()
     {
         AppState.User = AuthService.CurrentUser;
-        DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Username}, id={AppState.User?.Id}");
+        DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Email}, id={AppState.User?.Id}, userId={AppState.UserId}");
+    }
+
+    /// <summary>
+    /// 运行时注入平台安全存储实现。
+    /// 由 Android MainActivity.OnCreate 调用，覆盖默认的 DpapiSecureStorage（Windows DPAPI）。
+    /// Android 实现使用 Android Keystore（AES-256-GCM，密钥不可导出）。
+    /// 注入后必须重新创建 AuthService 以使用新 SecureStorage。
+    /// </summary>
+    public void OverrideSecureStorage(ISecureStorage implementation)
+    {
+        SecureStorage = implementation;
+        // 重新创建 AuthService，使其使用平台 SecureStorage（旧的 DpapiSecureStorage 弃用）
+        AuthService = new AuthService(UserRepository, AppState, SyncConfigRepository, SecureStorage);
+        AppState.BindSyncConfigRepository(SyncConfigRepository);
+        DevLogger.Log("DI", $"SecureStorage overridden: {implementation.GetType().Name}, AuthService recreated");
     }
 
     /// <summary>
@@ -199,8 +228,11 @@ public sealed class ServiceProvider
 
     /// <summary>
     /// 检测 DB schema 版本，若与当前期望不符则删除整个 DB 文件让其重建。
-    /// 项目未正式上线，不做数据迁移，直接重建最稳妥。
-    /// 当前期望：业务表 child_record.id 列类型为 TEXT。若为 INTEGER（旧版 schema）则重建。
+    /// 项目未正式上线，不做数据迁移，直接重建最稳妥（v5 重构删除旧 username/password_hash 列，
+    /// SQLite 不支持 DROP UNIQUE 列，迁移路径无法走 ALTER TABLE DROP COLUMN）。
+    /// 检测条件（任一满足即重建）：
+    ///   1) PRAGMA user_version &lt; CurrentSchemaVersion（旧版本 schema）
+    ///   2) child_record.id 列类型为 INTEGER（极旧版 schema，user_version 可能不准）
     /// </summary>
     private static void EnsureSchemaVersion(string dbPath)
     {
@@ -211,16 +243,28 @@ public sealed class ServiceProvider
         {
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath};Pooling=False");
             conn.Open();
-            using var cmd = conn.CreateCommand();
-            // child_record 是核心业务表，id 列类型反映 schema 版本
-            cmd.CommandText = "PRAGMA table_info(child_record);";
-            using var r = cmd.ExecuteReader();
-            while (r.Read())
+            using var verCmd = conn.CreateCommand();
+            verCmd.CommandText = "PRAGMA user_version;";
+            var curVer = Convert.ToInt32(verCmd.ExecuteScalar() ?? 0, System.Globalization.CultureInfo.InvariantCulture);
+            if (curVer < DbInitializer.CurrentSchemaVersion)
             {
-                if (r.GetString(1) == "id" && r.GetString(2).Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
+                needRebuild = true;
+                DevLogger.Log("DI", $"Schema outdated (user_version={curVer} < {DbInitializer.CurrentSchemaVersion}), will rebuild DB.");
+            }
+            if (!needRebuild)
+            {
+                using var cmd = conn.CreateCommand();
+                // child_record 是核心业务表，id 列类型反映极旧版 schema（user_version 可能不准）
+                cmd.CommandText = "PRAGMA table_info(child_record);";
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
                 {
-                    needRebuild = true;
-                    break;
+                    if (r.GetString(1) == "id" && r.GetString(2).Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
+                    {
+                        needRebuild = true;
+                        DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), will rebuild DB.");
+                        break;
+                    }
                 }
             }
         }
@@ -229,7 +273,7 @@ public sealed class ServiceProvider
 
         if (needRebuild)
         {
-            DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), rebuilding DB.");
+            DevLogger.Log("DI", "Rebuilding DB file.");
             // SQLite 启用 WAL 模式时会有 -wal 和 -shm 旁路文件，需一起处理
             var wal = dbPath + "-wal";
             var shm = dbPath + "-shm";

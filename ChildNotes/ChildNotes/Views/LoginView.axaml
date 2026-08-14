@@ -25,23 +25,23 @@
                 <Border Grid.Row="1" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}"
                         Margin="12,0" Padding="14">
                     <StackPanel>
-                        <TextBlock Text="{DynamicResource Login_Account}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
-                                   IsVisible="{Binding !IsRegisterMode}"/>
-                        <TextBlock Text="{DynamicResource Login_SetAccount}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"
-                                   IsVisible="{Binding IsRegisterMode}"/>
-                        <TextBox Text="{Binding Username}" PlaceholderText="{DynamicResource Login_AccountPlaceholder}" CornerRadius="{StaticResource Radius.Medium}"
-                                 Margin="0,0,0,12"/>
+                        <!-- 邮箱输入 -->
+                        <TextBlock Text="{DynamicResource Login_Email}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                        <TextBox Text="{Binding Email}" PlaceholderText="{DynamicResource Login_EmailPlaceholder}"
+                                 CornerRadius="{StaticResource Radius.Medium}" Margin="0,0,0,12"/>
 
-                        <TextBlock Text="{DynamicResource Login_Password}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                        <TextBox Text="{Binding Password}" PlaceholderText="{DynamicResource Login_PasswordPlaceholder}" PasswordChar="●" CornerRadius="{StaticResource Radius.Medium}"
-                                 Margin="0,0,0,12"/>
+                        <!-- 验证码输入 + 发送按钮（同一行） -->
+                        <TextBlock Text="{DynamicResource Login_Code}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+                            <TextBox Grid.Column="0" Text="{Binding Code}" PlaceholderText="{DynamicResource Login_CodePlaceholder}"
+                                     CornerRadius="{StaticResource Radius.Medium}" Margin="0,0,8,0"/>
+                            <Button Grid.Column="1" Content="{Binding SendCodeButtonText}"
+                                    Classes="btn secondary medium"
+                                    Command="{Binding SendCodeCommand}"
+                                    IsEnabled="{Binding CanSendCode}"/>
+                        </Grid>
 
-                        <StackPanel IsVisible="{Binding IsRegisterMode}" Margin="0,0,0,12">
-                            <TextBlock Text="{DynamicResource Login_Nickname}" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,8"/>
-                            <TextBox Text="{Binding NickName}" PlaceholderText="{DynamicResource Login_NicknamePlaceholder}" CornerRadius="{StaticResource Radius.Medium}"/>
-                        </StackPanel>
-
-                        <!-- 服务器地址配置（可折叠，默认展开让首次部署用户先填地址再注册） -->
+                        <!-- 服务器地址配置（可折叠） -->
                         <Button Command="{Binding ToggleServerConfigCommand}" Background="Transparent" BorderThickness="0"
                                 HorizontalAlignment="Left" Padding="0,4" Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
@@ -60,26 +60,16 @@
                                        Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,4,0,0"/>
                         </StackPanel>
 
+                        <!-- 错误信息 -->
                         <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource SemanticErrorBrush}"
-                                   FontSize="{StaticResource FontSize.Label}" Margin="0,4" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                   FontSize="{StaticResource FontSize.Label}" Margin="0,4"
+                                   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+                        <!-- 登录按钮（统一流程：注册+登录合一） -->
                         <Button Content="{DynamicResource Login_LoginBtn}" Classes="btn primary large"
-                                Command="{Binding SubmitCommand}"
-                                IsVisible="{Binding !IsRegisterMode}"
+                                Command="{Binding VerifyCommand}"
+                                IsEnabled="{Binding CanVerify}"
                                 Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-                        <Button Content="{DynamicResource Login_RegisterBtn}" Classes="btn primary large"
-                                Command="{Binding SubmitCommand}"
-                                IsVisible="{Binding IsRegisterMode}"
-                                Margin="0,8,0,12" HorizontalAlignment="Stretch"/>
-
-                        <Button Content="{DynamicResource Login_GoRegister}" Classes="btn secondary large"
-                                Command="{Binding ToggleModeCommand}"
-                                IsVisible="{Binding !IsRegisterMode}"
-                                HorizontalAlignment="Stretch"/>
-                        <Button Content="{DynamicResource Login_GoLogin}" Classes="btn secondary large"
-                                Command="{Binding ToggleModeCommand}"
-                                IsVisible="{Binding IsRegisterMode}"
-                                HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Border>
 

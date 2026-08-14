@@ -36,6 +36,10 @@
     <PackageReference Include="Microsoft.Data.Sqlite" />
     <PackageReference Include="Semi.Avalonia" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <!-- Windows DPAPI for DpapiSecureStorage。
+         该包提供的 ProtectedData 类在非 Windows 平台会抛 PlatformNotSupportedException，
+         但 DpapiSecureStorage 仅在 Windows 运行时实例化（Android/iOS 由 SecureStorage 注入），不会触发非 Windows 调用。 -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
     <!-- Serilog：Release 日志系统（Debug 构建也包含，便于在 Debug 环境验证 ReleaseLogger 行为） -->
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Sinks.File" />

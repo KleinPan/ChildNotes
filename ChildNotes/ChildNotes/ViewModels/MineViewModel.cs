@@ -195,9 +195,17 @@ public partial class MineViewModel : ViewModelBase, IActivatable
     }
 
     [RelayCommand]
-    private void Logout()
+    private async Task Logout()
     {
-        _auth.Logout();
+        // v5：异步登出（清理 SecureStorage + sync_config.cloud_user_id），保留业务数据
+        try
+        {
+            await _auth.LogoutAsync();
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Mine", "LogoutAsync failed: " + ex.Message);
+        }
         LogoutRequested?.Invoke();
     }
 }

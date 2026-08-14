@@ -84,6 +84,10 @@ public class MainActivity : AvaloniaMainActivity
         // 业务层在 ScheduleAsync 前会调用 RequestPermissionAsync，但渠道必须在此处提前创建
         InitializeLocalNotification();
 
+        // v5：注入 Android Keystore SecureStorage，覆盖桌面端默认的 DpapiSecureStorage。
+        // 必须在任何业务 API 调用前完成（AuthService 依赖 SecureStorage 读写 Token）。
+        InitializeSecureStorage();
+
         // 注入 Android Photo Picker：覆盖桌面端默认的 DesktopPhotoPicker
         // Android 13+ 调起系统原生相册网格（MediaStore.ActionPickImages），无需任何运行时权限；
         // Android 7-12 回退到 SAF Documents UI（Intent.ActionOpenDocument）。
@@ -212,6 +216,24 @@ public class MainActivity : AvaloniaMainActivity
 
     /// <summary>Android Photo Picker 实例引用，供 OnActivityResult 转发结果。</summary>
     private ChildNotes.Android.Services.AndroidPhotoPicker? _photoPicker;
+
+    /// <summary>
+    /// v5：注入 Android Keystore SecureStorage，覆盖桌面端默认的 DpapiSecureStorage。
+    /// AuthService 依赖 SecureStorage 读写 AccessToken/RefreshToken，必须在任何 API 调用前完成注入。
+    /// </summary>
+    private void InitializeSecureStorage()
+    {
+        try
+        {
+            ChildNotes.Infrastructure.ServiceProvider.Instance.OverrideSecureStorage(
+                new ChildNotes.Android.Services.AndroidSecureStorage(this));
+            Log.Info("ChildNotes", "[SecureStorage] AndroidSecureStorage injected");
+        }
+        catch (Exception ex)
+        {
+            Log.Error("ChildNotes", $"[SecureStorage] InitializeSecureStorage failed: {ex}");
+        }
+    }
 
     /// <summary>
     /// 初始化 Android Photo Picker：创建实例并注入 ServiceProvider，覆盖桌面端默认实现。
