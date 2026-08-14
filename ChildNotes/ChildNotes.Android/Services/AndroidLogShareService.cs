@@ -69,4 +69,64 @@ public static class AndroidLogShareService
         // 4. 返回展示路径（不暴露完整路径，只显示目录名+文件名，避免路径泄露 App 私有目录结构）
         return Path.GetFileName(path);
     }
+
+    /// <summary>
+    /// 将本地数据库文件复制到 external-files 目录，并通过 FileProvider 弹出系统分享面板。
+    /// 由共享层 DatabaseExportService 通过反射调用，避免主项目直接引用 Android 项目。
+    ///
+    /// 关键点：调用方（共享层）在调用本方法前必须已执行 PRAGMA wal_checkpoint(TRUNCATE)，
+    /// 否则源文件可能只有 1KB schema，活跃数据还在 -wal 里。
+    ///
+    /// 复制源：<paramref name="sourceDbPath"/> = Context.GetFilesDir() + "/ChildNotes/childnotes.db"
+    /// 复制目标：external-files 目录 = /storage/emulated/0/Android/data/{pkg}/files/
+    /// FileProvider 路径：<external-files-path name="external_files" path="." />（file_paths.xml 已配置）
+    ///
+    /// 返回展示路径（仅文件名），用于 toast 提示。
+    /// </summary>
+    public static async Task<string> WriteDbAndShareAsync(string sourceDbPath)
+    {
+        var ctx = Application.Context;
+        if (ctx is null) throw new InvalidOperationException("Application.Context is null");
+
+        if (!File.Exists(sourceDbPath))
+            throw new FileNotFoundException("源数据库文件不存在", sourceDbPath);
+
+        // 1. 复制到 App 私有外部目录（无需权限）
+        var extFilesDir = ctx.GetExternalFilesDir(null)
+            ?? throw new InvalidOperationException("GetExternalFilesDir(null) returned null");
+        var dir = extFilesDir.AbsolutePath;
+        Directory.CreateDirectory(dir);
+
+        // 时间戳文件名：用户多次导出不会冲突，便于区分
+        var fileName = $"childnotes_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+        var destPath = Path.Combine(dir, fileName);
+
+        // 异步复制：避免阻塞 UI；File.Copy 内部用流式 IO。
+        // overwrite=true：用户可能重名（同一秒），直接覆盖
+        await using (var src = new FileStream(sourceDbPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        await using (var dst = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await src.CopyToAsync(dst);
+        }
+
+        // 2. 通过 FileProvider 生成 content:// URI
+        var authority = ctx.PackageName + ".fileprovider";
+        var javaFile = new Java.IO.File(destPath);
+        var uri = FileProvider.GetUriForFile(ctx, authority, javaFile);
+
+        // 3. 构造 ACTION_SEND Intent 并启动系统分享面板
+        // type 用 application/octet-stream：SQLite 是二进制文件，文本类应用（微信/邮件）
+        // 也能识别并支持"另存为"操作
+        var intent = new Intent(Intent.ActionSend);
+        intent.SetType("application/octet-stream");
+        intent.PutExtra(Intent.ExtraStream, uri);
+        intent.AddFlags(ActivityFlags.GrantReadUriPermission);
+
+        var chooser = Intent.CreateChooser(intent, "分享数据库");
+        chooser.AddFlags(ActivityFlags.NewTask);
+
+        ctx.StartActivity(chooser);
+
+        return fileName;
+    }
 }

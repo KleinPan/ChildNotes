@@ -584,10 +584,13 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Dev_FilterAll"] = "全部";
         this["Dev_FilteredCount"] = "筛选后 {0} 条";
         this["Dev_ExportTxt"] = "导出 .txt";
+        this["Dev_ExportDb"] = "导出数据库";
         // DeveloperOptionsViewModel
         this["Dev_SaveFailed"] = "保存设置失败：{0}";
         this["Dev_ExportOk"] = "已导出 {0} 行日志到：{1}";
         this["Dev_ExportFailed"] = "导出失败：{0}";
+        this["Dev_ExportDbOk"] = "数据库已导出到 {0}（{1}）";
+        this["Dev_ExportDbFailed"] = "数据库导出失败：{0}";
 
         // ===== InAppMessageView =====
         this["Msg_Title"] = "应用消息";
@@ -1266,9 +1269,12 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Dev_FilterAll"] = "All";
         this["Dev_FilteredCount"] = "{0} filtered";
         this["Dev_ExportTxt"] = "Export .txt";
+        this["Dev_ExportDb"] = "Export DB";
         this["Dev_SaveFailed"] = "Save failed: {0}";
         this["Dev_ExportOk"] = "Exported {0} lines to: {1}";
         this["Dev_ExportFailed"] = "Export failed: {0}";
+        this["Dev_ExportDbOk"] = "DB exported to {0} ({1})";
+        this["Dev_ExportDbFailed"] = "DB export failed: {0}";
 
         // ===== InAppMessageView =====
         this["Msg_Title"] = "Messages";

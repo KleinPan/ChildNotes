@@ -21,6 +21,9 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
     /// <summary>是否正在导出日志（防止重复点击）。</summary>
     [ObservableProperty] private bool _isExporting;
 
+    /// <summary>是否正在导出数据库（防止重复点击）。</summary>
+    [ObservableProperty] private bool _isDbExporting;
+
     /// <summary>是否启用动画效果。</summary>
     [ObservableProperty] private bool _enableAnimations = true;
 
@@ -238,6 +241,59 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
     protected override int ToastDurationMs => 5000;
 
     partial void OnIsExportingChanged(bool value) => ExportCommand.NotifyCanExecuteChanged();
+
+    /// <summary>
+    /// 导出本地数据库文件。服务在导出前自动执行 PRAGMA wal_checkpoint(TRUNCATE)，
+    /// 确保导出的 .db 包含完整数据（否则活跃事务还在 -wal 里，主文件只有 schema）。
+    ///
+    /// 可见性：所有构建变体都可见（包括 release）。原因：项目当前用 release 风格的 dev APK
+    /// （包名 .dev 但无 DEBUGGABLE 位），adb run-as 不可用，这个入口是绕开限制的兜底通路。
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanExportDb))]
+    private async Task ExportDatabaseAsync()
+    {
+        if (IsDbExporting) return;
+        IsDbExporting = true;
+        try
+        {
+            var result = await DatabaseExportService.ExportAsync();
+            if (result.Success)
+            {
+                DisplayToast(string.Format(
+                    _locale.GetString("Dev_ExportDbOk", "数据库已导出到 {0}（{1}）"),
+                    result.FilePath,
+                    FormatSize(result.SizeBytes)));
+            }
+            else
+            {
+                DisplayToast(string.Format(
+                    _locale.GetString("Dev_ExportDbFailed", "数据库导出失败：{0}"),
+                    result.ErrorMessage));
+            }
+        }
+        catch (Exception ex)
+        {
+            DisplayToast(string.Format(
+                _locale.GetString("Dev_ExportDbFailed", "数据库导出失败：{0}"),
+                ex.Message));
+        }
+        finally
+        {
+            IsDbExporting = false;
+        }
+    }
+
+    private bool CanExportDb() => !IsDbExporting;
+
+    /// <summary>字节数 → 人类可读（KB/MB）。仅用于 toast 提示，无需高精度。</summary>
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / 1024.0 / 1024.0:F2} MB";
+    }
+
+    partial void OnIsDbExportingChanged(bool value) => ExportDatabaseCommand.NotifyCanExecuteChanged();
 
     /// <summary>动画开关变化时自动保存并实时生效。</summary>
     partial void OnEnableAnimationsChanged(bool value) => SaveSettings();

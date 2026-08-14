@@ -62,4 +62,19 @@ public sealed class DbConnectionFactory
 
     /// <summary>数据库文件路径（供备份路径推导等使用）。</summary>
     public string DbPath => _dbPath;
+
+    /// <summary>
+    /// 执行 WAL checkpoint（TRUNCATE 模式），把 -wal 里的活跃事务合并到主文件并清空 -wal。
+    /// 用于：导出数据库前确保主文件包含完整数据，避免 adb pull 主文件只拿到 1KB 空壳的问题。
+    /// 实现要点：使用独立短连接而非复用 Create()，避免占用长连接阻塞其他读写。
+    /// </summary>
+    public void Checkpoint()
+    {
+        using var conn = new SqliteConnection(_connectionString);
+        conn.Open();
+        using var pragma = conn.CreateCommand();
+        pragma.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+        pragma.ExecuteNonQuery();
+        DevLogger.Log("DB", "Checkpoint(TRUNCATE) done");
+    }
 }
