@@ -50,27 +50,50 @@ public class RateLimitMiddleware
             return;
         }
 
+        // 专用限流：/api/auth/send-code 是 [AllowAnonymous] 接口，攻击者可枚举邮箱骚扰用户/耗尽 SMTP 配额
+        // 对该路径增加"同 IP 每小时最多 10 次"的限制（独立于全局 5 req/s 限制）
+        if (ctx.Request.Path.Equals("/api/auth/send-code", StringComparison.OrdinalIgnoreCase)
+            && ctx.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+        {
+            var sendCodeKey = $"sendcode|{ip}";
+            var nowMs = Environment.TickCount64;
+            var windowMs = 3600_000; // 1 小时
+            var maxPerHour = 10;
+
+            var queue = _counters.GetOrAdd(sendCodeKey, _ => new ConcurrentQueue<long>());
+            var cutoff = nowMs - windowMs;
+            while (queue.TryPeek(out var t) && t < cutoff) queue.TryDequeue(out _);
+            queue.Enqueue(nowMs);
+
+            if (queue.Count > maxPerHour)
+            {
+                ctx.Response.Headers["Retry-After"] = "3600";
+                await WriteResponse(ctx, 429, $"该IP发送验证码请求过于频繁，每小时限制{maxPerHour}次");
+                return;
+            }
+        }
+
         var endpoint = $"{ctx.Request.Method} {ctx.Request.Path}";
         var key = $"{ip}|{endpoint}";
-        var nowMs = Environment.TickCount64;
-        var windowStart = nowMs - 1000;
+        var nowMs2 = Environment.TickCount64;
+        var windowStart = nowMs2 - 1000;
 
-        var queue = _counters.GetOrAdd(key, _ => new ConcurrentQueue<long>());
+        var queue2 = _counters.GetOrAdd(key, _ => new ConcurrentQueue<long>());
         // 清理 1 秒外的旧记录
-        while (queue.TryPeek(out var t) && t < windowStart)
+        while (queue2.TryPeek(out var t) && t < windowStart)
         {
-            queue.TryDequeue(out _);
+            queue2.TryDequeue(out _);
         }
-        queue.Enqueue(nowMs);
-        var count = queue.Count;
+        queue2.Enqueue(nowMs2);
+        var count = queue2.Count;
 
         // 定期清理 120 秒未访问的 key
-        TryCleanup(nowMs);
+        TryCleanup(nowMs2);
 
         var blacklistThreshold = Math.Max(_opt.BlacklistRequestsPerSecond, _opt.MaxRequestsPerSecond + 1);
         if (count > blacklistThreshold)
         {
-            await BlacklistIpAsync(db, ip, ctx.Request.Method, ctx.Request.Path, endpoint, count, nowMs);
+            await BlacklistIpAsync(db, ip, ctx.Request.Method, ctx.Request.Path, endpoint, count, nowMs2);
             _blacklist.TryAdd(ip, 0);
             await WriteResponse(ctx, 403, "请求过于频繁，当前IP已被永久限制访问");
             return;

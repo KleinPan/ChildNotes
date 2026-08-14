@@ -61,14 +61,21 @@ else
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
     {
+        // 从配置读取 issuer/audience，与 JwtTokenService 签发时使用的值保持一致
+        var issuer = builder.Configuration["Jwt:Issuer"] ?? "childnotes";
+        var audience = builder.Configuration["Jwt:Audience"] ?? "childnotes-app";
         opt.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,
-            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidIssuer = issuer,
+            ValidAudience = audience,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             NameClaimType = "uid",
+            // ClockSkew: 5 秒时钟偏移容差（生产环境建议缩短，开发环境可保留）
+            ClockSkew = TimeSpan.FromSeconds(30),
         };
     });
 builder.Services.AddAuthorization();

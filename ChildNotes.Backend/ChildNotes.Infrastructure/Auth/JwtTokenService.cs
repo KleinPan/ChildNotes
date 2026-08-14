@@ -13,6 +13,12 @@ public class JwtOptions
 {
     public string Secret { get; set; } = string.Empty;
     public int ExpireDays { get; set; } = 30;
+
+    /// <summary>JWT 签发者标识（issuer）。验证时必须与 TokenValidationParameters.ValidIssuer 匹配。</summary>
+    public string Issuer { get; set; } = "childnotes";
+
+    /// <summary>JWT 接收方标识（audience）。验证时必须与 TokenValidationParameters.ValidAudience 匹配。</summary>
+    public string Audience { get; set; } = "childnotes-app";
 }
 
 public class JwtTokenService
@@ -31,6 +37,13 @@ public class JwtTokenService
         var expireAt = DateTime.UtcNow.AddMinutes(_emailOpt.AccessTokenExpireMinutes);
         var claims = new[]
         {
+            // 标准 claims
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new Claim(JwtRegisteredClaimNames.Iss, _opt.Issuer),
+            new Claim(JwtRegisteredClaimNames.Aud, _opt.Audience),
+            // 业务 claims
             new Claim("uid", user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Email),
@@ -76,7 +89,12 @@ public class JwtTokenService
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opt.Secret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var jwt = new JwtSecurityToken(claims: claims, expires: expireAt, signingCredentials: creds);
+        var jwt = new JwtSecurityToken(
+            issuer: _opt.Issuer,
+            audience: _opt.Audience,
+            claims: claims,
+            expires: expireAt,
+            signingCredentials: creds);
         return new JwtSecurityTokenHandler().WriteToken(jwt);
     }
 }
