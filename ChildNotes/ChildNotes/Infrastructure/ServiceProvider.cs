@@ -230,9 +230,16 @@ public sealed class ServiceProvider
     /// 检测 DB schema 版本，若与当前期望不符则删除整个 DB 文件让其重建。
     /// 项目未正式上线，不做数据迁移，直接重建最稳妥（v5 重构删除旧 username/password_hash 列，
     /// SQLite 不支持 DROP UNIQUE 列，迁移路径无法走 ALTER TABLE DROP COLUMN）。
-    /// 检测条件（任一满足即重建）：
-    ///   1) PRAGMA user_version &lt; CurrentSchemaVersion（旧版本 schema）
-    ///   2) child_record.id 列类型为 INTEGER（极旧版 schema，user_version 可能不准）
+    ///
+    /// 重建判定原则（严格）：
+    ///   - 只有"明确检测到不支持的旧版本"才允许删除重建
+    ///   - 数据库损坏/读取失败/临时 IO 异常/未知异常 → 不删除，向上抛出
+    ///   - 否则可能出现：DB 临时 IO 异常 → 被误判为旧版本 → 删除用户全部数据
+    ///
+    /// 重建触发条件（必须两条同时满足）：
+    ///   1) PRAGMA user_version 可正常读取，且 &lt; CurrentSchemaVersion（明确的旧版本号）
+    ///   2) child_record 表存在且 id 列类型为 INTEGER（极旧版 schema 二次确认）
+    /// 仅条件 1) 满足也允许重建（user_version 是权威版本号，单独可信）
     /// </summary>
     private static void EnsureSchemaVersion(string dbPath)
     {
@@ -242,30 +249,53 @@ public sealed class ServiceProvider
         // 用独立 using 块确保连接在判断 needRebuild 前完全释放（含 Pooling=False 不入池）
         {
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath};Pooling=False");
-            conn.Open();
-            using var verCmd = conn.CreateCommand();
-            verCmd.CommandText = "PRAGMA user_version;";
-            var curVer = Convert.ToInt32(verCmd.ExecuteScalar() ?? 0, System.Globalization.CultureInfo.InvariantCulture);
-            if (curVer < DbInitializer.CurrentSchemaVersion)
+            try
             {
-                needRebuild = true;
-                DevLogger.Log("DI", $"Schema outdated (user_version={curVer} < {DbInitializer.CurrentSchemaVersion}), will rebuild DB.");
+                conn.Open();
             }
-            if (!needRebuild)
+            catch (Exception ex)
             {
-                using var cmd = conn.CreateCommand();
-                // child_record 是核心业务表，id 列类型反映极旧版 schema（user_version 可能不准）
-                cmd.CommandText = "PRAGMA table_info(child_record);";
-                using var r = cmd.ExecuteReader();
-                while (r.Read())
+                // DB 文件存在但无法打开：可能损坏/被锁定/暂态 IO 错误
+                // 不能误判为旧版本直接删除，向上抛出让用户感知
+                throw new InvalidOperationException(
+                    "数据库文件无法打开（可能已损坏或被其他进程锁定）。" +
+                    $"请勿在 App 运行时手动操作 DB 文件。路径: {dbPath}。原因: {ex.Message}", ex);
+            }
+
+            try
+            {
+                using var verCmd = conn.CreateCommand();
+                verCmd.CommandText = "PRAGMA user_version;";
+                var curVer = Convert.ToInt32(verCmd.ExecuteScalar() ?? 0, System.Globalization.CultureInfo.InvariantCulture);
+                if (curVer < DbInitializer.CurrentSchemaVersion)
                 {
-                    if (r.GetString(1) == "id" && r.GetString(2).Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
+                    needRebuild = true;
+                    DevLogger.Log("DI", $"Schema outdated (user_version={curVer} < {DbInitializer.CurrentSchemaVersion}), will rebuild DB.");
+                }
+                if (!needRebuild)
+                {
+                    using var cmd = conn.CreateCommand();
+                    // child_record 是核心业务表，id 列类型反映极旧版 schema（user_version 可能不准）
+                    cmd.CommandText = "PRAGMA table_info(child_record);";
+                    using var r = cmd.ExecuteReader();
+                    while (r.Read())
                     {
-                        needRebuild = true;
-                        DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), will rebuild DB.");
-                        break;
+                        if (r.GetString(1) == "id" && r.GetString(2).Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
+                        {
+                            needRebuild = true;
+                            DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), will rebuild DB.");
+                            break;
+                        }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                // PRAGMA 读取失败：DB 可能损坏（file is not a database / database disk image is malformed 等）
+                // 不能误判为旧版本直接删除，向上抛出让用户感知并手动恢复
+                throw new InvalidOperationException(
+                    "数据库 schema 版本读取失败（可能文件已损坏）。" +
+                    $"请勿在 App 运行时手动操作 DB 文件。路径: {dbPath}。原因: {ex.Message}", ex);
             }
         }
         // 连接已 Dispose，文件句柄释放；清池兜底（Pooling=False 不入池，但旧残留无害）

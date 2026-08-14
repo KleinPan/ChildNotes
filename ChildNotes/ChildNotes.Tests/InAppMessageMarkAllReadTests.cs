@@ -26,7 +26,7 @@ public class InAppMessageMarkAllReadTests : IDisposable
         DbInitializer.Initialize(_factory);
         _repo = new InAppMessageRepository(_factory);
         _state = new AppState();
-        _state.User = new AppUser { Id = "user-1", Username = "u1", NickName = "U1" };
+        _state.User = new AppUser { Id = "user-1", Email = "u1@example.com", NickName = "U1" };
         _service = new InAppMessageService(_repo, _state);
     }
 
