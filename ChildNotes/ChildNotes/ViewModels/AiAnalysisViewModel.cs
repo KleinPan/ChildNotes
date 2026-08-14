@@ -41,6 +41,8 @@ public partial class AiAnalysisViewModel : ViewModelBase
     [ObservableProperty] private bool _pointsSufficient = true;
     /// <summary>积分不足提示文案。</summary>
     [ObservableProperty] private string _insufficientTip = string.Empty;
+    /// <summary>积分行显示文案（"积分 {余额} / 消耗 {成本}"），供 XAML 直接绑定。</summary>
+    [ObservableProperty] private string _pointsDisplayText = string.Empty;
     /// <summary>是否已加载更多历史记录（懒加载：首次仅展示最近 5 条）。</summary>
     [ObservableProperty] private bool _allLoaded;
     /// <summary>是否还有更多历史记录可加载。</summary>
@@ -85,6 +87,8 @@ public partial class AiAnalysisViewModel : ViewModelBase
         {
             UpdateRangeTip();
         }
+        // 积分行格式串依赖语言，切换时同步刷新
+        RefreshPointsSufficiency();
     }
 
     /// <summary>
@@ -143,6 +147,9 @@ public partial class AiAnalysisViewModel : ViewModelBase
     private void RefreshPointsSufficiency()
     {
         PointsSufficient = CurrentPoints >= AnalysisCost;
+        PointsDisplayText = string.Format(
+            _locale.GetString("AiAnalysis_PointsFormat", "积分 {0} / 消耗 {1}"),
+            CurrentPoints, AnalysisCost);
         InsufficientTip = PointsSufficient
             ? string.Empty
             : string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFull", "积分不足，需 {0} 积分，当前 {1} 积分（每日签到可获取积分）"), AnalysisCost, CurrentPoints);

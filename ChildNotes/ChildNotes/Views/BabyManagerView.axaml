@@ -404,7 +404,7 @@
                              IsDangerConfirm="True">
             <controls:DialogHost.MessageContent>
                 <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" TextAlignment="Center" TextWrapping="Wrap"
-                           Text="{Binding DeleteConfirmName, StringFormat={DynamicResource BabyMgr_DeleteConfirm}}"/>
+                           Text="{Binding DeleteConfirmMessage}"/>
             </controls:DialogHost.MessageContent>
         </controls:DialogHost>
 

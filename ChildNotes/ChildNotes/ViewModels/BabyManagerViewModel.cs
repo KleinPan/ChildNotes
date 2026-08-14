@@ -55,6 +55,15 @@ public partial class BabyManagerViewModel : ViewModelBase
     [ObservableProperty] private DateTime? _birthDate;
     [ObservableProperty] private string _deleteConfirmName = string.Empty;
 
+    /// <summary>删除确认弹窗的完整文案（"确定要删除「{0}」吗？..."），供 XAML 直接绑定。</summary>
+    public string DeleteConfirmMessage => string.Format(
+        _locale.GetString("BabyMgr_DeleteConfirm", "确定要删除「{0}」吗？相关记录将保留，但宝宝信息将无法恢复。"),
+        DeleteConfirmName);
+
+    /// <summary>DeleteConfirmName 变更时刷新删除确认文案。</summary>
+    partial void OnDeleteConfirmNameChanged(string value)
+        => OnPropertyChanged(nameof(DeleteConfirmMessage));
+
     // 头像相关
     [ObservableProperty] private Bitmap? _avatarBitmap;
     [ObservableProperty] private bool _hasAvatar;
@@ -113,6 +122,8 @@ public partial class BabyManagerViewModel : ViewModelBase
             RoleEditorTitle = string.Format(_locale.GetString("Family_RoleEditorTitle", "我的角色 · {0}"), _editingBabyName);
         else
             RoleEditorTitle = _locale.GetString("Family_MyRole", "我的角色");
+        // 删除确认弹窗格式串依赖语言，切换时同步刷新
+        OnPropertyChanged(nameof(DeleteConfirmMessage));
     }
 
     public void Load()

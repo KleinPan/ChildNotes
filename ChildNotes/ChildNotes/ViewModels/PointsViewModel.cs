@@ -10,6 +10,7 @@ public partial class PointsViewModel : ViewModelBase
 {
     private readonly PointsService _pointsService = ServiceProvider.Instance.PointsService;
     private readonly PointsApiClient _pointsApi = ServiceProvider.Instance.PointsApiClient;
+    private readonly LocaleManager _locale = LocaleManager.Instance;
 
     [ObservableProperty] private int _points;
     [ObservableProperty] private int _totalEarned;
@@ -20,12 +21,33 @@ public partial class PointsViewModel : ViewModelBase
     [ObservableProperty] private string _signButtonText = "立即签到";
     /// <summary>任务列表是否从后端加载（server 模式）。false 表示回退到本地展示，领取按钮不可用。</summary>
     [ObservableProperty] private bool _tasksLoadedFromServer;
+    /// <summary>累计获得/已使用积分汇总文案（"累计获得 {0} 分 · 已使用 {1} 分"），供 XAML 直接绑定。</summary>
+    [ObservableProperty] private string _totalEarnSpentText = string.Empty;
 
     public ObservableCollection<SignInTimelineItem> Timeline { get; } = new();
     public ObservableCollection<TaskDisplayItem> Tasks { get; } = new();
 
     /// <summary>沿用历史 2000ms 显示时长。</summary>
     protected override int ToastDurationMs => 2000;
+
+    public PointsViewModel()
+    {
+        _locale.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(AppLanguage lang)
+    {
+        // 格式串依赖语言，切换时同步刷新
+        RefreshTotalEarnSpentText();
+    }
+
+    /// <summary>刷新累计获得/已使用汇总文案。</summary>
+    private void RefreshTotalEarnSpentText()
+    {
+        TotalEarnSpentText = string.Format(
+            _locale.GetString("Points_TotalEarnSpent", "累计获得 {0} 分 · 已使用 {1} 分"),
+            TotalEarned, TotalSpent);
+    }
 
     /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做属性赋值。
@@ -73,6 +95,7 @@ public partial class PointsViewModel : ViewModelBase
         TodaySigned = dashboard.TodaySigned;
         ContinuousDays = dashboard.ContinuousDays;
         SignButtonText = TodaySigned ? "今日已签到" : "立即签到";
+        RefreshTotalEarnSpentText();
 
         Timeline.Clear();
         foreach (var item in dashboard.Timeline) Timeline.Add(item);
@@ -141,6 +164,7 @@ public partial class PointsViewModel : ViewModelBase
             item.RefreshCanClaim();
             Points = (int)result.Points;
             TotalEarned = (int)result.TotalEarned;
+            RefreshTotalEarnSpentText();
             DisplayToast($"领取成功 +{result.AwardedPoints}分");
         }
         catch (PointsApiException ex)

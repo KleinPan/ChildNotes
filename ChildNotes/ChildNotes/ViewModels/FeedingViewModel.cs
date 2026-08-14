@@ -57,6 +57,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         OnPropertyChanged(nameof(DiaperStatsText));
         OnPropertyChanged(nameof(WaterStatsText));
         OnPropertyChanged(nameof(SupplementStatsText));
+        OnPropertyChanged(nameof(SleepStatsText));
         // 重建记录列表，使 BuildText 中的中文文案重新本地化
         _ = LoadDataAsync();
     }
@@ -69,6 +70,7 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         OnPropertyChanged(nameof(DiaperStatsText));
         OnPropertyChanged(nameof(WaterStatsText));
         OnPropertyChanged(nameof(SupplementStatsText));
+        OnPropertyChanged(nameof(SleepStatsText));
     }
 
     public string FeedStatsText => DayStats is not null && DayStats.FeedCount > 0
@@ -85,6 +87,9 @@ public partial class FeedingViewModel : ViewModelBase, IActivatable
         : string.Empty;
     public string SupplementStatsText => DayStats is not null && DayStats.SupplementCount > 0
         ? string.Format(_locale.GetString("Feeding_StatsSupplement", "补给{0}次"), DayStats.SupplementCount)
+        : string.Empty;
+    public string SleepStatsText => DayStats is not null && DayStats.SleepTotalMin > 0
+        ? string.Format(_locale.GetString("Feeding_StatsSleep", "睡眠{0}分钟"), DayStats.SleepTotalMin)
         : string.Empty;
 
     /// <summary>沿用历史 2000ms 显示时长。</summary>

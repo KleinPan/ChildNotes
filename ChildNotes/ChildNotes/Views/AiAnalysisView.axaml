@@ -52,9 +52,8 @@
                     <StackPanel>
                         <!-- 第一行：余额 + 消耗 + 签到按钮 -->
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center">
-                                <Run Text="{DynamicResource AiAnalysis_PointsFormat}"><Run.Text><Binding Path="AiAnalysis_PointsFormat" Converter="{x:Static StringConverters.IsNotNullOrEmpty}"/></Run.Text></Run>
-                            </TextBlock>
+                            <TextBlock Grid.Column="0" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextPrimaryBrush}" VerticalAlignment="Center"
+                                       Text="{Binding PointsDisplayText}"/>
                             <Button Grid.Column="1" Content="{DynamicResource AiAnalysis_CheckInForPoints}" Classes="btn small" Padding="10,6" FontSize="{StaticResource FontSize.Caption}"
                                     Command="{Binding OpenPointsCommand}" Background="{StaticResource FeedingOrangeLightBrush}" Foreground="{StaticResource FeedingOrangeBrush}" BorderThickness="0"/>
                         </Grid>

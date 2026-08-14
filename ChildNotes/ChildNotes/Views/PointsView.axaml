@@ -51,14 +51,8 @@
                             <TextBlock Text="{Binding Points}" FontSize="40" FontWeight="Bold" Foreground="{StaticResource SurfaceCardBrush}"/>
                             <TextBlock Text="{DynamicResource Points_Unit}" FontSize="{StaticResource FontSize.Body}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" VerticalAlignment="Bottom" Margin="4,0,0,8"/>
                         </StackPanel>
-                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,8,0,0" TextAlignment="Center">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{DynamicResource Points_TotalEarnSpent}">
-                                    <Binding Path="TotalEarned"/>
-                                    <Binding Path="TotalSpent"/>
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
+                        <TextBlock FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextOnPrimaryBrush}" Opacity="0.8" HorizontalAlignment="Center" Margin="0,8,0,0" TextAlignment="Center"
+                                   Text="{Binding TotalEarnSpentText}"/>
                     </StackPanel>
                 </Border>
 
