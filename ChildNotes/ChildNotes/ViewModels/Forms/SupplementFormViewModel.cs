@@ -178,15 +178,18 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     /// <summary>合并当前类型的默认项 + 自定义项到 CurrentAllItems。</summary>
     private void RebuildCurrentAllItems()
     {
-        // 先解绑旧项的事件，避免内存泄漏
-        foreach (var item in CurrentAllItems) item.PropertyChanged -= OnItemPropertyChanged;
+        // 注意：不能在此处解绑 CurrentAllItems 中项的 PropertyChanged 事件。
+        // CurrentAllItems 里的项是默认项/自定义项集合的同一引用，解绑会导致默认项事件永久丢失
+        // （默认项事件在构造函数订阅一次，切换类型时 CurrentAllItems 被清空再重建，
+        //  若在此解绑，再切回该类型时事件已不在，选中 Chip 不再触发 RebuildName，Name 始终为空）。
+        // 默认项事件由构造函数订阅、ViewModel 生命周期内保持；
+        // 自定义项事件由 AddCustomItem 订阅、DeleteCustomItem 解绑，与此处无关。
         CurrentAllItems.Clear();
 
         var defaults = SuppType == "medicine" ? MedicineCommonItems : SupplementCommonItems;
         var customs = SuppType == "medicine" ? CustomMedicineItems : CustomSupplementItems;
         foreach (var item in defaults) CurrentAllItems.Add(item);
         foreach (var item in customs) CurrentAllItems.Add(item);
-        // CurrentAllItems 中的项本身就是 defaults/customs 中的同一个引用，事件已订阅，无需重复订阅
     }
 
     /// <summary>
