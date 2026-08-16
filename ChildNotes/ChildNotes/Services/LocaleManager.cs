@@ -195,6 +195,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         // ===== AccountCenterView =====
         this["Account_Title"] = "账户中心";
         this["Account_Section_Assets"] = "账户资产";
+        this["Account_LoginRegister"] = "登录 / 注册";
 
         // ===== AppSettingsView =====
         this["AppSettings_Title"] = "应用设置";
@@ -948,6 +949,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         // ===== AccountCenterView =====
         this["Account_Title"] = "Account Center";
         this["Account_Section_Assets"] = "Account Assets";
+        this["Account_LoginRegister"] = "Log In / Sign Up";
 
         // ===== AppSettingsView =====
         this["AppSettings_Title"] = "App Settings";

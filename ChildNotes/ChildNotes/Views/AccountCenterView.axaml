@@ -62,11 +62,17 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- 退出登录：固定底部，红字 secondary 按钮（与原 MineView 退出按钮风格一致） -->
+        <!-- 底部按钮：未登录显示"登录/注册"（主按钮），已登录显示"退出登录"（红字次按钮） -->
         <Button Grid.Row="2" Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                 Classes="btn secondary large"
                 Command="{Binding LogoutCommand}"
                 Content="{DynamicResource Mine_Logout}"
-                Foreground="{StaticResource SemanticErrorBrush}"/>
+                Foreground="{StaticResource SemanticErrorBrush}"
+                IsVisible="{Binding IsLoggedIn}"/>
+        <Button Grid.Row="2" Margin="12,16" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                Classes="btn primary large"
+                Command="{Binding LoginCommand}"
+                Content="{DynamicResource Account_LoginRegister}"
+                IsVisible="{Binding !IsLoggedIn}"/>
     </Grid>
 </UserControl>

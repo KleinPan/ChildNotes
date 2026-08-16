@@ -179,6 +179,7 @@ public partial class MainShellViewModel : ViewModelBase
             vm.OpenMembershipRequested += OpenMembership;
             vm.OpenPointsRequested += OpenPoints;
             vm.LogoutRequested += OnLogout;
+            vm.OpenLoginRequested += OnOpenLogin;
         },
         () => IsAccountCenterOpen = false, () => IsAccountCenterOpen);
     public AppSettingsViewModel AppSettings => _appSettings ??= CreateAndRegisterOverlay(
@@ -259,6 +260,9 @@ public partial class MainShellViewModel : ViewModelBase
     }
 
     public event Action? LogoutRequested;
+
+    /// <summary>请求打开登录页（未登录状态下从账户中心"登录/注册"按钮触发）。</summary>
+    public event Action? LoginRequested;
 
     /// <summary>
     /// 当"是否需要拦截系统返回"状态变化时触发。
@@ -668,6 +672,8 @@ public partial class MainShellViewModel : ViewModelBase
     /// <summary>打开账户中心页（从"我的"页顶部用户卡进入）。</summary>
     public void OpenAccountCenter()
     {
+        // 刷新登录状态：登出后重新进入账户中心，底部按钮需正确切换
+        AccountCenter.RefreshLoginState();
         IsAccountCenterOpen = true;  // 懒加载：AccountCenter 属性在 View 绑定时才创建
     }
 
@@ -783,6 +789,13 @@ public partial class MainShellViewModel : ViewModelBase
         // 释放可释放的懒加载 VM（如 SyncSettings 实现 IDisposable）
         (_syncSettings as IDisposable)?.Dispose();
         LogoutRequested?.Invoke();
+    }
+
+    /// <summary>未登录状态下从账户中心请求登录：关闭所有弹层，通知 App 切换到登录页。</summary>
+    private void OnOpenLogin()
+    {
+        CloseAllOverlays();
+        LoginRequested?.Invoke();
     }
 
     public void ActivateHomeAfterLogin()

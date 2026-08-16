@@ -252,6 +252,7 @@ public partial class App : Application
         {
             _shellVm = new MainShellViewModel();
             _shellVm.LogoutRequested += OnLogout;
+            _shellVm.LoginRequested += OnOpenLogin;
             _shellVm.InterceptBackChanged += OnInterceptBackChanged;
             _shellVm.ActivateHomeAfterLogin();
             _shellView = new MainShellView { DataContext = _shellVm };
@@ -332,6 +333,7 @@ public partial class App : Application
             _shellVm = new MainShellViewModel();
             DevLogger.Log("App", "MainShellViewModel created");
             _shellVm.LogoutRequested += OnLogout;
+            _shellVm.LoginRequested += OnOpenLogin;
             _shellVm.InterceptBackChanged += OnInterceptBackChanged;
             _shellVm.ActivateHomeAfterLogin();
             DevLogger.Log("App", "ActivateHomeAfterLogin done");
@@ -395,6 +397,7 @@ public partial class App : Application
         if (_shellVm is not null)
         {
             _shellVm.LogoutRequested -= OnLogout;
+            _shellVm.LoginRequested -= OnOpenLogin;
             _shellVm.InterceptBackChanged -= OnInterceptBackChanged;
             _shellVm = null;
         }
@@ -432,6 +435,30 @@ public partial class App : Application
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
                 EnterMainShell(null);
+            }
+        });
+    }
+
+    /// <summary>
+    /// 未登录状态下从账户中心请求登录：切换到登录页。
+    /// 与 OnLogout 对称：OnLogout 是登出后回主界面（离线模式），
+    /// OnOpenLogin 是主动请求登录，切到登录页。
+    /// 登录成功后 OnLoginSucceeded 会重新进入主界面。
+    /// </summary>
+    private void OnOpenLogin()
+    {
+        DevLogger.Log("App", "OnOpenLogin: switch to login page");
+        ReleaseLogger.Info("App", "User requested login from AccountCenter");
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                && desktop.MainWindow is not null)
+            {
+                ShowLogin(desktop.MainWindow);
+            }
+            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
+            {
+                ShowLogin(singleViewPlatform);
             }
         });
     }
