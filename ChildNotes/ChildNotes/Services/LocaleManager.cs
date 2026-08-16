@@ -455,6 +455,12 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiSettings_ServerUrl"] = "后端地址";
         this["AiSettings_Hint"] = "提示";
         this["AiSettings_HintContent"] = "后端地址需在同步设置中配置";
+        this["AiSettings_ParseMode"] = "智能识别模式";
+        this["AiSettings_ParseModeLabel"] = "识别模式";
+        this["AiSettings_ParseModeHint"] = "选择 Ai 记文本解析的优先策略（仅后端服务来源下生效）";
+        this["AiSettings_ParseModeFast"] = "快速模式";
+        this["AiSettings_ParseModePrecise"] = "精准模式";
+        this["AiSettings_ParseModePreciseHint"] = "每次都调用 AI 解析，会更快消耗每日 AI 次数配额";
         this["AiSettings_GenParams"] = "生成参数";
         this["AiSettings_Temperature"] = "温度";
         this["AiSettings_MaxTokens"] = "最大 Token 数";
@@ -744,6 +750,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_TotalMilkAmount"] = "总奶量（ml，选填）";
         this["RS_TotalMilkPlaceholder"] = "不填则自动计算";
         this["RS_CommonFoods"] = "常用辅食（可多选，右键自定义项可删除）";
+        this["RS_FoodName"] = "食物名称";
+        this["RS_FoodNamePlaceholder"] = "点击上方常用辅食或直接输入食物名称";
+        this["RS_EditFoods"] = "编辑";
         this["RS_CustomFoodPlaceholder"] = "输入其他辅食名称...";
         this["RS_Texture"] = "质地";
         this["RS_Texture_Puree"] = "泥糊";
@@ -1192,6 +1201,12 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiSettings_SourceLocal"] = "Local LLM";
         this["AiSettings_SourceServer"] = "Backend service";
         this["AiSettings_ServerUrl"] = "Backend URL";
+        this["AiSettings_ParseMode"] = "Recognition Mode";
+        this["AiSettings_ParseModeLabel"] = "Mode";
+        this["AiSettings_ParseModeHint"] = "Choose AI Note text parsing strategy (effective only with backend service)";
+        this["AiSettings_ParseModeFast"] = "Fast";
+        this["AiSettings_ParseModePrecise"] = "Precise";
+        this["AiSettings_ParseModePreciseHint"] = "Always call AI for parsing, consumes daily AI quota faster";
         this["AiSettings_Hint"] = "Tip";
         this["AiSettings_HintContent"] = "Backend URL must be configured in Data Sync";
         this["AiSettings_GenParams"] = "Generation params";
@@ -1491,6 +1506,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_TotalMilkAmount"] = "Total amount (ml, optional)";
         this["RS_TotalMilkPlaceholder"] = "Auto-calculated if blank";
         this["RS_CommonFoods"] = "Common foods (multi-select, right-click custom to delete)";
+        this["RS_FoodName"] = "Food name";
+        this["RS_FoodNamePlaceholder"] = "Tap common foods above or type food name directly";
+        this["RS_EditFoods"] = "Edit";
         this["RS_CustomFoodPlaceholder"] = "Enter other food name...";
         this["RS_Texture"] = "Texture";
         this["RS_Texture_Puree"] = "Puree";

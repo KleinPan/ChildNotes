@@ -512,6 +512,21 @@ public partial class RecordSheetView : UserControl
         }
     }
 
+    /// <summary>点击自定义辅食 Chip 右上角 × 删除按钮（左键点击直接删除）。</summary>
+    private async void OnCompFoodDeleteMarkPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (sender is not Border { Tag: CommonItemViewModel item }) return;
+        if (!item.IsCustom) return;
+        if (DataContext is not RecordSheetViewModel vm) return;
+
+        e.Handled = true;
+        var confirmed = await ShowConfirmDialog("删除自定义辅食", $"确定删除「{item.Name}」吗？");
+        if (confirmed)
+        {
+            vm.ComplementaryForm.DeleteCustomCommand.Execute(item);
+        }
+    }
+
     /// <summary>右键点击自定义单位 Chip 弹出删除确认对话框。</summary>
     private async void OnUnitChipPointerReleased(object? sender, PointerReleasedEventArgs e)
     {

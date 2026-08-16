@@ -687,10 +687,20 @@
 
                         <StackPanel IsVisible="{Binding ActiveType, Converter={x:Static v:AppConverters.IsComplementary}}">
 
-                            <!--  常用辅食选择区域（含系统默认项 + 用户自定义项，右键自定义项可删除）  -->
+                            <!--  常用辅食选择区域（含系统默认项 + 用户自定义项，点击编辑按钮进入管理模式）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CommonFoods}" />
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Classes="form-label" Text="{DynamicResource RS_CommonFoods}" />
+                                        <Button Grid.Column="1"
+                                                Padding="8,2"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Command="{Binding ComplementaryForm.ToggleEditFoodsCommand}"
+                                                Content="{DynamicResource RS_EditFoods}"
+                                                FontSize="{StaticResource FontSize.Caption}"
+                                                Foreground="{StaticResource BrandPrimaryBrush}" />
+                                    </Grid>
                                     <ItemsControl ItemsSource="{Binding ComplementaryForm.AllCommonFoodItems}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
@@ -705,29 +715,55 @@
                                                         PointerReleased="OnCompFoodChipPointerReleased"
                                                         Tag="{Binding .}"
                                                         Tapped="OnCompFoodChipTap">
-                                                    <TextBlock Text="{Binding Name}" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                                        <TextBlock Text="{Binding Name}" />
+                                                        <!--  自定义项删除按钮：浅红圆形背景 + 红色 ×（Chip 内部右侧）  -->
+                                                        <Border Width="14" Height="14"
+                                                                Background="#33F44336"
+                                                                CornerRadius="7"
+                                                                IsVisible="{Binding IsCustom}"
+                                                                PointerReleased="OnCompFoodDeleteMarkPointerReleased"
+                                                                Tag="{Binding .}"
+                                                                VerticalAlignment="Center">
+                                                            <TextBlock FontSize="10"
+                                                                       FontWeight="Bold"
+                                                                       Foreground="{StaticResource SemanticErrorBrush}"
+                                                                       HorizontalAlignment="Center"
+                                                                       Text="✕"
+                                                                       VerticalAlignment="Center" />
+                                                        </Border>
+                                                    </StackPanel>
                                                 </Border>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+
+                                    <!--  编辑模式下显示自定义输入区  -->
+                                    <Border Margin="0,8,0,0" IsVisible="{Binding ComplementaryForm.IsEditingFoods}">
+                                        <StackPanel>
+                                            <TextBlock Classes="form-label" Text="{DynamicResource RS_CustomAdd}" />
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomFoodPlaceholder}" Text="{Binding ComplementaryForm.CustomFood}" />
+                                                <Button Grid.Column="1" Margin="8,0,0,0"
+                                                        Background="{StaticResource BrandPrimaryBrush}"
+                                                        BorderThickness="0"
+                                                        Command="{Binding ComplementaryForm.AddCustomCommand}"
+                                                        Content="{DynamicResource RS_AddBtn}" CornerRadius="{StaticResource Radius.Small}" Foreground="{StaticResource SurfaceCardBrush}" />
+                                            </Grid>
+                                            <TextBlock Margin="0,4,0,0" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SemanticErrorBrush}"
+                                                       IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                                       Text="{Binding ComplementaryForm.ErrorMessage}" />
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </Border>
 
-                            <!--  自定义输入  -->
+                            <!--  食物名称（可编辑文本框，与 Chip 互斥共存：Chip 选中追加，用户也可手动编辑）  -->
                             <Border Classes="form-section">
                                 <StackPanel>
-                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_CustomAdd}" />
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <TextBox Grid.Column="0" Classes="form-input" PlaceholderText="{DynamicResource RS_CustomFoodPlaceholder}" Text="{Binding ComplementaryForm.CustomFood}" />
-                                        <Button Grid.Column="1" Margin="8,0,0,0"
-                                                Background="{StaticResource BrandPrimaryBrush}"
-                                                BorderThickness="0"
-                                                Command="{Binding ComplementaryForm.AddCustomCommand}"
-                                                Content="{DynamicResource RS_AddBtn}" CornerRadius="{StaticResource Radius.Small}" Foreground="{StaticResource SurfaceCardBrush}" />
-                                    </Grid>
-                                    <TextBlock Margin="0,4,0,0" FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource SemanticErrorBrush}"
-                                               IsVisible="{Binding ComplementaryForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                               Text="{Binding ComplementaryForm.ErrorMessage}" />
+                                    <TextBlock Classes="form-label" Text="{DynamicResource RS_FoodName}" />
+                                    <TextBox Classes="form-input" PlaceholderText="{DynamicResource RS_FoodNamePlaceholder}"
+                                             Text="{Binding ComplementaryForm.FoodName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
                             </Border>
                             <Border Classes="form-section">

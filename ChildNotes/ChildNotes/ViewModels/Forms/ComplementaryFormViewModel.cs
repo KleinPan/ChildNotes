@@ -22,6 +22,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
 
     [ObservableProperty] private string _dateText = ServiceProvider.Instance.DateTimeFormatter.FormatDate(DateTime.Now);
     [ObservableProperty] private string _foodName = string.Empty;
+    private bool _suppressFoodNameRebuild;
     [ObservableProperty] private string _selectedTexture = "puree";
     [ObservableProperty] private string _amountText = string.Empty;
     [ObservableProperty] private string _selectedReaction = "none";
@@ -29,6 +30,9 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
     [ObservableProperty] private string _timeText = ServiceProvider.Instance.DateTimeFormatter.FormatTime(DateTime.Now);
     [ObservableProperty] private string _customFood = string.Empty;
     [ObservableProperty] private string _errorMessage = string.Empty;
+
+    /// <summary>是否处于"编辑常用辅食"模式（显示删除标记 + 自定义输入区）</summary>
+    [ObservableProperty] private bool _isEditingFoods;
 
     /// <summary>当前选中的食量单位（默认"克"）</summary>
     [ObservableProperty] private string _amountUnit = "克";
@@ -93,6 +97,9 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
     /// <summary>删除自定义食物命令（参数为 CommonItemViewModel）</summary>
     public ICommand DeleteCustomCommand { get; }
 
+    /// <summary>切换"编辑常用辅食"模式命令</summary>
+    public ICommand ToggleEditFoodsCommand { get; }
+
     public ComplementaryFormViewModel()
     {
         // 合并所有默认类别
@@ -101,6 +108,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
 
         AddCustomCommand = new RelayCommand(AddCustomFood);
         DeleteCustomCommand = new RelayCommand<CommonItemViewModel>(DeleteCustomFood);
+        ToggleEditFoodsCommand = new RelayCommand(() => IsEditingFoods = !IsEditingFoods);
 
         // 订阅默认项选中变化
         SubscribeItems(DefaultFoodItems);
@@ -117,18 +125,27 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         foreach (var item in items) item.PropertyChanged += OnFoodItemChanged;
     }
 
-    /// <summary>食物项选中变化时同步重建 FoodName。</summary>
+    /// <summary>食物项选中变化时：选中追加到 FoodName，取消选中从 FoodName 移除。</summary>
     private void OnFoodItemChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(CommonItemViewModel.IsSelected)) return;
-        RebuildFoodName();
-    }
+        if (_suppressFoodNameRebuild) return;
+        if (sender is not CommonItemViewModel item) return;
 
-    /// <summary>合并选中项到 FoodName（以"、"分隔）。</summary>
-    private void RebuildFoodName()
-    {
-        var selected = AllCommonFoodItems.Where(x => x.IsSelected).Select(x => x.Name).Distinct().ToList();
-        FoodName = string.Join("、", selected);
+        // FoodName 为空时直接用 Chip 名；非空时按"、"分隔追加/移除
+        var currentParts = string.IsNullOrWhiteSpace(FoodName)
+            ? new List<string>()
+            : FoodName.Split('、', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+        if (item.IsSelected)
+        {
+            if (!currentParts.Contains(item.Name)) currentParts.Add(item.Name);
+        }
+        else
+        {
+            currentParts.RemoveAll(x => x == item.Name);
+        }
+        FoodName = string.Join("、", currentParts);
     }
 
     /// <summary>从 DB 重新加载自定义辅食，并重建 AllCommonFoodItems。</summary>
@@ -177,16 +194,28 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         AmountUnit = unit;
     }
 
-    /// <summary>编辑回填时按 FoodName 反选 Chip（匹配到的项置为选中）。</summary>
+    /// <summary>
+    /// 编辑回填：直接设置 FoodName 文本框，并同步 Chip 选中状态。
+    /// 抑制 Chip 事件触发的 FoodName 重建，避免覆盖用户即将编辑的文本。
+    /// </summary>
     public void SelectFoodsByName(string? foodName)
     {
-        foreach (var item in AllCommonFoodItems) item.IsSelected = false;
-        if (string.IsNullOrWhiteSpace(foodName)) return;
-        var names = foodName.Split('、', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        foreach (var name in names)
+        _suppressFoodNameRebuild = true;
+        try
         {
-            var match = AllCommonFoodItems.FirstOrDefault(x => x.Name == name);
-            if (match is not null) match.IsSelected = true;
+            foreach (var item in AllCommonFoodItems) item.IsSelected = false;
+            FoodName = foodName ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(foodName)) return;
+            var names = foodName.Split('、', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var name in names)
+            {
+                var match = AllCommonFoodItems.FirstOrDefault(x => x.Name == name);
+                if (match is not null) match.IsSelected = true;
+            }
+        }
+        finally
+        {
+            _suppressFoodNameRebuild = false;
         }
     }
 
@@ -225,7 +254,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         newItem.PropertyChanged += OnFoodItemChanged;
         CustomFoodItems.Add(newItem);
         AllCommonFoodItems.Add(newItem);
-        newItem.IsSelected = true;  // 自动选中，触发 RebuildFoodName
+        newItem.IsSelected = true;  // 自动选中，触发 OnFoodItemChanged 追加到 FoodName
 
         CustomFood = string.Empty;
     }
@@ -245,15 +274,25 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         CustomFoodItems.Remove(item);
         AllCommonFoodItems.Remove(item);
         item.PropertyChanged -= OnFoodItemChanged;
-        if (item.IsSelected) RebuildFoodName();
+        // 从 FoodName 移除被删除的食物名
+        if (item.IsSelected && !string.IsNullOrWhiteSpace(FoodName))
+        {
+            var parts = FoodName.Split('、', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                .Where(x => x != item.Name).ToList();
+            FoodName = string.Join("、", parts);
+        }
     }
 
     /// <summary>
-    /// 同步选中项到食物名称字段
+    /// 同步选中项到食物名称字段（保留空实现以兼容外部调用，
+    /// 实际 FoodName 已由 OnFoodItemChanged 实时维护）。
     /// </summary>
     public void RefreshFoodNameFromSelection()
     {
-        RebuildFoodName();
+        // 兼容旧调用：若 FoodName 与 Chip 状态严重不同步，用 Chip 重建
+        var selected = AllCommonFoodItems.Where(x => x.IsSelected).Select(x => x.Name).Distinct().ToList();
+        if (string.IsNullOrWhiteSpace(FoodName) && selected.Count > 0)
+            FoodName = string.Join("、", selected);
     }
 
     public bool Validate(out string error)
