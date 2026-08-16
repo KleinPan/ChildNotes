@@ -24,6 +24,9 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
     /// <summary>是否正在导出数据库（防止重复点击）。</summary>
     [ObservableProperty] private bool _isDbExporting;
 
+    /// <summary>是否正在导入数据库（防止重复点击）。</summary>
+    [ObservableProperty] private bool _isDbImporting;
+
     /// <summary>是否启用动画效果。</summary>
     [ObservableProperty] private bool _enableAnimations = true;
 
@@ -294,6 +297,48 @@ public partial class DeveloperOptionsViewModel : ViewModelBase, IActivatable
     }
 
     partial void OnIsDbExportingChanged(bool value) => ExportDatabaseCommand.NotifyCanExecuteChanged();
+
+    /// <summary>
+    /// 导入数据库：从 external-files 目录的 childnotes_import.db 恢复本地数据库。
+    /// 导入前验证 schema 版本兼容性，导入后备份当前数据库到 .before_import，
+    /// 需要手动重启应用使新数据库生效。
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanImportDb))]
+    private async Task ImportDatabaseAsync()
+    {
+        if (IsDbImporting) return;
+        IsDbImporting = true;
+        try
+        {
+            var result = await DatabaseExportService.ImportAsync();
+            if (result.Success)
+            {
+                DisplayToast(string.Format(
+                    _locale.GetString("Dev_ImportDbOk", "数据库已导入（{0}），请重启应用使其生效"),
+                    FormatSize(result.SizeBytes)));
+            }
+            else
+            {
+                DisplayToast(string.Format(
+                    _locale.GetString("Dev_ImportDbFailed", "数据库导入失败：{0}"),
+                    result.ErrorMessage));
+            }
+        }
+        catch (Exception ex)
+        {
+            DisplayToast(string.Format(
+                _locale.GetString("Dev_ImportDbFailed", "数据库导入失败：{0}"),
+                ex.Message));
+        }
+        finally
+        {
+            IsDbImporting = false;
+        }
+    }
+
+    private bool CanImportDb() => !IsDbImporting;
+
+    partial void OnIsDbImportingChanged(bool value) => ImportDatabaseCommand.NotifyCanExecuteChanged();
 
     /// <summary>动画开关变化时自动保存并实时生效。</summary>
     partial void OnEnableAnimationsChanged(bool value) => SaveSettings();

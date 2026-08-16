@@ -619,6 +619,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Dev_ExportFailed"] = "导出失败：{0}";
         this["Dev_ExportDbOk"] = "数据库已导出到 {0}（{1}）";
         this["Dev_ExportDbFailed"] = "数据库导出失败：{0}";
+        this["Dev_ImportDb"] = "导入数据库";
+        this["Dev_ImportDbOk"] = "数据库已导入（{0}），请重启应用使其生效";
+        this["Dev_ImportDbFailed"] = "数据库导入失败：{0}";
 
         // ===== InAppMessageView =====
         this["Msg_Title"] = "应用消息";
@@ -1378,6 +1381,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Dev_ExportFailed"] = "Export failed: {0}";
         this["Dev_ExportDbOk"] = "DB exported to {0} ({1})";
         this["Dev_ExportDbFailed"] = "DB export failed: {0}";
+        this["Dev_ImportDb"] = "Import DB";
+        this["Dev_ImportDbOk"] = "DB imported ({0}), please restart app to take effect";
+        this["Dev_ImportDbFailed"] = "DB import failed: {0}";
 
         // ===== InAppMessageView =====
         this["Msg_Title"] = "Messages";

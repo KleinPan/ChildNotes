@@ -245,20 +245,26 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- 底部操作栏：筛选条数 + 导出数据库 + 导出 .txt -->
+        <!-- 底部操作栏：筛选条数 + 导入数据库 + 导出数据库 + 导出 .txt -->
         <Border Grid.Row="4" Padding="14,10" Background="{StaticResource SurfaceCardBrush}"
                 BorderBrush="{StaticResource SurfaceDividerBrush}" BorderThickness="0,1,0,0">
-            <Grid ColumnDefinitions="*,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                 <TextBlock Grid.Column="0" VerticalAlignment="Center"
                            FontSize="{StaticResource FontSize.Caption}" Foreground="{StaticResource TextSecondaryBrush}"
                            Text="{Binding Filtered.Count, StringFormat='筛选后 {0} 条'}"/>
+                <!-- 导入数据库：从 external-files 目录的 childnotes_import.db 恢复 -->
+                <Button Grid.Column="1" Content="{DynamicResource Dev_ImportDb}"
+                        Classes="btn secondary small"
+                        Command="{Binding ImportDatabaseCommand}"
+                        IsEnabled="{Binding !IsDbImporting}"
+                        Margin="0,0,8,0"/>
                 <!-- 导出数据库：所有构建变体可见，用于解决 release 风格 dev APK 无法 adb run-as 的问题 -->
-                <Button Grid.Column="1" Content="{DynamicResource Dev_ExportDb}"
+                <Button Grid.Column="2" Content="{DynamicResource Dev_ExportDb}"
                         Classes="btn secondary small"
                         Command="{Binding ExportDatabaseCommand}"
                         IsEnabled="{Binding !IsDbExporting}"
                         Margin="0,0,8,0"/>
-                <Button Grid.Column="2" Content="{DynamicResource Dev_ExportTxt}"
+                <Button Grid.Column="3" Content="{DynamicResource Dev_ExportTxt}"
                         Classes="btn primary small"
                         Command="{Binding ExportCommand}"
                         IsEnabled="{Binding !IsExporting}"

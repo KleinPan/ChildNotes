@@ -129,4 +129,27 @@ public static class AndroidLogShareService
 
         return fileName;
     }
+
+    /// <summary>
+    /// 从 external-files 目录读取 childnotes_import.db 文件，返回其本地路径。
+    /// 由共享层 DatabaseExportService.ImportAsync 通过反射调用。
+    ///
+    /// 设计：不用 SAF（需要 Activity 上下文和回调注册，跨平台抽象复杂），
+    /// 改用 external-files 目录作为中转：用户先通过文件管理器或 adb push 把备份的
+    /// childnotes.db 放到 /storage/emulated/0/Android/data/{pkg}/files/childnotes_import.db，
+    /// 然后调用本方法返回该路径，供 ImportAsync 做后续验证和替换。
+    ///
+    /// external-files 目录无需任何权限，app 自己可读写，用户也可通过系统文件管理器访问。
+    /// </summary>
+    public static Task<string?> FindImportableDbAsync()
+    {
+        var ctx = Application.Context;
+        if (ctx is null) throw new InvalidOperationException("Application.Context is null");
+
+        var extFilesDir = ctx.GetExternalFilesDir(null)
+            ?? throw new InvalidOperationException("GetExternalFilesDir(null) returned null");
+
+        var importPath = Path.Combine(extFilesDir.AbsolutePath, "childnotes_import.db");
+        return Task.FromResult<string?>(File.Exists(importPath) ? importPath : null);
+    }
 }
