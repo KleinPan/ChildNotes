@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 using ChildNotes.Data.Repositories;
+using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 
 namespace ChildNotes.Services;
@@ -16,10 +17,13 @@ public sealed class AiParseApiClient : BaseApiClient
 
     public AiParseApiClient(SyncConfigRepository cfgRepo) => _cfgRepo = cfgRepo;
 
-    /// <summary>调用后端解析接口；后端不可达或返回错误时返回 null。</summary>
-    public async Task<AiNoteParseBatchResponse?> ParseAsync(string text, bool forceAi = false, CancellationToken ct = default)
+    /// <summary>
+    /// 调用后端解析接口；后端不可达或返回错误时返回 null。
+    /// <paramref name="parseMode"/> 见 <see cref="ParseMode"/>；默认 <see cref="ParseMode.Fast"/>。
+    /// </summary>
+    public async Task<AiNoteParseBatchResponse?> ParseAsync(string text, string parseMode = ParseMode.Fast, CancellationToken ct = default)
     {
-        var body = Serialize(new { Text = text, ForceAi = forceAi });
+        var body = Serialize(new { Text = text, ParseMode = parseMode });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/smart-analysis/parse-note", body, ct);
         return resp is null ? null : await ReadDataAsync<AiNoteParseBatchResponse>(resp, ct);
     }
@@ -27,10 +31,11 @@ public sealed class AiParseApiClient : BaseApiClient
     /// <summary>
     /// 调用后端解析接口，失败时抛出带错误码的异常（而非返回 null）。
     /// 供需要区分"AI 次数用尽"等业务错误的调用方使用。
+    /// <paramref name="parseMode"/> 见 <see cref="ParseMode"/>；默认 <see cref="ParseMode.Fast"/>。
     /// </summary>
-    public async Task<AiNoteParseBatchResponse> ParseWithErrorsAsync(string text, bool forceAi = false, CancellationToken ct = default)
+    public async Task<AiNoteParseBatchResponse> ParseWithErrorsAsync(string text, string parseMode = ParseMode.Fast, CancellationToken ct = default)
     {
-        var body = Serialize(new { Text = text, ForceAi = forceAi });
+        var body = Serialize(new { Text = text, ParseMode = parseMode });
         // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
         // 导致后端业务错误（AI 次数用尽等）的 msg/code 丢失，最终统一抛"后端服务不可用"。
         using var resp = await SendWithErrorAsync(_cfgRepo, HttpMethod.Post, "/api/smart-analysis/parse-note", body, ct);

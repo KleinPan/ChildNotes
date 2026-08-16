@@ -8,9 +8,19 @@ public class AiNoteParseRequest
     public string Text { get; set; } = string.Empty;
 
     /// <summary>
+    /// 智能识别模式，决定后端是否跳过规则快速路径：
+    /// <list type="bullet">
+    ///   <item><c>fast</c>（默认）：规则置信度足够高且非复杂文本时直接返回（0ms），低置信度或复杂文本才调 AI。AI 失败时规则兜底。</item>
+    ///   <item><c>precise</c>：跳过规则快速路径，每次都调 AI。AI 失败时仍走规则兜底。会更快消耗每日 AI 次数配额。</item>
+    /// </list>
+    /// 未传或空值视为 <see cref="ChildNotes.Shared.Constants.ParseMode.Fast"/>，向后兼容旧前端。
+    /// </summary>
+    public string ParseMode { get; set; } = ChildNotes.Shared.Constants.ParseMode.Fast;
+
+    /// <summary>
     /// 是否强制走 AI 解析（跳过规则优先的快速路径）。
-    /// 默认 false：规则置信度高时直接返回（0ms），低置信度才调 AI。
-    /// 用户主动要求"重新识别"等场景可传 true 强制走 AI。
+    /// 旧字段，保留以兼容旧前端。等价于 <see cref="ParseMode"/> = <see cref="ParseMode.Precise"/>。
+    /// 新前端应直接设置 <see cref="ParseMode"/>；后端内部统一按 ParseMode 决策。
     /// </summary>
     public bool ForceAi { get; set; } = false;
 }

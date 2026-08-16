@@ -124,21 +124,28 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// 按 NoteSource 配置选择解析路径并执行三级降级。
     /// 返回多条解析结果列表（至少 1 条；解析完全失败时返回空列表）。
     /// </summary>
-    public async Task<List<AiNoteParseItem>> ParseAsync(string text)
+    /// <param name="overrideParseMode">
+    /// 可选解析模式覆盖：传入非空值时强制使用该模式（不读 LlmConfig.ParseMode）。
+    /// 供"重新识别"按钮等场景强制精准模式使用；普通输入留空走用户设置。
+    /// </param>
+    public async Task<List<AiNoteParseItem>> ParseAsync(string text, string? overrideParseMode = null)
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
+        var parseMode = !string.IsNullOrEmpty(overrideParseMode)
+            ? overrideParseMode
+            : (string.IsNullOrEmpty(config.ParseMode) ? ParseMode.Fast : config.ParseMode);
 
         // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
-        DevLogger.Log("AiNote", $"[AI-LOG] 用户输入 | 时间={DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} 类型=NoteParse 路径={(preferServer ? "server" : "local")} 文本={text}");
+        DevLogger.Log("AiNote", $"[AI-LOG] 用户输入 | 时间={DateTime.Now:yyyy-MM-dd HH:mm:ss.fff} 类型=NoteParse 路径={(preferServer ? "server" : "local")} ParseMode={parseMode} 文本={text}");
 
-        DevLogger.Log("AiNote", $"[AI-LOG] 解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, Enabled={config.Enabled}, preferServer={preferServer}");
+        DevLogger.Log("AiNote", $"[AI-LOG] 解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, ParseMode={parseMode}, Enabled={config.Enabled}, preferServer={preferServer}");
 
         // 1) 按用户选择的路径调用 AI
         List<AiNoteParseItem>? aiItems = null;
         if (preferServer)
         {
-            aiItems = await TryServerAsync(text);
+            aiItems = await TryServerAsync(text, parseMode);
         }
         else
         {
@@ -165,8 +172,9 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// 尝试调用后端解析接口；未配置或一般失败时返回 null（降级到本地 LLM/规则）。
     /// AI 记次数用尽（AI_NOTE_LIMIT_EXCEEDED）时抛出 <see cref="AiNoteApiException"/>，
     /// 不降级，由上层提示用户升级会员。
+    /// <param name="parseMode">解析模式，见 <see cref="ParseMode"/>；透传给后端决定是否跳过规则快速路径。</param>
     /// </summary>
-    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text)
+    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text, string parseMode)
     {
         var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
         if (string.IsNullOrEmpty(serverUrl))
@@ -174,10 +182,10 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             DevLogger.Log("AiNote", "[AI-LOG] 后端解析跳过：ServerUrl 未配置", DevLogger.Level.Warn);
             return null;
         }
-        DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note");
+        DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note ParseMode={parseMode}");
         try
         {
-            var batch = await _apiClient.ParseWithErrorsAsync(text);
+            var batch = await _apiClient.ParseWithErrorsAsync(text, parseMode);
             DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{batch.Items.Count} 条");
             return batch.Items;
         }

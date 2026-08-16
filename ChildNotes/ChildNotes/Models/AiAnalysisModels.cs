@@ -1,4 +1,5 @@
 using ChildNotes.Infrastructure;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.Models;
 
@@ -38,6 +39,16 @@ public sealed class LlmConfig
     /// </list>
     /// </summary>
     public string NoteSource { get; set; } = "local";
+
+    /// <summary>
+    /// 智能识别模式，作用于"Ai记"的解析路由（仅 server 来源生效，local 来源无规则快速路径）：
+    /// <list type="bullet">
+    ///   <item><c>fast</c>（默认）：规则置信度足够高且非复杂文本时直接返回（0ms），复杂文本自动转 AI。</item>
+    ///   <item><c>precise</c>：每次都调 AI，会更快消耗每日 AI 次数配额；AI 失败时仍走规则兜底。</item>
+    /// </list>
+    /// 值定义见 <see cref="ChildNotes.Shared.Constants.ParseMode"/>。
+    /// </summary>
+    public string ParseMode { get; set; } = ChildNotes.Shared.Constants.ParseMode.Fast;
 }
 
 /// <summary>

@@ -169,8 +169,8 @@ public partial class AiNoteService : IAiNoteService
             throw new BusinessException("记录文本过长（最多 500 字）", 400);
 
         // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
-        _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ForceAi={ForceAi} 文本={Text}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ForceAi, text);
+        _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ParseMode={ParseMode} ForceAi={ForceAi} 文本={Text}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ParseMode ?? "(null)", req.ForceAi, text);
 
         // 每日次数限制：原子地检查额度并递增（防止并发绕过限制）
         var uid = _current.RequireUserId();
@@ -179,9 +179,17 @@ public partial class AiNoteService : IAiNoteService
         if (!ok)
             throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
 
+        // ===== 解析模式路由 =====
+        // ParseMode 是新字段（fast/precise），ForceAi 是旧字段（兼容）。
+        // 后端统一归并到 preferAi 标志：precise 模式或 ForceAi=true 都表示用户要求每次都调 AI。
+        // - fast（默认）：规则置信度 ≥ 阈值且非复杂文本 → 直接返回（0ms），否则调 AI
+        // - precise：跳过规则快速路径，每次都调 AI；AI 失败时仍走规则兜底
+        var parseMode = string.IsNullOrEmpty(req.ParseMode) ? ParseMode.Fast : req.ParseMode;
+        var preferAi = parseMode == ParseMode.Precise || req.ForceAi;
+
         // ===== 规则优先 + 智能升级 =====
         // 1. 先用规则解析（0ms）
-        // 2. 规则所有条目置信度 >= 0.6 且非 ForceAi 且非复杂文本 → 直接返回（快速路径）
+        // 2. 非 preferAi 且规则置信度 ≥ 0.6 且非复杂文本 → 直接返回（快速路径）
         // 3. 否则调 AI 解析（1-3秒）；AI 失败则用规则结果兜底
         // 复杂文本启发式（ShouldForceAi）：长文本或多逗号场景规则无法准确剥离描述性语句，
         // 应交由 AI 处理；规则解析仍会作为 AI 失败时的兜底执行。
@@ -190,7 +198,7 @@ public partial class AiNoteService : IAiNoteService
         var shouldForceAi = AiNoteRuleParser.ShouldForceAi(text);
 
         List<AiNoteParseItem> items;
-        if (!req.ForceAi && !shouldForceAi && ruleHighConfidence)
+        if (!preferAi && !shouldForceAi && ruleHighConfidence)
         {
             // 快速路径：规则置信度足够高且非复杂文本，直接返回，不调 AI
             _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf} Text={Text}",
@@ -199,8 +207,10 @@ public partial class AiNoteService : IAiNoteService
         }
         else
         {
-            // 慢速路径：规则置信度不足、复杂文本、或强制 AI，调 AI 解析
-            if (shouldForceAi)
+            // 慢速路径：规则置信度不足、复杂文本、或精准模式/强制 AI，调 AI 解析
+            if (preferAi)
+                _logger.LogInformation("[AI-LOG] 精准模式/强制AI跳过规则快速路径 ParseMode={ParseMode} ForceAi={ForceAi} Text={Text}", parseMode, req.ForceAi, text);
+            else if (shouldForceAi)
                 _logger.LogInformation("[AI-LOG] 复杂文本强制AI跳过规则快速路径 Text={Text}", text);
             try
             {

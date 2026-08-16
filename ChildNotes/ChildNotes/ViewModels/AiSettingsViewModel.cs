@@ -4,6 +4,7 @@ using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.ViewModels;
 
@@ -52,6 +53,24 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
     /// <summary>UI 绑定用：后端服务器地址（只读展示）。</summary>
     public string ServerUrl => _syncRepo.Get().ServerUrl ?? string.Empty;
 
+    /// <summary>
+    /// 智能识别模式：fast=快速模式（默认），precise=精准模式。
+    /// 仅 server 来源下生效（local 来源无规则快速路径）。
+    /// </summary>
+    [ObservableProperty] private string _parseMode = ChildNotes.Shared.Constants.ParseMode.Fast;
+    /// <summary>UI 双向绑定用：是否使用快速模式。setter 同步更新 ParseMode。</summary>
+    public bool UseFastMode
+    {
+        get => ParseMode == ChildNotes.Shared.Constants.ParseMode.Fast;
+        set { if (value) ParseMode = ChildNotes.Shared.Constants.ParseMode.Fast; }
+    }
+    /// <summary>UI 双向绑定用：是否使用精准模式。setter 同步更新 ParseMode。</summary>
+    public bool UsePreciseMode
+    {
+        get => ParseMode == ChildNotes.Shared.Constants.ParseMode.Precise;
+        set { if (value) ParseMode = ChildNotes.Shared.Constants.ParseMode.Precise; }
+    }
+
     [ObservableProperty] private bool _isTesting;
     [ObservableProperty] private string _testButtonText = "测试连接";
     [ObservableProperty] private string _testResult = string.Empty;
@@ -75,6 +94,12 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
         OnPropertyChanged(nameof(UseServerSource));
     }
 
+    partial void OnParseModeChanged(string value)
+    {
+        OnPropertyChanged(nameof(UseFastMode));
+        OnPropertyChanged(nameof(UsePreciseMode));
+    }
+
     partial void OnIsTestingChanged(bool value)
     {
         TestConnectionCommand.NotifyCanExecuteChanged();
@@ -90,6 +115,7 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
         ConfigTemperature = config.Temperature;
         ConfigMaxTokens = config.MaxTokens;
         NoteSource = string.IsNullOrEmpty(config.NoteSource) ? "local" : config.NoteSource;
+        ParseMode = string.IsNullOrEmpty(config.ParseMode) ? ChildNotes.Shared.Constants.ParseMode.Fast : config.ParseMode;
         TestResult = string.Empty;
         TestSuccess = false;
         OnPropertyChanged(nameof(ServerUrl));
@@ -107,6 +133,7 @@ public partial class AiSettingsViewModel : ViewModelBase, IActivatable
             MaxTokens = ConfigMaxTokens,
             Enabled = Enabled,
             NoteSource = NoteSource,
+            ParseMode = ParseMode,
         };
         _aiService.SaveLlmConfig(config);
         DisplayToast("配置已保存");

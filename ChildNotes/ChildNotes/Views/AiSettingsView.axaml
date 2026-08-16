@@ -95,6 +95,35 @@
                     </StackPanel>
                 </Border>
 
+                <!-- 智能识别模式（仅后端服务来源下生效） -->
+                <Border Classes="section-title" IsVisible="{Binding IsServerSource}">
+                    <TextBlock Text="{DynamicResource AiSettings_ParseMode}"/>
+                </Border>
+
+                <Border Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}" Margin="12,4" IsVisible="{Binding IsServerSource}">
+                    <StackPanel>
+                        <Grid Margin="14,12" ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource AiSettings_ParseModeLabel}" FontSize="{StaticResource FontSize.Label}"/>
+                                <TextBlock Text="{DynamicResource AiSettings_ParseModeHint}" FontSize="{StaticResource FontSize.Caption}"
+                                           Foreground="{StaticResource TextPlaceholderBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid Margin="14,0,14,12" ColumnDefinitions="*,*">
+                            <RadioButton Grid.Column="0" Content="{DynamicResource AiSettings_ParseModeFast}" IsChecked="{Binding UseFastMode, Mode=TwoWay}"
+                                         IsEnabled="{Binding !IsTesting}"/>
+                            <RadioButton Grid.Column="1" Content="{DynamicResource AiSettings_ParseModePrecise}" IsChecked="{Binding UsePreciseMode, Mode=TwoWay}"
+                                         IsEnabled="{Binding !IsTesting}"/>
+                        </Grid>
+                        <Border Height="1" Background="{StaticResource SurfaceDividerBrush}" Margin="14,0"/>
+                        <Grid Margin="14,10" ColumnDefinitions="80,*" IsVisible="{Binding UsePreciseMode}">
+                            <TextBlock Grid.Column="0" Text="{DynamicResource AiSettings_Hint}" FontSize="{StaticResource FontSize.Label}" VerticalAlignment="Top"/>
+                            <TextBlock Grid.Column="1" Text="{DynamicResource AiSettings_ParseModePreciseHint}" FontSize="{StaticResource FontSize.Caption}"
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <!-- 连接测试 -->
                 <Button Content="{Binding TestButtonText}" Classes="btn secondary large" Margin="12,12"
                         HorizontalAlignment="Stretch"
