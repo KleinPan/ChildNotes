@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +7,7 @@ using Android.Content;
 using Android.Security;
 using Android.Security.Keystore;
 using ChildNotes.Services.Storage;
+using Java.Security;
 using Javax.Crypto;
 using Javax.Crypto.Spec; // GCMParameterSpec 所在命名空间
 
@@ -107,7 +107,7 @@ public sealed class AndroidSecureStorage : ISecureStorage
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error("SecureStorage", $"GetAsync({key}) failed: {ex.Message}");
+            global::Android.Util.Log.Error("SecureStorage", $"GetAsync({key}) failed: {ex.Message}");
             return Task.FromResult<string?>(null);
         }
     }
@@ -125,7 +125,7 @@ public sealed class AndroidSecureStorage : ISecureStorage
 
             var cipher = GetEncryptCipher();
             cipher.Init(CipherMode.EncryptMode, GetOrCreateKey());
-            var iv = cipher.IV;
+            var iv = cipher.GetIV();
             var plain = Encoding.UTF8.GetBytes(value);
             var cipherText = cipher.DoFinal(plain);
 
@@ -138,7 +138,7 @@ public sealed class AndroidSecureStorage : ISecureStorage
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error("SecureStorage", $"SetAsync({key}) failed: {ex.Message}");
+            global::Android.Util.Log.Error("SecureStorage", $"SetAsync({key}) failed: {ex.Message}");
         }
         return Task.CompletedTask;
     }
@@ -152,12 +152,12 @@ public sealed class AndroidSecureStorage : ISecureStorage
         }
         catch (Exception ex)
         {
-            Android.Util.Log.Error("SecureStorage", $"DeleteAsync({key}) failed: {ex.Message}");
+            global::Android.Util.Log.Error("SecureStorage", $"DeleteAsync({key}) failed: {ex.Message}");
         }
         return Task.CompletedTask;
     }
 
-    private static SecretKey GetOrCreateKey()
+    private static ISecretKey GetOrCreateKey()
     {
         var ks = KeyStore.GetInstance(KeyStoreType);
         ks.Load(null); // 初始化，不读取已有 keystore 条目
