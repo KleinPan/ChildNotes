@@ -236,17 +236,26 @@ public sealed class ServiceProvider
     ///   - 数据库损坏/读取失败/临时 IO 异常/未知异常 → 不删除，向上抛出
     ///   - 否则可能出现：DB 临时 IO 异常 → 被误判为旧版本 → 删除用户全部数据
     ///
-    /// 重建触发条件（必须两条同时满足）：
+    /// 设计原则（2026-08-13 修复）：
+    ///   - **不再整体删除数据库**！旧逻辑只要 user_version < CurrentSchemaVersion 就 File.Delete，
+    ///     导致用户升级时本地数据全部丢失（llm_config / user_supplement_item 等纯本地数据无法恢复）。
+    ///   - 现在改为：检测到旧版本时，**先备份**到 .before_migrate，然后**让 DbInitializer 做增量迁移**
+    ///     （DbInitializer 用 CREATE TABLE IF NOT EXISTS / AddColumnIfNotExists / DropColumnIfExists，
+    ///     对已存在的表只做列级变更，不会删除数据）。
+    ///   - 仅在数据库文件**无法打开**或**损坏**（PRAGMA 读取失败）时，才走兜底重建：
+    ///     先备份到 .corrupt.{timestamp}，再删除让 DbInitializer 建新库。
+    ///
+    /// 旧版本检测（仅用于决定是否备份，不再触发删除）：
     ///   1) PRAGMA user_version 可正常读取，且 &lt; CurrentSchemaVersion（明确的旧版本号）
     ///   2) child_record 表存在且 id 列类型为 INTEGER（极旧版 schema 二次确认）
-    /// 仅条件 1) 满足也允许重建（user_version 是权威版本号，单独可信）
     /// </summary>
     private static void EnsureSchemaVersion(string dbPath)
     {
         if (!File.Exists(dbPath)) return;
 
-        bool needRebuild = false;
-        // 用独立 using 块确保连接在判断 needRebuild 前完全释放（含 Pooling=False 不入池）
+        bool needMigration = false;
+        bool isCorrupt = false;
+        // 用独立 using 块确保连接在判断前完全释放（含 Pooling=False 不入池）
         {
             using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath};Pooling=False");
             try
@@ -269,10 +278,10 @@ public sealed class ServiceProvider
                 var curVer = Convert.ToInt32(verCmd.ExecuteScalar() ?? 0, System.Globalization.CultureInfo.InvariantCulture);
                 if (curVer < DbInitializer.CurrentSchemaVersion)
                 {
-                    needRebuild = true;
-                    DevLogger.Log("DI", $"Schema outdated (user_version={curVer} < {DbInitializer.CurrentSchemaVersion}), will rebuild DB.");
+                    needMigration = true;
+                    DevLogger.Log("DI", $"Schema outdated (user_version={curVer} < {DbInitializer.CurrentSchemaVersion}), will migrate (not rebuild).");
                 }
-                if (!needRebuild)
+                if (!needMigration)
                 {
                     using var cmd = conn.CreateCommand();
                     // child_record 是核心业务表，id 列类型反映极旧版 schema（user_version 可能不准）
@@ -282,8 +291,8 @@ public sealed class ServiceProvider
                     {
                         if (r.GetString(1) == "id" && r.GetString(2).Equals("INTEGER", StringComparison.OrdinalIgnoreCase))
                         {
-                            needRebuild = true;
-                            DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), will rebuild DB.");
+                            needMigration = true;
+                            DevLogger.Log("DI", "Schema outdated (child_record.id is INTEGER), will migrate.");
                             break;
                         }
                     }
@@ -292,56 +301,95 @@ public sealed class ServiceProvider
             catch (Exception ex)
             {
                 // PRAGMA 读取失败：DB 可能损坏（file is not a database / database disk image is malformed 等）
-                // 不能误判为旧版本直接删除，向上抛出让用户感知并手动恢复
-                throw new InvalidOperationException(
-                    "数据库 schema 版本读取失败（可能文件已损坏）。" +
-                    $"请勿在 App 运行时手动操作 DB 文件。路径: {dbPath}。原因: {ex.Message}", ex);
+                // 这种情况才走兜底重建：先备份，再删除让 DbInitializer 建新库
+                DevLogger.Log("DI", $"DB corrupt detected, will backup and rebuild: {ex.Message}");
+                isCorrupt = true;
             }
         }
         // 连接已 Dispose，文件句柄释放；清池兜底（Pooling=False 不入池，但旧残留无害）
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
 
-        if (needRebuild)
+        // 损坏兜底：先备份，再删除让 DbInitializer 建新库
+        if (isCorrupt)
         {
-            DevLogger.Log("DI", "Rebuilding DB file.");
-            // SQLite 启用 WAL 模式时会有 -wal 和 -shm 旁路文件，需一起处理
-            var wal = dbPath + "-wal";
-            var shm = dbPath + "-shm";
-            // 删除可能因文件句柄残留失败，重试 3 次（每次间隔递增）
-            bool deleted = false;
-            for (int i = 0; i < 3 && !deleted; i++)
+            BackupAndRemoveDb(dbPath, ".corrupt." + DateTime.Now.ToString("yyyyMMddHHmmss"));
+            return;
+        }
+
+        // 旧版本：先备份到 .before_migrate，然后让 DbInitializer 做增量迁移（不删除！）
+        if (needMigration)
+        {
+            try
             {
-                Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-                try
-                {
-                    if (File.Exists(dbPath)) File.Delete(dbPath);
-                    if (File.Exists(wal)) File.Delete(wal);
-                    if (File.Exists(shm)) File.Delete(shm);
-                    deleted = true;
-                }
-                catch (Exception) when (i < 2)
-                {
-                    System.Threading.Thread.Sleep(200 * (i + 1));
-                }
+                var backupPath = dbPath + ".before_migrate";
+                if (File.Exists(backupPath)) File.Delete(backupPath);
+                File.Copy(dbPath, backupPath, overwrite: true);
+                DevLogger.Log("DI", $"DB backed up to {backupPath} before migration.");
             }
-            // 仍删除失败时兜底：把旧文件改名为 .old，让 DbInitializer 用新 schema 建新 DB
-            if (!deleted)
+            catch (Exception ex)
             {
-                try
-                {
-                    var stamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-                    if (File.Exists(dbPath)) File.Move(dbPath, $"{dbPath}.{stamp}.old");
-                    if (File.Exists(wal)) File.Move(wal, $"{wal}.{stamp}.old", overwrite: true);
-                    if (File.Exists(shm)) File.Move(shm, $"{shm}.{stamp}.old", overwrite: true);
-                    DevLogger.Log("DI", "DB file delete failed, renamed old files with .old suffix.");
-                }
-                catch (Exception ex)
-                {
-                    // 连 rename 都失败——DB 文件被严重锁定，无法继续。抛出明确异常便于排查
-                    throw new InvalidOperationException(
-                        "无法删除/重命名旧的数据库文件（schema 不兼容）。请关闭所有占用该文件的程序后重试。" +
-                        $"路径: {dbPath}。原因: {ex.Message}", ex);
-                }
+                DevLogger.Log("DI", $"DB backup before migration failed (non-fatal): {ex.Message}");
+            }
+            // 不删除！让 DbInitializer 增量迁移
+        }
+    }
+
+    /// <summary>
+    /// 兜底重建：数据库文件严重损坏时，先备份到 {dbPath}.{suffix}，再删除让 DbInitializer 建新库。
+    /// 仅在 PRAGMA user_version 读取失败（文件损坏）时调用。
+    /// </summary>
+    private static void BackupAndRemoveDb(string dbPath, string suffix)
+    {
+        var wal = dbPath + "-wal";
+        var shm = dbPath + "-shm";
+
+        // 先备份（即使损坏也保留原文件供用户手动恢复）
+        try
+        {
+            var backupPath = dbPath + suffix;
+            if (File.Exists(backupPath)) File.Delete(backupPath);
+            File.Copy(dbPath, backupPath, overwrite: true);
+            DevLogger.Log("DI", $"Corrupt DB backed up to {backupPath}.");
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("DI", $"Corrupt DB backup failed (non-fatal): {ex.Message}");
+        }
+
+        // 删除可能因文件句柄残留失败，重试 3 次（每次间隔递增）
+        bool deleted = false;
+        for (int i = 0; i < 3 && !deleted; i++)
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try
+            {
+                if (File.Exists(dbPath)) File.Delete(dbPath);
+                if (File.Exists(wal)) File.Delete(wal);
+                if (File.Exists(shm)) File.Delete(shm);
+                deleted = true;
+            }
+            catch (Exception) when (i < 2)
+            {
+                System.Threading.Thread.Sleep(200 * (i + 1));
+            }
+        }
+        // 仍删除失败时兜底：把旧文件改名为 .old，让 DbInitializer 用新 schema 建新 DB
+        if (!deleted)
+        {
+            try
+            {
+                var stamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+                if (File.Exists(dbPath)) File.Move(dbPath, $"{dbPath}.{stamp}.old");
+                if (File.Exists(wal)) File.Move(wal, $"{wal}.{stamp}.old", overwrite: true);
+                if (File.Exists(shm)) File.Move(shm, $"{shm}.{stamp}.old", overwrite: true);
+                DevLogger.Log("DI", "DB file delete failed, renamed old files with .old suffix.");
+            }
+            catch (Exception ex)
+            {
+                // 连 rename 都失败——DB 文件被严重锁定，无法继续。抛出明确异常便于排查
+                throw new InvalidOperationException(
+                    "无法删除/重命名损坏的数据库文件。请关闭所有占用该文件的程序后重试。" +
+                    $"路径: {dbPath}。原因: {ex.Message}", ex);
             }
         }
     }
