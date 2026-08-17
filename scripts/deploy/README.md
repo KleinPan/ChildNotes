@@ -1,8 +1,137 @@
 # ChildNotes 后端部署方案
 
+本仓库提供 **两套独立** 的后端部署方案，按部署目标选择：
+
+| 方案 | 适用场景 | 部署产物 | 文件 |
+|---|---|---|---|
+| **A. Docker 镜像（NAS/容器化推荐）** | NAS、任意带 Docker 的主机 | GHCR 预构建镜像 `ghcr.io/kleinpan/childnotes/api` | `nas-update.sh` + `nas.env.example` + 仓库根 `ChildNotes.Backend/docker-compose.yml` |
+| **B. self-contained 二进制（云服务器）** | Ubuntu 云服务器（无 Docker） | GitHub Release 的 `.tar.gz` | `bootstrap.sh` + `deploy.sh` + `childnotes-api.service` |
+
+## 方案 A：Docker 镜像部署（推荐用于 NAS）
+
+### 工作原理
+
+```
+开发机                      GitHub Actions                  NAS
+──────────                  ──────────────                 ────────
+git push tag v0.5.4
+                ────────►   docker-publish.yml
+                            ├─ 构建镜像
+                            ├─ 推送 GHCR
+                            │   ghcr.io/kleinpan/childnotes/api:0.5.4
+                            │   ghcr.io/kleinpan/childnotes/api:latest
+                                              ◄────────────
+                                                            docker compose pull
+                                                            docker compose up -d
+                                                            (nas-update.sh 一条命令)
+```
+
+**关键点**：
+- **不在部署机本地构建**。docker-compose.yml 用 `image:` 拉取 GHCR 镜像，无 `build:` 段。
+- CI 触发条件：推送 `v*` / `release-*` tag（见 [docker-publish.yml](../../.github/workflows/docker-publish.yml)）。
+- 镜像 tag 三种：`latest`、`0.5.4`、`0.5`（minor 跟踪），由 `docker/metadata-action` 生成。
+
+### 首次配置（NAS 上执行一次）
+
+> 前提：NAS 已装 Docker + docker compose 插件（群晖 DSM 7.2+ Container Manager / QNAP Container Station / 通用 Linux docker-ce 均可）。CPU 架构需为 x86_64 或 ARM64（ARMv7 不支持 .NET 10）。
+
+1. **把 3 个文件拷到 NAS 部署目录**（如 `/volume1/app/childnotes/`）：
+
+   ```
+   docker-compose.yml      ← 来自仓库 ChildNotes.Backend/docker-compose.yml
+   nas.env.example         ← 来自仓库 scripts/deploy/nas.env.example
+   nas-update.sh           ← 来自仓库 scripts/deploy/nas-update.sh
+   ```
+
+2. **生成生产配置**：
+
+   ```bash
+   cd /volume1/app/childnotes
+   cp nas.env.example .env
+   nano .env
+   ```
+
+   必改项（见 [nas.env.example](nas.env.example)）：
+   - `DB_PASSWORD`（≥16 字符强密码）
+   - `JWT_SECRET`（≥32 字符随机串，用 `openssl rand -base64 48` 生成）
+   - `ADMIN_PASSWORD`（Admin 初始密码）
+   - `DEEPSEEK_API_KEY`（可选，不配则 AI 功能不可用）
+
+3. **GHCR 私有镜像需登录**（仓库默认 private）：
+
+   - GitHub 生成 PAT：https://github.com/settings/tokens?type=beta → 选 Fine-grained → 仅 `KleinPan/ChildNotes` 仓库 → `Contents = Read-only` 或 `Packages = Read-only`。
+   - NAS 上执行：
+     ```bash
+     echo "YOUR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+     ```
+   - 凭据保存在 `/root/.docker/config.json` 或对应用户家目录，长期有效。
+
+4. **首次启动**：
+
+   ```bash
+   chmod +x nas-update.sh
+   sudo ./nas-update.sh
+   ```
+
+### 一键更新（日常）
+
+CI 构建完成后，SSH 到 NAS 执行一条命令：
+
+```bash
+cd /volume1/app/childnotes
+sudo ./nas-update.sh
+```
+
+**指定版本**（如回滚到旧版）：
+
+```bash
+sudo ./nas-update.sh v0.5.3
+```
+
+脚本自动完成：拉取镜像 → 重启容器 → 健康检查 → 清理旧镜像。失败会自动输出日志查看命令。
+
+### 验证
+
+```bash
+# 健康检查
+curl http://127.0.0.1:8080/health
+# {"state":"ok","ts":"..."}
+
+# 看版本（从 image label 读取）
+docker inspect ghcr.io/kleinpan/childnotes/api:latest \
+  --format '{{ index .Config.Labels "org.opencontainers.image.version" }}'
+
+# 查看运行容器
+docker compose ps
+
+# 看日志
+docker compose logs -f api
+```
+
+### 数据持久化
+
+| 卷 | 容器路径 | 内容 |
+|---|---|---|
+| `pgdata` | `/var/lib/postgresql/data` | PostgreSQL 数据 |
+| `uploads-data` | `/app/uploads` | 用户上传文件 |
+
+升级/重启不丢数据。备份方式见下方"备份方案"段。
+
+### 与本地开发隔离
+
+仓库根的 [ChildNotes.Backend/docker-compose.yml](../../ChildNotes.Backend/docker-compose.yml) 现已改为纯 `image:` 模式，**不会触发本地 build**。
+
+- **生产/NAS**：直接用此 compose 文件 + `.env`。
+- **本地开发**：用 `dotnet run` 启动后端，或单独 `docker compose up db` 只起 PostgreSQL。
+- **本地构建镜像**（仅测试 Dockerfile 时）：`docker build -f ChildNotes.Backend/Dockerfile -t childnotes/api:dev .`
+
+---
+
+## 方案 B：self-contained 二进制部署（云服务器，无 Docker）
+
 基于 GitHub Release self-contained 产物部署,**目标服务器无需装 .NET SDK/Runtime**,无需 clone 源码仓库。
 
-## 部署架构概览
+### 部署架构概览
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

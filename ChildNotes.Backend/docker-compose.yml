@@ -1,8 +1,11 @@
 services:
   api:
-    build:
-      context: ..
-      dockerfile: ChildNotes.Backend/Dockerfile
+    # 直接使用 CI 推送到 GHCR 的预构建镜像，不在部署机本地构建
+    # 镜像由 .github/workflows/docker-publish.yml 在推送 tag 时自动构建并推送
+    # 镜像地址格式: ghcr.io/<owner_lower>/<repo_lower>/api
+    image: ghcr.io/kleinpan/childnotes/api:${IMAGE_TAG:-latest}
+    # 每次启动都检查并拉取最新镜像，避免使用旧版本
+    pull_policy: always
     container_name: childnotes-api
     ports:
       - "${API_PORT:-8080}:8080"

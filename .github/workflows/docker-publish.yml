@@ -1,18 +1,19 @@
 name: Docker Image
 
-# [临时禁用] 已切换到 Linux 服务器直接部署，Docker 镜像构建暂不自动触发。
-# 恢复时把下面的 push 段取消注释即可。
+# 推送 tag（v* / release-*）时自动构建并推送到 GHCR。
+# docker-compose.yml 在部署机直接拉取此镜像，不再本地 build。
+# 也可在 Actions 页面手动 dispatch 指定 ref 构建。
 on:
+  push:
+    tags:
+      - 'v*'
+      - 'release-*'
   workflow_dispatch:
     inputs:
       ref:
         description: '要构建的分支/tag/commit'
         required: false
         default: ''
-  # push:
-  #   tags:
-  #     - 'v*'
-  #     - 'release-*'
 
 permissions:
   contents: read

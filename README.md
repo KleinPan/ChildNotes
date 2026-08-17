@@ -26,7 +26,7 @@ ChildNotes（爱记）是一个跨平台育儿记录应用，面向家庭成员�
 | 后端 | ASP.NET Core、EF Core、PostgreSQL、JWT | 提供认证、宝宝、记录、同步、AI、积分、后台管理 API |
 | 共享层 | .NET 10 class library | DTO、实体基类、记录类型、同步协议在前后端复用 |
 | 测试 | xUnit、ASP.NET Core Testing、Avalonia Headless | 前后端分别维护测试项目 |
-| 部署 | Docker、docker-compose、systemd、bash scripts | 后端以容器/服务方式部署 |
+| 部署 | Docker 镜像（GHCR）/ docker-compose / systemd / bash scripts | 后端支持容器化部署（NAS 推荐）与 self-contained 二进制部署（云服务器）|
 
 ## 解决方案入口
 
