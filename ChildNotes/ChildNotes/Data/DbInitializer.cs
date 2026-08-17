@@ -263,6 +263,13 @@ INSERT OR IGNORE INTO sync_config (id, enabled, server_url, cloud_user_id, local
 VALUES (1, 0, '', '', '');
 ");
 
+        // v4→v5 数据迁移：旧版本未登录用户的 child_record.user_id 用的是 app_user.id。
+        // v5 重构后改用 sync_config.local_user_id，若不继承旧 id 则 AppState.UserId 会返回新 GUID，
+        // 导致全部历史记录 WHERE user_id = @uid 查不到，UI 显示空。
+        // 兜底：local_user_id 为空时，用 app_user 表的第一条记录的 id 作为 local_user_id 写入。
+        // 仅在 app_user 表存在记录时执行（新库不会触发）。
+        MigrateLocalUserIdFromAppUser(conn);
+
         // sync_config 增量迁移：device_id 字段（用于设备级追踪与冲突归因）
         AddColumnIfNotExists(conn, "sync_config", "device_id", "TEXT");
 
@@ -529,6 +536,54 @@ CREATE INDEX IF NOT EXISTS idx_family_join_request_updated
     }
 
     /// <summary>
+    /// v4→v5 数据迁移：把 app_user.id 继承为 sync_config.local_user_id。
+    ///
+    /// 背景：v4 之前未登录用户的 child_record.user_id 直接用 app_user.id（首次启动时插入）。
+    /// v5 重构后，未登录态的 user_id 改用 sync_config.local_user_id；若不做数据迁移，
+    /// 启动时 <see cref="AuthService.EnsureLocalUserId"/> 会生成新 GUID，与历史数据不匹配，
+    /// UI 全部显示空。
+    ///
+    /// 策略（幂等）：
+    ///   - 仅当 sync_config.local_user_id 为空时执行
+    ///   - 取 app_user 表按 created_at 升序的第一条 id（首账号），写入 local_user_id
+    ///   - 若 app_user 表无记录则跳过（新库场景）
+    /// </summary>
+    private static void MigrateLocalUserIdFromAppUser(SqliteConnection conn)
+    {
+        // 先确认 sync_config 行存在且 local_user_id 为空
+        string? firstAppUserId = null;
+        using (var check = conn.CreateCommand())
+        {
+            check.CommandText = "SELECT local_user_id FROM sync_config WHERE id = 1;";
+            var result = check.ExecuteScalar();
+            if (result is null) return; // sync_config 无行，跳过
+            var cur = result as string;
+            if (!string.IsNullOrWhiteSpace(cur)) return; // 已有 local_user_id，跳过
+        }
+
+        // 取首账号 id（按 created_at 升序）
+        using (var q = conn.CreateCommand())
+        {
+            q.CommandText = "SELECT id FROM app_user ORDER BY created_at ASC LIMIT 1;";
+            using var r = q.ExecuteReader();
+            if (r.Read()) firstAppUserId = r.GetString(0);
+        }
+        if (string.IsNullOrWhiteSpace(firstAppUserId)) return;
+
+        // 写入 local_user_id
+        using (var upd = conn.CreateCommand())
+        {
+            upd.CommandText = "UPDATE sync_config SET local_user_id = @uid WHERE id = 1 AND (local_user_id IS NULL OR local_user_id = '');";
+            upd.Parameters.AddWithValue("@uid", firstAppUserId);
+            int affected = upd.ExecuteNonQuery();
+            if (affected > 0)
+            {
+                DevLogger.Log("DB", $"Migrated: sync_config.local_user_id = {firstAppUserId} (inherited from app_user.id)");
+            }
+        }
+    }
+
+    /// <summary>
     /// 幂等地为指定表添加列。若列已存在则跳过。
     /// </summary>
     private static void AddColumnIfNotExists(SqliteConnection conn, string table, string column, string definition)
@@ -550,24 +605,132 @@ CREATE INDEX IF NOT EXISTS idx_family_join_request_updated
     /// 删除指定表的列（如不存在则跳过）。SQLite 3.35.0（2021-03-06）起支持 ALTER TABLE DROP COLUMN。
     /// .NET 10 + Microsoft.Data.Sqlite 10.x 自带的 SQLite 通常为 3.40+，支持 DROP COLUMN。
     /// 用 PRAGMA table_info 探测列是否存在，避免盲目 DROP 报错。
+    ///
+    /// 限制处理（2026-08-17 修复）：
+    ///   SQLite 的 ALTER TABLE DROP COLUMN 不能直接删除以下列：
+    ///     - UNIQUE 约束列（如 app_user.username / sync_config.username）
+    ///     - PRIMARY KEY 列
+    ///     - 被索引引用的列
+    ///     - 被外键引用的列
+    ///   试图删除会报 "cannot drop UNIQUE column" / "cannot drop column with index" 等错误。
+    ///   处理策略：先尝试普通 DROP COLUMN；若失败（SqliteException），降级到表重建方式
+    ///   （SQLite 官方推荐流程 https://www.sqlite.org/lang_altertable.html#otheralter）：
+    ///     1) PRAGMA legacy_alter_table=ON（让 RENAME 不触发约束重算）
+    ///     2) PRAGMA foreign_keys=OFF（避免重建期间触发 FK 检查）
+    ///     3) CREATE TABLE {table}__migration_new (保留列的完整定义 + PK，不含目标列与 UNIQUE 约束)
+    ///     4) INSERT INTO {table}__migration_new SELECT (保留列) FROM {table}
+    ///     5) DROP TABLE {table}
+    ///     6) ALTER TABLE {table}__migration_new RENAME TO {table}
+    ///     7) PRAGMA foreign_keys=ON / legacy_alter_table=OFF 恢复
+    ///   索引会随旧表一起 DROP，需重建相关索引（当前 schema 由调用方后续 CREATE INDEX IF NOT EXISTS 重建）。
+    ///   UNIQUE 约束不保留（业务层保证唯一性），仅保留 PK 与 NOT NULL / DEFAULT。
     /// </summary>
     private static void DropColumnIfExists(SqliteConnection conn, string table, string column)
     {
         bool exists = false;
+        var allColumns = new List<(string Name, string Type, bool NotNull, object? Default, int PkIndex)>();
         using (var check = conn.CreateCommand())
         {
             check.CommandText = $"PRAGMA table_info({table});";
             using var reader = check.ExecuteReader();
             while (reader.Read())
             {
-                if (reader.GetString(1) == column) { exists = true; break; }
+                // table_info 列顺序：cid, name, type, notnull, dflt_value, pk
+                string name = reader.GetString(1);
+                string type = reader.GetString(2);
+                bool notNull = reader.GetInt32(3) != 0;
+                object? dflt = reader.IsDBNull(4) ? null : reader.GetValue(4);
+                int pk = reader.GetInt32(5);
+                allColumns.Add((name, type, notNull, dflt, pk));
+                if (name == column) { exists = true; }
             }
         }
         if (!exists) return;
-        using var alter = conn.CreateCommand();
-        alter.CommandText = $"ALTER TABLE {table} DROP COLUMN {column};";
-        alter.ExecuteNonQuery();
-        DevLogger.Log("DB", $"Migrated: {table}.{column} dropped");
+
+        // 先尝试普通 DROP COLUMN（对无约束的普通列最快）
+        try
+        {
+            using var alter = conn.CreateCommand();
+            alter.CommandText = $"ALTER TABLE {table} DROP COLUMN {column};";
+            alter.ExecuteNonQuery();
+            DevLogger.Log("DB", $"Migrated: {table}.{column} dropped (fast path)");
+            return;
+        }
+        catch (SqliteException ex)
+        {
+            // 常见失败：cannot drop UNIQUE column / cannot drop column with index
+            DevLogger.Log("DB", $"DropColumn fast path failed for {table}.{column}: {ex.Message}. Falling back to table rebuild.");
+        }
+
+        // 降级：表重建方式
+        // 1) 关闭 FK + legacy_alter_table 让后续 RENAME 不触发约束重算
+        conn.ExecuteNonQuery("PRAGMA foreign_keys=OFF;");
+        conn.ExecuteNonQuery("PRAGMA legacy_alter_table=ON;");
+
+        try
+        {
+            var keepCols = allColumns.Where(c => c.Name != column).ToList();
+            string keepColNames = string.Join(", ", keepCols.Select(c => QuoteIdent(c.Name)));
+
+            // 2) 构造新表定义：保留 PK（单列 PK 标在列上，复合 PK 标在表级）、NOT NULL、DEFAULT。
+            //    不保留 UNIQUE / 外键约束（业务层保证，避免重建期间约束冲突）。
+            var pkCols = keepCols.Where(c => c.PkIndex > 0).OrderBy(c => c.PkIndex).Select(c => c.Name).ToList();
+            var newColDefs = new List<string>();
+            foreach (var c in keepCols)
+            {
+                string def = $"{QuoteIdent(c.Name)} {c.Type}";
+                if (c.NotNull) def += " NOT NULL";
+                if (c.Default != null) def += $" DEFAULT {FormatDefault(c.Default)}";
+                // 单列 PRIMARY KEY 直接标在列上（项目所有业务表都是单列 PK）
+                if (c.PkIndex > 0 && pkCols.Count == 1) def += " PRIMARY KEY";
+                newColDefs.Add(def);
+            }
+            // 复合 PRIMARY KEY 标在表级（当前 schema 无此情况，保留以防未来扩展）
+            if (pkCols.Count > 1)
+            {
+                newColDefs.Add("PRIMARY KEY (" + string.Join(", ", pkCols.Select(QuoteIdent)) + ")");
+            }
+
+            string newTableSql = $"CREATE TABLE {QuoteIdent(table + "__migration_new")} (\n  " +
+                                  string.Join(",\n  ", newColDefs) + "\n);";
+            conn.ExecuteNonQuery(newTableSql);
+
+            // 3) 复制数据（按列名对齐，避免列顺序差异）
+            conn.ExecuteNonQuery($"INSERT INTO {QuoteIdent(table + "__migration_new")} ({keepColNames}) SELECT {keepColNames} FROM {QuoteIdent(table)};");
+
+            // 4) 删除旧表（索引随表一起删除，由调用方后续 CREATE INDEX IF NOT EXISTS 重建）
+            conn.ExecuteNonQuery($"DROP TABLE {QuoteIdent(table)};");
+
+            // 5) 重命名新表
+            conn.ExecuteNonQuery($"ALTER TABLE {QuoteIdent(table + "__migration_new")} RENAME TO {QuoteIdent(table)};");
+        }
+        finally
+        {
+            // 恢复 PRAGMA（连接级属性，会随连接释放重置，但显式恢复更稳妥）
+            conn.ExecuteNonQuery("PRAGMA legacy_alter_table=OFF;");
+            conn.ExecuteNonQuery("PRAGMA foreign_keys=ON;");
+        }
+
+        DevLogger.Log("DB", $"Migrated: {table}.{column} dropped (table rebuild fallback)");
+    }
+
+    /// <summary>用双引号包裹标识符（SQLite 标准引用方式）。</summary>
+    private static string QuoteIdent(string name) => "\"" + name.Replace("\"", "\"\"") + "\"";
+
+    /// <summary>格式化 PRAGMA table_info 返回的 dflt_value 用于 CREATE TABLE。</summary>
+    private static string FormatDefault(object dflt)
+    {
+        if (dflt is string s)
+        {
+            string trimmed = s.Trim();
+            // 已经是表达式（如 CURRENT_TIMESTAMP、数字、带单引号字符串）直接用
+            if (trimmed.Length == 0) return "NULL";
+            if (trimmed.StartsWith("'", StringComparison.Ordinal)) return trimmed;
+            if (double.TryParse(trimmed, out _)) return trimmed;
+            // 默认当作字符串字面量
+            return "'" + trimmed.Replace("'", "''") + "'";
+        }
+        return dflt.ToString() ?? "NULL";
     }
 }
 
