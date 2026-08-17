@@ -93,9 +93,18 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
     /// </summary>
     internal void OnActivityResult(int requestCode, Result resultCode, Intent? data)
     {
-        if (_tcs is null) return;
-        if (requestCode != RequestCodeSingle && requestCode != RequestCodeMulti)
+        // ★ 无条件 logcat 输出：确认本方法是否被调用（排查 deliverResultsIfNeeded NPE 是否阻止回调）
+        Log.Info(Tag, $"[PhotoPicker] OnActivityResult: requestCode={requestCode}, resultCode={resultCode}, data={(data is null ? "null" : "not null")}");
+        if (_tcs is null)
+        {
+            Log.Warn(Tag, "[PhotoPicker] OnActivityResult: _tcs is null（无待处理请求）");
             return;
+        }
+        if (requestCode != RequestCodeSingle && requestCode != RequestCodeMulti)
+        {
+            Log.Warn(Tag, $"[PhotoPicker] OnActivityResult: requestCode={requestCode} 不匹配，忽略");
+            return;
+        }
 
         var uris = new List<AndroidUri>();
         if (resultCode == Result.Ok && data is not null)
@@ -108,12 +117,22 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
                     var uri = clipData.GetItemAt(i).Uri;
                     if (uri is not null) uris.Add(uri);
                 }
+                Log.Info(Tag, $"[PhotoPicker] ClipData 多选: count={uris.Count}");
             }
             // 单选：Data 是单个 Uri
             else if (data.Data is { } singleUri)
             {
                 uris.Add(singleUri);
+                Log.Info(Tag, $"[PhotoPicker] Data 单选: uri={singleUri}");
             }
+            else
+            {
+                Log.Warn(Tag, "[PhotoPicker] resultCode=Ok 但 ClipData 和 Data 均为 null");
+            }
+        }
+        else
+        {
+            Log.Warn(Tag, $"[PhotoPicker] 非 OK 结果或 data 为 null: resultCode={resultCode}, data={(data is null ? "null" : "not null")}");
         }
 
         _tcs.TrySetResult(uris);
@@ -182,14 +201,19 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
             using var output = new JavaIO.FileOutputStream(target);
             var buffer = new byte[8192];
             int read;
+            long total = 0;
             while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+            {
                 output.Write(buffer, 0, read);
+                total += read;
+            }
             output.Flush();
+            Log.Info(Tag, $"[PhotoPicker] 复制成功: uri={uri}, path={target.AbsolutePath}, size={total}");
             return target.AbsolutePath;
         }
         catch (Exception ex)
         {
-            Log.Error(Tag, $"[PhotoPicker] 复制 URI 到本地文件失败: {ex.Message}");
+            Log.Error(Tag, $"[PhotoPicker] 复制 URI 到本地文件失败: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
     }

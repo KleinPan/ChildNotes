@@ -81,21 +81,39 @@ public sealed class UploadService
     /// 从本地文件路径压缩图片并保存到 images/ 目录，返回缩略图本地路径。
     /// 与 CompressAndSaveAsync(IStorageFile) 行为一致，仅入参从 IStorageFile 改为路径，
     /// 供 Android Photo Picker / 桌面端选择器返回的本地路径使用（避免 IStorageFile 依赖）。
+    /// 用流式加载而非 Bitmap(string path) 构造函数，确保跨平台行为一致
+    /// （Android 上 Bitmap(string) 对某些路径/格式可能解码失败）。
     /// </summary>
     public async Task<string?> CompressAndSaveFromPathAsync(string sourcePath)
     {
-        if (!File.Exists(sourcePath)) return null;
+        if (string.IsNullOrWhiteSpace(sourcePath))
+        {
+            DevLogger.Log("Upload", "CompressAndSaveFromPathAsync 失败: sourcePath 为空");
+            return null;
+        }
+        if (!File.Exists(sourcePath))
+        {
+            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync 失败: 文件不存在 path={sourcePath}");
+            return null;
+        }
         try
         {
-            return await Task.Run(() =>
+            var len = new FileInfo(sourcePath).Length;
+            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync start: path={sourcePath}, size={len}");
+            var result = await Task.Run(() =>
             {
-                using var srcBmp = new Bitmap(sourcePath);
+                // 用 FileStream + Bitmap(stream) 而非 Bitmap(string path)，
+                // 与旧 CompressAndSaveAsync(IStorageFile) 路径完全一致，避免平台差异。
+                using var fs = File.OpenRead(sourcePath);
+                using var srcBmp = new Bitmap(fs);
                 return CompressAndSave(srcBmp);
             });
+            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync done: result={(result is null ? "null" : result)}");
+            return result;
         }
         catch (Exception ex)
         {
-            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync 失败: {ex.Message}");
+            DevLogger.Log("Upload", $"CompressAndSaveFromPathAsync 异常: {ex.GetType().Name}: {ex.Message}");
             return null;
         }
     }
