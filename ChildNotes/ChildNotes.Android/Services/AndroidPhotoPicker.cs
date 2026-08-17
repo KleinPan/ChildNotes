@@ -254,8 +254,9 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
                 return null;
             }
             using (androidBmp)
-            using (var output = new JavaIO.FileOutputStream(target))
+            using (var output = System.IO.File.Create(target.AbsolutePath))
             {
+                // Bitmap.Compress 第三个参数要求 System.IO.Stream（不是 Java.IO.OutputStream）
                 // 以质量 90 压缩为 JPEG（后续 UploadService 还会再次压缩到目标尺寸，这里保留较高质量）
                 var ok = androidBmp.Compress(Bitmap.CompressFormat.Jpeg, 90, output);
                 if (!ok)
