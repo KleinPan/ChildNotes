@@ -279,8 +279,14 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
     /// <summary>获取 URI 的 MIME 类型，失败返回 null。</summary>
     private string? GetMimeType(AndroidUri uri)
     {
-        try => _activity.ContentResolver?.GetType(uri);
-        catch => null;
+        try
+        {
+            return _activity.ContentResolver?.GetType(uri);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
