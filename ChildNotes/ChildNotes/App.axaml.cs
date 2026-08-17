@@ -284,6 +284,8 @@ public partial class App : Application
         {
             _loginVm = new LoginViewModel();
             _loginVm.LoginSucceeded += OnLoginSucceeded;
+            // 订阅取消事件：本地用户误入登录页可退出回主界面（离线模式）
+            _loginVm.CancelRequested += OnLoginCancelled;
             _loginView = new LoginView();
             _loginView.Bind(_loginVm);
 
@@ -359,6 +361,37 @@ public partial class App : Application
             DevLogger.Log("App", ex);
             ReleaseLogger.Error("App", ex, "OnLoginSucceeded failed");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 用户取消登录（点击登录页返回按钮），切回主界面（离线模式）。
+    /// 仅切换视图，不重建 MainShellViewModel，保留用户之前的 tab 状态。
+    /// </summary>
+    private void OnLoginCancelled()
+    {
+        DevLogger.Log("App", "OnLoginCancelled: switch back to main shell (offline mode)");
+        ReleaseLogger.Info("App", "Login cancelled, returning to main shell in offline mode");
+
+        // 解绑登录事件
+        if (_loginVm is not null)
+        {
+            _loginVm.LoginSucceeded -= OnLoginSucceeded;
+            _loginVm.CancelRequested -= OnLoginCancelled;
+            _loginVm = null;
+        }
+        _loginView = null;
+
+        // 切回主界面。_shellVm 在 OnFrameworkInitializationCompleted/EnterMainShell 时已创建，
+        // 此处直接切视图，不重建 ViewModel，保留 tab 状态。
+        if (_shellView is not null)
+        {
+            SwitchToMainView();
+        }
+        else
+        {
+            // 极端兜底：_shellView 为 null（首次启动直接进登录页，不应发生），走 EnterMainShell 创建。
+            EnterMainShell(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop ? desktop.MainWindow : null);
         }
     }
 

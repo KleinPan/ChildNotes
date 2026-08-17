@@ -9,6 +9,16 @@
              Background="{StaticResource SurfaceBackgroundBrush}">
 
     <Grid>
+        <!-- 返回按钮：本地用户误入登录页后可退出回主界面（离线模式） -->
+        <Button Command="{Binding CancelCommand}"
+                Background="Transparent" BorderThickness="0"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Padding="12,10" Margin="4,4"
+                ZIndex="10">
+            <TextBlock Text="‹" FontSize="28" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}"/>
+        </Button>
+
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
             <Grid RowDefinitions="*,Auto,*">
 

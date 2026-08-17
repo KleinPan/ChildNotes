@@ -38,6 +38,11 @@ public partial class LoginViewModel : ViewModelBase
     private CancellationTokenSource? _countdownCts;
 
     public event Action? LoginSucceeded;
+    /// <summary>
+    /// 用户主动取消登录（点击返回按钮）。
+    /// App 订阅此事件后切回主界面（离线模式）。
+    /// </summary>
+    public event Action? CancelRequested;
 
     public LoginViewModel()
     {
@@ -48,6 +53,18 @@ public partial class LoginViewModel : ViewModelBase
             _serverUrl = cfg.ServerUrl ?? string.Empty;
         }
         catch { /* 首次启动表还没建，忽略 */ }
+    }
+
+    /// <summary>
+    /// 取消登录，返回主界面（离线模式）。
+    /// 用于本地用户误入登录页后退出。
+    /// </summary>
+    [RelayCommand]
+    private void Cancel()
+    {
+        // 停止可能正在进行的倒计时，避免事件回调到已释放的 ViewModel
+        _countdownCts?.Cancel();
+        CancelRequested?.Invoke();
     }
 
     /// <summary>发送验证码按钮是否可点击。</summary>
