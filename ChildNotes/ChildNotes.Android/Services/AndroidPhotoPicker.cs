@@ -115,8 +115,8 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
             {
                 for (int i = 0; i < clipData.ItemCount; i++)
                 {
-                    var uri = clipData.GetItemAt(i).Uri;
-                    if (uri is not null) uris.Add(uri);
+                    var item = clipData.GetItemAt(i);
+                    if (item?.Uri is { } uri) uris.Add(uri);
                 }
                 Log.Info(Tag, $"[PhotoPicker] ClipData 多选: count={uris.Count}");
             }
@@ -257,7 +257,7 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
             using (var output = new JavaIO.FileOutputStream(target))
             {
                 // 以质量 90 压缩为 JPEG（后续 UploadService 还会再次压缩到目标尺寸，这里保留较高质量）
-                var ok = androidBmp.Compress(CompressFormat.Jpeg, 90, output);
+                var ok = androidBmp.Compress(Bitmap.CompressFormat.Jpeg, 90, output);
                 if (!ok)
                 {
                     Log.Error(Tag, "[PhotoPicker] HEIC 转码：Bitmap.Compress 返回 false");
