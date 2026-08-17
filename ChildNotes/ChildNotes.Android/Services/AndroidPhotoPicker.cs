@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
+using Android.Graphics;
 using Android.OS;
 using Android.Provider;
 using Android.Util;
@@ -178,6 +179,10 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
     /// <summary>
     /// 通过 ContentResolver 读取 content:// URI 的流，复制到 CacheDir/ChildNotes/picked/ 目录，
     /// 返回本地绝对路径。失败返回 null（不抛异常，调用方按"未选"处理）。
+    ///
+    /// HEIC/HEIF 特殊处理：
+    /// Avalonia 的 Bitmap 不支持 HEIC 解码，Android 9.0+（API 28+）原生 BitmapFactory 支持。
+    /// 检测到 HEIC 时，用 BitmapFactory 解码后压缩为 JPEG 再返回，避免上游解码失败。
     /// </summary>
     private string? CopyUriToLocalFile(AndroidUri uri)
     {
@@ -186,9 +191,18 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
             var dir = new Java.IO.File(_activity.CacheDir, "ChildNotes/picked");
             if (!dir.Exists()) dir.Mkdirs();
 
-            var ext = GuessExtension(uri);
+            var mime = GetMimeType(uri);
+            var isHeic = mime is "image/heic" or "image/heif";
+            // HEIC 需要转码为 JPEG，扩展名用 .jpg；其他格式按 mime 取扩展名
+            var ext = isHeic ? ".jpg" : GuessExtension(uri);
             var fileName = $"picked_{DateTime.Now:yyyyMMddHHmmss}_{Guid.NewGuid():N}{ext}";
             var target = new Java.IO.File(dir, fileName);
+
+            if (isHeic)
+            {
+                // HEIC → JPEG 转码：用 Android 原生 BitmapFactory（API 28+ 支持 HEIC）
+                return DecodeHeicToJpeg(uri, target);
+            }
 
             using var input = _activity.ContentResolver?.OpenInputStream(uri);
             if (input is null)
@@ -219,25 +233,68 @@ public sealed class AndroidPhotoPicker : ChildNotes.Services.PhotoPicker.IPhotoP
     }
 
     /// <summary>
-    /// 从 URI 推断图片扩展名。优先用 ContentResolver 查 MIME 类型，回退到 URI 末尾段。
+    /// HEIC/HEIF → JPEG 转码：用 Android 原生 BitmapFactory 解码 HEIC（API 28+ 原生支持），
+    /// 再以 JPEG 压缩写入目标文件。失败返回 null。
     /// </summary>
-    private string GuessExtension(AndroidUri uri)
+    private string? DecodeHeicToJpeg(AndroidUri uri, Java.IO.File target)
     {
         try
         {
-            var mime = _activity.ContentResolver?.GetType(uri);
-            var ext = mime switch
+            using var input = _activity.ContentResolver?.OpenInputStream(uri);
+            if (input is null)
             {
-                "image/png" => ".png",
-                "image/gif" => ".gif",
-                "image/webp" => ".webp",
-                _ => ".jpg",
-            };
-            return ext;
+                Log.Warn(Tag, "[PhotoPicker] HEIC 转码：OpenInputStream 返回 null");
+                return null;
+            }
+            // BitmapFactory.DecodeStream 在 API 28+ 原生支持 HEIC 解码
+            var androidBmp = BitmapFactory.DecodeStream(input);
+            if (androidBmp is null)
+            {
+                Log.Error(Tag, "[PhotoPicker] HEIC 转码：BitmapFactory.DecodeStream 返回 null");
+                return null;
+            }
+            using (androidBmp)
+            using (var output = new JavaIO.FileOutputStream(target))
+            {
+                // 以质量 90 压缩为 JPEG（后续 UploadService 还会再次压缩到目标尺寸，这里保留较高质量）
+                var ok = androidBmp.Compress(CompressFormat.Jpeg, 90, output);
+                if (!ok)
+                {
+                    Log.Error(Tag, "[PhotoPicker] HEIC 转码：Bitmap.Compress 返回 false");
+                    return null;
+                }
+                output.Flush();
+            }
+            var size = target.Length();
+            Log.Info(Tag, $"[PhotoPicker] HEIC→JPEG 转码成功: uri={uri}, path={target.AbsolutePath}, size={size}");
+            return target.AbsolutePath;
         }
-        catch
+        catch (Exception ex)
         {
-            return ".jpg";
+            Log.Error(Tag, $"[PhotoPicker] HEIC 转码失败: {ex.GetType().Name}: {ex.Message}");
+            return null;
         }
+    }
+
+    /// <summary>获取 URI 的 MIME 类型，失败返回 null。</summary>
+    private string? GetMimeType(AndroidUri uri)
+    {
+        try => _activity.ContentResolver?.GetType(uri);
+        catch => null;
+    }
+
+    /// <summary>
+    /// 从 URI 推断图片扩展名（HEIC 已在上层提前转码，此处只处理非 HEIC 格式）。
+    /// </summary>
+    private string GuessExtension(AndroidUri uri)
+    {
+        var mime = GetMimeType(uri);
+        return mime switch
+        {
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            _ => ".jpg",
+        };
     }
 }
