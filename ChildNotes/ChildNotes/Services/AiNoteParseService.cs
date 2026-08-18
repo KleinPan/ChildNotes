@@ -217,6 +217,12 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         {
             var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt.Replace("{NowText}", DateTime.Now.ToString("yyyy-MM-dd HH:mm")), text);
             var parsed = ParseLlmJsonArray(raw);
+            if (parsed is not null)
+            {
+                // 时间后处理（前后端共用）：对 LLM 返回的 12 小时制无时段词时间做"取最近过去时刻"修正，
+                // 修正 LLM 不遵守 prompt 规则导致的时间推断错误（如凌晨输入"1点半"被 LLM 误判为 13:30）。
+                AiNoteRuleParser.NormalizeTimeFields(parsed, text);
+            }
             DevLogger.Log("AiNote", $"[AI-LOG] 本地 LLM 解析返回：{(parsed is null ? "null" : $"{parsed.Count} 条")}");
             return parsed;
         }

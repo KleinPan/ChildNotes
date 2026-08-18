@@ -118,6 +118,10 @@ public static class AiNoteRuleParser
             return new List<AiNoteParseItem> { Parse(text, now) };
 
         var results = new List<AiNoteParseItem>(segments.Count);
+        // 追踪前一段睡眠的 EndTime，用于"睡到X点，喝了奶"模式的时间继承：
+        // 后续 Feed/Water/Supplement 段若无显式时间，则用睡眠结束时间作为记录时间
+        // （语义上：醒来后喝奶/喝水/吃补剂的时间 ≈ 睡眠结束时间）
+        string? inheritedTime = null;
         foreach (var seg in segments)
         {
             var item = Parse(seg, now);
@@ -125,7 +129,26 @@ public static class AiNoteRuleParser
             // 但如果整句只有一段且未识别，仍需返回兜底
             if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
                 continue;
+
+            // 时间继承：当前段是带量记录（Feed/Water/Supplement）且无显式时间，
+            // 且前一段是睡眠（含 EndTime）时，用睡眠 EndTime 作为当前段的时间。
+            // 仅限这三种"醒来后常做"的动作，避免误伤（如"睡到12点，拉了"不继承）。
+            if (inheritedTime is not null
+                && item.Time is null
+                && (item.RecordType == RecordType.Feed
+                    || item.RecordType == RecordType.Water
+                    || item.RecordType == RecordType.Supplement))
+            {
+                item.Time = inheritedTime;
+            }
+
             results.Add(item);
+
+            // 更新 inheritedTime：睡眠段有 EndTime 时记录，其他段清空（避免跨事件链式继承）
+            if (item.RecordType == RecordType.Sleep && !string.IsNullOrEmpty(item.EndTime))
+                inheritedTime = item.EndTime;
+            else
+                inheritedTime = null;
 
             // 复合句后处理：若当前段解析出 feed，但原段同时含明确的 water 表述
             // （如"喝了110奶粉和10ml水"），补充一条 water 记录，避免丢失。
@@ -135,7 +158,12 @@ public static class AiNoteRuleParser
                 var waterItem = ParseWater(seg);
                 // 仅在 water 提取出水量时才补充（避免无意义的重复记录）
                 if (waterItem.Amount.HasValue)
+                {
+                    // 补充的 water 也继承时间（与 feed 同时间段）
+                    if (item.Time is not null && waterItem.Time is null)
+                        waterItem.Time = item.Time;
                     results.Add(waterItem);
+                }
             }
         }
         // 若全部段都被跳过（罕见），回退到原句解析
@@ -985,6 +1013,24 @@ public static class AiNoteRuleParser
             chosen = amCandidate; // 取 AM
 
         return chosen.ToString(format);
+    }
+
+    /// <summary>
+    /// 对解析结果列表中的时间字段做归一化 + 12 小时制歧义修正（原地修改）。
+    /// 仅处理非空 Time 字段；空 Time 由调用方决定如何兜底（继承前一条/当前时间）。
+    /// 前后端 LLM 路径共用此方法，避免时间后处理逻辑重复实现。
+    /// </summary>
+    /// <param name="items">解析结果列表（原地修改 Time 字段）</param>
+    /// <param name="originalText">原始输入文本，用于判断是否含时段词</param>
+    public static void NormalizeTimeFields(List<AiNoteParseItem> items, string originalText)
+    {
+        if (items is null || items.Count == 0) return;
+        foreach (var it in items)
+        {
+            if (string.IsNullOrEmpty(it.Time)) continue;
+            var normalized = NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
+            it.Time = NormalizeAmbiguousTime(normalized, originalText);
+        }
     }
 
     /// <summary>

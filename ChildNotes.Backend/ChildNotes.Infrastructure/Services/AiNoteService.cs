@@ -229,11 +229,12 @@ public partial class AiNoteService : IAiNoteService
             }
         }
 
-        // 时间后处理（对每个 Item 应用）：
-        // 1. 有 time 则归一化 + 对 12 小时制无时段词时间做"取最近过去时刻"
-        // 2. 无 time 则继承同批次前一条记录的 time（同一输入中多记录共享上下文时间）
-        // 3. 前面所有记录都无 time 时兜底为当前时间
-        // 并对 LLM 返回的 12 小时制无时段词时间做"取最近过去时刻"后处理
+        // 时间后处理（前后端共用归一化 + 后端独有的继承/兜底）：
+        // 1. 先用共用方法对所有非空 Time 做归一化 + 12 小时制歧义修正
+        // 2. 再处理无 Time 的记录：继承同批次前一条记录的 time；前面都无 time 时兜底为当前时间
+        // 3. 补剂用药：用常见药品/补充剂标签库补全完整药剂名
+        AiNoteRuleParser.NormalizeTimeFields(items, text);
+
         var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
         string? lastTime = null; // 同批次已处理的最后一条非空 time（归一化后）
         foreach (var it in items)
@@ -245,9 +246,6 @@ public partial class AiNoteService : IAiNoteService
             }
             else
             {
-                // 先归一化，再对无时段词的 12 小时制时间做后处理
-                var normalized = AiNoteRuleParser.NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
-                it.Time = AiNoteRuleParser.NormalizeAmbiguousTime(normalized, text);
                 lastTime = it.Time;
             }
             // 补给用药：用常见药品/补充剂标签库补全完整药剂名

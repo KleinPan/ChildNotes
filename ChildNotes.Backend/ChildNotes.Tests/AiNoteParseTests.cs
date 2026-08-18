@@ -351,6 +351,107 @@ public class AiNoteParseTests
         Assert.Equal("11:30", items[0].Time);
     }
 
+    // ===== 睡眠后喂奶/喝水/补剂 时间继承测试 =====
+
+    /// <summary>
+    /// "睡到X点，喝了奶" 复合句：喂奶记录无显式时间时，应继承睡眠 EndTime 作为时间。
+    /// 语义：醒来后喝奶的时间 ≈ 睡眠结束时间。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepThenFeed_InheritsSleepEndTime()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，喝了90ml奶");
+        Assert.True(items.Count >= 2, $"应至少解析出 2 条，实际 {items.Count}");
+
+        // 第一条：睡眠 11:30 ~ 12:40
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("11:30", items[0].Time);
+        Assert.Equal("12:40", items[0].EndTime);
+
+        // 第二条：喂奶，时间应继承睡眠 EndTime = "12:40"
+        Assert.Equal(RecordType.Feed, items[1].RecordType);
+        Assert.Equal(90, items[1].Amount);
+        Assert.Equal("12:40", items[1].Time);
+    }
+
+    /// <summary>
+    /// "睡到X点，喝水" 复合句：喝水记录应继承睡眠 EndTime。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepThenWater_InheritsSleepEndTime()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，喝了10ml水");
+        Assert.True(items.Count >= 2, $"应至少解析出 2 条，实际 {items.Count}");
+
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("12:40", items[0].EndTime);
+
+        Assert.Equal(RecordType.Water, items[1].RecordType);
+        Assert.Equal(10, items[1].Amount);
+        Assert.Equal("12:40", items[1].Time);
+    }
+
+    /// <summary>
+    /// "睡到X点，吃补剂" 复合句：补剂记录应继承睡眠 EndTime。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepThenSupplement_InheritsSleepEndTime()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，吃了维生素D3");
+        Assert.True(items.Count >= 2, $"应至少解析出 2 条，实际 {items.Count}");
+
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("12:40", items[0].EndTime);
+
+        Assert.Equal(RecordType.Supplement, items[1].RecordType);
+        Assert.Equal("12:40", items[1].Time);
+    }
+
+    /// <summary>
+    /// "睡到X点，拉了" 复合句：尿布记录不应继承睡眠 EndTime（仅限 Feed/Water/Supplement）。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepThenDiaper_DoesNotInheritTime()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，拉了");
+        Assert.True(items.Count >= 2, $"应至少解析出 2 条，实际 {items.Count}");
+
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("12:40", items[0].EndTime);
+
+        // 尿布记录不在继承白名单内，时间应为 null（而非 12:40）
+        Assert.Equal(RecordType.Diaper, items[1].RecordType);
+        Assert.Null(items[1].Time);
+    }
+
+    /// <summary>
+    /// 时间继承不应跨事件链式传递：睡眠 → 喂奶 → 换尿布，
+    /// 尿布记录不应继承喂奶的时间（喂奶时间来自睡眠，但尿布不应再从喂奶继承）。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepFeedDiaper_NoChainedInheritance()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("11点半睡到12点40，喝了90ml奶，换尿布");
+        Assert.True(items.Count >= 3, $"应至少解析出 3 条，实际 {items.Count}");
+
+        // 第一条：睡眠 12:40 结束
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("12:40", items[0].EndTime);
+
+        // 第二条：喂奶继承睡眠 EndTime
+        Assert.Equal(RecordType.Feed, items[1].RecordType);
+        Assert.Equal("12:40", items[1].Time);
+
+        // 第三条：尿布不继承（不在此前段睡眠的紧邻后继，且尿布不在白名单）
+        Assert.Equal(RecordType.Diaper, items[2].RecordType);
+        Assert.Null(items[2].Time);
+    }
+
     // ===== ShouldForceAi 复杂文本启发式测试 =====
 
     /// <summary>
