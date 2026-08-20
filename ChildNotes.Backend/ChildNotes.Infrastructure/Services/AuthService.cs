@@ -62,8 +62,11 @@ public class AuthService : IAuthService
             {
                 var key = StableEmailHashKey(email);
                 // pg_advisory_xact_lock(bigint)：负数 key 避免与系统保留段冲突
+                // 注意：必须用显式 object[] + ct 命名传参，否则编译器会把 (long, CancellationToken) 匹配到
+                // ExecuteSqlRawAsync(string, params object[]) 重载，把 ct 当成 SQL 参数传给 provider
+                // 导致 InvalidOperationException: store type mapping for 'CancellationToken' not found
                 await _db.Database.ExecuteSqlRawAsync(
-                    "SELECT pg_advisory_xact_lock({0})", -key, ct);
+                    "SELECT pg_advisory_xact_lock({0})", new object[] { -key }, ct);
             }
 
             // 限流：同邮箱 ResendIntervalSeconds 内只能发一次
@@ -154,8 +157,9 @@ public class AuthService : IAuthService
                 if (_db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
                 {
                     var key = StableEmailHashKey(email);
+                    // 同上：显式 object[] + ct 命名传参，避免歧义重载（详见 SendCodeAsync 注释）
                     await _db.Database.ExecuteSqlRawAsync(
-                        "SELECT pg_advisory_xact_lock({0})", -key, ct);
+                        "SELECT pg_advisory_xact_lock({0})", new object[] { -key }, ct);
                 }
 
                 // 查未消费的验证码（advisory lock 已串行化同邮箱请求，可安全 SELECT）
