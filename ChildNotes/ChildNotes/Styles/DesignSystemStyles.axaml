@@ -80,6 +80,7 @@
         <Setter Property="FontSize" Value="{StaticResource FontSize.Label}" />
         <Setter Property="Foreground" Value="{StaticResource SurfaceCardBrush}" />
         <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="MaxWidth" Value="320" />
     </Style>
 
     <!-- ============ Button 按钮交互反馈 ============ -->

@@ -491,7 +491,7 @@
         <!-- Toast -->
         <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,80"
                 Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
-            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}"/>
+            <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}" TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
     </Grid>
 </UserControl>

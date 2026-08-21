@@ -255,7 +255,7 @@
         <Border Margin="0,0,0,80" Padding="20,10" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                 Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}"
                 IsVisible="{Binding ShowToast}">
-            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" />
+            <TextBlock FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}" Text="{Binding ToastMessage}" TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
 
         <controls:DialogHost Title="{DynamicResource Feeding_DeleteConfirmTitle}"
