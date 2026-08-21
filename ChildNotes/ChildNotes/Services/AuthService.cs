@@ -225,6 +225,29 @@ public sealed class AuthService
         var cfg = _cfgRepo.Get();
         if (string.IsNullOrWhiteSpace(cfg.CloudUserId))
         {
+            // 离线模式补救迁移：检查 last_cloud_user_id 是否非空，
+            // 有则把上次 CloudUserId 名下遗留数据反迁移到 LocalUserId 名下。
+            // 场景：旧版本（v0.7.19 及之前）登出时未反迁移，数据留在旧 CloudUserId 名下，
+            // 重启 App 走离线模式（CloudUserId 空，AppState.UserId = LocalUserId）查不到。
+            // 此分支在 v0.7.21 引入，能修复所有用户从旧版本升级后的遗留数据。
+            // 幂等：反迁移成功后清空 last_cloud_user_id，下次启动不再重复；
+            //      反迁移失败时保留 last_cloud_user_id，下次启动重试。
+            EnsureLocalUserId(cfg);
+            if (!string.IsNullOrEmpty(cfg.LastCloudUserId) &&
+                !string.IsNullOrEmpty(cfg.LocalUserId) &&
+                !string.Equals(cfg.LastCloudUserId, cfg.LocalUserId, StringComparison.Ordinal))
+            {
+                try
+                {
+                    int affected = _cfgRepo.MigrateUserId(cfg.LastCloudUserId, cfg.LocalUserId);
+                    DevLogger.Log("Auth", $"Offline migration: last_cloud={cfg.LastCloudUserId} → local={cfg.LocalUserId}, affected={affected}");
+                    _cfgRepo.UpdateLastCloudUserId(string.Empty);
+                }
+                catch (Exception migrateEx)
+                {
+                    DevLogger.Log("Auth", $"Offline migration failed (non-fatal): {migrateEx.Message}");
+                }
+            }
             DevLogger.Log("Auth", "RestoreSession: cloud_user_id 为空，离线模式");
             return false;
         }
@@ -308,6 +331,14 @@ public sealed class AuthService
             {
                 DevLogger.Log("Auth", "Logout migration failed (non-fatal): " + migrateEx.Message);
             }
+        }
+
+        // 记录上次 CloudUserId：兜底机制，下次启动 TryRestoreSessionAsync 若发现此字段非空，
+        // 且 CloudUserId 仍空（离线模式），会再次尝试反迁移（处理本次反迁移失败/跳过的场景）。
+        // 反迁移成功的情况下此字段下次启动时也会被清空（避免重复迁移）。
+        if (!string.IsNullOrEmpty(cloudUserIdBeforeLogout))
+        {
+            _cfgRepo.UpdateLastCloudUserId(cloudUserIdBeforeLogout);
         }
 
         try

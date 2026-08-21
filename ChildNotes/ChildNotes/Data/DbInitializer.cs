@@ -247,6 +247,7 @@ CREATE TABLE IF NOT EXISTS sync_config (
     server_url TEXT NOT NULL DEFAULT '',
     cloud_user_id TEXT NOT NULL DEFAULT '',
     local_user_id TEXT NOT NULL DEFAULT '',
+    last_cloud_user_id TEXT NOT NULL DEFAULT '',
     last_sync_at TEXT,
     last_sync_status TEXT,
     last_sync_msg TEXT
@@ -254,6 +255,10 @@ CREATE TABLE IF NOT EXISTS sync_config (
         // v5 schema 迁移：已有 sync_config 表添加 cloud_user_id/local_user_id 列
         AddColumnIfNotExists(conn, "sync_config", "cloud_user_id", "TEXT NOT NULL DEFAULT ''");
         AddColumnIfNotExists(conn, "sync_config", "local_user_id", "TEXT NOT NULL DEFAULT ''");
+        // v6 schema 迁移：添加 last_cloud_user_id 列（登出时记录上次 CloudUserId，
+        // 启动时若发现此字段非空则反迁移遗留数据到 LocalUserId 名下，
+        // 修复旧版本登出未反迁移导致离线模式下查不到数据的问题）
+        AddColumnIfNotExists(conn, "sync_config", "last_cloud_user_id", "TEXT NOT NULL DEFAULT ''");
         // v5 schema 迁移：删除 username/password/token 列（SQLite 3.35+ 支持 DROP COLUMN）
         DropColumnIfExists(conn, "sync_config", "username");
         DropColumnIfExists(conn, "sync_config", "password");

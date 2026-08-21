@@ -129,6 +129,18 @@ public sealed class SyncConfigRepository : BaseRepository
     }
 
     /// <summary>
+    /// 更新上次登录的云端用户 Id（登出时记录，用于下次启动时反迁移遗留数据）。
+    /// 启动时若发现此字段非空且 CloudUserId 为空（已登出），执行反迁移后清空此字段。
+    /// </summary>
+    public void UpdateLastCloudUserId(string lastCloudUserId)
+    {
+        ExecuteNonQuery(
+            "UPDATE sync_config SET last_cloud_user_id=@c WHERE id=1",
+            cmd => cmd.AddString("@c", lastCloudUserId ?? string.Empty, emptyAsNull: false));
+        InvalidateCache();
+    }
+
+    /// <summary>
     /// 把 oldUserId 名下的所有业务数据迁移到 newUserId 名下。
     ///
     /// 背景：v5 重构后 AppState.UserId 未登录返回 LocalUserId，登录返回 CloudUserId。
@@ -255,9 +267,10 @@ UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
         ServerUrl = r.GetString(2),
         CloudUserId = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         LocalUserId = r.IsDBNull(4) ? string.Empty : r.GetString(4),
-        LastSyncAt = r.IsDBNull(5) ? null : DateTimeExtensions.ParseDb(r.GetString(5)),
-        LastSyncStatus = r.IsDBNull(6) ? null : r.GetString(6),
-        LastSyncMsg = r.IsDBNull(7) ? null : r.GetString(7),
-        DeviceId = r.IsDBNull(8) ? string.Empty : r.GetString(8),
+        LastCloudUserId = r.IsDBNull(5) ? string.Empty : r.GetString(5),
+        LastSyncAt = r.IsDBNull(6) ? null : DateTimeExtensions.ParseDb(r.GetString(6)),
+        LastSyncStatus = r.IsDBNull(7) ? null : r.GetString(7),
+        LastSyncMsg = r.IsDBNull(8) ? null : r.GetString(8),
+        DeviceId = r.IsDBNull(9) ? string.Empty : r.GetString(9),
     };
 }
