@@ -17,7 +17,7 @@ public sealed class SyncConfigRepository : BaseRepository
     public SyncConfigRepository(DbConnectionFactory factory) : base(factory) { }
 
     private const string SelectSql =
-        "SELECT id, enabled, server_url, cloud_user_id, local_user_id, " +
+        "SELECT id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id, " +
         "last_sync_at, last_sync_status, last_sync_msg, device_id FROM sync_config WHERE id=1";
 
     /// <summary>内存缓存：单行配置表极少变化，仅在写操作后失效。</summary>
@@ -46,6 +46,7 @@ public sealed class SyncConfigRepository : BaseRepository
         ServerUrl = c.ServerUrl,
         CloudUserId = c.CloudUserId,
         LocalUserId = c.LocalUserId,
+        LastCloudUserId = c.LastCloudUserId,
         LastSyncAt = c.LastSyncAt,
         LastSyncStatus = c.LastSyncStatus,
         LastSyncMsg = c.LastSyncMsg,
@@ -67,9 +68,9 @@ public sealed class SyncConfigRepository : BaseRepository
     {
         ExecuteNonQuery(
             @"INSERT OR REPLACE INTO sync_config
-              (id, enabled, server_url, cloud_user_id, local_user_id,
+              (id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id,
                last_sync_at, last_sync_status, last_sync_msg, device_id)
-              VALUES (@id, @e, @u, @cuid, @luid, @lsa, @lss, @lsm, @did)",
+              VALUES (@id, @e, @u, @cuid, @luid, @lcuid, @lsa, @lss, @lsm, @did)",
             cmd =>
             {
                 cmd.Add("@id", 1)
@@ -77,6 +78,7 @@ public sealed class SyncConfigRepository : BaseRepository
                    .AddString("@u", cfg.ServerUrl, emptyAsNull: true)
                    .AddString("@cuid", cfg.CloudUserId, emptyAsNull: true)
                    .AddString("@luid", cfg.LocalUserId, emptyAsNull: true)
+                   .AddString("@lcuid", cfg.LastCloudUserId, emptyAsNull: true)
                    .Add("@lsa", cfg.LastSyncAt is null ? DBNull.Value : (object)ToUtcO(cfg.LastSyncAt.Value))
                    .AddString("@lss", cfg.LastSyncStatus, emptyAsNull: true)
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
