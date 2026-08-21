@@ -270,8 +270,12 @@ jobs:
           # 2. bin 缓存：prod 构建生成的 AndroidManifest.xml（包名 com.babydiary.app）若未被清理，
           #    dev 构建的增量判断可能复用该 manifest，导致 dev APK 包名不是 com.babydiary.app.dev
           #    （v0.6.9 曾出现此问题：dev APK 实际为正式版包名，安装后与正式版冲突而非共存）
-          rm -rf ChildNotes.Android/obj ChildNotes.Android/bin ChildNotes/obj ChildNotes/bin
-          echo "::notice::Cleaned obj+bin cache before dev build"
+          # 3. ChildNotes.Shared/obj 也需清理：v0.7.21 dev APK 启动闪退，根因是 Shared 的 obj
+          #    缓存被 dev 构建复用，间接影响 Android JNI 绑定的 CRC 计算
+          rm -rf ChildNotes.Android/obj ChildNotes.Android/bin \
+                 ChildNotes/obj ChildNotes/bin \
+                 ../ChildNotes.Shared/obj ../ChildNotes.Shared/bin
+          echo "::notice::Cleaned all obj+bin cache before dev build (incl. Shared)"
 
           # DevBuild=true 注入 DEV_BUILD 编译常量
           # ★ 包名切换：用 sed 临时修改 csproj 中的 ApplicationId 为 com.babydiary.app.dev
