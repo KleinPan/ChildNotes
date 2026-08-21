@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 
 namespace ChildNotes.Data.Repositories;
@@ -125,6 +126,108 @@ public sealed class SyncConfigRepository : BaseRepository
             "UPDATE sync_config SET cloud_user_id=@c WHERE id=1",
             cmd => cmd.AddString("@c", cloudUserId ?? string.Empty, emptyAsNull: false));
         InvalidateCache();
+    }
+
+    /// <summary>
+    /// 登录后把 LocalUserId 名下的所有业务数据迁移到 CloudUserId 名下。
+    ///
+    /// 背景：v5 重构后 AppState.UserId 未登录返回 LocalUserId，登录返回 CloudUserId。
+    /// 用户离线时按 LocalUserId 创建的 baby/record/milestone/points 等数据，
+    /// 在登录后切换为 CloudUserId 时会查不到（GetByUser(CloudUserId) 返回空），
+    /// 导致首页显示"未添加宝宝"。
+    ///
+    /// 单事务执行所有 UPDATE，遇 UNIQUE 冲突时合并/去重后保留 CloudUserId 名下数据。
+    /// </summary>
+    /// <param name="localUserId">sync_config.local_user_id（迁移前已生成）。</param>
+    /// <param name="cloudUserId">登录后从后端获取的云端用户 Id。</param>
+    /// <returns>受影响的总行数（含 UPDATE 与 DELETE，用于诊断）。</returns>
+    public int MigrateLocalUserToCloudUser(string localUserId, string cloudUserId)
+    {
+        if (string.IsNullOrEmpty(localUserId) || string.IsNullOrEmpty(cloudUserId)) return 0;
+        if (string.Equals(localUserId, cloudUserId, StringComparison.Ordinal)) return 0;
+
+        int totalAffected = 0;
+        using var conn = _factory.Create();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            // user_points.user_id UNIQUE：若 CloudUserId 已有积分行，合并积分后删 LocalUserId 行
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+UPDATE user_points
+SET points = points + (SELECT points FROM user_points WHERE user_id = @old),
+    total_earned = total_earned + (SELECT total_earned FROM user_points WHERE user_id = @old),
+    total_spent = total_spent + (SELECT total_spent FROM user_points WHERE user_id = @old)
+WHERE user_id = @new
+  AND EXISTS (SELECT 1 FROM user_points WHERE user_id = @old);
+DELETE FROM user_points
+WHERE user_id = @old
+  AND EXISTS (SELECT 1 FROM user_points WHERE user_id = @new);
+UPDATE user_points SET user_id = @new WHERE user_id = @old;";
+                cmd.Parameters.AddWithValue("@old", localUserId);
+                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            // task_record (user_id, task_code) UNIQUE：删 LocalUserId 名下与 CloudUserId 冲突的行后 UPDATE
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+DELETE FROM task_record
+WHERE user_id = @old
+  AND EXISTS (SELECT 1 FROM task_record AS b WHERE b.user_id = @new AND b.task_code = task_record.task_code);
+UPDATE task_record SET user_id = @new WHERE user_id = @old;";
+                cmd.Parameters.AddWithValue("@old", localUserId);
+                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            // user_supplement_item (user_id, type, name) UNIQUE：同上去重后 UPDATE
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+DELETE FROM user_supplement_item
+WHERE user_id = @old
+  AND EXISTS (SELECT 1 FROM user_supplement_item AS b
+              WHERE b.user_id = @new AND b.type = user_supplement_item.type AND b.name = user_supplement_item.name);
+UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
+                cmd.Parameters.AddWithValue("@old", localUserId);
+                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            // 无 UNIQUE 约束的表：直接 UPDATE
+            var simpleTables = new[]
+            {
+                "baby", "baby_member", "child_record", "milestone",
+                "sign_in_record", "user_custom_vaccine",
+                "ai_analysis_record", "in_app_message",
+            };
+            foreach (var table in simpleTables)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = $"UPDATE {table} SET user_id = @new WHERE user_id = @old;";
+                cmd.Parameters.AddWithValue("@old", localUserId);
+                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+            InvalidateCache();
+            DevLogger.Log("Sync", $"MigrateLocalUserToCloudUser: local={localUserId} → cloud={cloudUserId}, affected={totalAffected}");
+            return totalAffected;
+        }
+        catch (Exception ex)
+        {
+            tx.Rollback();
+            DevLogger.Log("Sync", $"MigrateLocalUserToCloudUser failed (rolled back): {ex.Message}");
+            throw;
+        }
     }
 
     /// <summary>更新设备标识。首次启动时由 ServiceProvider 调用。</summary>

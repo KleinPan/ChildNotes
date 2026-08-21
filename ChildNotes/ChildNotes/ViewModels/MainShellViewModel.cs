@@ -421,6 +421,11 @@ public partial class MainShellViewModel : ViewModelBase
         Home.CheckInRequested += OpenPoints;
         Home.QuickRecordRequested += OpenQuickRecord;
 
+        // 订阅同步完成事件：同步成功拉到宝宝数据时刷新首页（修登录后云端宝宝不刷新 bug）
+        // BabyService.OnSyncCompleted 已刷新 AppState.BabyList，但不会通知 HomeViewModel；
+        // 此处补足：成功且 PulledBabies > 0 时触发 Home.RefreshAsync（已有 2 秒防抖兜底）
+        ServiceProvider.Instance.SyncTrigger.SyncCompleted += OnSyncCompletedRefreshHome;
+
         // 订阅 QuickMenu.IsMenuOpen 变化，触发返回拦截状态检查
         QuickMenu.PropertyChanged += (_, e) =>
         {
@@ -788,7 +793,26 @@ public partial class MainShellViewModel : ViewModelBase
         CloseAllOverlays();
         // 释放可释放的懒加载 VM（如 SyncSettings 实现 IDisposable）
         (_syncSettings as IDisposable)?.Dispose();
+        // 取消订阅 SyncTrigger.SyncCompleted，避免实例被事件引用阻止 GC
+        ServiceProvider.Instance.SyncTrigger.SyncCompleted -= OnSyncCompletedRefreshHome;
         LogoutRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// 同步成功且本次拉取了宝宝数据时，刷新首页 UI。
+    /// 弥补 BabyService.OnSyncCompleted 只刷新 AppState.BabyList 而不通知 HomeViewModel 的缺失。
+    /// 典型场景：登录后从云端首次 Pull 拉到宝宝，需立即在首页显示，否则停留在"未添加宝宝"。
+    /// </summary>
+    private async void OnSyncCompletedRefreshHome(ApiSyncService.SyncResult result)
+    {
+        if (!result.Success) return;
+        if (result.PulledBabies <= 0) return;
+        try
+        {
+            await Home.RefreshAsync();
+            DevLogger.Log("Shell", $"SyncCompleted → Home.RefreshAsync (pulledBabies={result.PulledBabies})");
+        }
+        catch (Exception ex) { DevLogger.Log("Shell", "OnSyncCompletedRefreshHome failed: " + ex); }
     }
 
     /// <summary>未登录状态下从账户中心请求登录：关闭所有弹层，通知 App 切换到登录页。</summary>

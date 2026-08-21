@@ -172,9 +172,24 @@ public sealed class AuthService
             await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
 
             // 2) CloudUserId 写入 sync_config（唯一身份权威来源）
+            //    同时把 LocalUserId 名下的本地业务数据迁移到 CloudUserId 名下：
+            //    用户离线时按 LocalUserId 创建的 baby/record/points 等数据，
+            //    若不迁移，登录后 GetByUser(CloudUserId) 查不到，首页会显示"未添加宝宝"。
             if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
             {
+                var localUserIdBeforeLogin = _cfgRepo.Get().LocalUserId;
                 _cfgRepo.UpdateCloudUserId(auth.User.Id);
+                try
+                {
+                    int affected = _cfgRepo.MigrateLocalUserToCloudUser(localUserIdBeforeLogin ?? string.Empty, auth.User.Id);
+                    if (affected > 0)
+                        DevLogger.Log("Auth", $"Local data migrated to cloud user: affected={affected}");
+                }
+                catch (Exception migrateEx)
+                {
+                    // 迁移失败不阻塞登录：保留 CloudUserId 与 Token，让用户登录后再手动处理
+                    DevLogger.Log("Auth", "MigrateLocalUserToCloudUser failed (non-fatal): " + migrateEx.Message);
+                }
             }
 
             // 3) app_user 表缓存 profile（Upsert），供 UI 展示昵称/头像等
@@ -216,6 +231,22 @@ public sealed class AuthService
 
         // 确保 LocalUserId 已生成（离线模式的业务数据需要）
         EnsureLocalUserId(cfg);
+
+        // 启动时补救迁移：将 LocalUserId 名下未迁移的业务数据迁移到 CloudUserId 名下。
+        // 修复"先离线记录后登录"用户在更新到此版本前已写入 CloudUserId 但未触发迁移的场景：
+        // 重启 App 走 TryRestoreSessionAsync 路径不会调用 VerifyCodeAsync，
+        // 若不补救迁移，原本地宝宝数据仍按 LocalUserId 存储，首页继续显示"未添加宝宝"。
+        // 幂等：相同 id 或无数据可迁时返回 0，每次启动重复调用安全。
+        try
+        {
+            int affected = _cfgRepo.MigrateLocalUserToCloudUser(cfg.LocalUserId, cfg.CloudUserId);
+            if (affected > 0)
+                DevLogger.Log("Auth", $"RestoreSession migration: local={cfg.LocalUserId} → cloud={cfg.CloudUserId}, affected={affected}");
+        }
+        catch (Exception migrateEx)
+        {
+            DevLogger.Log("Auth", "RestoreSession migration failed (non-fatal): " + migrateEx.Message);
+        }
 
         var user = _users.FindById(cfg.CloudUserId);
         if (user is not null)
