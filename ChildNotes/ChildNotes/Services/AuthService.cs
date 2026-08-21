@@ -410,6 +410,12 @@ public sealed class AuthService
             if (!resp.IsSuccessStatusCode)
             {
                 DevLogger.Log("Auth", $"Refresh fail: {(int)resp.StatusCode}");
+                // 401/403：服务端明确拒绝该 RefreshToken（已撤销/过期），
+                // 软登出避免 UI 卡在"已登录但同步失败"状态，引导用户重新登录。
+                if (resp.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+                {
+                    await SoftLogoutAsync(ct);
+                }
                 return null;
             }
             var auth = ExtractData<AuthResponseDto>(json);
@@ -444,7 +450,7 @@ public sealed class AuthService
 
     /// <summary>
     /// 标记 AccessToken 已失效（401 触发）：删除 SecureStorage 中的 AccessToken。
-    /// 不删除 RefreshToken（仍可尝试 Refresh）；若 Refresh 也失败，调用 LogoutAsync 不删业务数据。
+    /// 不删除 RefreshToken（仍可尝试 Refresh）；若 Refresh 也失败，由 SoftLogoutAsync 处理。
     /// </summary>
     public async Task InvalidateAccessTokenAsync(CancellationToken ct = default)
     {
@@ -457,6 +463,28 @@ public sealed class AuthService
         {
             DevLogger.Log("Auth", "InvalidateAccessToken failed: " + ex.Message);
         }
+    }
+
+    /// <summary>
+    /// 软登出：RefreshToken 被服务端拒绝（401/403）时调用。
+    /// 清空 Token + CloudUserId，让 UI 显示"未登录"，引导用户重新登录。
+    /// 不反迁移业务数据（下次登录可能用同一账号），不取消本地提醒（与 LogoutAsync 区别）。
+    /// </summary>
+    private async Task SoftLogoutAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
+            await _secureStorage.DeleteAsync(SecureStorageKeys.RefreshToken, ct);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", "SoftLogout: 清空 SecureStorage 失败（继续）: " + ex.Message);
+        }
+        _cfgRepo.UpdateCloudUserId(string.Empty);
+        CurrentUser = null;
+        _state.Clear();
+        DevLogger.Log("Auth", "SoftLogout ok: RefreshToken 被服务端拒绝，需重新登录");
     }
 
     // ===== 离线用户 Id =====

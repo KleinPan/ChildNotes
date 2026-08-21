@@ -5,6 +5,7 @@ using ChildNotes.Core.Services;
 using ChildNotes.Shared.Sync;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ChildNotes.Infrastructure.Services;
 
@@ -18,12 +19,14 @@ public class SyncService : ISyncService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
+    private readonly ILogger<SyncService> _logger;
 
-    public SyncService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess)
+    public SyncService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, ILogger<SyncService> logger)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
+        _logger = logger;
     }
 
     public async Task<SyncPullResponse> PullAsync(DateTime since, int limit = 500,
@@ -169,111 +172,165 @@ public class SyncService : ISyncService
     }
 
     public async Task<SyncBatchResponse> PushAsync(SyncBatchRequest req, CancellationToken ct = default)
+{
+    var uid = _current.RequireUserId();
+
+    // 修复死锁：先处理 Babies，再 SaveChanges 持久化，重新查询权限集合。
+    // 原顺序：先查 babyIds（空表 → []）→ 处理 Records 时 BabyId 不在空集合全部 continue 丢弃
+    //        → 处理 Babies 写入新 baby（已经晚了，本批 records 已丢弃）。
+    // 客户端看到 HTTP 200 + RecordsUpserted=0 误以为成功，MarkSynced 写本地 synced_at，
+    // 下次同步因 synced_at IS NOT NULL + updated_at < LastSyncAt 永远推不上去。
+    // 新顺序：Babies → SaveChanges → 重新查 babyIds（含刚写入的 baby_id）→ Records/Milestones/SignIns。
+    var babiesUpserted = 0;
+    foreach (var item in req.Babies ?? new())
     {
-        var uid = _current.RequireUserId();
-
-        var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
-
-        var recordsUpserted = 0;
-        foreach (var item in req.Records ?? new())
+        // 权限：只能 upsert 自己创建的宝宝
+        if (item.UserId != uid)
         {
-            // 权限：记录必须属于当前用户可访问的宝宝，且 user_id 必须是当前用户
-            if (item.UserId != uid) continue;
-            if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId)) continue;
-
-            var existing = await _db.ChildRecords.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == item.Id, ct);
-            if (existing is null)
-            {
-                _db.ChildRecords.Add(FromItem(item));
-                recordsUpserted++;
-            }
-            else if (item.UpdatedAt > existing.UpdatedAt)
-            {
-                // LWW 行级合并：远程较新才覆盖
-                CopyTo(existing, item);
-                recordsUpserted++;
-            }
+            _logger.LogWarning("userId mismatch, dropped baby id={Id}, item.UserId={ItemUserId}, jwt.uid={Uid}",
+                item.Id, item.UserId, uid);
+            continue;
         }
 
-        var babiesUpserted = 0;
-        foreach (var item in req.Babies ?? new())
+        // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
+        var existing = await _db.Babies.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == item.Id, ct);
+        if (existing is null)
         {
-            // 权限：只能 upsert 自己创建的宝宝
-            if (item.UserId != uid) continue;
-
-            // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
-            var existing = await _db.Babies.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == item.Id, ct);
-            if (existing is null)
-            {
-                _db.Babies.Add(FromItem(item));
-                babiesUpserted++;
-            }
-            else if (item.UpdatedAt > existing.UpdatedAt)
-            {
-                existing.Name = item.Name;
-                existing.Avatar = item.Avatar;
-                existing.Gender = item.Gender;
-                existing.BirthDate = item.BirthDate is null ? null : DateTime.SpecifyKind(item.BirthDate.Value, DateTimeKind.Utc);
-                existing.Deleted = item.Deleted;
-                existing.UpdatedAt = DateTime.SpecifyKind(item.UpdatedAt, DateTimeKind.Utc);
-                babiesUpserted++;
-            }
+            _db.Babies.Add(FromItem(item));
+            babiesUpserted++;
         }
-
-        var milestonesUpserted = 0;
-        foreach (var item in req.Milestones ?? new())
+        else if (item.UpdatedAt > existing.UpdatedAt)
         {
-            // 权限：里程碑必须属于当前用户可访问的宝宝（与 ChildRecord 一致），
-            // 允许家庭成员 push 自己创建的里程碑（UserId 保留为创建者，不强制覆盖）
-            if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId)) continue;
-
-            var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
-            if (existing is null)
-            {
-                _db.Milestones.Add(FromItem(item));
-                milestonesUpserted++;
-            }
-            else if (item.UpdatedAt > existing.UpdatedAt)
-            {
-                CopyTo(existing, item);
-                milestonesUpserted++;
-            }
+            existing.Name = item.Name;
+            existing.Avatar = item.Avatar;
+            existing.Gender = item.Gender;
+            existing.BirthDate = item.BirthDate is null ? null : DateTime.SpecifyKind(item.BirthDate.Value, DateTimeKind.Utc);
+            existing.Deleted = item.Deleted;
+            existing.UpdatedAt = DateTime.SpecifyKind(item.UpdatedAt, DateTimeKind.Utc);
+            babiesUpserted++;
         }
-
-        // 签到记录：客户端上送本地签到（离线签到场景）。以 Id 做幂等 upsert，
-        // 不重复发积分——积分发放以服务端签到 API 为准，这里只同步记录本身。
-        var signInsUpserted = 0;
-        foreach (var item in req.SignIns ?? new())
+        else
         {
-            if (item.UserId != uid) continue;
-
-            var existing = await _db.SignInRecords.FirstOrDefaultAsync(s => s.Id == item.Id, ct);
-            if (existing is null)
-            {
-                _db.SignInRecords.Add(new SignInRecord
-                {
-                    Id = item.Id,
-                    UserId = item.UserId,
-                    SignDate = DateTime.SpecifyKind(item.SignDate, DateTimeKind.Utc),
-                    ContinuousDays = item.ContinuousDays,
-                    RewardPoints = item.Reward,
-                    CreatedAt = DateTime.SpecifyKind(item.CreatedAt, DateTimeKind.Utc),
-                });
-                signInsUpserted++;
-            }
-            // 签到记录不可变（无 UpdatedAt），已存在则跳过
+            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                item.Id, existing.UpdatedAt, item.UpdatedAt);
         }
-
-        await _db.SaveChangesAsync(ct);
-        return new SyncBatchResponse
-        {
-            RecordsUpserted = recordsUpserted,
-            BabiesUpserted = babiesUpserted,
-            MilestonesUpserted = milestonesUpserted,
-            SignInsUpserted = signInsUpserted,
-            ServerTime = DateTime.UtcNow,
-        };
     }
+
+    // 先持久化 Babies，让 GetAccessibleBabyIdsAsync 能查到刚写入的 baby_id。
+    // EF Core 查询只读 DB（不读 ChangeTracker 的 Added 项），必须 SaveChanges 后才能在权限集合中体现。
+    if (babiesUpserted > 0)
+    {
+        await _db.SaveChangesAsync(ct);
+    }
+
+    // 重新查询权限集合（包含刚写入的 baby_id）
+    var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
+
+    var recordsUpserted = 0;
+    foreach (var item in req.Records ?? new())
+    {
+        // 权限：记录必须属于当前用户可访问的宝宝，且 user_id 必须是当前用户
+        if (item.UserId != uid)
+        {
+            _logger.LogWarning("userId mismatch, dropped record id={Id}, item.UserId={ItemUserId}, jwt.uid={Uid}",
+                item.Id, item.UserId, uid);
+            continue;
+        }
+        if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId))
+        {
+            _logger.LogWarning("babyId not accessible, dropped record id={Id}, babyId={BabyId}, accessibleBabyIds=[{AccessibleBabyIds}]",
+                item.Id, item.BabyId, string.Join(",", babyIds));
+            continue;
+        }
+
+        var existing = await _db.ChildRecords.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == item.Id, ct);
+        if (existing is null)
+        {
+            _db.ChildRecords.Add(FromItem(item));
+            recordsUpserted++;
+        }
+        else if (item.UpdatedAt > existing.UpdatedAt)
+        {
+            // LWW 行级合并：远程较新才覆盖
+            CopyTo(existing, item);
+            recordsUpserted++;
+        }
+        else
+        {
+            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                item.Id, existing.UpdatedAt, item.UpdatedAt);
+        }
+    }
+
+    var milestonesUpserted = 0;
+    foreach (var item in req.Milestones ?? new())
+    {
+        // 权限：里程碑必须属于当前用户可访问的宝宝（与 ChildRecord 一致），
+        // 允许家庭成员 push 自己创建的里程碑（UserId 保留为创建者，不强制覆盖）
+        if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId))
+        {
+            _logger.LogWarning("babyId not accessible, dropped milestone id={Id}, babyId={BabyId}, accessibleBabyIds=[{AccessibleBabyIds}]",
+                item.Id, item.BabyId, string.Join(",", babyIds));
+            continue;
+        }
+
+        var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
+        if (existing is null)
+        {
+            _db.Milestones.Add(FromItem(item));
+            milestonesUpserted++;
+        }
+        else if (item.UpdatedAt > existing.UpdatedAt)
+        {
+            CopyTo(existing, item);
+            milestonesUpserted++;
+        }
+        else
+        {
+            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                item.Id, existing.UpdatedAt, item.UpdatedAt);
+        }
+    }
+
+    // 签到记录：客户端上送本地签到（离线签到场景）。以 Id 做幂等 upsert，
+    // 不重复发积分——积分发放以服务端签到 API 为准，这里只同步记录本身。
+    var signInsUpserted = 0;
+    foreach (var item in req.SignIns ?? new())
+    {
+        if (item.UserId != uid)
+        {
+            _logger.LogWarning("userId mismatch, dropped signIn id={Id}, item.UserId={ItemUserId}, jwt.uid={Uid}",
+                item.Id, item.UserId, uid);
+            continue;
+        }
+
+        var existing = await _db.SignInRecords.FirstOrDefaultAsync(s => s.Id == item.Id, ct);
+        if (existing is null)
+        {
+            _db.SignInRecords.Add(new SignInRecord
+            {
+                Id = item.Id,
+                UserId = item.UserId,
+                SignDate = DateTime.SpecifyKind(item.SignDate, DateTimeKind.Utc),
+                ContinuousDays = item.ContinuousDays,
+                RewardPoints = item.Reward,
+                CreatedAt = DateTime.SpecifyKind(item.CreatedAt, DateTimeKind.Utc),
+            });
+            signInsUpserted++;
+        }
+        // 签到记录不可变（无 UpdatedAt），已存在则跳过
+    }
+
+    await _db.SaveChangesAsync(ct);
+    return new SyncBatchResponse
+    {
+        RecordsUpserted = recordsUpserted,
+        BabiesUpserted = babiesUpserted,
+        MilestonesUpserted = milestonesUpserted,
+        SignInsUpserted = signInsUpserted,
+        ServerTime = DateTime.UtcNow,
+    };
+}
 
     private static SyncBabyItem ToBabyItem(Baby b) => new()
     {

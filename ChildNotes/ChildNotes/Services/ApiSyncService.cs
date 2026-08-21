@@ -128,6 +128,8 @@ public sealed class ApiSyncService : BaseApiClient
 
             // 1. 确保有可用 AccessToken，缺失则尝试 RefreshToken 续期（v5：不再用户名密码登录）
             var token = await EnsureTokenAsync(cfg, serverUrl, ct);
+            // 诊断日志：记录 token 前 8 字符，方便排查"登录失效"问题（仅前缀，无安全风险；ReleaseLogger 自动脱敏）
+            DevLogger.Log("Sync", $"Token acquired: {token?.Substring(0, Math.Min(8, token?.Length ?? 0))}...");
             if (token is null)
                 return Finish(false, "登录已失效，请重新邮箱验证码登录", cfg, SyncErrorKind.Auth);
 
@@ -244,11 +246,24 @@ public sealed class ApiSyncService : BaseApiClient
                 return Finish(false, "推送失败，已自动重试，请稍后再试", cfg, SyncErrorKind.Network);
 
             // 4. 标记已成功上送的数据（更新 synced_at），防止崩溃导致重推
+            //    仅当某类推送数 == upserted 数时才对该类调用 MarkSynced；否则不 MarkSynced，
+            //    让下次同步重试（后端 LWW 幂等跳过），避免"假同步"：推送 0 条却标记已同步。
+            //    整体仍视为成功（更新 LastSyncAt），但 LastSyncMsg 加"部分丢弃"提示。
+            var babyDropped = localBabies.Count > 0 && pushResp.BabiesUpserted < localBabies.Count;
+            var recordDropped = localRecords.Count > 0 && pushResp.RecordsUpserted < localRecords.Count;
+            var milestoneDropped = localMilestones.Count > 0 && pushResp.MilestonesUpserted < localMilestones.Count;
+            if (babyDropped || recordDropped || milestoneDropped)
+            {
+                DevLogger.Log("Sync", $"Push partial drop: babies {pushResp.BabiesUpserted}/{localBabies.Count}, records {pushResp.RecordsUpserted}/{localRecords.Count}, milestones {pushResp.MilestonesUpserted}/{localMilestones.Count}");
+            }
             try
             {
-                _babyRepo.MarkSynced(localBabies.Select(b => b.Id), pushResp.ServerTime);
-                _recordRepo.MarkSynced(localRecords.Select(r => r.Id), pushResp.ServerTime);
-                _milestoneRepo.MarkSynced(localMilestones.Select(m => m.Id), pushResp.ServerTime);
+                if (!babyDropped)
+                    _babyRepo.MarkSynced(localBabies.Select(b => b.Id), pushResp.ServerTime);
+                if (!recordDropped)
+                    _recordRepo.MarkSynced(localRecords.Select(r => r.Id), pushResp.ServerTime);
+                if (!milestoneDropped)
+                    _milestoneRepo.MarkSynced(localMilestones.Select(m => m.Id), pushResp.ServerTime);
             }
             catch (Exception ex)
             {
@@ -259,7 +274,8 @@ public sealed class ApiSyncService : BaseApiClient
             // 5. 更新本地同步时间戳
             cfg.LastSyncAt = pushResp.ServerTime;
             cfg.LastSyncStatus = "ok";
-            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑/{pushResp.SignInsUpserted}签到";
+            var partialHint = (babyDropped || recordDropped || milestoneDropped) ? "（部分丢弃，下次重试）" : "";
+            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑/{pushResp.SignInsUpserted}签到{partialHint}";
             _cfgRepo.Save(cfg);
 
             // 6. 通知网络监测器本次成功，加速从 OfflineServer 恢复
@@ -403,13 +419,16 @@ public sealed class ApiSyncService : BaseApiClient
         var token = await auth.GetAccessTokenAsync(ct);
         if (!string.IsNullOrWhiteSpace(token))
         {
-            // 不主动调 /api/auth/me 探活：401 由后续 Pull 触发 Refresh 处理（减少请求次数）。
-            // user.id 迁移逻辑已废弃（旧逻辑修复本地注册 id 与后端不一致的问题，
-            // v5 后用户 id 由云端权威管理，不存在本地生成的 user.id 与云端不一致的情况）。
-            return token;
+            // 检查 JWT exp，过期则主动 refresh（避免一次无谓的 401 往返）。
+            // 解码失败（非 JWT 格式）不拦截，让 401 反推处理。
+            if (!IsJwtExpired(token))
+            {
+                return token;
+            }
+            DevLogger.Log("Sync", "EnsureToken: AccessToken JWT exp 已过期，主动 refresh");
         }
 
-        // AccessToken 缺失：尝试用 RefreshToken 续期（Rotation）
+        // AccessToken 缺失或过期：尝试用 RefreshToken 续期（Rotation）
         var refreshed = await auth.RefreshAccessTokenAsync(ct);
         if (!string.IsNullOrEmpty(refreshed))
         {
@@ -421,6 +440,48 @@ public sealed class ApiSyncService : BaseApiClient
         // 用户需在 UI 上重新邮箱登录（不删除业务数据，登录后可继续同步）。
         DevLogger.Log("Sync", "EnsureToken: AccessToken 和 RefreshToken 均失效，需重新登录");
         return null;
+    }
+
+    /// <summary>
+    /// 轻量 JWT exp 解码：手写 Base64Url 解码 + 字符串查找 exp claim。
+    /// 不引入 JWT 库，兼容 AOT/Trimming。解析失败返回 false（不拦截，让 401 处理）。
+    /// </summary>
+    private static bool IsJwtExpired(string jwt)
+    {
+        try
+        {
+            var parts = jwt.Split('.');
+            if (parts.Length < 2) return false;
+            var payload = Encoding.UTF8.GetString(Base64UrlDecode(parts[1]));
+            // 简单查找 "exp":1234567890（Unix 秒）
+            var key = "\"exp\"";
+            var idx = payload.IndexOf(key, StringComparison.Ordinal);
+            if (idx < 0) return false;
+            idx += key.Length;
+            while (idx < payload.Length && (payload[idx] == ':' || payload[idx] == ' ')) idx++;
+            var start = idx;
+            while (idx < payload.Length && char.IsDigit(payload[idx])) idx++;
+            if (idx <= start) return false;
+            var exp = long.Parse(payload.AsSpan(start, idx - start));
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            return now >= exp;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static byte[] Base64UrlDecode(string s)
+    {
+        var sb = new StringBuilder(s);
+        sb.Replace('-', '+').Replace('_', '/');
+        switch (sb.Length % 4)
+        {
+            case 2: sb.Append("=="); break;
+            case 3: sb.Append("="); break;
+        }
+        return Convert.FromBase64String(sb.ToString());
     }
 
     private async Task<SyncPullResponse?> PullWithRetryAsync(string serverUrl, string token, DateTime since, int limit, SyncCursor? cursor, CancellationToken ct)
@@ -478,6 +539,21 @@ public sealed class ApiSyncService : BaseApiClient
         }
         catch (SyncException ex)
         {
+            // v5：与 Pull 对称，Auth 错误（401）尝试 RefreshToken 续期后重试一次；
+            // 旧实现直接吞掉异常导致"登录失效"被误报为"推送失败"，且无法自愈。
+            if (ex.Kind == SyncErrorKind.Auth)
+            {
+                DevLogger.Log("Sync", "Push 401, refreshing token...");
+                var auth = ServiceProvider.Instance.AuthService;
+                var newToken = await auth.RefreshAccessTokenAsync(ct);
+                if (!string.IsNullOrEmpty(newToken))
+                {
+                    // 递归一次（新 token 已写入 SecureStorage，不会再触发 Auth 重试分支）
+                    return await PushWithRetryAsync(serverUrl, newToken, req, ct);
+                }
+                DevLogger.Log("Sync", "Push Auth 失败且 Refresh 失败，停止同步");
+                return null;
+            }
             DevLogger.Log("Sync", $"Push failed: {ex.Kind} {ex.Message}");
             return null;
         }
