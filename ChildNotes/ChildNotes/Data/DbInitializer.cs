@@ -15,8 +15,13 @@ public static class DbInitializer
     /// v4→v5：邮箱验证码认证重构 — app_user 表删除 username/password_hash，新增 email/email_verified_at/membership_expire_at；
     ///        sync_config 表删除 username/password/token，新增 cloud_user_id/local_user_id；
     ///        user_session 表删除（改用 SecureStorage + CloudUserId）。
+    /// v5→v6：sync_config 表新增 last_cloud_user_id 列（登出时记录上次 CloudUserId，启动时反迁移遗留数据）。
+    ///        ★ v0.7.21 引入该列时 CurrentSchemaVersion 未递增（仍为 5），导致 v5 老库升级后
+    ///          跳过 DDL、列不存在，SyncConfigRepository.SelectSql 查询该列抛
+    ///          "no such column" → ServiceProvider TypeInitializationException → 启动闪退（v0.7.21~v0.7.23）。
+    ///        新库（user_version=0）走完整 DDL 不受影响，仅从 v0.7.20 及之前升级的用户命中。
     /// </summary>
-    public const int CurrentSchemaVersion = 5;
+    public const int CurrentSchemaVersion = 6;
 
     public static void Initialize(DbConnectionFactory factory)
     {
