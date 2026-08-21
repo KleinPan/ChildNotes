@@ -181,14 +181,14 @@ public sealed class AuthService
                 _cfgRepo.UpdateCloudUserId(auth.User.Id);
                 try
                 {
-                    int affected = _cfgRepo.MigrateLocalUserToCloudUser(localUserIdBeforeLogin ?? string.Empty, auth.User.Id);
+                    int affected = _cfgRepo.MigrateUserId(localUserIdBeforeLogin ?? string.Empty, auth.User.Id);
                     if (affected > 0)
                         DevLogger.Log("Auth", $"Local data migrated to cloud user: affected={affected}");
                 }
                 catch (Exception migrateEx)
                 {
                     // 迁移失败不阻塞登录：保留 CloudUserId 与 Token，让用户登录后再手动处理
-                    DevLogger.Log("Auth", "MigrateLocalUserToCloudUser failed (non-fatal): " + migrateEx.Message);
+                    DevLogger.Log("Auth", "MigrateUserId(local→cloud) failed (non-fatal): " + migrateEx.Message);
                 }
             }
 
@@ -239,7 +239,7 @@ public sealed class AuthService
         // 幂等：相同 id 或无数据可迁时返回 0，每次启动重复调用安全。
         try
         {
-            int affected = _cfgRepo.MigrateLocalUserToCloudUser(cfg.LocalUserId, cfg.CloudUserId);
+            int affected = _cfgRepo.MigrateUserId(cfg.LocalUserId, cfg.CloudUserId);
             if (affected > 0)
                 DevLogger.Log("Auth", $"RestoreSession migration: local={cfg.LocalUserId} → cloud={cfg.CloudUserId}, affected={affected}");
         }
@@ -288,6 +288,28 @@ public sealed class AuthService
     /// </summary>
     public async Task LogoutAsync(CancellationToken ct = default)
     {
+        var cfg = _cfgRepo.Get();
+        var cloudUserIdBeforeLogout = cfg.CloudUserId;
+        var localUserId = cfg.LocalUserId;
+
+        // 反迁移：把 CloudUserId 名下的业务数据迁移到 LocalUserId 名下，
+        // 让用户登出后继续离线使用本地数据（否则 AppState.UserId 切回 LocalUserId 后查不到，
+        // 首页会显示"未添加宝宝"）。与登录时的正向迁移对称，方法内部幂等。
+        if (!string.IsNullOrEmpty(cloudUserIdBeforeLogout) &&
+            !string.IsNullOrEmpty(localUserId) &&
+            !string.Equals(cloudUserIdBeforeLogout, localUserId, StringComparison.Ordinal))
+        {
+            try
+            {
+                int affected = _cfgRepo.MigrateUserId(cloudUserIdBeforeLogout, localUserId);
+                DevLogger.Log("Auth", $"Logout migration: cloud={cloudUserIdBeforeLogout} → local={localUserId}, affected={affected}");
+            }
+            catch (Exception migrateEx)
+            {
+                DevLogger.Log("Auth", "Logout migration failed (non-fatal): " + migrateEx.Message);
+            }
+        }
+
         try
         {
             await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);

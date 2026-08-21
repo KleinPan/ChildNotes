@@ -129,29 +129,33 @@ public sealed class SyncConfigRepository : BaseRepository
     }
 
     /// <summary>
-    /// 登录后把 LocalUserId 名下的所有业务数据迁移到 CloudUserId 名下。
+    /// 把 oldUserId 名下的所有业务数据迁移到 newUserId 名下。
     ///
     /// 背景：v5 重构后 AppState.UserId 未登录返回 LocalUserId，登录返回 CloudUserId。
-    /// 用户离线时按 LocalUserId 创建的 baby/record/milestone/points 等数据，
-    /// 在登录后切换为 CloudUserId 时会查不到（GetByUser(CloudUserId) 返回空），
+    /// 用户切换登录态时（登录或登出），若不迁移 user_id，GetByUser(新 id) 查不到原数据，
     /// 导致首页显示"未添加宝宝"。
     ///
-    /// 单事务执行所有 UPDATE，遇 UNIQUE 冲突时合并/去重后保留 CloudUserId 名下数据。
+    /// 双向使用：
+    ///   - 登录时：MigrateUserId(localUserId, cloudUserId)
+    ///   - 登出时：MigrateUserId(cloudUserId, localUserId)
+    ///
+    /// 单事务执行所有 UPDATE，遇 UNIQUE 冲突时合并/去重后保留 newUserId 名下数据。
+    /// 幂等：相同 id 或无数据可迁时返回 0，多次调用安全。
     /// </summary>
-    /// <param name="localUserId">sync_config.local_user_id（迁移前已生成）。</param>
-    /// <param name="cloudUserId">登录后从后端获取的云端用户 Id。</param>
+    /// <param name="oldUserId">迁移源用户 Id（被替换的 user_id 值）。</param>
+    /// <param name="newUserId">迁移目标用户 Id（替换后的 user_id 值）。</param>
     /// <returns>受影响的总行数（含 UPDATE 与 DELETE，用于诊断）。</returns>
-    public int MigrateLocalUserToCloudUser(string localUserId, string cloudUserId)
+    public int MigrateUserId(string oldUserId, string newUserId)
     {
-        if (string.IsNullOrEmpty(localUserId) || string.IsNullOrEmpty(cloudUserId)) return 0;
-        if (string.Equals(localUserId, cloudUserId, StringComparison.Ordinal)) return 0;
+        if (string.IsNullOrEmpty(oldUserId) || string.IsNullOrEmpty(newUserId)) return 0;
+        if (string.Equals(oldUserId, newUserId, StringComparison.Ordinal)) return 0;
 
         int totalAffected = 0;
         using var conn = _factory.Create();
         using var tx = conn.BeginTransaction();
         try
         {
-            // user_points.user_id UNIQUE：若 CloudUserId 已有积分行，合并积分后删 LocalUserId 行
+            // user_points.user_id UNIQUE：若 newUserId 已有积分行，合并积分后删 oldUserId 行
             using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tx;
@@ -166,12 +170,12 @@ DELETE FROM user_points
 WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM user_points WHERE user_id = @new);
 UPDATE user_points SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", localUserId);
-                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                cmd.Parameters.AddWithValue("@old", oldUserId);
+                cmd.Parameters.AddWithValue("@new", newUserId);
                 totalAffected += cmd.ExecuteNonQuery();
             }
 
-            // task_record (user_id, task_code) UNIQUE：删 LocalUserId 名下与 CloudUserId 冲突的行后 UPDATE
+            // task_record (user_id, task_code) UNIQUE：删 oldUserId 名下与 newUserId 冲突的行后 UPDATE
             using (var cmd = conn.CreateCommand())
             {
                 cmd.Transaction = tx;
@@ -180,8 +184,8 @@ DELETE FROM task_record
 WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM task_record AS b WHERE b.user_id = @new AND b.task_code = task_record.task_code);
 UPDATE task_record SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", localUserId);
-                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                cmd.Parameters.AddWithValue("@old", oldUserId);
+                cmd.Parameters.AddWithValue("@new", newUserId);
                 totalAffected += cmd.ExecuteNonQuery();
             }
 
@@ -195,8 +199,8 @@ WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM user_supplement_item AS b
               WHERE b.user_id = @new AND b.type = user_supplement_item.type AND b.name = user_supplement_item.name);
 UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", localUserId);
-                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                cmd.Parameters.AddWithValue("@old", oldUserId);
+                cmd.Parameters.AddWithValue("@new", newUserId);
                 totalAffected += cmd.ExecuteNonQuery();
             }
 
@@ -212,20 +216,20 @@ UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
                 using var cmd = conn.CreateCommand();
                 cmd.Transaction = tx;
                 cmd.CommandText = $"UPDATE {table} SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", localUserId);
-                cmd.Parameters.AddWithValue("@new", cloudUserId);
+                cmd.Parameters.AddWithValue("@old", oldUserId);
+                cmd.Parameters.AddWithValue("@new", newUserId);
                 totalAffected += cmd.ExecuteNonQuery();
             }
 
             tx.Commit();
             InvalidateCache();
-            DevLogger.Log("Sync", $"MigrateLocalUserToCloudUser: local={localUserId} → cloud={cloudUserId}, affected={totalAffected}");
+            DevLogger.Log("Sync", $"MigrateUserId: {oldUserId} → {newUserId}, affected={totalAffected}");
             return totalAffected;
         }
         catch (Exception ex)
         {
             tx.Rollback();
-            DevLogger.Log("Sync", $"MigrateLocalUserToCloudUser failed (rolled back): {ex.Message}");
+            DevLogger.Log("Sync", $"MigrateUserId failed (rolled back): {ex.Message}");
             throw;
         }
     }

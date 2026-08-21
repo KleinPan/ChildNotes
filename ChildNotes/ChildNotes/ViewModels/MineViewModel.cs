@@ -91,8 +91,24 @@ public partial class MineViewModel : ViewModelBase, IActivatable
         {
             DevLogger.Log("Mine", "Activate start");
             var user = _auth.CurrentUser;
-            NickName = user?.NickName ?? _locale.GetString("Mine_NotLoggedIn", "未登录");
-            AvatarUrl = user?.AvatarUrl ?? string.Empty;
+            // 登录态以 sync_config.CloudUserId 为准（IsLoggedIn），不依赖 app_user 表的 profile 缓存。
+            // 若已登录但 app_user 表无 CloudUserId 行（db 重建/旧版未 Upsert 等场景），
+            // 显示占位文案"已登录"，避免误显示"未登录"；下次同步或拉取 profile 后会刷新。
+            if (user is not null)
+            {
+                NickName = user.NickName;
+                AvatarUrl = user.AvatarUrl;
+            }
+            else if (_auth.IsLoggedIn)
+            {
+                NickName = _locale.GetString("Mine_LoggedIn", "已登录");
+                AvatarUrl = string.Empty;
+            }
+            else
+            {
+                NickName = _locale.GetString("Mine_NotLoggedIn", "未登录");
+                AvatarUrl = string.Empty;
+            }
 
             // DB 调用 + HTTP 调用全部移到后台线程，避免 UI 线程阻塞。
             // 历史问题：HttpClient.SendAsync 在 Android 上首次调用会做 DNS 解析 + SSL 握手，
