@@ -1,19 +1,19 @@
 name: Docker Image
 
-# 推送 tag（v* / release-*）时自动构建并推送到 GHCR。
-# docker-compose.yml 在部署机直接拉取此镜像，不再本地 build。
-# 也可在 Actions 页面手动 dispatch 指定 ref 构建。
+# [已禁用自动触发] 推送 tag 时不再自动构建 Docker 镜像，改为手动 dispatch。
+# 恢复自动构建时把下面的 push 段取消注释即可。
+# docker-compose.yml 在部署机直接拉取 GHCR 镜像，不再本地 build。
 on:
-  push:
-    tags:
-      - 'v*'
-      - 'release-*'
   workflow_dispatch:
     inputs:
       ref:
         description: '要构建的分支/tag/commit'
         required: false
         default: ''
+  # push:
+  #   tags:
+  #     - 'v*'
+  #     - 'release-*'
 
 permissions:
   contents: read

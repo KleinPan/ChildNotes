@@ -4,6 +4,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+# 先复制构建配置文件：
+# - Directory.Packages.props：后端启用 NuGet CPM，所有 PackageReference 均不带 Version，
+#   缺此文件会导致 dotnet restore 报 NETSDK1064（包未指定版本）
+# - Directory.Build.props/targets：版本号默认值 + 关闭 Git 后缀追加
+COPY Directory.Build.props Directory.Build.targets ./
+COPY ChildNotes.Backend/Directory.Packages.props ./ChildNotes.Backend/
+
 # 先复制所有 csproj，利用 Docker 缓存层加速依赖还原
 COPY ChildNotes.Shared/ChildNotes.Shared.csproj ./ChildNotes.Shared/
 COPY ChildNotes.Backend/ChildNotes.Api/ChildNotes.Api.csproj ./ChildNotes.Backend/ChildNotes.Api/
