@@ -468,10 +468,40 @@ public sealed class AuthService
     /// <summary>
     /// 软登出：RefreshToken 被服务端拒绝（401/403）时调用。
     /// 清空 Token + CloudUserId，让 UI 显示"未登录"，引导用户重新登录。
-    /// 不反迁移业务数据（下次登录可能用同一账号），不取消本地提醒（与 LogoutAsync 区别）。
+    /// 反迁移业务数据到 LocalUserId（软登出后 AppState.UserId 回落 LocalUserId，
+    /// 不反迁移会导致首页"0 个宝宝"数据"消失"假象）；重新登录时 VerifyCodeAsync /
+    /// TryRestoreSessionAsync 的正向迁移幂等迁回，同账号重登无额外成本。
+    /// 不取消本地提醒（下次登录大概率同账号，与 LogoutAsync 区别）。
     /// </summary>
     private async Task SoftLogoutAsync(CancellationToken ct = default)
     {
+        var cfg = _cfgRepo.Get();
+        var cloudUserIdBeforeSoftLogout = cfg.CloudUserId;
+        var localUserId = cfg.LocalUserId;
+
+        // 反迁移：把 CloudUserId 名下的业务数据迁移到 LocalUserId 名下，
+        // 软登出后用户离线仍能看到全部数据（数据保护与 LogoutAsync 一致）。
+        if (!string.IsNullOrEmpty(cloudUserIdBeforeSoftLogout) &&
+            !string.IsNullOrEmpty(localUserId) &&
+            !string.Equals(cloudUserIdBeforeSoftLogout, localUserId, StringComparison.Ordinal))
+        {
+            try
+            {
+                int affected = _cfgRepo.MigrateUserId(cloudUserIdBeforeSoftLogout, localUserId);
+                DevLogger.Log("Auth", $"SoftLogout migration: cloud={cloudUserIdBeforeSoftLogout} → local={localUserId}, affected={affected}");
+            }
+            catch (Exception migrateEx)
+            {
+                DevLogger.Log("Auth", $"SoftLogout migration failed (non-fatal): {migrateEx.Message}");
+            }
+        }
+
+        // 记录 last_cloud_user_id：反迁移失败时下次启动 TryRestoreSessionAsync 兜底重试
+        if (!string.IsNullOrEmpty(cloudUserIdBeforeSoftLogout))
+        {
+            _cfgRepo.UpdateLastCloudUserId(cloudUserIdBeforeSoftLogout);
+        }
+
         try
         {
             await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
