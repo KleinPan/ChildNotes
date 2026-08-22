@@ -69,8 +69,11 @@ public class DeepSeekClient
             temperature = _opt.Temperature,
             max_tokens = _opt.MaxTokens,
             stream = false,
-            thinking = _opt.ThinkingEnabled ? new { type = "enabled",
-                             reasoning_effort = _opt.ReasoningEffort } : null,
+            // thinking 必须显式声明：1xm 的 v4 系列模型缺省该参数时默认开启思考（慢且耗 token），
+            // 因此关闭时也要发送 {"type":"disabled"}，不能省略字段
+            thinking = _opt.ThinkingEnabled
+                ? (object)new { type = "enabled", reasoning_effort = _opt.ReasoningEffort }
+                : new { type = "disabled" },
         };
 
         // 请求摘要：模型 + 用户输入前 60 字（脱敏长输入）

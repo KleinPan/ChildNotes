@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- 本地开发密钥存储（DeepSeek/1xm ApiKey 等），仅在 Development 环境加载，不进 git -->
+    <UserSecretsId>childnotes-api-9f2a1c4e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
