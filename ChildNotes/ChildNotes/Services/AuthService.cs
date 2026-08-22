@@ -32,7 +32,8 @@ public sealed class AuthService
     private readonly UserRepository _users;
     private readonly AppState _state;
     private readonly SyncConfigRepository _cfgRepo;
-    private readonly ISecureStorage _secureStorage;
+    // 非 readonly：Android/iOS 平台启动时通过 UpdateSecureStorage 热替换（见 OverrideSecureStorage 注释）
+    private ISecureStorage _secureStorage;
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
@@ -60,6 +61,20 @@ public sealed class AuthService
         _state = state;
         _cfgRepo = cfgRepo;
         _secureStorage = secureStorage;
+    }
+
+    /// <summary>
+    /// 运行时热替换安全存储实现（Android Keystore / iOS 注入时调用）。
+    /// ★ 不重建 AuthService 实例：Android 启动时序中 App.OnFrameworkInitializationCompleted
+    /// （含 TryRestoreSessionAsync，恢复 CurrentUser）在进程级 Application.OnCreate 中执行，
+    /// 早于 MainActivity.OnCreate 的平台注入。若注入时重建 AuthService，已恢复的 CurrentUser
+    /// 会随旧实例一起丢弃，导致"我的"页显示"已登录"占位但不显示账号信息
+    /// （CurrentUser=null + CloudUserId 非空）。热替换保持实例稳定，任何时序下状态不丢。
+    /// </summary>
+    public void UpdateSecureStorage(ISecureStorage implementation)
+    {
+        _secureStorage = implementation;
+        DevLogger.Log("DI", $"AuthService SecureStorage updated: {implementation.GetType().Name}");
     }
 
     // ===== 邮箱验证码流程 =====

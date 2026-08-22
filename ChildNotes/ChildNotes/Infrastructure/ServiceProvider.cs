@@ -192,15 +192,20 @@ public sealed class ServiceProvider
     /// 运行时注入平台安全存储实现。
     /// 由 Android MainActivity.OnCreate 调用，覆盖默认的 DpapiSecureStorage（Windows DPAPI）。
     /// Android 实现使用 Android Keystore（AES-256-GCM，密钥不可导出）。
-    /// 注入后必须重新创建 AuthService 以使用新 SecureStorage。
+    /// 注入方式为 AuthService.UpdateSecureStorage 热替换（不重建实例，保持 CurrentUser 等状态）。
     /// </summary>
     public void OverrideSecureStorage(ISecureStorage implementation)
     {
         SecureStorage = implementation;
-        // 重新创建 AuthService，使其使用平台 SecureStorage（旧的 DpapiSecureStorage 弃用）
-        AuthService = new AuthService(UserRepository, AppState, SyncConfigRepository, SecureStorage);
+        // ★ 热替换存储实现，不重建 AuthService 实例：
+        // Android 启动时序中 App.OnFrameworkInitializationCompleted（含 TryRestoreSessionAsync，
+        // 恢复 CurrentUser）在进程级 Application.OnCreate 中执行，早于 MainActivity.OnCreate 的
+        // 本方法。若在此重建 AuthService，已恢复的 CurrentUser 会随旧实例一起丢弃，
+        // 导致"我的"页显示"已登录"占位但不显示账号信息（CurrentUser=null + CloudUserId 非空），
+        // 且 AppState.User 为 null，账号中心等信息全部消失。
+        AuthService.UpdateSecureStorage(implementation);
         AppState.BindSyncConfigRepository(SyncConfigRepository);
-        DevLogger.Log("DI", $"SecureStorage overridden: {implementation.GetType().Name}, AuthService recreated");
+        DevLogger.Log("DI", $"SecureStorage overridden: {implementation.GetType().Name}");
     }
 
     /// <summary>
