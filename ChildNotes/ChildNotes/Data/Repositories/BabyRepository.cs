@@ -109,6 +109,9 @@ public sealed class BabyRepository : BaseRepository
     /// <summary>
     /// 以 LWW（updated_at 比较）合并远端下发的 baby_member 记录。
     /// 用于同步 Pull：join 后客户端需要本地 baby_member 记录来判断可访问的宝宝。
+    /// baby_member 是 Pull-only：id 由服务端生成（如 owner 补建、join 审批），
+    /// 服务端重建成员行后 id 会变化，因此冲突目标用逻辑身份 (baby_id, user_id)
+    /// 而非 id，命中后采纳服务端 id（防止撞 UNIQUE(baby_id, user_id) 索引）。
     /// </summary>
     public bool UpsertMemberFromSync(SyncBabyMemberItem item, SqliteConnection conn, SqliteTransaction? tx)
     {
@@ -117,13 +120,13 @@ public sealed class BabyRepository : BaseRepository
         cmd.CommandText = @"
             INSERT INTO baby_member (id, baby_id, user_id, role_code, role_name, is_owner, status, created_at, updated_at)
             VALUES (@id, @bid, @uid, @rc, @rn, @io, @st, @c, @u)
-            ON CONFLICT(id) DO UPDATE SET
-                baby_id = excluded.baby_id,
-                user_id = excluded.user_id,
+            ON CONFLICT(baby_id, user_id) DO UPDATE SET
+                id = excluded.id,
                 role_code = excluded.role_code,
                 role_name = excluded.role_name,
                 is_owner = excluded.is_owner,
                 status = excluded.status,
+                created_at = excluded.created_at,
                 updated_at = excluded.updated_at
             WHERE excluded.updated_at > baby_member.updated_at";
         cmd.Add("@id", item.Id)
