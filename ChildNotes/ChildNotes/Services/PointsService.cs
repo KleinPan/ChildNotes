@@ -21,8 +21,11 @@ public sealed class PointsService
 
     public PointsDashboard GetDashboard()
     {
-        var points = _repo.GetOrCreate(_state.UserId);
-        var signIns = _repo.GetRecentSignIns(_state.UserId, 7);
+        // Family-centric（阶段 1C）：个人数据 per-User。已登录用 CloudUserId，
+        // 未登录离线态挂 LocalDataSpaceId（登录时由 AdoptPersonalDataOnLogin 归并到账号名下）
+        var uid = _state.GetPersonalDataUserId();
+        var points = _repo.GetOrCreate(uid);
+        var signIns = _repo.GetRecentSignIns(uid, 7);
         var todaySigned = signIns.Any(s => s.SignDate.Date == DateTime.Today);
         var continuousDays = CalculateContinuousDays(signIns);
 
@@ -64,10 +67,11 @@ public sealed class PointsService
 
     public PointsDashboard SignIn()
     {
-        var existing = _repo.GetSignIn(_state.UserId, DateTime.Today);
+        var uid = _state.GetPersonalDataUserId();
+        var existing = _repo.GetSignIn(uid, DateTime.Today);
         if (existing is not null) return GetDashboard();
 
-        var recent = _repo.GetRecentSignIns(_state.UserId, 2);
+        var recent = _repo.GetRecentSignIns(uid, 2);
         var yesterday = DateTime.Today.AddDays(-1);
         var continuous = recent.Any(s => s.SignDate.Date == yesterday)
             ? recent.First(s => s.SignDate.Date == yesterday).ContinuousDays + 1
@@ -78,12 +82,12 @@ public sealed class PointsService
 
         _repo.InsertSignIn(new SignInRecord
         {
-            UserId = _state.UserId,
+            UserId = uid,
             SignDate = DateTime.Today,
             ContinuousDays = continuous,
             Reward = reward,
         });
-        _repo.AddPoints(_state.UserId, reward);
+        _repo.AddPoints(uid, reward);
 
         return GetDashboard();
     }
@@ -94,7 +98,7 @@ public sealed class PointsService
     /// </summary>
     public void SyncPointsFromServer(long points, long totalEarned, long totalSpent)
     {
-        _repo.SetPoints(_state.UserId, points);
+        _repo.SetPoints(_state.GetPersonalDataUserId(), points);
         // total_earned/total_spent 同步可选，暂不处理避免引入复杂度
     }
 

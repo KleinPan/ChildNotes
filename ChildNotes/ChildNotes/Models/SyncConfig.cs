@@ -25,16 +25,32 @@ public sealed class SyncConfig
     public string LocalUserId { get; set; } = string.Empty;
 
     /// <summary>
-    /// 上次登录的云端用户 Id（登出时记录，用于启动时反迁移遗留数据）。
-    ///
-    /// 场景：用户登录后业务数据按 CloudUserId 存储，登出时 CloudUserId 被清空。
-    /// 若登出时未反迁移（旧版本逻辑），数据仍留在旧 CloudUserId 名下，
-    /// 重启 App 走离线模式（AppState.UserId = LocalUserId）查不到。
-    /// 此字段记录登出前的 CloudUserId，启动时若发现此字段非空，
-    /// 触发 MigrateUserId(lastCloudUserId, LocalUserId) 把遗留数据迁回 LocalUserId 名下。
-    /// 反迁移完成后清空此字段（避免重复迁移）。
+    /// 当前绑定的家庭 Id（Family-centric 模型，见 docs/development/family-identity-architecture.md）。
+    /// 登录成功后由服务端 AuthResponse.currentFamilyId 写入；Push 时随协议上送（仅路由/日志，
+    /// 服务端以 JWT 鉴权为准）。阶段 2 引入换绑（rebind）后此值变化触发 synced_at 清理。
+    /// </summary>
+    public string CurrentFamilyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 上次登录的云端用户 Id（v6 遗留字段）。
+    /// 旧版本登出时记录、启动时反迁移遗留数据；1C 废弃该补偿机制后仅作诊断参考，
+    /// fixup 事务会清空此字段（防版本回滚后旧逻辑误触发反迁移）。
     /// </summary>
     public string LastCloudUserId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 本数据空间最近绑定的家庭 Id（阶段 1C，schema v8）。
+    /// 用于换绑检测（设计文档 7.1）：登录时 last_bound == F → 同家庭静默绑定；≠ F → 弹换绑确认框（阶段 2）。
+    /// 除"清除本地数据"外永不清空（含 SoftLogout/401 登出路径）。
+    /// </summary>
+    public string LastBoundFamilyId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 一次性身份 fixup 完成标志（阶段 1C，schema v8）。
+    /// 0 = 未执行；1 = 已把存量 user_id（旧版本登录迁移后的 CloudUserId 等）归位到 LocalUserId。
+    /// fixup 在单事务内完成数据归位 + 标志置位，崩溃可安全重跑。
+    /// </summary>
+    public int IdentityFixupDone { get; set; }
 
     public DateTime? LastSyncAt { get; set; }
     public string? LastSyncStatus { get; set; }

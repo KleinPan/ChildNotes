@@ -80,8 +80,15 @@ public sealed class AuthService
     // ===== 邮箱验证码流程 =====
 
     /// <summary>
+    /// 待确认换绑的登录上下文（阶段 2，设计文档 7.1）：
+    /// VerifyCodeAsync 检测到 last_bound_family ≠ 新家庭时暂存，等用户在确认框做出选择。
+    /// CancelRebind 清空；ConfirmRebindAsync 消费。
+    /// </summary>
+    private AuthResponseDto? _pendingRebindAuth;
+
+    /// <summary>
     /// 发送邮箱验证码。
-/// </summary>
+    /// </summary>
     /// <param name="email">目标邮箱</param>
     /// <param name="ct"></param>
     /// <returns>成功返回 true；失败返回 false 并在 Message 中携带原因。</returns>
@@ -182,47 +189,137 @@ public sealed class AuthService
                 return new VerifyCodeResult(false, "当前已绑定其他账号，请先清除本地数据后再登录");
             }
 
-            // 1) Token 写入 SecureStorage（非明文）
+            // ===== 换绑（rebind）状态机（阶段 2，设计文档 7.1）=====
+            // last_bound_family 非空 ≠ 新家庭 → 暂存 pending，返回 NeedsRebindConfirmation 由 UI 弹确认框；
+            // 空（首绑/清数据后）或 == 新家庭（同家庭重登，最高频）→ 静默绑定，直接完成登录。
+            var newFamilyId = auth.CurrentFamilyId ?? string.Empty;
+            var lastBound = _cfgRepo.Get().LastBoundFamilyId;
+            if (!string.IsNullOrEmpty(lastBound) && !string.IsNullOrEmpty(newFamilyId) &&
+                !string.Equals(lastBound, newFamilyId, StringComparison.Ordinal))
+            {
+                _pendingRebindAuth = auth;
+                DevLogger.Log("Auth", $"Rebind confirmation required: lastBound={lastBound}, newFamily={newFamilyId}");
+                return new VerifyCodeResult(false, "需要换绑确认")
+                {
+                    NeedsRebindConfirmation = true,
+                    PreviousFamilyId = lastBound,
+                    FamilyId = newFamilyId,
+                };
+            }
+
+            // Token 写入 SecureStorage（非明文）
             await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
             await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
 
-            // 2) CloudUserId 写入 sync_config（唯一身份权威来源）
-            //    同时把 LocalUserId 名下的本地业务数据迁移到 CloudUserId 名下：
-            //    用户离线时按 LocalUserId 创建的 baby/record/points 等数据，
-            //    若不迁移，登录后 GetByUser(CloudUserId) 查不到，首页会显示"未添加宝宝"。
-            if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
-            {
-                var localUserIdBeforeLogin = _cfgRepo.Get().LocalUserId;
-                _cfgRepo.UpdateCloudUserId(auth.User.Id);
-                try
-                {
-                    int affected = _cfgRepo.MigrateUserId(localUserIdBeforeLogin ?? string.Empty, auth.User.Id);
-                    if (affected > 0)
-                        DevLogger.Log("Auth", $"Local data migrated to cloud user: affected={affected}");
-                }
-                catch (Exception migrateEx)
-                {
-                    // 迁移失败不阻塞登录：保留 CloudUserId 与 Token，让用户登录后再手动处理
-                    DevLogger.Log("Auth", "MigrateUserId(local→cloud) failed (non-fatal): " + migrateEx.Message);
-                }
-            }
-
-            // 3) app_user 表缓存 profile（Upsert），供 UI 展示昵称/头像等
-            var user = ToAppUser(auth.User!);
-            _users.Upsert(user);
-
-            // 4) 设置 CurrentUser 与 AppState
-            CurrentUser = user;
-            _state.User = user;
+            // 绑定身份 + 个人数据归并（同家庭重登/首绑：无 synced_at 清理，走常规增量）
+            CompleteLogin(auth, rebind: false);
 
             DevLogger.Log("Auth", $"VerifyCode ok: email={trimmedEmail}, userId={auth.User?.Id}, newUser={auth.NewUser}");
-            return new VerifyCodeResult(true, "登录成功", user, auth.NewUser);
+            return new VerifyCodeResult(true, "登录成功", ToAppUser(auth.User!), auth.NewUser);
         }
         catch (Exception ex)
         {
             DevLogger.Log("Auth", "VerifyCode exception: " + ex.Message);
             return new VerifyCodeResult(false, "网络异常，请稍后重试");
         }
+    }
+
+    /// <summary>
+    /// 用户在换绑确认框点"确认"后执行（阶段 2，设计文档 6.4）：
+    /// 1. SyncTrigger 独占（暂停触发 + 等正在执行的同步完成）
+    /// 2. rebind 事务：sync_config 四字段 + baby/child_record/milestone.synced_at 全清
+    /// 3. Token 写入 + 个人数据归并 + CurrentUser 设置
+    /// 之后由 UI 触发 RunNowAsync → Full Pull Only（LastSyncAt=NULL）。
+    /// </summary>
+    public async Task<VerifyCodeResult> ConfirmRebindAsync(CancellationToken ct = default)
+    {
+        var auth = _pendingRebindAuth;
+        if (auth is null || string.IsNullOrEmpty(auth.User?.Id))
+        {
+            return new VerifyCodeResult(false, "没有待确认的换绑请求");
+        }
+        _pendingRebindAuth = null;
+
+        try
+        {
+            var userId = auth.User.Id;
+            var familyId = auth.CurrentFamilyId ?? string.Empty;
+
+            // Token 先写（Keystore 非 SQLite，无法与 rebind 事务同事务；失败即中止，本地状态零改动）
+            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+            await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+
+            var syncTrigger = Infrastructure.ServiceProvider.Instance.SyncTrigger;
+            await syncTrigger.ExecuteExclusiveDuringRebindAsync(() =>
+                Task.Run(() => _cfgRepo.ExecuteRebind(userId, familyId)));
+
+            // 个人数据归并（换账号遗留行清理 + 离线个人数据 → 账号名下，设计文档 6.5）
+            CompleteLogin(auth, rebind: true);
+
+            DevLogger.Log("Auth", $"ConfirmRebind ok: userId={userId}, family={familyId}");
+            return new VerifyCodeResult(true, "换绑完成", ToAppUser(auth.User), auth.NewUser);
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Auth", "ConfirmRebind exception: " + ex.Message);
+            return new VerifyCodeResult(false, "换绑失败，请重试");
+        }
+    }
+
+    /// <summary>
+    /// 用户在换绑确认框点"取消"：清空 pending，本地零改动
+    /// （token 未写入、sync_config 未动、家庭业务数据可见性不变），回到登录页初始状态。
+    /// </summary>
+    public void CancelRebind()
+    {
+        if (_pendingRebindAuth is not null)
+        {
+            DevLogger.Log("Auth", "Rebind cancelled by user");
+            _pendingRebindAuth = null;
+        }
+    }
+
+    /// <summary>
+    /// 登录完成后的公共落地（VerifyCodeAsync 静默路径 + ConfirmRebindAsync 共用）：
+    /// 个人数据归并 + app_user 缓存 + CurrentUser/AppState 设置。
+    /// rebind=true 时身份字段已由 ExecuteRebind 事务写入，此处只做归并与缓存。
+    /// </summary>
+    private void CompleteLogin(AuthResponseDto auth, bool rebind)
+    {
+        if (auth.User is null || string.IsNullOrEmpty(auth.User.Id)) return;
+
+        if (!rebind)
+        {
+            // 静默路径：身份字段逐项写入（rebind 路径已在事务内写入）
+            _cfgRepo.UpdateCloudUserId(auth.User.Id);
+            if (!string.IsNullOrEmpty(auth.CurrentFamilyId))
+            {
+                _cfgRepo.UpdateCurrentFamilyId(auth.CurrentFamilyId);
+                // last_bound_family_id 记录本数据空间最近绑定的家庭（换绑检测，7.1）
+                _cfgRepo.UpdateLastBoundFamilyId(auth.CurrentFamilyId);
+            }
+        }
+
+        // 个人数据归并（设计文档 6.5）：清理换账号遗留行 + 离线个人数据迁到 CloudUserId。
+        // 失败不阻塞登录：家庭业务数据不受影响（恒为 LocalDataSpaceId 天然可见），下次登录重试。
+        try
+        {
+            int affected = _cfgRepo.AdoptPersonalDataOnLogin(_cfgRepo.Get().LocalUserId, auth.User.Id);
+            if (affected > 0)
+                DevLogger.Log("Auth", $"Personal data adopted by cloud user: affected={affected}");
+        }
+        catch (Exception adoptEx)
+        {
+            DevLogger.Log("Auth", "AdoptPersonalDataOnLogin failed (non-fatal): " + adoptEx.Message);
+        }
+
+        // app_user 表缓存 profile（Upsert），供 UI 展示昵称/头像等
+        var user = ToAppUser(auth.User);
+        _users.Upsert(user);
+
+        // 设置 CurrentUser 与 AppState
+        CurrentUser = user;
+        _state.User = user;
     }
 
     // ===== 启动恢复 =====
@@ -238,52 +335,32 @@ public sealed class AuthService
     public async Task<bool> TryRestoreSessionAsync(CancellationToken ct = default)
     {
         var cfg = _cfgRepo.Get();
-        if (string.IsNullOrWhiteSpace(cfg.CloudUserId))
-        {
-            // 离线模式补救迁移：检查 last_cloud_user_id 是否非空，
-            // 有则把上次 CloudUserId 名下遗留数据反迁移到 LocalUserId 名下。
-            // 场景：旧版本（v0.7.19 及之前）登出时未反迁移，数据留在旧 CloudUserId 名下，
-            // 重启 App 走离线模式（CloudUserId 空，AppState.UserId = LocalUserId）查不到。
-            // 此分支在 v0.7.21 引入，能修复所有用户从旧版本升级后的遗留数据。
-            // 幂等：反迁移成功后清空 last_cloud_user_id，下次启动不再重复；
-            //      反迁移失败时保留 last_cloud_user_id，下次启动重试。
-            EnsureLocalUserId(cfg);
-            if (!string.IsNullOrEmpty(cfg.LastCloudUserId) &&
-                !string.IsNullOrEmpty(cfg.LocalUserId) &&
-                !string.Equals(cfg.LastCloudUserId, cfg.LocalUserId, StringComparison.Ordinal))
-            {
-                try
-                {
-                    int affected = _cfgRepo.MigrateUserId(cfg.LastCloudUserId, cfg.LocalUserId);
-                    DevLogger.Log("Auth", $"Offline migration: last_cloud={cfg.LastCloudUserId} → local={cfg.LocalUserId}, affected={affected}");
-                    _cfgRepo.UpdateLastCloudUserId(string.Empty);
-                }
-                catch (Exception migrateEx)
-                {
-                    DevLogger.Log("Auth", $"Offline migration failed (non-fatal): {migrateEx.Message}");
-                }
-            }
-            DevLogger.Log("Auth", "RestoreSession: cloud_user_id 为空，离线模式");
-            return false;
-        }
 
-        // 确保 LocalUserId 已生成（离线模式的业务数据需要）
+        // 确保 LocalUserId 已生成（本机数据空间 Id，首次启动）
         EnsureLocalUserId(cfg);
 
-        // 启动时补救迁移：将 LocalUserId 名下未迁移的业务数据迁移到 CloudUserId 名下。
-        // 修复"先离线记录后登录"用户在更新到此版本前已写入 CloudUserId 但未触发迁移的场景：
-        // 重启 App 走 TryRestoreSessionAsync 路径不会调用 VerifyCodeAsync，
-        // 若不补救迁移，原本地宝宝数据仍按 LocalUserId 存储，首页继续显示"未添加宝宝"。
-        // 幂等：相同 id 或无数据可迁时返回 0，每次启动重复调用安全。
-        try
+        // 一次性身份 fixup（阶段 1C）：把旧版本（User-centric 双向迁移时代）遗留的 user_id
+        // 归位到 Family-centric 语义（家庭业务表恒为 LocalDataSpaceId）。
+        // 幂等：identity_fixup_done 标志与数据同事务，崩溃可安全重跑；
+        // 失败不阻塞启动（下次重试），家庭业务数据在新语义下按 LocalDataSpaceId 查询。
+        if (cfg.IdentityFixupDone == 0)
         {
-            int affected = _cfgRepo.MigrateUserId(cfg.LocalUserId, cfg.CloudUserId);
-            if (affected > 0)
-                DevLogger.Log("Auth", $"RestoreSession migration: local={cfg.LocalUserId} → cloud={cfg.CloudUserId}, affected={affected}");
+            try
+            {
+                int affected = _cfgRepo.RunIdentityFixup(
+                    cfg.LocalUserId, cfg.CloudUserId, cfg.LastCloudUserId, cfg.CurrentFamilyId);
+                DevLogger.Log("Auth", $"IdentityFixup executed: affected={affected}");
+            }
+            catch (Exception fixupEx)
+            {
+                DevLogger.Log("Auth", $"IdentityFixup failed (non-fatal, retry next launch): {fixupEx.Message}");
+            }
         }
-        catch (Exception migrateEx)
+
+        if (string.IsNullOrWhiteSpace(cfg.CloudUserId))
         {
-            DevLogger.Log("Auth", "RestoreSession migration failed (non-fatal): " + migrateEx.Message);
+            DevLogger.Log("Auth", "RestoreSession: cloud_user_id 为空，离线模式");
+            return false;
         }
 
         var user = _users.FindById(cfg.CloudUserId);
@@ -295,8 +372,8 @@ public sealed class AuthService
         }
         else
         {
-            // app_user 表无缓存（首次登录后 DB 重建等场景），仅设置 AppState.UserId
-            // 通过 AppState.UserId 计算（cloud_user_id 优先，否则 local_user_id）兜底
+            // app_user 表无缓存（首次登录后 DB 重建等场景）：登录态以 sync_config.cloud_user_id
+            // 为准（AppState.GetCloudUserId 兜底读取），profile 待下次登录/刷新时重建
             DevLogger.Log("Auth", $"RestoreSession: cloud_user_id={cfg.CloudUserId} 但 app_user 表无缓存，仍视为已登录");
         }
 
@@ -323,39 +400,12 @@ public sealed class AuthService
     /// 登出：清空 SecureStorage 的 Token + sync_config 的 CloudUserId。
     /// 不删除业务数据（Baby/Record/Milestone 等），用户可继续离线使用。
     /// 切换账号前需先调用此方法。
+    /// Family-centric（阶段 1C）：不迁移任何数据——家庭业务表 user_id 恒为
+    /// LocalDataSpaceId（离线立即可见）；个人表 C 行原地保留，下次登录归并处理；
+    /// last_bound_family_id 保留（换绑检测用，除清数据外永不清空）。
     /// </summary>
     public async Task LogoutAsync(CancellationToken ct = default)
     {
-        var cfg = _cfgRepo.Get();
-        var cloudUserIdBeforeLogout = cfg.CloudUserId;
-        var localUserId = cfg.LocalUserId;
-
-        // 反迁移：把 CloudUserId 名下的业务数据迁移到 LocalUserId 名下，
-        // 让用户登出后继续离线使用本地数据（否则 AppState.UserId 切回 LocalUserId 后查不到，
-        // 首页会显示"未添加宝宝"）。与登录时的正向迁移对称，方法内部幂等。
-        if (!string.IsNullOrEmpty(cloudUserIdBeforeLogout) &&
-            !string.IsNullOrEmpty(localUserId) &&
-            !string.Equals(cloudUserIdBeforeLogout, localUserId, StringComparison.Ordinal))
-        {
-            try
-            {
-                int affected = _cfgRepo.MigrateUserId(cloudUserIdBeforeLogout, localUserId);
-                DevLogger.Log("Auth", $"Logout migration: cloud={cloudUserIdBeforeLogout} → local={localUserId}, affected={affected}");
-            }
-            catch (Exception migrateEx)
-            {
-                DevLogger.Log("Auth", "Logout migration failed (non-fatal): " + migrateEx.Message);
-            }
-        }
-
-        // 记录上次 CloudUserId：兜底机制，下次启动 TryRestoreSessionAsync 若发现此字段非空，
-        // 且 CloudUserId 仍空（离线模式），会再次尝试反迁移（处理本次反迁移失败/跳过的场景）。
-        // 反迁移成功的情况下此字段下次启动时也会被清空（避免重复迁移）。
-        if (!string.IsNullOrEmpty(cloudUserIdBeforeLogout))
-        {
-            _cfgRepo.UpdateLastCloudUserId(cloudUserIdBeforeLogout);
-        }
-
         try
         {
             await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
@@ -483,40 +533,12 @@ public sealed class AuthService
     /// <summary>
     /// 软登出：RefreshToken 被服务端拒绝（401/403）时调用。
     /// 清空 Token + CloudUserId，让 UI 显示"未登录"，引导用户重新登录。
-    /// 反迁移业务数据到 LocalUserId（软登出后 AppState.UserId 回落 LocalUserId，
-    /// 不反迁移会导致首页"0 个宝宝"数据"消失"假象）；重新登录时 VerifyCodeAsync /
-    /// TryRestoreSessionAsync 的正向迁移幂等迁回，同账号重登无额外成本。
+    /// Family-centric（阶段 1C）：与 LogoutAsync 一致不迁移数据——家庭业务表 user_id
+    /// 恒为 LocalDataSpaceId（离线立即可见），个人表 C 行原地保留待下次登录归并。
     /// 不取消本地提醒（下次登录大概率同账号，与 LogoutAsync 区别）。
     /// </summary>
     private async Task SoftLogoutAsync(CancellationToken ct = default)
     {
-        var cfg = _cfgRepo.Get();
-        var cloudUserIdBeforeSoftLogout = cfg.CloudUserId;
-        var localUserId = cfg.LocalUserId;
-
-        // 反迁移：把 CloudUserId 名下的业务数据迁移到 LocalUserId 名下，
-        // 软登出后用户离线仍能看到全部数据（数据保护与 LogoutAsync 一致）。
-        if (!string.IsNullOrEmpty(cloudUserIdBeforeSoftLogout) &&
-            !string.IsNullOrEmpty(localUserId) &&
-            !string.Equals(cloudUserIdBeforeSoftLogout, localUserId, StringComparison.Ordinal))
-        {
-            try
-            {
-                int affected = _cfgRepo.MigrateUserId(cloudUserIdBeforeSoftLogout, localUserId);
-                DevLogger.Log("Auth", $"SoftLogout migration: cloud={cloudUserIdBeforeSoftLogout} → local={localUserId}, affected={affected}");
-            }
-            catch (Exception migrateEx)
-            {
-                DevLogger.Log("Auth", $"SoftLogout migration failed (non-fatal): {migrateEx.Message}");
-            }
-        }
-
-        // 记录 last_cloud_user_id：反迁移失败时下次启动 TryRestoreSessionAsync 兜底重试
-        if (!string.IsNullOrEmpty(cloudUserIdBeforeSoftLogout))
-        {
-            _cfgRepo.UpdateLastCloudUserId(cloudUserIdBeforeSoftLogout);
-        }
-
         try
         {
             await _secureStorage.DeleteAsync(SecureStorageKeys.AccessToken, ct);
@@ -536,7 +558,8 @@ public sealed class AuthService
 
     /// <summary>
     /// 确保 sync_config.local_user_id 已生成（首次启动）。
-    /// 未登录时作为本地业务数据的 user_id，永久不变。
+    /// 未登录时作为本地业务数据的 user_id，永久不变（写入后冻结）。
+    /// Family-centric（阶段 2）：ANDROID_ID 可用时派生（SHA256，同设备重装后数据归属连续），否则 GUID。
     /// </summary>
     public string EnsureLocalUserId()
     {
@@ -549,11 +572,12 @@ public sealed class AuthService
         if (!string.IsNullOrWhiteSpace(cfg.LocalUserId))
             return cfg.LocalUserId;
 
-        var localId = Guid.NewGuid().ToString("N");
+        var localId = DeviceIdentityDerivation.DeriveLocalDataSpaceId(
+            DeviceIdentityProvider.Current?.GetAndroidId());
         // 直接写库（无 UpdateLocalUserId 方法，用 Save 全量更新）
         cfg.LocalUserId = localId;
         _cfgRepo.Save(cfg);
-        DevLogger.Log("Auth", $"local_user_id generated: {localId}");
+        DevLogger.Log("Auth", $"local_user_id generated: {localId} (derived={DeviceIdentityProvider.Current is not null})");
         return localId;
     }
 
@@ -637,6 +661,8 @@ public sealed class AuthService
         public int ExpiresIn { get; set; }
         public LoginUserDto? User { get; set; }
         public bool NewUser { get; set; }
+        /// <summary>当前绑定家庭 Id（Family-centric，服务端 FamilyService 解析；空/缺失兼容旧后端）。</summary>
+        public string? CurrentFamilyId { get; set; }
     }
 }
 
@@ -655,6 +681,17 @@ public sealed class VerifyCodeResult
     public string Message { get; }
     public AppUser? User { get; }
     public bool NewUser { get; }
+
+    /// <summary>需要换绑确认（阶段 2，设计文档 7.1）：last_bound_family ≠ 登录账号当前家庭。
+    /// true 时 UI 弹换绑确认框；用户确认 → AuthService.ConfirmRebindAsync，取消 → CancelRebind。</summary>
+    public bool NeedsRebindConfirmation { get; init; }
+
+    /// <summary>换绑场景：本数据空间原绑定家庭 Id（确认框文案用）。</summary>
+    public string? PreviousFamilyId { get; init; }
+
+    /// <summary>换绑场景：登录账号当前家庭 Id（确认框文案用）。</summary>
+    public string? FamilyId { get; init; }
+
     public VerifyCodeResult(bool success, string message, AppUser? user = null, bool newUser = false)
     {
         Success = success; Message = message; User = user; NewUser = newUser;

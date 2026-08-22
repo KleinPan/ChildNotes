@@ -139,6 +139,11 @@ public sealed class ApiSyncService : BaseApiClient
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
             var isFirstLogin = cfg.LastSyncAt is null; // v5 规则(6)：首次登录以云端为准，只 Full Pull 不 Push
             DevLogger.Log("Sync", $"Pull since={since:O} (LastSyncAt={(cfg.LastSyncAt?.ToString("O") ?? "null")}, isFirstLogin={isFirstLogin})");
+            // Family-centric（阶段 1C）Pull 身份注入（设计文档 6.2）：
+            //   家庭业务表 → 本地 user_id 一律写 LocalDataSpaceId（幂等，登录态无关）
+            //   个人表（积分/签到）→ 写当前 CloudUserId（Pull 仅在登录后执行，非空）
+            var pullLocalId = cfg.LocalUserId;
+            var pullCloudId = cfg.CloudUserId;
             int pulledBabies = 0, pulledRecords = 0, pulledMilestones = 0, pulledSignIns = 0, pullPages = 0;
             DateTime pullServerTime = DateTime.UtcNow; // 最后一页的 ServerTime，用于 Full Pull Only 的 LastSyncAt 基准
             SyncCursor? cursor = null; // null 表示第一页，用 since 过滤
@@ -157,13 +162,13 @@ public sealed class ApiSyncService : BaseApiClient
                     }
 
                     foreach (var b in pageResp.Babies)
-                        if (_babyRepo.UpsertFromSync(MapToBaby(b), pullConn, pullTx)) pulledBabies++;
+                        if (_babyRepo.UpsertFromSync(MapToBaby(b, pullLocalId), pullConn, pullTx)) pulledBabies++;
                     foreach (var r in pageResp.Records)
-                        if (_recordRepo.UpsertFromSync(MapToRecord(r), pullConn, pullTx)) pulledRecords++;
+                        if (_recordRepo.UpsertFromSync(MapToRecord(r, pullLocalId), pullConn, pullTx)) pulledRecords++;
                     foreach (var m in pageResp.Milestones)
-                        if (_milestoneRepo.UpsertFromSync(MapToMilestone(m), pullConn, pullTx)) pulledMilestones++;
+                        if (_milestoneRepo.UpsertFromSync(MapToMilestone(m, pullLocalId), pullConn, pullTx)) pulledMilestones++;
                     foreach (var s in pageResp.SignIns)
-                        if (_pointsRepo.UpsertSignInFromSync(MapToSignIn(s), pullConn, pullTx)) pulledSignIns++;
+                        if (_pointsRepo.UpsertSignInFromSync(MapToSignIn(s, pullCloudId), pullConn, pullTx)) pulledSignIns++;
                     foreach (var bm in pageResp.BabyMembers)
                         _babyRepo.UpsertMemberFromSync(bm, pullConn, pullTx);
 
@@ -180,7 +185,7 @@ public sealed class ApiSyncService : BaseApiClient
 
                     // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
                     if (pageResp.UserPoints is not null)
-                        _pointsRepo.UpsertUserPointsFromSync(MapToUserPoints(pageResp.UserPoints), pullConn, pullTx);
+                        _pointsRepo.UpsertUserPointsFromSync(MapToUserPoints(pageResp.UserPoints, pullCloudId), pullConn, pullTx);
 
                     pullServerTime = pageResp.ServerTime; // 每页都更新，最终为最后一页的 ServerTime
                     pullPages++;
@@ -234,27 +239,41 @@ public sealed class ApiSyncService : BaseApiClient
             DevLogger.Log("Sync",
                 $"Push prepare: babies={localBabies.Count}, records={localRecords.Count}, milestones={localMilestones.Count}, signIns={localSignIns.Count} (pushSince={pushSince:O})");
 
+            // Family-centric（阶段 1B）：身份注入点 —— 协议项的 UserId/FamilyId 一律来自登录态
+            // （CloudUserId / sync_config.current_family_id），禁止读本地业务表的 user_id
+            // （该列语义已降级为 LocalDataSpaceId，服务端以 JWT 鉴权为准，payload 仅作路由/日志）。
+            var cloudUid = cfg.CloudUserId;
+            var familyId = cfg.CurrentFamilyId;
             var pushReq = new SyncBatchRequest
             {
-                Babies = localBabies.Select(MapToBabyItem).ToList(),
-                Records = localRecords.Select(MapToRecordItem).ToList(),
-                Milestones = localMilestones.Select(MapToMilestoneItem).ToList(),
-                SignIns = localSignIns.Select(MapToSignInItem).ToList(),
+                Babies = localBabies.Select(b => MapToBabyItem(b, cloudUid, familyId)).ToList(),
+                Records = localRecords.Select(r => MapToRecordItem(r, cloudUid, familyId)).ToList(),
+                Milestones = localMilestones.Select(m => MapToMilestoneItem(m, cloudUid, familyId)).ToList(),
+                SignIns = localSignIns.Select(s => MapToSignInItem(s, cloudUid)).ToList(),
             };
             var pushResp = await PushWithRetryAsync(serverUrl, token, pushReq, ct);
             if (pushResp is null)
                 return Finish(false, "推送失败，已自动重试，请稍后再试", cfg, SyncErrorKind.Network);
 
             // 4. 标记已成功上送的数据（更新 synced_at），防止崩溃导致重推
-            //    仅当某类推送数 == upserted 数时才对该类调用 MarkSynced；否则不 MarkSynced，
+            //    仅当 upserted + skippedForeign == count 时才对该类调用 MarkSynced；否则不 MarkSynced，
             //    让下次同步重试（后端 LWW 幂等跳过），避免"假同步"：推送 0 条却标记已同步。
-            //    整体仍视为成功（更新 LastSyncAt），但 LastSyncMsg 加"部分丢弃"提示。
-            var babyDropped = localBabies.Count > 0 && pushResp.BabiesUpserted < localBabies.Count;
-            var recordDropped = localRecords.Count > 0 && pushResp.RecordsUpserted < localRecords.Count;
-            var milestoneDropped = localMilestones.Count > 0 && pushResp.MilestonesUpserted < localMilestones.Count;
+            //    skippedForeign（跨家庭 terminal skip）视为终态：曾同步到其他家庭的数据永久留本机，
+            //    记冲突日志后随全批 MarkSynced，防止无限重推（见设计文档 6.3）。
+            //    整体仍视为成功（更新 LastSyncAt），但 LastSyncMsg 加"部分丢弃"提示（排除 foreign 行）。
+            var babyForeign = pushResp.SkippedForeignBabyIds.Count;
+            var recordForeign = pushResp.SkippedForeignRecordIds.Count;
+            var milestoneForeign = pushResp.SkippedForeignMilestoneIds.Count;
+            if (babyForeign + recordForeign + milestoneForeign > 0)
+            {
+                DevLogger.Log("Sync", $"Push foreign-skipped (terminal): babies={babyForeign} [{string.Join(",", pushResp.SkippedForeignBabyIds)}], records={recordForeign} [{string.Join(",", pushResp.SkippedForeignRecordIds)}], milestones={milestoneForeign} [{string.Join(",", pushResp.SkippedForeignMilestoneIds)}]");
+            }
+            var babyDropped = localBabies.Count > 0 && pushResp.BabiesUpserted + babyForeign < localBabies.Count;
+            var recordDropped = localRecords.Count > 0 && pushResp.RecordsUpserted + recordForeign < localRecords.Count;
+            var milestoneDropped = localMilestones.Count > 0 && pushResp.MilestonesUpserted + milestoneForeign < localMilestones.Count;
             if (babyDropped || recordDropped || milestoneDropped)
             {
-                DevLogger.Log("Sync", $"Push partial drop: babies {pushResp.BabiesUpserted}/{localBabies.Count}, records {pushResp.RecordsUpserted}/{localRecords.Count}, milestones {pushResp.MilestonesUpserted}/{localMilestones.Count}");
+                DevLogger.Log("Sync", $"Push partial drop: babies {pushResp.BabiesUpserted}+{babyForeign}f/{localBabies.Count}, records {pushResp.RecordsUpserted}+{recordForeign}f/{localRecords.Count}, milestones {pushResp.MilestonesUpserted}+{milestoneForeign}f/{localMilestones.Count}");
             }
             try
             {
@@ -275,7 +294,10 @@ public sealed class ApiSyncService : BaseApiClient
             cfg.LastSyncAt = pushResp.ServerTime;
             cfg.LastSyncStatus = "ok";
             var partialHint = (babyDropped || recordDropped || milestoneDropped) ? "（部分丢弃，下次重试）" : "";
-            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑/{pushResp.SignInsUpserted}签到{partialHint}";
+            // 跨家庭 terminal skip 是既定语义（换绑后历史数据留本机），如实提示但不告警为失败
+            var foreignHint = (babyForeign + recordForeign + milestoneForeign) > 0
+                ? $"，另有 {babyForeign + recordForeign + milestoneForeign} 条其他家庭的历史数据已保留在本机" : "";
+            cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushResp.BabiesUpserted}宝/{pushResp.RecordsUpserted}条/{pushResp.MilestonesUpserted}里程碑/{pushResp.SignInsUpserted}签到{foreignHint}{partialHint}";
             _cfgRepo.Save(cfg);
 
             // 6. 通知网络监测器本次成功，加速从 OfflineServer 恢复
@@ -338,7 +360,8 @@ public sealed class ApiSyncService : BaseApiClient
     /// </summary>
     private void ProcessJoinRequestNotifications()
     {
-        if (_inAppMessageService is null || _appState?.User?.Id is not string myUid)
+        // Family-centric（阶段 1C）：云端 uid 匹配用 CloudUserId（云端成员身份），与本地数据空间无关
+        if (_inAppMessageService is null || _appState?.GetCloudUserId() is not string myUid)
         {
             _pendingJoinNotifications.Clear();
             return;
@@ -561,17 +584,22 @@ public sealed class ApiSyncService : BaseApiClient
 
     // ===== 映射方法：本地实体 ↔ 共享同步 DTO（ChildNotes.Shared.Sync）=====
 
-    private static Baby MapToBaby(SyncBabyItem i) => new()
+    /// <summary>
+    /// Pull 映射（家庭业务表）：本地 UserId 一律写 LocalDataSpaceId（设计文档 6.2，幂等），
+    /// 禁止透传云端 UserId（家庭数据本地可见性与登录态无关）。
+    /// </summary>
+    private static Baby MapToBaby(SyncBabyItem i, string localDataSpaceId) => new()
     {
-        Id = i.Id, UserId = i.UserId, Name = i.Name, Avatar = i.Avatar ?? "",
+        Id = i.Id, UserId = localDataSpaceId, Name = i.Name, Avatar = i.Avatar ?? "",
         Gender = i.Gender ?? "", BirthDate = i.BirthDate,
         // 服务器时间约定为 UTC，转 Local 与本地库读取行为一致；BirthDate 是纯日期原样保留
         CreatedAt = ToLocal(i.CreatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
 
-    private static ChildRecord MapToRecord(SyncRecordItem i) => new()
+    /// <summary>Pull 映射（家庭业务表），本地 UserId 写 LocalDataSpaceId（规则同 MapToBaby）。</summary>
+    private static ChildRecord MapToRecord(SyncRecordItem i, string localDataSpaceId) => new()
     {
-        Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
+        Id = i.Id, UserId = localDataSpaceId, BabyId = i.BabyId,
         RecordType = i.RecordType, RecordSubType = i.RecordSubType,
         // 服务器传来的时间约定为 UTC（后端 SyncService 用 SpecifyKind(..., Utc) 标记）。
         // 但 DTO 用 DateTime 传输、JSON 反序列化后 Kind=Unspecified。这里显式转 Local，
@@ -599,17 +627,22 @@ public sealed class ApiSyncService : BaseApiClient
     private static DateTime ToUtc(DateTime dt)
         => dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
 
-    private static SyncBabyItem MapToBabyItem(Baby b) => new()
+    /// <summary>
+    /// Push 映射（家庭业务表）：UserId 注入当前 CloudUserId（创建者归因），FamilyId 注入当前绑定家庭。
+    /// 禁止读本地实体 user_id（语义已降级为 LocalDataSpaceId）；服务端以 JWT 鉴权为准，payload 仅路由/日志。
+    /// </summary>
+    private static SyncBabyItem MapToBabyItem(Baby b, string cloudUserId, string familyId) => new()
     {
-        Id = b.Id, UserId = b.UserId, Name = b.Name, Avatar = b.Avatar ?? "",
+        Id = b.Id, UserId = cloudUserId, FamilyId = familyId, Name = b.Name, Avatar = b.Avatar ?? "",
         Gender = b.Gender ?? "", BirthDate = b.BirthDate,
         // 应用层时间已是 Local，上送服务器需转 UTC；BirthDate 是纯日期原样上送
         CreatedAt = ToUtc(b.CreatedAt), UpdatedAt = ToUtc(b.UpdatedAt),
     };
 
-    private static SyncRecordItem MapToRecordItem(ChildRecord r) => new()
+    /// <summary>Push 映射（家庭业务表），身份注入规则同 <see cref="MapToBabyItem"/>。</summary>
+    private static SyncRecordItem MapToRecordItem(ChildRecord r, string cloudUserId, string familyId) => new()
     {
-        Id = r.Id, UserId = r.UserId, BabyId = r.BabyId,
+        Id = r.Id, UserId = cloudUserId, FamilyId = familyId, BabyId = r.BabyId,
         RecordType = r.RecordType, RecordSubType = r.RecordSubType,
         // 应用层 RecordTime/CreatedAt/UpdatedAt 已是 Local（RecordRepository.Map 转换过）。
         // 服务器期望 UTC，这里显式转回。RecordDate 是纯日期无时区，原样上送。
@@ -623,9 +656,10 @@ public sealed class ApiSyncService : BaseApiClient
         CreatedAt = ToUtc(r.CreatedAt), UpdatedAt = ToUtc(r.UpdatedAt),
     };
 
-    private static Milestone MapToMilestone(SyncMilestoneItem i) => new()
+    /// <summary>Pull 映射（家庭业务表），本地 UserId 写 LocalDataSpaceId（规则同 MapToBaby）。</summary>
+    private static Milestone MapToMilestone(SyncMilestoneItem i, string localDataSpaceId) => new()
     {
-        Id = i.Id, UserId = i.UserId, BabyId = i.BabyId,
+        Id = i.Id, UserId = localDataSpaceId, BabyId = i.BabyId,
         Title = i.Title, Content = i.Content,
         // RecordDate 是纯日期，原样保留；CreatedAt/UpdatedAt 服务器传 UTC，转 Local
         RecordDate = i.RecordDate,
@@ -634,9 +668,10 @@ public sealed class ApiSyncService : BaseApiClient
         CreatedAt = ToLocal(i.CreatedAt), UpdatedAt = ToLocal(i.UpdatedAt),
     };
 
-    private static SyncMilestoneItem MapToMilestoneItem(Milestone m) => new()
+    /// <summary>Push 映射（家庭业务表）：UserId 注入当前 CloudUserId（创建者透传），FamilyId 注入当前绑定家庭。</summary>
+    private static SyncMilestoneItem MapToMilestoneItem(Milestone m, string cloudUserId, string familyId) => new()
     {
-        Id = m.Id, UserId = m.UserId, BabyId = m.BabyId,
+        Id = m.Id, UserId = cloudUserId, FamilyId = familyId, BabyId = m.BabyId,
         Title = m.Title, Content = m.Content,
         RecordDate = m.RecordDate,
         PhotosJson = m.PhotosJson ?? "[]",
@@ -645,27 +680,33 @@ public sealed class ApiSyncService : BaseApiClient
         CreatedAt = ToUtc(m.CreatedAt), UpdatedAt = ToUtc(m.UpdatedAt),
     };
 
-    private static SignInRecord MapToSignIn(SyncSignInItem i) => new()
+    /// <summary>Pull 映射（个人数据）：签到 UserId 写当前 CloudUserId（设计文档 6.2）。</summary>
+    private static SignInRecord MapToSignIn(SyncSignInItem i, string cloudUserId) => new()
     {
-        Id = i.Id, UserId = i.UserId,
+        Id = i.Id, UserId = cloudUserId,
         SignDate = i.SignDate,
         ContinuousDays = i.ContinuousDays,
         Reward = i.Reward,
         CreatedAt = ToLocal(i.CreatedAt),
     };
 
-    private static SyncSignInItem MapToSignInItem(SignInRecord s) => new()
+    /// <summary>
+    /// Push 映射（个人数据）：签到 UserId 注入当前 CloudUserId（不随家庭切换）。
+    /// 离线期间以 LocalUserId 创建的签到，登录后按此归因到账号（服务端校验 item.UserId == JWT uid）。
+    /// </summary>
+    private static SyncSignInItem MapToSignInItem(SignInRecord s, string cloudUserId) => new()
     {
-        Id = s.Id, UserId = s.UserId,
+        Id = s.Id, UserId = cloudUserId,
         SignDate = s.SignDate,
         ContinuousDays = s.ContinuousDays,
         Reward = s.Reward,
         CreatedAt = ToUtc(s.CreatedAt),
     };
 
-    private static UserPoints MapToUserPoints(SyncUserPointsItem i) => new()
+    /// <summary>Pull 映射（个人数据）：积分余额 UserId 写当前 CloudUserId（服务端为准覆盖本地）。</summary>
+    private static UserPoints MapToUserPoints(SyncUserPointsItem i, string cloudUserId) => new()
     {
-        Id = i.Id, UserId = i.UserId,
+        Id = i.Id, UserId = cloudUserId,
         Points = i.Points, TotalEarned = i.TotalEarned, TotalSpent = i.TotalSpent,
         // user_points 本地无独立 CreatedAt 同步，用 UpdatedAt 近似（仅 LWW 判定用）
         CreatedAt = ToLocal(i.UpdatedAt), UpdatedAt = ToLocal(i.UpdatedAt),

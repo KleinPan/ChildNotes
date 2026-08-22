@@ -518,7 +518,8 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     private static string? ResolveSupplementName(string? aiName, string? subType)
     {
         // 收集用户自定义标签（同类型在前，跨类型在后）作为额外候选
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        // Family-centric（阶段 1C）：本地标签库查询用 LocalDataSpaceId（登录态无关）
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         var repo = ServiceProvider.Instance.SupplementItemRepository;
         var isMedicine = subType == "medicine";
         List<string> extraCandidates = new();

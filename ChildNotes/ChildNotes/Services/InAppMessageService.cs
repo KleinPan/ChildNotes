@@ -13,6 +13,7 @@ namespace ChildNotes.Services;
 /// - 清理过期已读消息
 ///
 /// 后续接入推送时，推送消息落地后也通过本服务查询展示。
+/// Family-centric（阶段 1C）：站内信是个人数据，查询身份 = CloudUserId（未登录 null，不展示）。
 /// </summary>
 public sealed class InAppMessageService
 {
@@ -28,7 +29,7 @@ public sealed class InAppMessageService
     /// <summary>查询当前用户的消息列表（按时间倒序）。</summary>
     public List<InAppMessage> GetMessages(int limit = 100)
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return new();
         return _repo.GetByUser(uid, limit);
     }
@@ -36,7 +37,7 @@ public sealed class InAppMessageService
     /// <summary>当前用户未读消息数。</summary>
     public int GetUnreadCount()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return 0;
         return _repo.CountUnread(uid);
     }
@@ -47,7 +48,7 @@ public sealed class InAppMessageService
     /// <summary>标记当前用户全部消息为已读。</summary>
     public void MarkAllAsRead()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return;
         _repo.MarkAllAsRead(uid);
     }
@@ -59,7 +60,7 @@ public sealed class InAppMessageService
     /// <returns>实际删除的行数。</returns>
     public int DeleteAllRead()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return 0;
         return _repo.DeleteAllRead(uid);
     }
@@ -67,7 +68,7 @@ public sealed class InAppMessageService
     /// <summary>当前用户已读消息数（用于控制清理按钮可用性）。</summary>
     public int GetReadCount()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return 0;
         return _repo.CountRead(uid);
     }
@@ -75,7 +76,7 @@ public sealed class InAppMessageService
     /// <summary>清理 30 天前的已读消息。</summary>
     public int CleanupOldReadMessages()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return 0;
         return _repo.CleanupOldReadMessages(uid, 30);
     }
@@ -97,7 +98,7 @@ public sealed class InAppMessageService
     /// </summary>
     public void EnsureWelcomeMessage()
     {
-        var uid = _state.User?.Id;
+        var uid = _state.GetCloudUserId();
         if (string.IsNullOrEmpty(uid)) return;
         var existing = _repo.GetByUser(uid, limit: 1);
         if (existing.Count > 0) return;

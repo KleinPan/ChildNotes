@@ -64,7 +64,7 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
 
         var state = ServiceProvider.Instance.AppState;
         var babyId = state.CurrentBabyId;
-        var userId = state.UserId;
+        var userId = state.GetLocalDataSpaceId();
         try
         {
             // 后台线程执行 DB 查询

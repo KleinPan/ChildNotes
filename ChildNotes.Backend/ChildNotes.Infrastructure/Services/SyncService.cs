@@ -12,20 +12,24 @@ namespace ChildNotes.Infrastructure.Services;
 /// <summary>
 /// 后端同步服务：增量拉取 + 批量上行。
 /// 同步范围：baby + child_record + milestone + sign_in_record（Pull 积分余额）。
-/// 权限：只同步当前用户有访问权的宝宝及其记录；签到/积分仅同步当前用户自己的。
+/// 权限（Family-centric，见 docs/development/family-identity-architecture.md）：
+/// 家庭业务数据（baby/record/milestone）按用户当前家庭（FamilyId）分区；
+/// 签到/积分为个人数据，按 CloudUserId 隔离。
+/// 信任边界：payload 中的 FamilyId/UserId 仅作路由与日志，归属以 JWT uid + FamilyMember 鉴权为准。
 /// </summary>
 public class SyncService : ISyncService
 {
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
-    private readonly IBabyAccessService _babyAccess;
+    private readonly IFamilyService _familyService;
     private readonly ILogger<SyncService> _logger;
 
-    public SyncService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, ILogger<SyncService> logger)
+    public SyncService(ChildNotesDbContext db, ICurrentUserService current,
+        IFamilyService familyService, ILogger<SyncService> logger)
     {
         _db = db;
         _current = current;
-        _babyAccess = babyAccess;
+        _familyService = familyService;
         _logger = logger;
     }
 
@@ -37,22 +41,32 @@ public class SyncService : ISyncService
         // 防御性 clamp，避免恶意传入超大 limit 拖垮服务端
         var pageLimit = Math.Clamp(limit, 1, 2000);
 
-        // 当前用户可访问的宝宝 ID 集合（自己创建 + baby_member active）
-        var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
+        // 当前家庭（Family-centric 分区键）。异常态（无家庭）返回空集合，仅个人数据可同步
+        var fid = await _familyService.GetCurrentFamilyIdAsync(uid, ct);
+        if (fid is null)
+        {
+            _logger.LogWarning("sync pull: user {Uid} has no family, family data empty", uid);
+        }
+
+        // 当前家庭的宝宝 ID 集合（含软删/removed 成员的 baby，供 baby_member 同步感知）
+        var babyIds = fid is null ? new List<string>() :
+            await _db.Babies.IgnoreQueryFilters().Where(b => b.FamilyId == fid).Select(b => b.Id).ToListAsync(ct);
 
         // 复合游标过滤：(UpdatedAt > cursorTime) OR (UpdatedAt == cursorTime AND Id > cursorId)
         // 第一页（cursorTime == null）只用 since 过滤
         // 用 string.Compare 静态方法，EF Core 对它有完整的翻译支持
         var hasCursor = cursorTime is not null && !string.IsNullOrEmpty(cursorId);
         Expression<Func<Baby, bool>> babyCursor = hasCursor
-            ? b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc && (b.UpdatedAt > cursorTime!.Value || (b.UpdatedAt == cursorTime.Value && string.Compare(b.Id, cursorId) > 0))
-            : b => babyIds.Contains(b.Id) && b.UpdatedAt > sinceUtc;
+            ? b => b.FamilyId == fid! && b.UpdatedAt > sinceUtc && (b.UpdatedAt > cursorTime!.Value || (b.UpdatedAt == cursorTime.Value && string.Compare(b.Id, cursorId) > 0))
+            : b => b.FamilyId == fid! && b.UpdatedAt > sinceUtc;
         Expression<Func<ChildRecord, bool>> recordCursor = hasCursor
-            ? r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc && (r.UpdatedAt > cursorTime!.Value || (r.UpdatedAt == cursorTime.Value && string.Compare(r.Id, cursorId) > 0))
-            : r => r.BabyId != null && babyIds.Contains(r.BabyId) && r.UpdatedAt > sinceUtc;
+            ? r => r.FamilyId == fid! && r.UpdatedAt > sinceUtc && (r.UpdatedAt > cursorTime!.Value || (r.UpdatedAt == cursorTime.Value && string.Compare(r.Id, cursorId) > 0))
+            : r => r.FamilyId == fid! && r.UpdatedAt > sinceUtc;
+        // 里程碑：按 FamilyId 家庭共享（家庭成员可拉到他人创建的里程碑）；
+        // 兜底 (BabyId == null && UserId == uid) 兼容迁移前无 baby 的历史数据（family_id 未回填）
         Expression<Func<Milestone, bool>> msCursor = hasCursor
-            ? m => ((m.BabyId != null && babyIds.Contains(m.BabyId)) || m.UserId == uid) && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
-            : m => ((m.BabyId != null && babyIds.Contains(m.BabyId)) || m.UserId == uid) && m.UpdatedAt > sinceUtc;
+            ? m => (m.FamilyId == fid! || (m.BabyId == null && m.UserId == uid)) && m.UpdatedAt > sinceUtc && (m.UpdatedAt > cursorTime!.Value || (m.UpdatedAt == cursorTime.Value && string.Compare(m.Id, cursorId) > 0))
+            : m => (m.FamilyId == fid! || (m.BabyId == null && m.UserId == uid)) && m.UpdatedAt > sinceUtc;
         Expression<Func<SignInRecord, bool>> siCursor = hasCursor
             ? s => s.UserId == uid && s.CreatedAt > sinceUtc && (s.CreatedAt > cursorTime!.Value || (s.CreatedAt == cursorTime.Value && string.Compare(s.Id, cursorId) > 0))
             : s => s.UserId == uid && s.CreatedAt > sinceUtc;
@@ -175,6 +189,17 @@ public class SyncService : ISyncService
 {
     var uid = _current.RequireUserId();
 
+    // Family-centric：当前家庭为分区键（JWT uid + FamilyMember 解析，不信任 payload FamilyId）。
+    // 无家庭（异常态）时家庭数据全部跳过（retryable 语义，不进 skippedForeign），个人数据照常。
+    var fid = await _familyService.GetCurrentFamilyIdAsync(uid, ct);
+    if (fid is null)
+    {
+        _logger.LogWarning("sync push: user {Uid} has no family, family items dropped", uid);
+    }
+    var skippedForeignBabies = new List<string>();
+    var skippedForeignRecords = new List<string>();
+    var skippedForeignMilestones = new List<string>();
+
     // 修复死锁：先处理 Babies，再 SaveChanges 持久化，重新查询权限集合。
     // 原顺序：先查 babyIds（空表 → []）→ 处理 Records 时 BabyId 不在空集合全部 continue 丢弃
     //        → 处理 Babies 写入新 baby（已经晚了，本批 records 已丢弃）。
@@ -184,19 +209,26 @@ public class SyncService : ISyncService
     var babiesUpserted = 0;
     foreach (var item in req.Babies ?? new())
     {
-        // 权限：只能 upsert 自己创建的宝宝
-        if (item.UserId != uid)
+        if (fid is null)
         {
-            _logger.LogWarning("userId mismatch, dropped baby id={Id}, item.UserId={ItemUserId}, jwt.uid={Uid}",
-                item.Id, item.UserId, uid);
+            _logger.LogWarning("no family, dropped baby id={Id}, jwt.uid={Uid}", item.Id, uid);
             continue;
         }
 
         // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
         var existing = await _db.Babies.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == item.Id, ct);
+        // cross-family skip（terminal）：曾同步到其他家庭的 baby，换绑后不可覆盖原家庭云端数据
+        if (existing is not null && existing.FamilyId != fid)
+        {
+            _logger.LogWarning("cross-family baby skipped (terminal): id={Id}, itemFamily={ItemFamily}, existingFamily={ExistingFamily}, jwt.family={Fid}",
+                item.Id, item.FamilyId, existing.FamilyId, fid);
+            skippedForeignBabies.Add(item.Id);
+            continue;
+        }
         if (existing is null)
         {
-            _db.Babies.Add(FromItem(item));
+            // 新 baby：FamilyId 以鉴权上下文为准（禁止信任 payload）；UserId 落为当前用户（创建者）
+            _db.Babies.Add(FromItem(item, fid, uid));
             babiesUpserted++;
         }
         else if (item.UpdatedAt > existing.UpdatedAt)
@@ -216,42 +248,51 @@ public class SyncService : ISyncService
         }
     }
 
-    // 先持久化 Babies，让 GetAccessibleBabyIdsAsync 能查到刚写入的 baby_id。
+    // 先持久化 Babies，让家庭 baby 集合能查到刚写入的 baby_id。
     // EF Core 查询只读 DB（不读 ChangeTracker 的 Added 项），必须 SaveChanges 后才能在权限集合中体现。
     if (babiesUpserted > 0)
     {
         await _db.SaveChangesAsync(ct);
     }
 
-    // 重新查询权限集合（包含刚写入的 baby_id）
-    var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(uid, ct);
+    // 重新查询当前家庭的 baby 集合（包含刚写入的 baby_id）
+    var babyIds = fid is null ? new List<string>() :
+        await _db.Babies.IgnoreQueryFilters().Where(b => b.FamilyId == fid).Select(b => b.Id).ToListAsync(ct);
 
     var recordsUpserted = 0;
     foreach (var item in req.Records ?? new())
     {
-        // 权限：记录必须属于当前用户可访问的宝宝，且 user_id 必须是当前用户
-        if (item.UserId != uid)
+        if (fid is null)
         {
-            _logger.LogWarning("userId mismatch, dropped record id={Id}, item.UserId={ItemUserId}, jwt.uid={Uid}",
-                item.Id, item.UserId, uid);
+            _logger.LogWarning("no family, dropped record id={Id}, jwt.uid={Uid}", item.Id, uid);
             continue;
         }
+        // babyId 不属于当前家庭（含指向其他家庭的 baby）→ ForeignFamily terminal skip
         if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId))
         {
-            _logger.LogWarning("babyId not accessible, dropped record id={Id}, babyId={BabyId}, accessibleBabyIds=[{AccessibleBabyIds}]",
-                item.Id, item.BabyId, string.Join(",", babyIds));
+            _logger.LogWarning("babyId not in current family, skipped record (terminal): id={Id}, babyId={BabyId}, jwt.family={Fid}",
+                item.Id, item.BabyId, fid);
+            skippedForeignRecords.Add(item.Id);
             continue;
         }
 
         var existing = await _db.ChildRecords.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == item.Id, ct);
+        // cross-family skip（terminal）：防止换绑后 LWW 覆盖原家庭云端数据
+        if (existing is not null && existing.FamilyId != fid)
+        {
+            _logger.LogWarning("cross-family record skipped (terminal): id={Id}, existingFamily={ExistingFamily}, jwt.family={Fid}",
+                item.Id, existing.FamilyId, fid);
+            skippedForeignRecords.Add(item.Id);
+            continue;
+        }
         if (existing is null)
         {
-            _db.ChildRecords.Add(FromItem(item));
+            _db.ChildRecords.Add(FromItem(item, fid, uid));
             recordsUpserted++;
         }
         else if (item.UpdatedAt > existing.UpdatedAt)
         {
-            // LWW 行级合并：远程较新才覆盖
+            // LWW 行级合并：远程较新才覆盖（BabyId/UserId/FamilyId 不可变，CopyTo 不触碰）
             CopyTo(existing, item);
             recordsUpserted++;
         }
@@ -265,19 +306,31 @@ public class SyncService : ISyncService
     var milestonesUpserted = 0;
     foreach (var item in req.Milestones ?? new())
     {
-        // 权限：里程碑必须属于当前用户可访问的宝宝（与 ChildRecord 一致），
-        // 允许家庭成员 push 自己创建的里程碑（UserId 保留为创建者，不强制覆盖）
+        if (fid is null)
+        {
+            _logger.LogWarning("no family, dropped milestone id={Id}, jwt.uid={Uid}", item.Id, uid);
+            continue;
+        }
         if (!string.IsNullOrEmpty(item.BabyId) && !babyIds.Contains(item.BabyId))
         {
-            _logger.LogWarning("babyId not accessible, dropped milestone id={Id}, babyId={BabyId}, accessibleBabyIds=[{AccessibleBabyIds}]",
-                item.Id, item.BabyId, string.Join(",", babyIds));
+            _logger.LogWarning("babyId not in current family, skipped milestone (terminal): id={Id}, babyId={BabyId}, jwt.family={Fid}",
+                item.Id, item.BabyId, fid);
+            skippedForeignMilestones.Add(item.Id);
             continue;
         }
 
         var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
+        if (existing is not null && existing.FamilyId != fid)
+        {
+            _logger.LogWarning("cross-family milestone skipped (terminal): id={Id}, existingFamily={ExistingFamily}, jwt.family={Fid}",
+                item.Id, existing.FamilyId, fid);
+            skippedForeignMilestones.Add(item.Id);
+            continue;
+        }
         if (existing is null)
         {
-            _db.Milestones.Add(FromItem(item));
+            // milestone：UserId 保留创建者透传（家庭共享语义），FamilyId 以鉴权上下文为准
+            _db.Milestones.Add(FromItem(item, fid));
             milestonesUpserted++;
         }
         else if (item.UpdatedAt > existing.UpdatedAt)
@@ -294,6 +347,7 @@ public class SyncService : ISyncService
 
     // 签到记录：客户端上送本地签到（离线签到场景）。以 Id 做幂等 upsert，
     // 不重复发积分——积分发放以服务端签到 API 为准，这里只同步记录本身。
+    // 个人数据（per-User）：UserId 必须是当前用户，不随家庭切换。
     var signInsUpserted = 0;
     foreach (var item in req.SignIns ?? new())
     {
@@ -328,6 +382,9 @@ public class SyncService : ISyncService
         BabiesUpserted = babiesUpserted,
         MilestonesUpserted = milestonesUpserted,
         SignInsUpserted = signInsUpserted,
+        SkippedForeignBabyIds = skippedForeignBabies,
+        SkippedForeignRecordIds = skippedForeignRecords,
+        SkippedForeignMilestoneIds = skippedForeignMilestones,
         ServerTime = DateTime.UtcNow,
     };
 }
@@ -336,6 +393,7 @@ public class SyncService : ISyncService
     {
         Id = b.Id,
         UserId = b.UserId,
+        FamilyId = b.FamilyId,
         Name = b.Name,
         Avatar = b.Avatar ?? "",
         Gender = b.Gender ?? "",
@@ -349,6 +407,7 @@ public class SyncService : ISyncService
     {
         Id = r.Id,
         UserId = r.UserId,
+        FamilyId = r.FamilyId,
         BabyId = r.BabyId,
         RecordType = r.RecordType,
         RecordSubType = r.RecordSubType,
@@ -368,10 +427,12 @@ public class SyncService : ISyncService
         UpdatedAt = r.UpdatedAt,
     };
 
-    private static Baby FromItem(SyncBabyItem i) => new()
+    /// <summary>Push 新建 baby：FamilyId/UserId 以鉴权上下文为准（禁止信任 payload）。</summary>
+    private static Baby FromItem(SyncBabyItem i, string familyId, string uid) => new()
     {
         Id = i.Id,
-        UserId = i.UserId,
+        UserId = uid,
+        FamilyId = familyId,
         Name = i.Name,
         Avatar = i.Avatar,
         Gender = i.Gender,
@@ -381,10 +442,12 @@ public class SyncService : ISyncService
         UpdatedAt = DateTime.SpecifyKind(i.UpdatedAt, DateTimeKind.Utc),
     };
 
-    private static ChildRecord FromItem(SyncRecordItem i) => new()
+    /// <summary>Push 新建 record：FamilyId/UserId 以鉴权上下文为准。</summary>
+    private static ChildRecord FromItem(SyncRecordItem i, string familyId, string uid) => new()
     {
         Id = i.Id,
-        UserId = i.UserId,
+        UserId = uid,
+        FamilyId = familyId,
         BabyId = i.BabyId,
         RecordType = i.RecordType,
         RecordSubType = i.RecordSubType,
@@ -427,6 +490,7 @@ public class SyncService : ISyncService
     {
         Id = m.Id,
         UserId = m.UserId,
+        FamilyId = m.FamilyId,
         BabyId = m.BabyId,
         Title = m.Title,
         Content = m.Content,
@@ -437,10 +501,12 @@ public class SyncService : ISyncService
         UpdatedAt = m.UpdatedAt,
     };
 
-    private static Milestone FromItem(SyncMilestoneItem i) => new()
+    /// <summary>Push 新建 milestone：UserId 保留创建者透传，FamilyId 以鉴权上下文为准。</summary>
+    private static Milestone FromItem(SyncMilestoneItem i, string familyId) => new()
     {
         Id = i.Id,
         UserId = i.UserId,
+        FamilyId = familyId,
         BabyId = i.BabyId,
         Title = i.Title,
         Content = i.Content,

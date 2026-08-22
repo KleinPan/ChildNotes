@@ -151,7 +151,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
     /// <summary>从 DB 重新加载自定义辅食，并重建 AllCommonFoodItems。</summary>
     private void ReloadCustomFoods()
     {
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         var customFoods = string.IsNullOrEmpty(userId)
             ? new List<CommonItemViewModel>()
             : ServiceProvider.Instance.SupplementItemRepository
@@ -243,7 +243,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         }
 
         // 写入 DB（用户未登录时仅内存保存）
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Insert(userId, CustomFoodType, value);
@@ -265,7 +265,7 @@ public partial class ComplementaryFormViewModel : ObservableObject, IRecordFormV
         if (item is null || !item.IsCustom) return;
         ErrorMessage = string.Empty;
 
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Delete(userId, CustomFoodType, item.Name);

@@ -151,7 +151,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     /// </summary>
     private void ReloadCustomItems()
     {
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         var repo = ServiceProvider.Instance.SupplementItemRepository;
 
         var customSupps = string.IsNullOrEmpty(userId)
@@ -215,7 +215,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         }
 
         // 写入DB（用户未登录时 userId 为空，仅内存保存）
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Insert(userId, SuppType, value);
@@ -239,7 +239,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         if (item is null || !item.IsCustom) return;
         ErrorMessage = string.Empty;
 
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Delete(userId, SuppType, item.Name);
@@ -266,7 +266,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
     /// </summary>
     private void ReloadCustomUnits()
     {
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         var customUnits = string.IsNullOrEmpty(userId)
             ? new List<CommonItemViewModel>()
             : ServiceProvider.Instance.SupplementItemRepository
@@ -352,7 +352,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
             return;
         }
 
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Insert(userId, "dose_unit", value);
@@ -376,7 +376,7 @@ public partial class SupplementFormViewModel : ObservableObject, IRecordFormView
         if (item is null || !item.IsCustom) return;
         ErrorMessage = string.Empty;
 
-        var userId = ServiceProvider.Instance.AppState.UserId;
+        var userId = ServiceProvider.Instance.AppState.GetLocalDataSpaceId();
         if (!string.IsNullOrEmpty(userId))
         {
             ServiceProvider.Instance.SupplementItemRepository.Delete(userId, "dose_unit", item.Name);

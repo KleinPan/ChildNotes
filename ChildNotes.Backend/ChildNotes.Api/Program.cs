@@ -93,6 +93,8 @@ builder.Services.Configure<EmailAuthOptions>(builder.Configuration.GetSection("E
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 // 宝宝访问权限校验：消除 AiAnalysisService/BabyService/RecordService/SyncService 中的重复
 builder.Services.AddScoped<IBabyAccessService, BabyAccessService>();
+// 家庭解析（"当前家庭"唯一解析点，Family-centric 模型）
+builder.Services.AddScoped<IFamilyService, FamilyService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBabyService, BabyService>();
 builder.Services.AddScoped<IRecordService, RecordService>();

@@ -8,6 +8,8 @@ public class SyncRecordItem
 {
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
+    /// <summary>数据归属家庭。仅作路由/日志：服务端以 JWT + FamilyMember 鉴权结果为准，不信任此值。</summary>
+    public string FamilyId { get; set; } = string.Empty;
     public string? BabyId { get; set; }
     public string RecordType { get; set; } = string.Empty;
     public string? RecordSubType { get; set; }
@@ -96,7 +98,10 @@ public class SyncFamilyJoinRequestItem
 public class SyncMilestoneItem
 {
     public string Id { get; set; } = string.Empty;
+    /// <summary>创建者（家庭成员透传，服务端保留原值用于归属展示）。</summary>
     public string UserId { get; set; } = string.Empty;
+    /// <summary>数据归属家庭。仅作路由/日志：服务端以 JWT + FamilyMember 鉴权结果为准。</summary>
+    public string FamilyId { get; set; } = string.Empty;
     public string? BabyId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }
@@ -111,6 +116,8 @@ public class SyncBabyItem
 {
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
+    /// <summary>数据归属家庭。仅作路由/日志：服务端以 JWT + FamilyMember 鉴权结果为准，不信任此值。</summary>
+    public string FamilyId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;
@@ -163,5 +170,11 @@ public class SyncBatchResponse
     public int BabiesUpserted { get; set; }
     public int MilestonesUpserted { get; set; }
     public int SignInsUpserted { get; set; }
+    /// <summary>跨家庭（ForeignFamily）terminal skip 的 baby Id 列表。客户端应将这些行视为终态并 MarkSynced。</summary>
+    public List<string> SkippedForeignBabyIds { get; set; } = new();
+    /// <summary>跨家庭 terminal skip 的记录 Id 列表（含 babyId-not-accessible 级联）。</summary>
+    public List<string> SkippedForeignRecordIds { get; set; } = new();
+    /// <summary>跨家庭 terminal skip 的里程碑 Id 列表。</summary>
+    public List<string> SkippedForeignMilestoneIds { get; set; } = new();
     public DateTime ServerTime { get; set; }
 }

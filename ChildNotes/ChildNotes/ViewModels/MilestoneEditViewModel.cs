@@ -254,7 +254,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
             var m = new Milestone
             {
                 Id = _editingId,
-                UserId = _state.UserId,
+                UserId = _state.GetLocalDataSpaceId(),
                 BabyId = _state.CurrentBabyId,
                 Title = Title.Trim(),
                 Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),

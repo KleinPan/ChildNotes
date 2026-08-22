@@ -169,23 +169,25 @@ public sealed class ServiceProvider
 
     /// <summary>
     /// 首次启动时为 sync_config 生成 device_id（设备唯一标识，用于冲突归因）。
-    /// 已存在则跳过。
+    /// 已存在则跳过（写入后冻结）。
+    /// Family-centric（阶段 2）：ANDROID_ID 可用时派生（SHA256，同设备重装后 Id 连续），否则 GUID。
     /// </summary>
     private void EnsureDeviceId()
     {
         var cfg = SyncConfigRepository.Get();
         if (string.IsNullOrWhiteSpace(cfg.DeviceId))
         {
-            cfg.DeviceId = Guid.NewGuid().ToString("N");
+            cfg.DeviceId = DeviceIdentityDerivation.DeriveDeviceId(DeviceIdentityProvider.Current?.GetAndroidId());
             SyncConfigRepository.UpdateDeviceId(cfg.DeviceId);
-            DevLogger.Log("DI", $"device_id generated: {cfg.DeviceId}");
+            DevLogger.Log("DI", $"device_id generated: {cfg.DeviceId} (derived={DeviceIdentityProvider.Current is not null})");
         }
     }
 
     public void BindUserToState()
     {
         AppState.User = AuthService.CurrentUser;
-        DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Email}, id={AppState.User?.Id}, userId={AppState.UserId}");
+        // 诊断日志：L=LocalDataSpaceId / C=CloudUserId / F=CurrentFamilyId（Family-centric 1C 拆分后语义）
+        DevLogger.Log("DI", $"BindUserToState: user={AppState.User?.Email}, id={AppState.User?.Id}, L={AppState.GetLocalDataSpaceId()}, C={AppState.GetCloudUserId() ?? "null"}, F={AppState.GetCurrentFamilyId() ?? "null"}");
     }
 
     /// <summary>

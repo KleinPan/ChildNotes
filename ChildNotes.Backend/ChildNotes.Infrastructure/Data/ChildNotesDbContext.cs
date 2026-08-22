@@ -9,6 +9,8 @@ public class ChildNotesDbContext : DbContext
     public ChildNotesDbContext(DbContextOptions<ChildNotesDbContext> options) : base(options) { }
 
     public DbSet<AppUser> AppUsers => Set<AppUser>();
+    public DbSet<Family> Families => Set<Family>();
+    public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
     public DbSet<Baby> Babies => Set<Baby>();
     public DbSet<BabyMember> BabyMembers => Set<BabyMember>();
     public DbSet<ChildRecord> ChildRecords => Set<ChildRecord>();
@@ -56,12 +58,39 @@ public class ChildNotesDbContext : DbContext
             e.HasIndex(x => x.MembershipExpireAt);
         });
 
+        modelBuilder.Entity<Family>(e =>
+        {
+            e.ToTable("family");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.Name).HasColumnName("name").IsRequired().HasMaxLength(64);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<FamilyMember>(e =>
+        {
+            e.ToTable("family_member");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.FamilyId).HasColumnName("family_id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Role).HasColumnName("role").IsRequired();
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+            e.HasIndex(x => new { x.FamilyId, x.UserId }).IsUnique();
+            e.HasIndex(x => x.UserId);
+            // 单 Owner 约束：每个家庭只能有一个 owner（部分唯一索引）
+            e.HasIndex(x => x.FamilyId).HasFilter("role = 'owner'").IsUnique().HasDatabaseName("ix_family_member_single_owner");
+        });
+
         modelBuilder.Entity<Baby>(e =>
         {
             e.ToTable("baby");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.FamilyId).HasColumnName("family_id").IsRequired().HasDefaultValue("");
             e.Property(x => x.Name).HasColumnName("name").IsRequired();
             e.Property(x => x.Avatar).HasColumnName("avatar");
             e.Property(x => x.Gender).HasColumnName("gender");
@@ -72,6 +101,8 @@ public class ChildNotesDbContext : DbContext
             // 软删除查询过滤器：默认隐藏已删除的宝宝（同步通道用 IgnoreQueryFilters 绕过）
             e.HasQueryFilter(x => !x.Deleted);
             e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.FamilyId);
+            e.HasIndex(x => new { x.FamilyId, x.UpdatedAt });
             e.HasIndex(x => x.UpdatedAt);
         });
 
@@ -98,6 +129,7 @@ public class ChildNotesDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.FamilyId).HasColumnName("family_id").IsRequired().HasDefaultValue("");
             e.Property(x => x.BabyId).HasColumnName("baby_id");
             e.Property(x => x.RecordType).HasColumnName("record_type").IsRequired().HasMaxLength(32);
             e.Property(x => x.RecordSubType).HasColumnName("record_sub_type").HasMaxLength(32);
@@ -118,6 +150,7 @@ public class ChildNotesDbContext : DbContext
             e.HasQueryFilter(x => !x.Deleted);
             e.HasIndex(x => new { x.UserId, x.RecordDate, x.RecordType });
             e.HasIndex(x => new { x.BabyId, x.RecordDate });
+            e.HasIndex(x => new { x.FamilyId, x.UpdatedAt });
             e.HasIndex(x => x.UpdatedAt);
         });
 
@@ -312,6 +345,7 @@ public class ChildNotesDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.FamilyId).HasColumnName("family_id").IsRequired().HasDefaultValue("");
             e.Property(x => x.BabyId).HasColumnName("baby_id");
             e.Property(x => x.Title).HasColumnName("title").IsRequired();
             e.Property(x => x.Content).HasColumnName("content");
@@ -323,6 +357,7 @@ public class ChildNotesDbContext : DbContext
             e.HasQueryFilter(x => !x.Deleted);
             e.HasIndex(x => new { x.UserId, x.RecordDate });
             e.HasIndex(x => x.BabyId);
+            e.HasIndex(x => new { x.FamilyId, x.UpdatedAt });
             e.HasIndex(x => x.UpdatedAt);
         });
 

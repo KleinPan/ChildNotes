@@ -10,12 +10,20 @@ namespace ChildNotes.Infrastructure.Services;
 /// <summary>
 /// 宝宝访问权限校验服务实现。
 /// 统一 AiAnalysisService/BabyService/RecordService/SyncService 中的权限校验逻辑到 EnsureAccessAsync 方法。
+/// Family-centric（见 docs/development/family-identity-architecture.md）：
+/// 范围查询（列表/默认宝宝）按用户当前家庭过滤；单点访问校验保留 owner+baby_member 兼容路径
+/// （迁移后两者等价，legacy 路径兜底未迁移的边缘数据与既有邀请流程，阶段 3 统一收敛到 FamilyMember）。
 /// </summary>
 public class BabyAccessService : IBabyAccessService
 {
     private readonly ChildNotesDbContext _db;
+    private readonly IFamilyService _familyService;
 
-    public BabyAccessService(ChildNotesDbContext db) => _db = db;
+    public BabyAccessService(ChildNotesDbContext db, IFamilyService familyService)
+    {
+        _db = db;
+        _familyService = familyService;
+    }
 
     public async Task<bool> HasAccessAsync(string userId, string babyId, CancellationToken ct = default)
     {
@@ -32,31 +40,30 @@ public class BabyAccessService : IBabyAccessService
 
     public async Task<List<string>> GetAccessibleBabyIdsAsync(string userId, CancellationToken ct = default)
     {
+        // Family 过滤：当前家庭的全部宝宝（owner+成员统一为家庭归属）。
         // 忽略软删过滤器：同步通道需要包含已软删的 baby，以便多设备间传递删除状态。
-        // 业务查询通道（GetAccessibleBabiesAsync / GetDefaultBabyAsync）仍受 HasQueryFilter 约束。
-        // 同步通道同时包含 status=removed 的 baby_member，让被移除的成员下次 Pull
-        // 能拉到自己被移除的状态（客户端 GetByUser 按 active 过滤，removed 不会出现在宝宝列表），
-        // 否则被移除成员永远看不到 baby_member 变化，本地数据无法清理。
+        var fid = await _familyService.GetCurrentFamilyIdAsync(userId, ct);
+        if (fid is null) return new();
         return await _db.Babies.IgnoreQueryFilters()
-            .Where(b => b.UserId == userId
-                || _db.BabyMembers.Any(m => m.BabyId == b.Id && m.UserId == userId
-                    && (m.Status == StatusConstants.BabyMember.Active || m.Status == StatusConstants.BabyMember.Removed)))
+            .Where(b => b.FamilyId == fid)
             .Select(b => b.Id).ToListAsync(ct);
     }
 
     public async Task<List<Baby>> GetAccessibleBabiesAsync(string userId, CancellationToken ct = default)
     {
+        var fid = await _familyService.GetCurrentFamilyIdAsync(userId, ct);
+        if (fid is null) return new();
         return await _db.Babies
-            .Where(b => b.UserId == userId
-                || _db.BabyMembers.Any(m => m.BabyId == b.Id && m.UserId == userId && m.Status == StatusConstants.BabyMember.Active))
+            .Where(b => b.FamilyId == fid)
             .OrderBy(b => b.Id).ToListAsync(ct);
     }
 
     public async Task<Baby?> GetDefaultBabyAsync(string userId, CancellationToken ct = default)
     {
+        var fid = await _familyService.GetCurrentFamilyIdAsync(userId, ct);
+        if (fid is null) return null;
         return await _db.Babies
-            .Where(b => b.UserId == userId
-                || _db.BabyMembers.Any(m => m.BabyId == b.Id && m.UserId == userId && m.Status == StatusConstants.BabyMember.Active))
+            .Where(b => b.FamilyId == fid)
             .OrderBy(b => b.Id).FirstOrDefaultAsync(ct);
     }
 }

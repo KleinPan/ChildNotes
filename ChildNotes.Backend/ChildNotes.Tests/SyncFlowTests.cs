@@ -256,33 +256,39 @@ public class SyncFlowTests
         var meB = await userB.GetFromJsonAsync<JsonElement>("/api/auth/me");
         var uidB = meB.GetProperty("data").GetProperty("id").GetString()!;
 
-        // B 尝试 push 一条记录到 A 的 baby（BabyId 是 A 的）
+        // B 尝试 push 一条记录到 A 的 baby（BabyId 是 A 的，属于另一家庭）
         var now = DateTime.UtcNow;
+        var recId = Guid.NewGuid().ToString("N");
         var resp = await userB.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
         {
             Records = new()
             {
                 new SyncRecordItem
                 {
-                    Id = Guid.NewGuid().ToString("N"), UserId = uidB, BabyId = babyIdA,
+                    Id = recId, UserId = uidB, BabyId = babyIdA,
                     RecordType = "feed", RecordDate = DateTime.Today, RecordTime = now,
                     AmountMl = 50, PayloadJson = "{}", CreatedAt = now, UpdatedAt = now,
                 }
             }
         });
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        // 权限拒绝：babyId 不在 B 的可访问列表中，记录被跳过
-        Assert.Equal(0, body.GetProperty("data").GetProperty("recordsUpserted").GetInt32());
+        var data = body.GetProperty("data");
+        // ForeignFamily terminal skip：babyId 不在 B 当前家庭，记录被跳过并计入 skippedForeignIds
+        Assert.Equal(0, data.GetProperty("recordsUpserted").GetInt32());
+        var skipped = data.GetProperty("skippedForeignRecordIds");
+        Assert.Equal(1, skipped.GetArrayLength());
+        Assert.Equal(recId, skipped[0].GetString());
     }
 
     [Fact]
-    public async Task Push_RejectsRecordWithUserIdMismatch()
+    public async Task Push_UserIdIsAttributionOnly_ServerStampsCurrentUser()
     {
         using var factory = NewFactory();
         var client = await NewAuthClientAsync(factory, "sync_uid_" + Guid.NewGuid().ToString("N")[..6]);
         var babyId = await CreateBabyAsync(client);
 
-        // push 一条 UserId = 99999（不是当前用户）的记录
+        // Family-centric：家庭业务表的 UserId 仅为创建者归因（本地可能填 LocalDataSpaceId），
+        // 授权以 JWT + FamilyMember 为准 —— 不匹配的 UserId 不再拒绝，服务端落库时以 JWT uid 覆盖
         var now = DateTime.UtcNow;
         var resp = await client.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
         {
@@ -290,14 +296,135 @@ public class SyncFlowTests
             {
                 new SyncRecordItem
                 {
-                    Id = Guid.NewGuid().ToString("N"), UserId = "non-existent-user-id", BabyId = babyId,
+                    Id = Guid.NewGuid().ToString("N"), UserId = "local-data-space-id", BabyId = babyId,
                     RecordType = "feed", RecordDate = DateTime.Today, RecordTime = now,
                     AmountMl = 30, PayloadJson = "{}", CreatedAt = now, UpdatedAt = now,
                 }
             }
         });
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
-        Assert.Equal(0, body.GetProperty("data").GetProperty("recordsUpserted").GetInt32());
+        Assert.Equal(1, body.GetProperty("data").GetProperty("recordsUpserted").GetInt32());
+    }
+
+    /// <summary>
+    /// cross-family skip（terminal）：同一条记录 Id 曾同步到家庭 F_A，
+    /// 换绑/另一家庭的用户再 Push 时不得 LWW 覆盖原家庭云端数据。
+    /// </summary>
+    [Fact]
+    public async Task Push_ExistingRecordInOtherFamily_TerminalSkip()
+    {
+        using var factory = NewFactory();
+        var userA = await NewAuthClientAsync(factory, "sync_cf_a_" + Guid.NewGuid().ToString("N")[..6]);
+        var userB = await NewAuthClientAsync(factory, "sync_cf_b_" + Guid.NewGuid().ToString("N")[..6]);
+        var babyIdA = await CreateBabyAsync(userA, "A的宝宝");
+        var babyIdB = await CreateBabyAsync(userB, "B的宝宝");
+        var meA = await userA.GetFromJsonAsync<JsonElement>("/api/auth/me");
+        var uidA = meA.GetProperty("data").GetProperty("id").GetString()!;
+
+        // A push 一条记录（进入 A 的家庭）
+        var t1 = DateTime.UtcNow;
+        var recId = Guid.NewGuid().ToString("N");
+        await userA.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
+        {
+            Records = new()
+            {
+                new SyncRecordItem
+                {
+                    Id = recId, UserId = uidA, BabyId = babyIdA,
+                    RecordType = "feed", RecordDate = DateTime.Today, RecordTime = t1,
+                    AmountMl = 100, PayloadJson = "{}", CreatedAt = t1, UpdatedAt = t1,
+                }
+            }
+        });
+
+        // B push 同 Id 记录（挂到 B 自己家庭的 baby，UpdatedAt 更新）——
+        // 服务端发现 existing.FamilyId(A家庭) ≠ B 当前家庭 → terminal skip，不覆盖
+        var t2 = t1.AddSeconds(30);
+        var resp = await userB.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
+        {
+            Records = new()
+            {
+                new SyncRecordItem
+                {
+                    Id = recId, UserId = "uid-b", BabyId = babyIdB,
+                    RecordType = "feed", RecordDate = DateTime.Today, RecordTime = t2,
+                    AmountMl = 999, PayloadJson = "{}", CreatedAt = t2, UpdatedAt = t2,
+                }
+            }
+        });
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var data = body.GetProperty("data");
+        Assert.Equal(0, data.GetProperty("recordsUpserted").GetInt32());
+        var skipped = data.GetProperty("skippedForeignRecordIds");
+        Assert.Equal(1, skipped.GetArrayLength());
+        Assert.Equal(recId, skipped[0].GetString());
+
+        // A pull 验证原数据未被覆盖（仍是 100）
+        var pullResp = await userA.GetAsync("/api/sync/pull");
+        var pullBody = await pullResp.Content.ReadFromJsonAsync<JsonElement>();
+        var rec = pullBody.GetProperty("data").GetProperty("records")[0];
+        Assert.Equal(100, rec.GetProperty("amountMl").GetInt32());
+    }
+
+    /// <summary>
+    /// 家庭成员可见性：同一 Family 的另一成员 Pull 可拉到 owner 创建的 baby 与记录，
+    /// 且 Pull 响应项携带 familyId（Family-centric 分区键）。
+    /// </summary>
+    [Fact]
+    public async Task Pull_FamilyMemberSeesSharedDataWithFamilyId()
+    {
+        using var factory = NewFactory();
+        var userA = await NewAuthClientAsync(factory, "sync_fm_a_" + Guid.NewGuid().ToString("N")[..6]);
+        var userB = await NewAuthClientAsync(factory, "sync_fm_b_" + Guid.NewGuid().ToString("N")[..6]);
+        var babyIdA = await CreateBabyAsync(userA, "A的宝宝");
+        var meA = await userA.GetFromJsonAsync<JsonElement>("/api/auth/me");
+        var uidA = meA.GetProperty("data").GetProperty("id").GetString()!;
+        var meB = await userB.GetFromJsonAsync<JsonElement>("/api/auth/me");
+        var uidB = meB.GetProperty("data").GetProperty("id").GetString()!;
+
+        // A push 一条记录
+        var now = DateTime.UtcNow;
+        await userA.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
+        {
+            Records = new()
+            {
+                new SyncRecordItem
+                {
+                    Id = Guid.NewGuid().ToString("N"), UserId = uidA, BabyId = babyIdA,
+                    RecordType = "feed", RecordDate = DateTime.Today, RecordTime = now,
+                    AmountMl = 80, PayloadJson = "{}", CreatedAt = now, UpdatedAt = now,
+                }
+            }
+        });
+
+        // 把 B 加入 A 的家庭（Member）——直接操作 DbContext 布置（成员邀请 API 属阶段 3）
+        string familyIdA;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            familyIdA = await db.Babies.Where(b => b.Id == babyIdA).Select(b => b.FamilyId).FirstAsync();
+            db.FamilyMembers.Add(new ChildNotes.Core.Entities.FamilyMember
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                FamilyId = familyIdA,
+                UserId = uidB,
+                Role = ChildNotes.Core.Constants.StatusConstants.FamilyMemberRole.Member,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync();
+        }
+
+        // B pull：应看到 A 的 baby（同家庭共享），响应项携带 familyId
+        var resp = await userB.GetAsync("/api/sync/pull");
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var babies = body.GetProperty("data").GetProperty("babies");
+        Assert.Equal(1, babies.GetArrayLength());
+        Assert.Equal(familyIdA, babies[0].GetProperty("familyId").GetString());
+        var records = body.GetProperty("data").GetProperty("records");
+        Assert.Equal(1, records.GetArrayLength());
+        Assert.Equal(familyIdA, records[0].GetProperty("familyId").GetString());
+        Assert.Equal(80, records[0].GetProperty("amountMl").GetInt32());
     }
 
     [Fact]

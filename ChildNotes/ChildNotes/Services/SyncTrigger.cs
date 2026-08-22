@@ -28,7 +28,52 @@ public sealed class SyncTrigger : IDisposable
     private readonly SemaphoreSlim _syncLock = new(1, 1);
     private bool _syncPending;
 
+    /// <summary>暂停标志（rebind 确认期间禁止新同步触发；设计文档 6.4）。</summary>
+    private volatile bool _paused;
+
     public event Action<ApiSyncService.SyncResult>? SyncCompleted;
+
+    /// <summary>
+    /// 暂停同步触发（Family-centric 阶段 2，设计文档 6.4）：换绑确认框弹出前调用，
+    /// 拒绝启动/防抖/保活/网络恢复等一切新触发，防止 rebind 事务期间并发读写 sync_config。
+    /// </summary>
+    public void Pause()
+    {
+        _paused = true;
+        lock (_debounceLock)
+        {
+            _debounceTimer?.Dispose();
+            _debounceTimer = null;
+        }
+        DevLogger.Log("Sync", "SyncTrigger paused (rebind in progress)");
+    }
+
+    /// <summary>恢复同步触发（rebind 事务完成后调用）。</summary>
+    public void Resume()
+    {
+        _paused = false;
+        DevLogger.Log("Sync", "SyncTrigger resumed");
+    }
+
+    /// <summary>
+    /// 独占执行 rebind 事务（设计文档 6.4）：暂停新触发 → await _syncLock
+    /// （等正在执行的同步完成，复用现有锁，禁止另造）→ 执行事务 → 恢复。
+    /// 事务本体由 action 携带（SyncConfigRepository.ExecuteRebind）。
+    /// </summary>
+    public async Task ExecuteExclusiveDuringRebindAsync(Func<Task> action)
+    {
+        Pause();
+        try
+        {
+            await _syncLock.WaitAsync();
+            try { await action(); }
+            finally { _syncLock.Release(); }
+        }
+        finally
+        {
+            Resume();
+        }
+    }
 
     /// <summary>
     /// 网络状态监测器（可选）。注入后：
@@ -87,6 +132,11 @@ public sealed class SyncTrigger : IDisposable
     private async Task<ApiSyncService.SyncResult> RunOnce(string source)
     {
         if (_disposed) return new ApiSyncService.SyncResult { Success = false, Message = "已关闭" };
+        if (_paused)
+        {
+            DevLogger.Log("Sync", $"Sync trigger skipped ({source}): paused for rebind");
+            return new ApiSyncService.SyncResult { Success = false, Message = "换绑处理中，同步已暂停" };
+        }
 
         // 节流：除手动触发外，3 秒内重复触发跳过
         if (source != "manual")

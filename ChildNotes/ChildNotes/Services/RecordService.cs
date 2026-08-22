@@ -252,10 +252,11 @@ public sealed class RecordService
         NotifyWrite();
     }
 
-    public List<ChildRecord> GetByDate(DateTime date) => _repo.GetByDate(_state.UserId, _state.CurrentBabyId, date);
-    public List<ChildRecord> GetByDateRange(DateTime start, DateTime end) => _repo.GetByDateRange(_state.UserId, _state.CurrentBabyId, start, end);
-    public ChildRecord? GetLatest(string type) => _repo.GetLatest(_state.UserId, _state.CurrentBabyId, type);
-    public List<ChildRecord> GetByType(string type, int limit = 100) => _repo.GetByType(_state.UserId, _state.CurrentBabyId, type, limit);
+    // Family-centric（阶段 1C）：家庭业务表本地 user_id 恒为 LocalDataSpaceId（登录态无关）
+    public List<ChildRecord> GetByDate(DateTime date) => _repo.GetByDate(_state.GetLocalDataSpaceId(), _state.CurrentBabyId, date);
+    public List<ChildRecord> GetByDateRange(DateTime start, DateTime end) => _repo.GetByDateRange(_state.GetLocalDataSpaceId(), _state.CurrentBabyId, start, end);
+    public ChildRecord? GetLatest(string type) => _repo.GetLatest(_state.GetLocalDataSpaceId(), _state.CurrentBabyId, type);
+    public List<ChildRecord> GetByType(string type, int limit = 100) => _repo.GetByType(_state.GetLocalDataSpaceId(), _state.CurrentBabyId, type, limit);
     public void Delete(string id)
     {
         // 删除前查询记录类型，用于取消对应的提醒
@@ -282,7 +283,7 @@ public sealed class RecordService
         var time = ParseTime(timeStr);
         return new ChildRecord
         {
-            UserId = _state.UserId,
+            UserId = _state.GetLocalDataSpaceId(),
             BabyId = _state.CurrentBabyId,
             RecordType = type,
             RecordDate = time.Date,

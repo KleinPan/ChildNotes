@@ -142,7 +142,8 @@ public sealed class AiAnalysisService
 
         var record = new AiAnalysisRecord
         {
-            UserId = _state.UserId,
+            // Family-centric（阶段 1C）：AiAnalysisRecord 本地查询字段，user_id 恒为 LocalDataSpaceId
+            UserId = _state.GetLocalDataSpaceId(),
             BabyId = baby.Id,
             BabyName = baby.Name,
             RangeStartDate = start,

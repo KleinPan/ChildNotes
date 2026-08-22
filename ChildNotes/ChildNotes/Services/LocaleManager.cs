@@ -1446,6 +1446,11 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Login_WelcomeBody"] = "Thanks for registering ChildNotes! {0} points gifted for AI feeding analysis and more. Check in daily in Points & Tasks for more.";
         this["Login_OperationFailed"] = "Operation failed: {0}";
         this["Login_ErrServerUrl"] = "Server URL must start with http:// or https://";
+        // Rebind confirmation (Family-centric stage 2, design doc 7.2)
+        this["Login_RebindTitle"] = "Switch family?";
+        this["Login_RebindBody"] = "This device's local data was previously linked to another family. After binding to the new family:\n- New records will sync to the new family\n- Existing history (including future edits) stays on this device and will NOT sync to the new family\n- The original family's cloud data is unaffected\n\nContinue?";
+        this["Login_RebindContinue"] = "Continue";
+        this["Login_RebindCancelled"] = "Cancelled. Local data unchanged";
 
         // ===== LoadingView / MainWindow =====
         this["App_Name"] = "Growth Notes";

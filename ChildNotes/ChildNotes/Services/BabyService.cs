@@ -46,11 +46,13 @@ public sealed class BabyService
 
     public IReadOnlyList<Baby> LoadBabyList()
     {
-        DevLogger.Log("Baby", $"LoadBabyList start, userId={_state.UserId}");
+        // Family-centric（阶段 1C）：家庭业务表本地 user_id 恒为 LocalDataSpaceId（登录态无关）
+        var localId = _state.GetLocalDataSpaceId();
+        DevLogger.Log("Baby", $"LoadBabyList start, localDataSpaceId={localId}");
         try
         {
             _state.BabyList.Clear();
-            foreach (var b in _repo.GetByUser(_state.UserId)) _state.BabyList.Add(b);
+            foreach (var b in _repo.GetByUser(localId)) _state.BabyList.Add(b);
             DevLogger.Log("Baby", $"LoadBabyList: count={_state.BabyList.Count}");
             if (_state.BabyList.Count > 0)
             {
@@ -73,7 +75,7 @@ public sealed class BabyService
     {
         var baby = new Baby
         {
-            UserId = _state.UserId,
+            UserId = _state.GetLocalDataSpaceId(),
             Name = name,
             Gender = gender,
             BirthDate = birthDate,

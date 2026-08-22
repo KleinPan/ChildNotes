@@ -20,14 +20,16 @@ public class MilestoneService : IMilestoneService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
+    private readonly IFamilyService _familyService;
     private readonly IHttpContextAccessor _httpCtx;
 
     public MilestoneService(ChildNotesDbContext db, ICurrentUserService current,
-        IBabyAccessService babyAccess, IHttpContextAccessor httpCtx)
+        IBabyAccessService babyAccess, IFamilyService familyService, IHttpContextAccessor httpCtx)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
+        _familyService = familyService;
         _httpCtx = httpCtx;
     }
 
@@ -54,10 +56,22 @@ public class MilestoneService : IMilestoneService
             await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
 
         var now = DateTime.UtcNow;
+        // Family-centric：归属跟随 baby 的家庭；无 baby 时归属当前家庭（历史兼容路径）
+        string familyId;
+        if (!string.IsNullOrEmpty(babyId))
+        {
+            familyId = await _db.Babies.Where(b => b.Id == babyId).Select(b => b.FamilyId).FirstOrDefaultAsync(ct)
+                ?? string.Empty;
+        }
+        else
+        {
+            familyId = await _familyService.GetCurrentFamilyIdAsync(uid, ct) ?? string.Empty;
+        }
         var entity = new Milestone
         {
             Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
+            FamilyId = familyId,
             BabyId = babyId,
             Title = dto.Title.Trim(),
             Content = string.IsNullOrWhiteSpace(dto.Content) ? null : dto.Content.Trim(),
@@ -87,6 +101,12 @@ public class MilestoneService : IMilestoneService
         existing.RecordDate = ParseDate(dto.Date);
         existing.PhotosJson = SerializePhotos(dto.Photos);
         existing.BabyId = babyId;
+        // Family-centric：baby 变更时归属跟随新 baby 的家庭（维持 family_id == baby.family_id 不变量）
+        if (!string.IsNullOrEmpty(babyId))
+        {
+            existing.FamilyId = await _db.Babies.Where(b => b.Id == babyId).Select(b => b.FamilyId).FirstOrDefaultAsync(ct)
+                ?? existing.FamilyId;
+        }
         existing.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         return true;

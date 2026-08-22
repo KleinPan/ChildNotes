@@ -20,8 +20,13 @@ public static class DbInitializer
     ///          跳过 DDL、列不存在，SyncConfigRepository.SelectSql 查询该列抛
     ///          "no such column" → ServiceProvider TypeInitializationException → 启动闪退（v0.7.21~v0.7.23）。
     ///        新库（user_version=0）走完整 DDL 不受影响，仅从 v0.7.20 及之前升级的用户命中。
+    /// v6→v7：sync_config 表新增 current_family_id 列（Family-centric 模型，阶段 1B；
+    ///        登录后由服务端 AuthResponse.currentFamilyId 写入，Push 协议路由用）。
+    ///        必须递增版本号让 v6 老库重跑 DDL 补列，否则重蹈 v0.7.21 覆辙。
+    /// v7→v8：sync_config 表新增 last_bound_family_id（换绑检测）+ identity_fixup_done（一次性身份
+    ///        fixup 标志）列（Family-centric 本地身份拆分，阶段 1C）。
     /// </summary>
-    public const int CurrentSchemaVersion = 6;
+    public const int CurrentSchemaVersion = 8;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -264,6 +269,11 @@ CREATE TABLE IF NOT EXISTS sync_config (
         // 启动时若发现此字段非空则反迁移遗留数据到 LocalUserId 名下，
         // 修复旧版本登出未反迁移导致离线模式下查不到数据的问题）
         AddColumnIfNotExists(conn, "sync_config", "last_cloud_user_id", "TEXT NOT NULL DEFAULT ''");
+        // Family-centric（阶段 1B）：当前绑定家庭 Id，登录后由 AuthResponse.currentFamilyId 写入
+        AddColumnIfNotExists(conn, "sync_config", "current_family_id", "TEXT NOT NULL DEFAULT ''");
+        // Family-centric（阶段 1C）：最近绑定家庭 Id（换绑检测）+ 一次性身份 fixup 标志
+        AddColumnIfNotExists(conn, "sync_config", "last_bound_family_id", "TEXT NOT NULL DEFAULT ''");
+        AddColumnIfNotExists(conn, "sync_config", "identity_fixup_done", "INTEGER NOT NULL DEFAULT 0");
         // v5 schema 迁移：删除 username/password/token 列（SQLite 3.35+ 支持 DROP COLUMN）
         DropColumnIfExists(conn, "sync_config", "username");
         DropColumnIfExists(conn, "sync_config", "password");
@@ -274,7 +284,7 @@ VALUES (1, 0, '', '', '');
 ");
 
         // v4→v5 数据迁移：旧版本未登录用户的 child_record.user_id 用的是 app_user.id。
-        // v5 重构后改用 sync_config.local_user_id，若不继承旧 id 则 AppState.UserId 会返回新 GUID，
+        // v5 重构后改用 sync_config.local_user_id，若不继承旧 id 则本地数据空间 Id 会变成新 GUID，
         // 导致全部历史记录 WHERE user_id = @uid 查不到，UI 显示空。
         // 兜底：local_user_id 为空时，用 app_user 表的第一条记录的 id 作为 local_user_id 写入。
         // 仅在 app_user 表存在记录时执行（新库不会触发）。

@@ -33,7 +33,15 @@ public partial class LoginViewModel : ViewModelBase
     [ObservableProperty] private bool _isSendingCode;
 
     /// <summary>是否正在验证登录。</summary>
-    [ObservableProperty] private bool _isVerifying;
+    [ObservableProperty]
+    private bool _isVerifying;
+
+    /// <summary>
+    /// 换绑确认框是否打开（Family-centric 阶段 2，设计文档 7.1/7.2）：
+    /// 检测到 last_bound_family ≠ 登录账号当前家庭时弹出。
+    /// </summary>
+    [ObservableProperty]
+    private bool _isRebindConfirmOpen;
 
     private CancellationTokenSource? _countdownCts;
 
@@ -145,12 +153,19 @@ public partial class LoginViewModel : ViewModelBase
     /// <summary>
     /// 验证邮箱验证码并完成登录/自动注册。
     /// 成功 → App.RaiseLoginSucceeded → 进入主界面 → 触发首次同步（Full Pull Only）。
-    /// 失败显示错误信息，保留验证码输入（用户可修改后重试）。
+    /// 检测到换绑（last_bound_family ≠ 新家庭）→ 打开换绑确认框（IsRebindConfirmOpen），
+    /// 用户选择走 ConfirmRebindCommand / CancelRebindCommand。
     /// </summary>
     [RelayCommand]
     private async Task Verify()
     {
         ErrorMessage = string.Empty;
+        // 若上一轮换绑确认还挂着（用户改了邮箱/验证码直接再点登录），丢弃旧 pending
+        if (IsRebindConfirmOpen)
+        {
+            IsRebindConfirmOpen = false;
+            _auth.CancelRebind();
+        }
         var trimmedEmail = Email.Trim();
         var trimmedCode = Code.Trim();
         if (string.IsNullOrWhiteSpace(trimmedEmail) || !trimmedEmail.Contains('@'))
@@ -169,63 +184,18 @@ public partial class LoginViewModel : ViewModelBase
         {
             DevLogger.Log("Login", $"Verify start: email={trimmedEmail}");
             var result = await _auth.VerifyCodeAsync(trimmedEmail, trimmedCode);
-            DevLogger.Log("Login", $"Verify result: success={result.Success}, msg={result.Message}, userId={result.User?.Id}, newUser={result.NewUser}");
+            DevLogger.Log("Login", $"Verify result: success={result.Success}, msg={result.Message}, userId={result.User?.Id}, newUser={result.NewUser}, needsRebind={result.NeedsRebindConfirmation}");
+
+            // 换绑确认（阶段 2）：弹确认框，登录流程暂停；确认/取消后继续
+            if (result.NeedsRebindConfirmation)
+            {
+                IsRebindConfirmOpen = true;
+                return;
+            }
 
             if (result.Success)
             {
-                ServiceProvider.Instance.BindUserToState();
-                DevLogger.Log("Login", "BindUserToState done");
-                // 登录成功后确保欢迎消息存在
-                ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
-                ServiceProvider.Instance.BabyService.LoadBabyList();
-                DevLogger.Log("Login", "LoadBabyList done");
-
-                // 新用户：注入"赠送积分"欢迎消息（首次登录明确提示）
-                if (result.NewUser)
-                {
-                    try
-                    {
-                        ServiceProvider.Instance.InAppMessageService.Insert(new InAppMessage
-                        {
-                            Id = $"bonus-{result.User!.Id}",
-                            UserId = result.User.Id,
-                            Title = _locale.GetString("Login_WelcomeTitle", "🎉 欢迎注册！已赠送 100 积分"),
-                            Body = string.Format(_locale.GetString("Login_WelcomeBody", "感谢注册 ChildNotes！系统已自动为您赠送 {0} 积分，可用于 AI 喂养分析等高级功能。去「积分任务」签到还能每日领取积分哦。"), PointsConstants.NewUserBonusPoints),
-                            Category = "general",
-                            DataJson = "{}",
-                            IsRead = false,
-                            CreatedAt = DateTime.UtcNow.ToString("O"),
-                        });
-                    }
-                    catch (Exception msgEx) { DevLogger.Log("Login", "Insert bonus message failed: " + msgEx.Message); }
-                }
-
-                var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
-                DevLogger.Log("Login", $"LoginSucceeded subscribers={subscribers}");
-                // 直接调用 App 静态方法，绕过事件订阅可能丢失的问题（安卓 Activity 重建）
-                App.RaiseLoginSucceeded();
-                // 兼容备份：如果 App 的订阅还在，也触发事件
-                LoginSucceeded?.Invoke();
-                DevLogger.Log("Login", "LoginSucceeded invoked");
-                // 登录成功后主动触发首次同步（Full Pull Only：LastSyncAt=null 时只 Pull 不 Push）
-                // fire-and-forget：同步失败不影响登录流程，下次触发会再试
-                _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
-                DevLogger.Log("Login", "Initial sync triggered");
-
-#if DEV_BUILD
-                // 开发版 APK：自动激活永不过期会员（后端需开启 EnableDevAutoActivate）
-                DevLogger.Log("Login", "[DevActivate] DEV_BUILD 已定义，准备激活会员");
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await Task.Delay(500);
-                        var ok = await ServiceProvider.Instance.MembershipApiClient.DevActivatePermanentAsync();
-                        DevLogger.Log("Login", $"[DevActivate] 结果：{(ok ? "success" : "skipped/failed")}");
-                    }
-                    catch (Exception exDev) { DevLogger.Log("Login", "[DevActivate] 异常：" + exDev.GetType().Name + ": " + exDev.Message, DevLogger.Level.Error); }
-                });
-#endif
+                HandleLoginSuccess(result);
             }
             else
             {
@@ -244,6 +214,111 @@ public partial class LoginViewModel : ViewModelBase
         {
             IsVerifying = false;
         }
+    }
+
+    /// <summary>
+    /// 换绑确认框"继续"（设计文档 6.4/7.2）：执行 rebind 事务
+    /// （sync_config 更新 + synced_at 清空 + Full Pull Only），然后走登录成功流程。
+    /// </summary>
+    [RelayCommand]
+    private async Task ConfirmRebind()
+    {
+        ErrorMessage = string.Empty;
+        IsRebindConfirmOpen = false;
+        IsVerifying = true;
+        try
+        {
+            DevLogger.Log("Login", "ConfirmRebind start");
+            var result = await _auth.ConfirmRebindAsync();
+            DevLogger.Log("Login", $"ConfirmRebind result: success={result.Success}, msg={result.Message}");
+
+            if (result.Success)
+            {
+                HandleLoginSuccess(result);
+            }
+            else
+            {
+                ErrorMessage = result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            DevLogger.Log("Login", ex);
+            ErrorMessage = string.Format(_locale.GetString("Login_OperationFailed", "操作失败：{0}"), ex.Message);
+        }
+        finally
+        {
+            IsVerifying = false;
+        }
+    }
+
+    /// <summary>换绑确认框"取消"：本地状态零改动，回到登录页。</summary>
+    [RelayCommand]
+    private void CancelRebind()
+    {
+        IsRebindConfirmOpen = false;
+        _auth.CancelRebind();
+        ErrorMessage = _locale.GetString("Login_RebindCancelled", "已取消，本机数据保持不变");
+        DevLogger.Log("Login", "Rebind cancelled by user (UI)");
+    }
+
+    /// <summary>登录/换绑成功后的统一收尾：绑定状态、欢迎消息、进入主界面、触发首次同步。</summary>
+    private void HandleLoginSuccess(VerifyCodeResult result)
+    {
+        ServiceProvider.Instance.BindUserToState();
+        DevLogger.Log("Login", "BindUserToState done");
+        // 登录成功后确保欢迎消息存在
+        ServiceProvider.Instance.InAppMessageService.EnsureWelcomeMessage();
+        ServiceProvider.Instance.BabyService.LoadBabyList();
+        DevLogger.Log("Login", "LoadBabyList done");
+
+        // 新用户：注入"赠送积分"欢迎消息（首次登录明确提示）
+        if (result.NewUser && result.User is not null)
+        {
+            try
+            {
+                ServiceProvider.Instance.InAppMessageService.Insert(new InAppMessage
+                {
+                    Id = $"bonus-{result.User.Id}",
+                    UserId = result.User.Id,
+                    Title = _locale.GetString("Login_WelcomeTitle", "🎉 欢迎注册！已赠送 100 积分"),
+                    Body = string.Format(_locale.GetString("Login_WelcomeBody", "感谢注册 ChildNotes！系统已自动为您赠送 {0} 积分，可用于 AI 喂养分析等高级功能。去「积分任务」签到还能每日领取积分哦。"), PointsConstants.NewUserBonusPoints),
+                    Category = "general",
+                    DataJson = "{}",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow.ToString("O"),
+                });
+            }
+            catch (Exception msgEx) { DevLogger.Log("Login", "Insert bonus message failed: " + msgEx.Message); }
+        }
+
+        var subscribers = LoginSucceeded?.GetInvocationList()?.Length ?? 0;
+        DevLogger.Log("Login", $"LoginSucceeded subscribers={subscribers}");
+        // 直接调用 App 静态方法，绕过事件订阅可能丢失的问题（安卓 Activity 重建）
+        App.RaiseLoginSucceeded();
+        // 兼容备份：如果 App 的订阅还在，也触发事件
+        LoginSucceeded?.Invoke();
+        DevLogger.Log("Login", "LoginSucceeded invoked");
+        // 登录成功后主动触发首次同步（Full Pull Only：LastSyncAt=null 时只 Pull 不 Push）。
+        // 换绑场景：rebind 事务已清 last_sync_at + synced_at，本次同步先全量 Pull 拉新家庭数据。
+        // fire-and-forget：同步失败不影响登录流程，下次触发会再试
+        _ = ServiceProvider.Instance.SyncTrigger.RunNowAsync();
+        DevLogger.Log("Login", "Initial sync triggered");
+
+#if DEV_BUILD
+        // 开发版 APK：自动激活永不过期会员（后端需开启 EnableDevAutoActivate）
+        DevLogger.Log("Login", "[DevActivate] DEV_BUILD 已定义，准备激活会员");
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(500);
+                var ok = await ServiceProvider.Instance.MembershipApiClient.DevActivatePermanentAsync();
+                DevLogger.Log("Login", $"[DevActivate] 结果：{(ok ? "success" : "skipped/failed")}");
+            }
+            catch (Exception exDev) { DevLogger.Log("Login", "[DevActivate] 异常：" + exDev.GetType().Name + ": " + exDev.Message, DevLogger.Level.Error); }
+        });
+#endif
     }
 
     /// <summary>

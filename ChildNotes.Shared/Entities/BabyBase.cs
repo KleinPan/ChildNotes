@@ -8,6 +8,8 @@ public abstract class BabyBase
 {
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
+    /// <summary>数据归属家庭（Family 模型，见 docs/development/family-identity-architecture.md）。服务端以鉴权上下文为准，不信任客户端值。</summary>
+    public string FamilyId { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Avatar { get; set; } = string.Empty;
     public string Gender { get; set; } = string.Empty;

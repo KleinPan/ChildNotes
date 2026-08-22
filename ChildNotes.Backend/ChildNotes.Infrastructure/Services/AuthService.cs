@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
+using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
@@ -20,6 +21,7 @@ public class AuthService : IAuthService
     private readonly IEmailSender _emailSender;
     private readonly EmailAuthOptions _opt;
     private readonly PointsWalletService _wallet;
+    private readonly IFamilyService _familyService;
 
     public AuthService(
         ChildNotesDbContext db,
@@ -27,7 +29,8 @@ public class AuthService : IAuthService
         ICurrentUserService current,
         IEmailSender emailSender,
         IOptions<EmailAuthOptions> opt,
-        PointsWalletService wallet)
+        PointsWalletService wallet,
+        IFamilyService familyService)
     {
         _db = db;
         _jwt = jwt;
@@ -35,6 +38,7 @@ public class AuthService : IAuthService
         _emailSender = emailSender;
         _opt = opt.Value;
         _wallet = wallet;
+        _familyService = familyService;
     }
 
     public async Task<SendCodeResponse> SendCodeAsync(SendCodeRequest req, CancellationToken ct = default)
@@ -261,6 +265,8 @@ public class AuthService : IAuthService
         if (resultNewUserId is not null)
         {
             await EnsureUserPointsAsync(resultNewUserId, ct);
+            // 新用户自动建默认 Family（Owner）——Family-now 模型，见 docs/development/family-identity-architecture.md
+            await EnsureDefaultFamilyAsync(resultNewUserId, ct);
         }
 
         // 事务外：生成 AccessToken/RefreshToken（BuildAuthResponseAsync 内部会开自己的事务）
@@ -362,6 +368,7 @@ public class AuthService : IAuthService
         });
         await _db.SaveChangesAsync(ct);
 
+        var families = await _familyService.GetUserFamiliesAsync(user.Id, ct);
         return new AuthResponse
         {
             AccessToken = accessToken,
@@ -369,7 +376,30 @@ public class AuthService : IAuthService
             ExpiresIn = _opt.AccessTokenExpireMinutes * 60,
             User = ToLoginUserDto(user),
             NewUser = newUser,
+            Families = families,
+            // 与 FamilyService.GetUserFamiliesAsync 同序（CreatedAt 升序），MVP 取首个为当前家庭
+            CurrentFamilyId = families.FirstOrDefault()?.Id,
         };
+    }
+
+    /// <summary>新用户建默认 Family（幂等：已是任意家庭成员则跳过）。</summary>
+    private async Task EnsureDefaultFamilyAsync(string userId, CancellationToken ct)
+    {
+        var hasFamily = await _db.FamilyMembers.AnyAsync(fm => fm.UserId == userId, ct);
+        if (hasFamily) return;
+        var now = DateTime.UtcNow;
+        var family = new Family { Id = Guid.NewGuid().ToString("N"), Name = "我的家庭", CreatedAt = now, UpdatedAt = now };
+        _db.Families.Add(family);
+        _db.FamilyMembers.Add(new FamilyMember
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            FamilyId = family.Id,
+            UserId = userId,
+            Role = StatusConstants.FamilyMemberRole.Owner,
+            CreatedAt = now,
+            UpdatedAt = now,
+        });
+        await _db.SaveChangesAsync(ct);
     }
 
     private async Task EnsureUserPointsAsync(string userId, CancellationToken ct)

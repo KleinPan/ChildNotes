@@ -55,4 +55,12 @@ public static class StatusConstants
     {
         public const string Completed = "completed";
     }
+
+    /// <summary>家庭成员角色（FamilyMember.Role）。</summary>
+    public static class FamilyMemberRole
+    {
+        public const string Owner = "owner";
+        public const string Member = "member";
+        public const string Readonly = "readonly";
+    }
 }

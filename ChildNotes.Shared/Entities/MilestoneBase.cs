@@ -9,6 +9,8 @@ public abstract class MilestoneBase
 {
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
+    /// <summary>数据归属家庭（冗余列，随 Baby.FamilyId 一致）。</summary>
+    public string FamilyId { get; set; } = string.Empty;
     public string? BabyId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Content { get; set; }

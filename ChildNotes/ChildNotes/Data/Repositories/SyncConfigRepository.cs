@@ -18,6 +18,7 @@ public sealed class SyncConfigRepository : BaseRepository
 
     private const string SelectSql =
         "SELECT id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id, " +
+        "current_family_id, last_bound_family_id, identity_fixup_done, " +
         "last_sync_at, last_sync_status, last_sync_msg, device_id FROM sync_config WHERE id=1";
 
     /// <summary>内存缓存：单行配置表极少变化，仅在写操作后失效。</summary>
@@ -46,6 +47,9 @@ public sealed class SyncConfigRepository : BaseRepository
         ServerUrl = c.ServerUrl,
         CloudUserId = c.CloudUserId,
         LocalUserId = c.LocalUserId,
+        CurrentFamilyId = c.CurrentFamilyId,
+        LastBoundFamilyId = c.LastBoundFamilyId,
+        IdentityFixupDone = c.IdentityFixupDone,
         LastCloudUserId = c.LastCloudUserId,
         LastSyncAt = c.LastSyncAt,
         LastSyncStatus = c.LastSyncStatus,
@@ -69,8 +73,9 @@ public sealed class SyncConfigRepository : BaseRepository
         ExecuteNonQuery(
             @"INSERT OR REPLACE INTO sync_config
               (id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id,
+               current_family_id, last_bound_family_id, identity_fixup_done,
                last_sync_at, last_sync_status, last_sync_msg, device_id)
-              VALUES (@id, @e, @u, @cuid, @luid, @lcuid, @lsa, @lss, @lsm, @did)",
+              VALUES (@id, @e, @u, @cuid, @luid, @lcuid, @cfid, @lbfid, @fx, @lsa, @lss, @lsm, @did)",
             cmd =>
             {
                 cmd.Add("@id", 1)
@@ -79,6 +84,9 @@ public sealed class SyncConfigRepository : BaseRepository
                    .AddString("@cuid", cfg.CloudUserId, emptyAsNull: true)
                    .AddString("@luid", cfg.LocalUserId, emptyAsNull: true)
                    .AddString("@lcuid", cfg.LastCloudUserId, emptyAsNull: true)
+                   .AddString("@cfid", cfg.CurrentFamilyId, emptyAsNull: true)
+                   .AddString("@lbfid", cfg.LastBoundFamilyId, emptyAsNull: true)
+                   .Add("@fx", cfg.IdentityFixupDone)
                    .Add("@lsa", cfg.LastSyncAt is null ? DBNull.Value : (object)ToUtcO(cfg.LastSyncAt.Value))
                    .AddString("@lss", cfg.LastSyncStatus, emptyAsNull: true)
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
@@ -131,49 +139,59 @@ public sealed class SyncConfigRepository : BaseRepository
     }
 
     /// <summary>
-    /// 更新上次登录的云端用户 Id（登出时记录，用于下次启动时反迁移遗留数据）。
-    /// 启动时若发现此字段非空且 CloudUserId 为空（已登出），执行反迁移后清空此字段。
+    /// 更新当前绑定家庭 Id（登录成功后由 AuthResponse.currentFamilyId 写入）。
+    /// 阶段 2 引入换绑（rebind）后，此方法在换绑事务中变更并联动清理 synced_at。
     /// </summary>
-    public void UpdateLastCloudUserId(string lastCloudUserId)
+    public void UpdateCurrentFamilyId(string familyId)
     {
         ExecuteNonQuery(
-            "UPDATE sync_config SET last_cloud_user_id=@c WHERE id=1",
-            cmd => cmd.AddString("@c", lastCloudUserId ?? string.Empty, emptyAsNull: false));
+            "UPDATE sync_config SET current_family_id=@f WHERE id=1",
+            cmd => cmd.AddString("@f", familyId ?? string.Empty, emptyAsNull: false));
         InvalidateCache();
     }
 
     /// <summary>
-    /// 把 oldUserId 名下的所有业务数据迁移到 newUserId 名下。
+    /// 更新最近绑定家庭 Id（登录绑定家庭时写入；换绑检测用，见设计文档 7.1）。
+    /// 除"清除本地数据"外永不清空。
+    /// </summary>
+    public void UpdateLastBoundFamilyId(string familyId)
+    {
+        ExecuteNonQuery(
+            "UPDATE sync_config SET last_bound_family_id=@f WHERE id=1",
+            cmd => cmd.AddString("@f", familyId ?? string.Empty, emptyAsNull: false));
+        InvalidateCache();
+    }
+
+    /// <summary>
+    /// 个人数据表清单（UserId = CloudUserId；未登录离线态挂 LocalDataSpaceId）。
+    /// sign_in_record：按 Id 全局唯一（INSERT OR IGNORE upsert），user_id 为属性列。
+    /// </summary>
+    private static readonly string[] PersonalTables = { "sign_in_record", "in_app_message" };
+
+    /// <summary>家庭业务表清单（本地 user_id 恒为 LocalDataSpaceId；云端归属 FamilyId）。</summary>
+    private static readonly string[] FamilyTables =
+        { "baby", "child_record", "milestone", "user_custom_vaccine", "ai_analysis_record" };
+
+    /// <summary>
+    /// 把个人数据表中的 oldUserId 行迁移/合并到 newUserId 名下（单事务）。
+    /// 仅处理个人表；家庭业务表 user_id 恒为 LocalDataSpaceId，不再参与任何迁移。
     ///
-    /// 背景：v5 重构后 AppState.UserId 未登录返回 LocalUserId，登录返回 CloudUserId。
-    /// 用户切换登录态时（登录或登出），若不迁移 user_id，GetByUser(新 id) 查不到原数据，
-    /// 导致首页显示"未添加宝宝"。
-    ///
-    /// 双向使用：
-    ///   - 登录时：MigrateUserId(localUserId, cloudUserId)
-    ///   - 登出时：MigrateUserId(cloudUserId, localUserId)
-    ///
-    /// 单事务执行所有 UPDATE，遇 UNIQUE 冲突时合并/去重后保留 newUserId 名下数据。
+    /// UNIQUE 冲突处理：
+    ///   - user_points（user_id UNIQUE）：合并 points/total_earned/total_spent 后删旧行
+    ///   - task_record（user_id+task_code UNIQUE）：删冲突行后 UPDATE
+    ///   - user_supplement_item（user_id+type+name UNIQUE）：删冲突行后 UPDATE
+    ///   - sign_in_record / in_app_message：无 UNIQUE 约束，直接 UPDATE
     /// 幂等：相同 id 或无数据可迁时返回 0，多次调用安全。
     /// </summary>
-    /// <param name="oldUserId">迁移源用户 Id（被替换的 user_id 值）。</param>
-    /// <param name="newUserId">迁移目标用户 Id（替换后的 user_id 值）。</param>
-    /// <returns>受影响的总行数（含 UPDATE 与 DELETE，用于诊断）。</returns>
-    public int MigrateUserId(string oldUserId, string newUserId)
+    /// <returns>受影响的总行数（用于诊断）。</returns>
+    private int MigratePersonalData(SqliteConnection conn, SqliteTransaction tx, string oldUserId, string newUserId)
     {
-        if (string.IsNullOrEmpty(oldUserId) || string.IsNullOrEmpty(newUserId)) return 0;
-        if (string.Equals(oldUserId, newUserId, StringComparison.Ordinal)) return 0;
-
         int totalAffected = 0;
-        using var conn = _factory.Create();
-        using var tx = conn.BeginTransaction();
-        try
+
+        using (var cmd = conn.CreateCommand())
         {
-            // user_points.user_id UNIQUE：若 newUserId 已有积分行，合并积分后删 oldUserId 行
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = @"
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
 UPDATE user_points
 SET points = points + (SELECT points FROM user_points WHERE user_id = @old),
     total_earned = total_earned + (SELECT total_earned FROM user_points WHERE user_id = @old),
@@ -184,66 +202,226 @@ DELETE FROM user_points
 WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM user_points WHERE user_id = @new);
 UPDATE user_points SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", oldUserId);
-                cmd.Parameters.AddWithValue("@new", newUserId);
-                totalAffected += cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@old", oldUserId);
+            cmd.Parameters.AddWithValue("@new", newUserId);
+            totalAffected += cmd.ExecuteNonQuery();
+        }
 
-            // task_record (user_id, task_code) UNIQUE：删 oldUserId 名下与 newUserId 冲突的行后 UPDATE
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = @"
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
 DELETE FROM task_record
 WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM task_record AS b WHERE b.user_id = @new AND b.task_code = task_record.task_code);
 UPDATE task_record SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", oldUserId);
-                cmd.Parameters.AddWithValue("@new", newUserId);
-                totalAffected += cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@old", oldUserId);
+            cmd.Parameters.AddWithValue("@new", newUserId);
+            totalAffected += cmd.ExecuteNonQuery();
+        }
 
-            // user_supplement_item (user_id, type, name) UNIQUE：同上去重后 UPDATE
-            using (var cmd = conn.CreateCommand())
-            {
-                cmd.Transaction = tx;
-                cmd.CommandText = @"
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.Transaction = tx;
+            cmd.CommandText = @"
 DELETE FROM user_supplement_item
 WHERE user_id = @old
   AND EXISTS (SELECT 1 FROM user_supplement_item AS b
               WHERE b.user_id = @new AND b.type = user_supplement_item.type AND b.name = user_supplement_item.name);
 UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", oldUserId);
-                cmd.Parameters.AddWithValue("@new", newUserId);
-                totalAffected += cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@old", oldUserId);
+            cmd.Parameters.AddWithValue("@new", newUserId);
+            totalAffected += cmd.ExecuteNonQuery();
+        }
 
-            // 无 UNIQUE 约束的表：直接 UPDATE
-            var simpleTables = new[]
-            {
-                "baby", "baby_member", "child_record", "milestone",
-                "sign_in_record", "user_custom_vaccine",
-                "ai_analysis_record", "in_app_message",
-            };
-            foreach (var table in simpleTables)
-            {
-                using var cmd = conn.CreateCommand();
-                cmd.Transaction = tx;
-                cmd.CommandText = $"UPDATE {table} SET user_id = @new WHERE user_id = @old;";
-                cmd.Parameters.AddWithValue("@old", oldUserId);
-                cmd.Parameters.AddWithValue("@new", newUserId);
-                totalAffected += cmd.ExecuteNonQuery();
-            }
+        foreach (var table in PersonalTables)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = $"UPDATE {table} SET user_id = @new WHERE user_id = @old;";
+            cmd.Parameters.AddWithValue("@old", oldUserId);
+            cmd.Parameters.AddWithValue("@new", newUserId);
+            totalAffected += cmd.ExecuteNonQuery();
+        }
 
+        return totalAffected;
+    }
+
+    /// <summary>
+    /// 删除个人数据表中"既不属于本地数据空间、也不属于当前账号"的遗留行（换云账号场景，
+    /// 设计文档 6.5：CloudUserId 变更时清理本地个人表，新账号数据由 Pull 重建）。
+    /// </summary>
+    private int DeleteForeignPersonalRows(SqliteConnection conn, SqliteTransaction tx, string localId, string cloudId)
+    {
+        int totalAffected = 0;
+        var allTables = new List<string>(PersonalTables) { "user_points", "task_record", "user_supplement_item" };
+        foreach (var table in allTables)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.Transaction = tx;
+            cmd.CommandText = $"DELETE FROM {table} WHERE user_id != @l AND user_id != @c;";
+            cmd.Parameters.AddWithValue("@l", localId);
+            cmd.Parameters.AddWithValue("@c", cloudId);
+            totalAffected += cmd.ExecuteNonQuery();
+        }
+        return totalAffected;
+    }
+
+    /// <summary>
+    /// 登录成功后把本地个人数据归到账号名下（设计文档 6.5，阶段 1C）：
+    ///   1. 删除换账号遗留行（user_id 既非 LocalDataSpaceId 也非当前 CloudUserId）
+    ///   2. 离线期间挂 LocalDataSpaceId 的个人数据（积分/签到/任务/自定义项/站内信）迁移到 CloudUserId
+    /// 单事务执行；家庭业务表不迁移（user_id 恒为 LocalDataSpaceId）。
+    /// </summary>
+    public int AdoptPersonalDataOnLogin(string localId, string cloudId)
+    {
+        if (string.IsNullOrEmpty(localId) || string.IsNullOrEmpty(cloudId)) return 0;
+        if (string.Equals(localId, cloudId, StringComparison.Ordinal)) return 0;
+
+        using var conn = _factory.Create();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            int totalAffected = DeleteForeignPersonalRows(conn, tx, localId, cloudId);
+            totalAffected += MigratePersonalData(conn, tx, localId, cloudId);
             tx.Commit();
             InvalidateCache();
-            DevLogger.Log("Sync", $"MigrateUserId: {oldUserId} → {newUserId}, affected={totalAffected}");
+            DevLogger.Log("Sync", $"AdoptPersonalDataOnLogin: local={localId} → cloud={cloudId}, affected={totalAffected}");
             return totalAffected;
         }
         catch (Exception ex)
         {
             tx.Rollback();
-            DevLogger.Log("Sync", $"MigrateUserId failed (rolled back): {ex.Message}");
+            DevLogger.Log("Sync", $"AdoptPersonalDataOnLogin failed (rolled back): {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 一次性身份 fixup（阶段 1C，设计文档 11 节）：把旧版本（User-centric 双向迁移时代）
+    /// 遗留的 user_id 归位到 Family-centric 语义。单事务，崩溃安全可重跑：
+    ///
+    ///   1. 家庭业务表：所有非 LocalDataSpaceId 的 user_id → LocalDataSpaceId
+    ///      （baby_member 不动：其 user_id 是云端成员名单，非本地数据空间概念）
+    ///   2. 个人表：
+    ///      - 已登录：清理换账号遗留行 + 离线个人数据（L 名下）迁到 CloudUserId
+    ///      - 未登录：lastCloudUserId 遗留行迁回 LocalDataSpaceId（旧版登出未反迁移的兜底）
+    ///   3. last_bound_family_id = 当前绑定家庭（若已登录）
+    ///   4. 清空 last_cloud_user_id（v6 补偿机制废弃；防版本回滚误触发旧反迁移）
+    ///   5. identity_fixup_done = 1（幂等标志，与数据同事务）
+    /// </summary>
+    public int RunIdentityFixup(string localId, string? cloudId, string? lastCloudId, string? currentFamilyId)
+    {
+        if (string.IsNullOrEmpty(localId)) return 0;
+
+        using var conn = _factory.Create();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            int totalAffected = 0;
+
+            // 1. 家庭业务表：user_id 恒为 LocalDataSpaceId（存量非 L 的全部归 L）
+            foreach (var table in FamilyTables)
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = $"UPDATE {table} SET user_id=@l WHERE user_id != @l;";
+                cmd.Parameters.AddWithValue("@l", localId);
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            // 2. 个人表按登录态归位
+            if (!string.IsNullOrEmpty(cloudId) && !string.Equals(cloudId, localId, StringComparison.Ordinal))
+            {
+                totalAffected += DeleteForeignPersonalRows(conn, tx, localId, cloudId);
+                totalAffected += MigratePersonalData(conn, tx, localId, cloudId);
+            }
+            else if (!string.IsNullOrEmpty(lastCloudId) && !string.Equals(lastCloudId, localId, StringComparison.Ordinal))
+            {
+                totalAffected += MigratePersonalData(conn, tx, lastCloudId, localId);
+            }
+
+            // 3-5. sync_config：last_bound_family_id / 清空 last_cloud_user_id / fixup 标志
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+UPDATE sync_config SET
+  last_bound_family_id = CASE WHEN @f != '' THEN @f ELSE last_bound_family_id END,
+  last_cloud_user_id = '',
+  identity_fixup_done = 1
+WHERE id = 1;";
+                cmd.Parameters.AddWithValue("@f", currentFamilyId ?? string.Empty);
+                cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+            InvalidateCache();
+            DevLogger.Log("Sync", $"RunIdentityFixup done: local={localId}, cloud={cloudId ?? "null"}, lastCloud={lastCloudId ?? "null"}, family={currentFamilyId ?? "null"}, affected={totalAffected}");
+            return totalAffected;
+        }
+        catch (Exception ex)
+        {
+            tx.Rollback();
+            DevLogger.Log("Sync", $"RunIdentityFixup failed (rolled back): {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 换绑（rebind）事务（Family-centric 阶段 2，设计文档 6.4）：用户在换绑确认框点"确认"后，
+    /// 在 SyncTrigger 独占锁内执行。单事务完成：
+    ///
+    ///   1. sync_config：cloud_user_id / current_family_id / last_bound_family_id 更新为登录账号与家庭，
+    ///      last_sync_at 置 NULL（下次同步 = Full Pull Only）
+    ///   2. baby / child_record / milestone 的 synced_at 全部置 NULL
+    ///      （本机数据标记为"未上送"，归属变更后重新推送到新家庭；服务端 LWW 幂等）
+    ///
+    /// 崩溃安全：单事务原子提交，重跑无副作用（UPDATE 幂等）。
+    /// </summary>
+    /// <returns>受影响行数（sync_config 1 行 + 三张业务表行数）。</returns>
+    public int ExecuteRebind(string cloudUserId, string familyId)
+    {
+        using var conn = _factory.Create();
+        using var tx = conn.BeginTransaction();
+        try
+        {
+            int totalAffected;
+
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.Transaction = tx;
+                cmd.CommandText = @"
+UPDATE sync_config SET
+  cloud_user_id = @c,
+  current_family_id = @f,
+  last_bound_family_id = @f,
+  last_sync_at = NULL,
+  last_sync_status = NULL,
+  last_sync_msg = NULL
+WHERE id = 1;";
+                cmd.Parameters.AddWithValue("@c", cloudUserId ?? string.Empty);
+                cmd.Parameters.AddWithValue("@f", familyId ?? string.Empty);
+                totalAffected = cmd.ExecuteNonQuery();
+            }
+
+            foreach (var table in new[] { "baby", "child_record", "milestone" })
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.Transaction = tx;
+                cmd.CommandText = $"UPDATE {table} SET synced_at = NULL;";
+                totalAffected += cmd.ExecuteNonQuery();
+            }
+
+            tx.Commit();
+            InvalidateCache();
+            DevLogger.Log("Sync", $"ExecuteRebind done: cloud={cloudUserId}, family={familyId}, affected={totalAffected}");
+            return totalAffected;
+        }
+        catch (Exception ex)
+        {
+            tx.Rollback();
+            DevLogger.Log("Sync", $"ExecuteRebind failed (rolled back): {ex.Message}");
             throw;
         }
     }
@@ -270,9 +448,12 @@ UPDATE user_supplement_item SET user_id = @new WHERE user_id = @old;";
         CloudUserId = r.IsDBNull(3) ? string.Empty : r.GetString(3),
         LocalUserId = r.IsDBNull(4) ? string.Empty : r.GetString(4),
         LastCloudUserId = r.IsDBNull(5) ? string.Empty : r.GetString(5),
-        LastSyncAt = r.IsDBNull(6) ? null : DateTimeExtensions.ParseDb(r.GetString(6)),
-        LastSyncStatus = r.IsDBNull(7) ? null : r.GetString(7),
-        LastSyncMsg = r.IsDBNull(8) ? null : r.GetString(8),
-        DeviceId = r.IsDBNull(9) ? string.Empty : r.GetString(9),
+        CurrentFamilyId = r.IsDBNull(6) ? string.Empty : r.GetString(6),
+        LastBoundFamilyId = r.IsDBNull(7) ? string.Empty : r.GetString(7),
+        IdentityFixupDone = r.GetInt32(8),
+        LastSyncAt = r.IsDBNull(9) ? null : DateTimeExtensions.ParseDb(r.GetString(9)),
+        LastSyncStatus = r.IsDBNull(10) ? null : r.GetString(10),
+        LastSyncMsg = r.IsDBNull(11) ? null : r.GetString(11),
+        DeviceId = r.IsDBNull(12) ? string.Empty : r.GetString(12),
     };
 }

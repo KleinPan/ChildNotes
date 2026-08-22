@@ -32,6 +32,22 @@ public class AuthResponse
     public int ExpiresIn { get; set; }
     public LoginUserDto User { get; set; } = new();
     public bool NewUser { get; set; }
+
+    /// <summary>用户所属家庭列表（一人多家庭 API 预留，MVP 单家庭）。</summary>
+    public List<FamilyDto> Families { get; set; } = new();
+
+    /// <summary>当前家庭 Id（MVP = Families[0].Id；无家庭时为 null）。</summary>
+    public string? CurrentFamilyId { get; set; }
+}
+
+/// <summary>家庭信息（登录响应 / 家庭接口共用）。</summary>
+public class FamilyDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>当前用户在该家庭的角色：owner / member / readonly。</summary>
+    public string Role { get; set; } = string.Empty;
 }
 
 public class LoginUserDto

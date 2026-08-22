@@ -16,12 +16,15 @@ public class BabyService : IBabyService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
+    private readonly IFamilyService _familyService;
 
-    public BabyService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess)
+    public BabyService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess,
+        IFamilyService familyService)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
+        _familyService = familyService;
     }
 
     public async Task<List<BabyDto>> ListBabiesAsync(CancellationToken ct = default)
@@ -53,12 +56,16 @@ public class BabyService : IBabyService
     public async Task<BabyDto> CreateBabyAsync(CreateBabyRequest req, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
+        // Family-centric：新 baby 归属创建者当前家庭（登录/注册已保证有默认家庭，null 属异常态）
+        var fid = await _familyService.GetCurrentFamilyIdAsync(uid, ct)
+            ?? throw new BusinessException("当前账号未归属任何家庭，无法创建宝宝", 400, "NO_FAMILY");
         var baby = new Baby
         {
             // 宝宝 ID 用户可见（用于加入家庭），截取 GUID 前 8 位缩短显示。
             // 16^8=42 亿组合，用户量远小于此，冲突概率可忽略；后期用户上来再加唯一性校验。
             Id = Guid.NewGuid().ToString("N")[..8],
             UserId = uid,
+            FamilyId = fid,
             Name = string.IsNullOrWhiteSpace(req.Name) ? "宝宝" : req.Name,
             Avatar = req.Avatar ?? string.Empty,
             Gender = string.IsNullOrWhiteSpace(req.Gender) ? "boy" : req.Gender,

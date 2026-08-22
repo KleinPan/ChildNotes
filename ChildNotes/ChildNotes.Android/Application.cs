@@ -1,4 +1,4 @@
-﻿﻿using Android.App;
+﻿using Android.App;
 using Android.Runtime;
 using Avalonia;
 using Avalonia.Android;
@@ -12,6 +12,17 @@ namespace ChildNotes.Android
     {
         protected Application(nint javaReference, JniHandleOwnership transfer) : base(javaReference, transfer)
         {
+        }
+
+        public override void OnCreate()
+        {
+            base.OnCreate();
+
+            // Family-centric（阶段 2）：注入 ANDROID_ID 提供者（进程级，早于 Avalonia 启动 /
+            // ServiceProvider 构造），DeviceId / LocalDataSpaceId 按设计文档第 4 节 SHA256 派生，
+            // 同设备卸载重装后 Id 连续（数据归属不漂移）。失败回退 GUID（上层处理）。
+            ChildNotes.Infrastructure.DeviceIdentityProvider.Current =
+                new Services.AndroidDeviceIdentityProvider(this);
         }
 
         protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)

@@ -16,12 +16,15 @@ public class RecordService : IRecordService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
+    private readonly IFamilyService _familyService;
 
-    public RecordService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess)
+    public RecordService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess,
+        IFamilyService familyService)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
+        _familyService = familyService;
     }
 
     public async Task<string> AddRecordAsync(string recordType, object dto, CancellationToken ct = default)
@@ -31,11 +34,14 @@ public class RecordService : IRecordService
 
         var uid = _current.RequireUserId();
         var baby = await _babyAccess.GetDefaultBabyAsync(uid, ct);
+        // Family-centric：记录归属跟随 baby 的家庭（baby 来自当前家庭默认宝宝）
+        var familyId = baby?.FamilyId ?? await _familyService.GetCurrentFamilyIdAsync(uid, ct) ?? string.Empty;
         var time = ExtractTime(dto);
         var rec = new ChildRecord
         {
             Id = Guid.NewGuid().ToString("N"),
             UserId = uid,
+            FamilyId = familyId,
             BabyId = baby?.Id,
             RecordType = recordType,
             RecordDate = DateTime.SpecifyKind(time.Date, DateTimeKind.Utc),
