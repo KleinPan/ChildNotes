@@ -25,8 +25,13 @@ public static class DbInitializer
     ///        必须递增版本号让 v6 老库重跑 DDL 补列，否则重蹈 v0.7.21 覆辙。
     /// v7→v8：sync_config 表新增 last_bound_family_id（换绑检测）+ identity_fixup_done（一次性身份
     ///        fixup 标志）列（Family-centric 本地身份拆分，阶段 1C）。
+    /// v8→v9：llm_config 表新增 parse_mode 列（Ai记快速/精准识别模式）。
+    ///        ★ v0.7.29 引入该列时 CurrentSchemaVersion 未递增（仍为 8），导致 v8 老库升级后
+    ///          跳过 DDL、列不存在，AiAnalysisRepository.GetLlmConfig 查询该列抛
+    ///          "no such column: parse_mode" → AI 分析设置页打不开（v0.7.29）。
+    ///        必须递增版本号让 v8 老库重跑 DDL 补列，否则重蹈 v0.7.21 覆辙。
     /// </summary>
-    public const int CurrentSchemaVersion = 8;
+    public const int CurrentSchemaVersion = 9;
 
     public static void Initialize(DbConnectionFactory factory)
     {
