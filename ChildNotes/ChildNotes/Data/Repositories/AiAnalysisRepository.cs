@@ -61,7 +61,7 @@ public sealed class AiAnalysisRepository : BaseRepository
         using (var conn = OpenConnection())
         {
             using var cmd = conn.CreateCommand();
-            cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source FROM llm_config WHERE id = 1";
+            cmd.CommandText = "SELECT api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source, parse_mode FROM llm_config WHERE id = 1";
             using var r = cmd.ExecuteReader();
             if (r.Read())
             {
@@ -74,6 +74,7 @@ public sealed class AiAnalysisRepository : BaseRepository
                     MaxTokens = r.GetInt32(4),
                     Enabled = r.GetInt32(5) == 1,
                     NoteSource = r.IsDBNull(6) ? "local" : r.GetString(6),
+                    ParseMode = r.IsDBNull(7) ? ChildNotes.Shared.Constants.ParseMode.Fast : r.GetString(7),
                 };
             }
             else
@@ -88,9 +89,9 @@ public sealed class AiAnalysisRepository : BaseRepository
     public void SaveLlmConfig(LlmConfig config)
     {
         ExecuteNonQuery(
-            @"INSERT INTO llm_config (id, api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source, updated_at)
-              VALUES (1, @u, @k, @m, @t, @mt, @e, @ns, @now)
-              ON CONFLICT(id) DO UPDATE SET api_base_url=@u, api_key=@k, model_name=@m, temperature=@t, max_tokens=@mt, enabled=@e, note_source=@ns, updated_at=@now",
+            @"INSERT INTO llm_config (id, api_base_url, api_key, model_name, temperature, max_tokens, enabled, note_source, parse_mode, updated_at)
+              VALUES (1, @u, @k, @m, @t, @mt, @e, @ns, @pm, @now)
+              ON CONFLICT(id) DO UPDATE SET api_base_url=@u, api_key=@k, model_name=@m, temperature=@t, max_tokens=@mt, enabled=@e, note_source=@ns, parse_mode=@pm, updated_at=@now",
             cmd => cmd
                 .Add("@u", config.ApiBaseUrl)
                 .Add("@k", config.ApiKey)
@@ -99,6 +100,7 @@ public sealed class AiAnalysisRepository : BaseRepository
                 .Add("@mt", config.MaxTokens)
                 .Add("@e", config.Enabled ? 1 : 0)
                 .Add("@ns", string.IsNullOrEmpty(config.NoteSource) ? "local" : config.NoteSource)
+                .Add("@pm", string.IsNullOrEmpty(config.ParseMode) ? ChildNotes.Shared.Constants.ParseMode.Fast : config.ParseMode)
                 .AddUtc("@now", DateTime.UtcNow));
         lock (_llmCacheLock) { _llmCached = null; }
     }

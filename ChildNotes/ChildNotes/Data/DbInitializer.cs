@@ -212,6 +212,8 @@ CREATE TABLE IF NOT EXISTS llm_config (
 
         // "Ai记" 解析服务来源：local=本地 LLM（默认），server=后端解析接口
         AddColumnIfNotExists(conn, "llm_config", "note_source", "TEXT NOT NULL DEFAULT 'local'");
+        // "Ai记" 智能识别模式：fast=快速模式（默认），precise=精准模式
+        AddColumnIfNotExists(conn, "llm_config", "parse_mode", "TEXT NOT NULL DEFAULT 'fast'");
 
         conn.ExecuteNonQuery(@"
 CREATE INDEX IF NOT EXISTS idx_child_record_user_date_type
