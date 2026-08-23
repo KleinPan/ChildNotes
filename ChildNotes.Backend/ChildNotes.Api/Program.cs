@@ -25,13 +25,15 @@ builder.Services.Configure<UploadOptions>(builder.Configuration.GetSection("Uplo
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection("Admin"));
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? string.Empty;
 // 生产环境强制校验 JWT Secret 必须配置且足够长（>=32 字符）
-// 开发/测试环境若未配置则生成临时密钥（仅本机使用，重启后失效）
+// 开发/测试环境若未配置则使用固定 dev 密钥（重启不变，避免客户端 Token 全量失效）
 if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
 {
     if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
     {
-        // 开发/测试环境：生成临时密钥，避免本地启动失败
-        jwtSecret = "dev-only-secret-" + Guid.NewGuid().ToString("N");
+        // 开发/测试环境：固定密钥（不随重启变化）。若每次重启随机生成，服务端所有已签发
+        // AccessToken/RefreshToken 会全量失效，客户端被迫重新登录，并放大客户端并发 Refresh 竞态。
+        // 可通过 user-secrets 覆盖：dotnet user-secrets set "Jwt:Secret" "<>=32字符>"（优先级高于此默认值）
+        jwtSecret = "dev-only-fixed-secret-childnotes-local-9f2a1c4e";
     }
     else
     {

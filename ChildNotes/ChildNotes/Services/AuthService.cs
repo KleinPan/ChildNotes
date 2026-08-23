@@ -35,6 +35,10 @@ public sealed class AuthService
     // 非 readonly：Android/iOS 平台启动时通过 UpdateSecureStorage 热替换（见 OverrideSecureStorage 注释）
     private ISecureStorage _secureStorage;
 
+    // Refresh 串行化锁：多个调用方（同步/上传/推送/BaseApiClient）并发发现 AccessToken 过期时，
+    // 若同时发 refresh，后到的请求会拿已被 Rotation 撤销的旧 RefreshToken → 服务端 401 → 误软登出。
+    private readonly SemaphoreSlim _refreshLock = new(1, 1);
+
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     private static readonly JsonSerializerOptions JsonOpts = new()
@@ -448,6 +452,10 @@ public sealed class AuthService
     /// 用 RefreshToken 换取新的 AccessToken + RefreshToken（Rotation）。
     /// 旧 RefreshToken 在服务端已撤销；新 Token 写入 SecureStorage。
     /// 失败返回 null，调用方应提示用户重新邮箱登录（不删除业务数据）。
+    ///
+    /// 并发安全：通过 _refreshLock 串行化，同一时刻只有一个 refresh 请求在飞。
+    /// 并发调用方中第一个完成 Rotation；后续请求进锁后重读 RefreshToken 发现已变化，
+    /// 直接复用新 AccessToken，不再发请求（旧 Token 已被撤销，重发必 401 → 误软登出）。
     /// </summary>
     public async Task<string?> RefreshAccessTokenAsync(CancellationToken ct = default)
     {
@@ -455,61 +463,108 @@ public sealed class AuthService
         var serverUrl = ResolveServerUrl(cfg.ServerUrl);
         if (serverUrl is null) return null;
 
-        var refreshToken = await _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
-        if (string.IsNullOrEmpty(refreshToken))
+        var refreshTokenOnEntry = await _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
+        if (string.IsNullOrEmpty(refreshTokenOnEntry))
         {
             DevLogger.Log("Auth", "Refresh: RefreshToken 缺失");
             return null;
         }
 
-        var url = serverUrl.TrimEnd('/') + "/api/auth/refresh";
-        var body = Serialize(new { refreshToken });
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json"),
-            };
-            using var resp = await Http.SendAsync(req, ct);
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("Auth", $"Refresh fail: {(int)resp.StatusCode}");
-                // 401/403：服务端明确拒绝该 RefreshToken（已撤销/过期），
-                // 软登出避免 UI 卡在"已登录但同步失败"状态，引导用户重新登录。
-                if (resp.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
-                {
-                    await SoftLogoutAsync(ct);
-                }
-                return null;
-            }
-            var auth = ExtractData<AuthResponseDto>(json);
-            if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
-            {
-                DevLogger.Log("Auth", "Refresh fail: 响应缺少 data.accessToken");
-                return null;
-            }
-
-            // Rotation：写入新的 Token 对
-            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
-            await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
-
-            // 若返回了新的 User（profile 更新），更新本地缓存
-            if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
-            {
-                var user = ToAppUser(auth.User);
-                _users.Upsert(user);
-                CurrentUser = user;
-                _state.User = user;
-            }
-
-            DevLogger.Log("Auth", "Refresh ok: new AccessToken + RefreshToken saved");
-            return auth.AccessToken;
+            await _refreshLock.WaitAsync(ct);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            DevLogger.Log("Auth", "Refresh exception: " + ex.Message);
-            return null;
+            return null; // 等锁期间调用方取消，与"请求失败返回 null"语义一致
+        }
+        try
+        {
+            // 进锁后重读 RefreshToken：等待期间可能已被其他请求 Rotation 替换
+            var refreshToken = await _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
+            if (string.IsNullOrEmpty(refreshToken))
+            {
+                DevLogger.Log("Auth", "Refresh: RefreshToken 缺失（等待锁期间被清除）");
+                return null;
+            }
+            if (!string.Equals(refreshToken, refreshTokenOnEntry, StringComparison.Ordinal))
+            {
+                var existing = await _secureStorage.GetAsync(SecureStorageKeys.AccessToken, ct);
+                if (!string.IsNullOrEmpty(existing))
+                {
+                    DevLogger.Log("Auth", "Refresh: 并发请求已完成 Rotation，复用现有 AccessToken");
+                    return existing;
+                }
+                // RefreshToken 已换新但 AccessToken 缺失（异常中间态）：改用新 RefreshToken 继续刷新
+                DevLogger.Log("Auth", "Refresh: RefreshToken 已变化但 AccessToken 缺失，改用新 Token 刷新");
+            }
+
+            var url = serverUrl.TrimEnd('/') + "/api/auth/refresh";
+            var body = Serialize(new { refreshToken });
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = new StringContent(body, Encoding.UTF8, "application/json"),
+                };
+                using var resp = await Http.SendAsync(req, ct);
+                var json = await resp.Content.ReadAsStringAsync(ct);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    DevLogger.Log("Auth", $"Refresh fail: {(int)resp.StatusCode}");
+                    // 401/403：服务端明确拒绝该 RefreshToken（已撤销/过期），
+                    // 软登出避免 UI 卡在"已登录但同步失败"状态，引导用户重新登录。
+                    if (resp.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+                    {
+                        // 二次确认（防御层）：若存储中的 RefreshToken 已不是本次发送的值，
+                        // 说明请求飞行期间被其他请求替换（锁路径下不该发生，防御绕过锁的调用方），
+                        // 不软登出，复用新 AccessToken。
+                        var latestRefresh = await _secureStorage.GetAsync(SecureStorageKeys.RefreshToken, ct);
+                        if (!string.Equals(latestRefresh, refreshToken, StringComparison.Ordinal))
+                        {
+                            var existingAccess = await _secureStorage.GetAsync(SecureStorageKeys.AccessToken, ct);
+                            if (!string.IsNullOrEmpty(existingAccess))
+                            {
+                                DevLogger.Log("Auth", "Refresh: 401 但 RefreshToken 已被并发替换，复用现有 AccessToken");
+                                return existingAccess;
+                            }
+                        }
+                        await SoftLogoutAsync(ct);
+                    }
+                    return null;
+                }
+                var auth = ExtractData<AuthResponseDto>(json);
+                if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
+                {
+                    DevLogger.Log("Auth", "Refresh fail: 响应缺少 data.accessToken");
+                    return null;
+                }
+
+                // Rotation：写入新的 Token 对
+                await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+                await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+
+                // 若返回了新的 User（profile 更新），更新本地缓存
+                if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))
+                {
+                    var user = ToAppUser(auth.User);
+                    _users.Upsert(user);
+                    CurrentUser = user;
+                    _state.User = user;
+                }
+
+                DevLogger.Log("Auth", "Refresh ok: new AccessToken + RefreshToken saved");
+                return auth.AccessToken;
+            }
+            catch (Exception ex)
+            {
+                DevLogger.Log("Auth", "Refresh exception: " + ex.Message);
+                return null;
+            }
+        }
+        finally
+        {
+            _refreshLock.Release();
         }
     }
 
