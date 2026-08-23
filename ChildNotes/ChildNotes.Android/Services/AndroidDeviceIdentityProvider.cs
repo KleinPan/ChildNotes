@@ -1,3 +1,4 @@
+using System;
 using Android.Provider;
 
 namespace ChildNotes.Android.Services;
