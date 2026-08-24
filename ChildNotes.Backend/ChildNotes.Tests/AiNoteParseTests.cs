@@ -452,6 +452,40 @@ public class AiNoteParseTests
         Assert.Null(items[2].Time);
     }
 
+    // ===== 结构化复合句 + 辅食 foodName 提取测试 =====
+
+    /// <summary>
+    /// "9点50左右吃一个鸡蛋羹和小半碗稀饭，10点10分喝100奶" 是结构化复合句
+    /// （含2个时间点+2个事件关键词），ShouldForceAi 应返回 false，让规则快速路径处理。
+    /// </summary>
+    [Fact]
+    public void ShouldForceAi_StructuredCompoundSentence_ReturnsFalse()
+    {
+        Assert.False(AiNoteRuleParser.ShouldForceAi("9点50左右吃一个鸡蛋羹和小半碗稀饭，10点10分喝100奶"));
+    }
+
+    /// <summary>
+    /// 结构化复合句应解析出 2 条记录：辅食 + 喂奶。
+    /// 验证规则对"时间+事件"并列结构的正确切分和解析。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_StructuredCompound_ParsesBothEvents()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("9点50左右吃一个鸡蛋羹和小半碗稀饭，10点10分喝100奶");
+        Assert.True(items.Count >= 2, $"应解析出 2 条，实际 {items.Count}");
+
+        // 第一条：辅食，时间 09:50，foodName 应为"鸡蛋羹、稀饭"（无左右/个/小残留）
+        Assert.Equal(RecordType.Complementary, items[0].RecordType);
+        Assert.Equal("09:50", items[0].Time);
+        Assert.Equal("鸡蛋羹、稀饭", items[0].FoodName);
+
+        // 第二条：喂奶，时间 10:10，奶量 100
+        Assert.Equal(RecordType.Feed, items[1].RecordType);
+        Assert.Equal("10:10", items[1].Time);
+        Assert.Equal(100, items[1].Amount);
+    }
+
     // ===== ShouldForceAi 复杂文本启发式测试 =====
 
     /// <summary>

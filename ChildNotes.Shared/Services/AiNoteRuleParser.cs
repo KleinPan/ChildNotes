@@ -50,7 +50,7 @@ public static class AiNoteRuleParser
 
     // ===== 辅食关键词/单位 =====
 
-    private static readonly string[] CompFoodKeywords = { "泥", "粥", "米粉", "面条", "辅食", "蛋黄", "肉泥", "果泥", "肝粉", "核桃油", "油", "香蕉", "苹果", "梨", "南瓜", "红薯", "土豆", "胡萝卜", "西兰花", "猪肉", "牛肉", "鸡肉", "鱼肉", "虾", "蛋黄", "蛋白" };
+    private static readonly string[] CompFoodKeywords = { "泥", "粥", "稀饭", "米粉", "面条", "辅食", "蛋黄", "肉泥", "果泥", "肝粉", "核桃油", "油", "香蕉", "苹果", "梨", "南瓜", "红薯", "土豆", "胡萝卜", "西兰花", "猪肉", "牛肉", "鸡肉", "鱼肉", "虾", "蛋黄", "蛋白", "鸡蛋", "蛋羹", "羹", "米饭", "馒头", "包子", "饺子", "馄饨", "汤", "糊", "糕", "饼", "菠菜", "猪肝" };
 
     /// <summary>判断文本是否含辅食关键词。</summary>
     private static bool ContainsComplementaryFood(string text)
@@ -88,6 +88,20 @@ public static class AiNoteRuleParser
     public static bool ShouldForceAi(string text)
     {
         if (string.IsNullOrWhiteSpace(text)) return false;
+
+        // 结构化复合句识别：含 ≥2 个时间点 + 事件关键词（吃/喝/睡/换/拉等）。
+        // 这种文本是"时间+事件"的并列结构，NoteSplitter 能按逗号切分后逐段解析，
+        // 不属于"大段描述性话"，不应强制 AI。
+        var timeMatches = TimeRegex.Matches(text);
+        if (timeMatches.Count >= 2)
+        {
+            var hasEventKw = text.Contains("吃") || text.Contains("喝") || text.Contains("睡")
+                || text.Contains("换") || text.Contains("拉") || text.Contains("尿")
+                || text.Contains("便") || text.Contains("量") || text.Contains("体温")
+                || text.Contains("洗澡") || text.Contains("药");
+            if (hasEventKw) return false;
+        }
+
         // 去掉首段时间数字（如"17点20"）后的有效文本长度
         var stripped = TimeRegex.Replace(text, "");
         if (stripped.Length > 15) return true;
@@ -548,18 +562,25 @@ public static class AiNoteRuleParser
             .Replace("下午", "").Replace("傍晚", "")
             .Replace("晚上", "").Replace("夜里", "").Replace("夜间", "").Replace("凌晨", "")
             .Replace("今早", "").Replace("今晚", "");
+        // 去掉模糊时间词残留（"9点50左右"去掉"9点50"后残留"左右"）
+        foodName = foodName.Replace("左右", "");
         // 去掉残留的数字+点/分/时（如"20分"）
         foodName = Regex.Replace(foodName, @"\d+[点分时:：]\d*", "");
+        // 去掉数量+单位（阿拉伯数字，如"20克"、"1个"、"0.5碗"）
+        foodName = Regex.Replace(foodName, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "");
+        // 去掉"小半碗"/"大半碗"整体（必须在中文数字+量词之前，避免"半碗"被先去掉残留"小"/"大"）
+        foodName = Regex.Replace(foodName, @"[大小]?半(?:碗|勺|包|个)", "");
+        // 去掉中文数字+量词（如"一个"、"半个"、"两碗"）
+        foodName = Regex.Replace(foodName, @"[一二三四五六七八九十两半几多]\s*(?:个|碗|勺|包|克|g|ml|毫升)", "");
         // 去掉残留的纯数字（如"17点20"残留的"20"）
         foodName = Regex.Replace(foodName, @"\d+", "");
-        // 去掉数量+单位（如"20克"、"半碗"）
-        foodName = Regex.Replace(foodName, @"\d+(?:\.\d+)?\s*(?:克|g|个|勺|碗|ml|毫升)", "");
-        foodName = Regex.Replace(foodName, @"半(?:碗|勺|包|个)", "");
         // 去掉描述性尾句/感慨语（如"今天吃的多"、"吃得多"、"今天吃得多"）
         // 在食材列表场景中，这些不是食材名，混入会污染 foodName
         foodName = Regex.Replace(foodName, @"今天吃(?:得|的)多|吃(?:得|的)多|今天吃(?:得|的)少|吃(?:得|的)少", "");
         // 去掉动词/泛义词
         foodName = foodName.Replace("吃了", "").Replace("吃", "").Replace("辅食", "").Replace("的", "");
+        // 去掉连接词"和"→顿号（食材列表场景统一分隔符）
+        foodName = foodName.Replace("和", "、");
         foodName = foodName.Trim('，', '、', ' ', '：', ':');
         if (string.IsNullOrWhiteSpace(foodName)) foodName = "辅食";
         // 统一逗号为顿号（食材列表场景）
