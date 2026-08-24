@@ -486,6 +486,54 @@ public class AiNoteParseTests
         Assert.Equal(100, items[1].Amount);
     }
 
+    // ===== "同时"连接词时间继承测试 =====
+
+    /// <summary>
+    /// "12点睡到3点35，然后吃了145奶，同时大便一次" 应解析 3 条：
+    /// 睡眠 12:00-15:35、喂奶 15:35/145、大便 15:35（"同时"继承喂奶时间）。
+    /// </summary>
+    [Fact]
+    public void RuleParseMulti_SleepFeedDiaperSameTime_InheritsBySameAs()
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti("12点睡到3点35，然后吃了145奶，同时大便一次");
+        Assert.True(items.Count >= 3, $"应解析出 3 条，实际 {items.Count}");
+
+        // 第一条：睡眠 12:00-15:35（EndTime 歧义修正：3 < 12 → 同天下午 15:35，时长 3.5h 合理）
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal("12:00", items[0].StartTime);
+        Assert.Equal("15:35", items[0].EndTime);
+
+        // 第二条：喂奶 15:35, 145（睡眠 EndTime 继承）
+        Assert.Equal(RecordType.Feed, items[1].RecordType);
+        Assert.Equal("15:35", items[1].Time);
+        Assert.Equal(145, items[1].Amount);
+
+        // 第三条：大便 15:35（"同时"继承喂奶时间）
+        Assert.Equal(RecordType.Diaper, items[2].RecordType);
+        Assert.Equal("15:35", items[2].Time);
+    }
+
+    /// <summary>
+    /// 睡眠时间歧义修正：EndTime &lt; StartTime 时选时长更短的解释。
+    /// "12点睡到3点35" → 同天下午 15:35（3.5h 合理），而非跨天凌晨 03:35（15.5h 不合理）。
+    /// "23点睡到2点" → 跨天凌晨 02:00（3h 合理），而非同天下午 14:00（15h 不合理）。
+    /// </summary>
+    [Theory]
+    [InlineData("12点睡到3点35", "12:00", "15:35")]  // 同天下午（时长短）
+    [InlineData("23点睡到2点", "23:00", "02:00")]    // 跨天凌晨（同天下午 15h 不合理）
+    [InlineData("11点睡到1点", "11:00", "13:00")]    // 同天下午（2h 合理 vs 14h 不合理）
+    [InlineData("1点睡到3点", "01:00", "03:00")]     // 同天凌晨（EndHour > StartHour，不修正）
+    public void RuleParse_SleepRange_AmbiguityResolution(string text, string expectedStart, string expectedEnd)
+    {
+        var svc = NewServiceWithFailingAi();
+        var items = svc.ParseByRulesMulti(text);
+        Assert.True(items.Count >= 1);
+        Assert.Equal(RecordType.Sleep, items[0].RecordType);
+        Assert.Equal(expectedStart, items[0].StartTime);
+        Assert.Equal(expectedEnd, items[0].EndTime);
+    }
+
     // ===== ShouldForceAi 复杂文本启发式测试 =====
 
     /// <summary>

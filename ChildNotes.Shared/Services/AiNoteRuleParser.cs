@@ -136,6 +136,9 @@ public static class AiNoteRuleParser
         // 后续 Feed/Water/Supplement 段若无显式时间，则用睡眠结束时间作为记录时间
         // （语义上：醒来后喝奶/喝水/吃补剂的时间 ≈ 睡眠结束时间）
         string? inheritedTime = null;
+        // 追踪前一段的 Time（所有类型），用于"同时"连接词的时间继承：
+        // "然后吃了145奶，同时大便一次"——大便与喂奶同时，继承喂奶时间
+        string? lastTime = null;
         foreach (var seg in segments)
         {
             var item = Parse(seg, now);
@@ -144,9 +147,8 @@ public static class AiNoteRuleParser
             if (item.RecordType == RecordType.Activity && item.Confidence <= 0.2 && segments.Count > 1)
                 continue;
 
-            // 时间继承：当前段是带量记录（Feed/Water/Supplement）且无显式时间，
-            // 且前一段是睡眠（含 EndTime）时，用睡眠 EndTime 作为当前段的时间。
-            // 仅限这三种"醒来后常做"的动作，避免误伤（如"睡到12点，拉了"不继承）。
+            // 时间继承1：睡眠后醒来动作（Feed/Water/Supplement）无显式时间时用睡眠 EndTime
+            // 优先级高于"同时"继承（更具体的语义场景）
             if (inheritedTime is not null
                 && item.Time is null
                 && (item.RecordType == RecordType.Feed
@@ -156,7 +158,18 @@ public static class AiNoteRuleParser
                 item.Time = inheritedTime;
             }
 
+            // 时间继承2："同时"连接词表示与前一段同时发生，继承前一段时间
+            // 适用场景：尿布/体温/生长等不睡眠的段，与喂奶/辅食等同时发生
+            if (item.Time is null && lastTime is not null && seg.Contains("同时"))
+            {
+                item.Time = lastTime;
+            }
+
             results.Add(item);
+
+            // 更新 lastTime：所有类型段，有 Time 就追踪（供下一段"同时"继承）
+            if (item.Time is not null)
+                lastTime = item.Time;
 
             // 更新 inheritedTime：睡眠段有 EndTime 时记录，其他段清空（避免跨事件链式继承）
             if (item.RecordType == RecordType.Sleep && !string.IsNullOrEmpty(item.EndTime))
@@ -889,6 +902,25 @@ public static class AiNoteRuleParser
 
         if (sh < 0 || sh > 23 || sm < 0 || sm > 59) return (null, null);
         if (eh < 0 || eh > 23 || em < 0 || em > 59) return (null, null);
+
+        // 睡眠时间歧义修正：
+        // "12点睡到3点35" 中 EndHour(3) < StartHour(12)，EndTime 可能是：
+        //   a) 同天下午（+12 → 15:35，时长 3.5h 合理）
+        //   b) 跨天凌晨（03:35，时长 15.5h 不合理）
+        // 选择时长更短的解释（婴幼儿睡眠通常 0.5-6h，极少超过 14h）。
+        // 例：23点睡到2点 → 跨天凌晨 3h（合理）vs 同天下午 15h（不合理）→ 保持凌晨。
+        if (eh < sh && eh + 12 <= 23)
+        {
+            int startMins = sh * 60 + sm;
+            int crossDayMins = (24 * 60 - startMins) + (eh * 60 + em);
+            int sameDayPmMins = (eh + 12) * 60 + em - startMins;
+            // 同天下午时长更短且非负 → 更合理的解释
+            if (sameDayPmMins >= 0 && sameDayPmMins < crossDayMins)
+            {
+                eh += 12;
+            }
+        }
+
         return ($"{sh:D2}:{sm:D2}", $"{eh:D2}:{em:D2}");
     }
 
