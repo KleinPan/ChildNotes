@@ -212,8 +212,11 @@ public sealed class AuthService
             }
 
             // Token 写入 SecureStorage（非明文）
-            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+            // 顺序：先 RefreshToken 后 AccessToken——若进程在两次写入之间中断，
+            // RefreshToken（长期凭证）是新有效的，AccessToken 旧/缺失可随时用 RefreshToken 重换；
+            // 反序则可能留下"已撤销的旧 RefreshToken"，下次刷新必 401 → 软登出掉线。
             await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
 
             // 绑定身份 + 个人数据归并（同家庭重登/首绑：无 synced_at 清理，走常规增量）
             CompleteLogin(auth, rebind: false);
@@ -250,8 +253,9 @@ public sealed class AuthService
             var familyId = auth.CurrentFamilyId ?? string.Empty;
 
             // Token 先写（Keystore 非 SQLite，无法与 rebind 事务同事务；失败即中止，本地状态零改动）
-            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+            // 顺序：先 RefreshToken 后 AccessToken（中断安全，理由见 VerifyCodeAsync 同段注释）
             await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+            await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
 
             var syncTrigger = Infrastructure.ServiceProvider.Instance.SyncTrigger;
             await syncTrigger.ExecuteExclusiveDuringRebindAsync(() =>
@@ -540,9 +544,12 @@ public sealed class AuthService
                     return null;
                 }
 
-                // Rotation：写入新的 Token 对
-                await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
+                // Rotation：写入新的 Token 对。
+                // 先 RefreshToken 后 AccessToken——若进程在两次写入之间中断，
+                // RefreshToken 是新有效的（服务端旧 token 已撤销），AccessToken 旧的可随时重换；
+                // 反序会留下已撤销的旧 RefreshToken，下次刷新必 401 → 软登出掉线。
                 await _secureStorage.SetAsync(SecureStorageKeys.RefreshToken, auth.RefreshToken, ct);
+                await _secureStorage.SetAsync(SecureStorageKeys.AccessToken, auth.AccessToken, ct);
 
                 // 若返回了新的 User（profile 更新），更新本地缓存
                 if (auth.User is not null && !string.IsNullOrEmpty(auth.User.Id))

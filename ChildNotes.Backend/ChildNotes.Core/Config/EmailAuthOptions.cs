@@ -17,4 +17,12 @@ public class EmailAuthOptions
 
     public int AccessTokenExpireMinutes { get; set; } = 60; // 1 小时
     public int RefreshTokenExpireDays { get; set; } = 30; // 30 天
+
+    /// <summary>
+    /// Refresh Token 宽限期（秒）：旧 token 被撤销后，该时间窗口内重放仍可换取新 token。
+    /// Rotation 场景下客户端可能因网络超时、并发重试、进程中断未保存新 token，
+    /// 而旧 token 已被服务端撤销——若无宽限期，客户端下次 refresh 必收 401，
+    /// 触发软登出导致永久掉线。宽限期内重放视为合法重试，直接再签发一对新 token。
+    /// </summary>
+    public int RefreshGracePeriodSeconds { get; set; } = 120;
 }

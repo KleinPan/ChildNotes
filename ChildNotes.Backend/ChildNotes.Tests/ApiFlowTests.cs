@@ -82,6 +82,106 @@ public class ApiFlowTests
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
     }
 
+    /// <summary>登录并返回携带 Bearer 的客户端与 RefreshToken 明文（refresh 流程测试用）。</summary>
+    private static async Task<(HttpClient client, string refreshToken)> NewAuthClientWithRefreshTokenAsync(
+        ApiFactory factory, string username)
+    {
+        var email = $"{username}@test.local";
+        var client = factory.CreateClient();
+        var resp = await client.PostAsJsonAsync("/api/auth/send-code", new SendCodeRequest { Email = email });
+        resp.EnsureSuccessStatusCode();
+        var code = factory.GetLastCode(email) ?? throw new InvalidOperationException($"未捕获到 {email} 的验证码");
+        var verifyResp = await client.PostAsJsonAsync("/api/auth/verify-code",
+            new VerifyCodeRequest { Email = email, Code = code });
+        verifyResp.EnsureSuccessStatusCode();
+        var body = await verifyResp.Content.ReadFromJsonAsync<JsonElement>();
+        var refreshToken = body.GetProperty("data").GetProperty("refreshToken").GetString()!;
+        client.DefaultRequestHeaders.Authorization = new("Bearer",
+            body.GetProperty("data").GetProperty("accessToken").GetString()!);
+        return (client, refreshToken);
+    }
+
+    /// <summary>调用 /api/auth/refresh，成功时返回新 token 对。</summary>
+    private static async Task<(string accessToken, string refreshToken)> RefreshTokensAsync(
+        HttpClient client, string refreshToken)
+    {
+        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshRequest { RefreshToken = refreshToken });
+        var body = await resp.Content.ReadAsStringAsync();
+        Assert.True(resp.IsSuccessStatusCode, body);
+        var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        return (
+            json.GetProperty("data").GetProperty("accessToken").GetString()!,
+            json.GetProperty("data").GetProperty("refreshToken").GetString()!);
+    }
+
+    [Fact]
+    public async Task Refresh_Rotation_IssuesNewTokenPair()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf1_" + Guid.NewGuid().ToString("N")[..6]);
+
+        var (newAccess, newRefresh) = await RefreshTokensAsync(client, refreshToken);
+        Assert.False(string.IsNullOrEmpty(newAccess));
+        Assert.False(string.IsNullOrEmpty(newRefresh));
+        Assert.NotEqual(refreshToken, newRefresh);
+
+        // 新 AccessToken 可正常访问鉴权接口
+        client.DefaultRequestHeaders.Authorization = new("Bearer", newAccess);
+        var meResp = await client.GetAsync("/api/auth/me");
+        Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// 宽限期内重放已撤销的旧 token：应换取新 token 而非 401。
+    /// 场景：Rotation 后客户端因网络超时/进程中断未保存新 token，
+    /// 只能重放旧 token——401 会触发客户端软登出，造成"掉线"故障。
+    /// </summary>
+    [Fact]
+    public async Task Refresh_ReplayedRevokedToken_WithinGrace_ReturnsNewToken()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf2_" + Guid.NewGuid().ToString("N")[..6]);
+
+        // 第一次 refresh 成功：旧 token 已被服务端撤销（模拟客户端未收到响应）
+        await RefreshTokensAsync(client, refreshToken);
+
+        // 宽限期内（默认 120s）重放旧 token：应成功再签发新 token 对
+        var (retryAccess, _) = await RefreshTokensAsync(client, refreshToken);
+        Assert.False(string.IsNullOrEmpty(retryAccess));
+
+        // 重试拿到的新 AccessToken 也可用
+        client.DefaultRequestHeaders.Authorization = new("Bearer", retryAccess);
+        var meResp = await client.GetAsync("/api/auth/me");
+        Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>宽限期外重放已撤销的旧 token：应返回 401（防盗用重放）。</summary>
+    [Fact]
+    public async Task Refresh_ReplayedRevokedToken_AfterGrace_Returns401()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf3_" + Guid.NewGuid().ToString("N")[..6]);
+
+        await RefreshTokensAsync(client, refreshToken);
+
+        // 把旧 token 的撤销时间改到宽限期（默认 120s）之外，模拟过期重放
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.Where(t => t.RevokedAt != null).ToList())
+                t.RevokedAt = DateTime.UtcNow.AddSeconds(-121);
+            await db.SaveChangesAsync();
+        }
+
+        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshRequest { RefreshToken = refreshToken });
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
     [Fact]
     public async Task CreateBaby_AutoCreatesOwnerMember()
     {

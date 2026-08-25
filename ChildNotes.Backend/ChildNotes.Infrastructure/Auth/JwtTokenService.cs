@@ -56,17 +56,33 @@ public class JwtTokenService
     public (string token, DateTime expireAt) CreateRefreshToken(out string hash)
     {
         var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
-        hash = HashToken(raw);
+        hash = HashToken(raw, RefreshTokenHashIterations);
         var expireAt = DateTime.UtcNow.AddDays(_emailOpt.RefreshTokenExpireDays);
         return (raw, expireAt);
     }
 
-    /// <summary>计算 Token Hash（PBKDF2 格式，复用密码哈希格式）。</summary>
-    public string HashToken(string raw)
+    /// <summary>
+    /// RefreshToken hash 的 PBKDF2 迭代次数。
+    /// RefreshToken 是 48 字节高熵随机数（384 bit），暴力破解在数学上不可行，
+    /// 无需密码级 60 万次拉伸；且 AuthService.RefreshAsync 需遍历全部候选 token
+    /// 逐一验证，600k 时单条约 300ms、全表遍历可达 8 秒（实测值），
+    /// 易触发客户端 15s 超时形成 rotation 丢失。降到 100k 提速 6 倍。
+    /// </summary>
+    private const int RefreshTokenHashIterations = 100_000;
+
+    /// <summary>
+    /// 计算 Token Hash（PBKDF2 格式）。
+    /// 迭代次数写入格式首段，验证时按存储值执行——旧数据（600000:...）天然兼容。
+    /// </summary>
+    /// <param name="iterations">
+    /// PBKDF2 迭代次数：验证码（6 位数字，低熵）用默认 600k 抗暴力破解；
+    /// RefreshToken（48 字节随机，高熵）用 100k 加速遍历验证。
+    /// </param>
+    public string HashToken(string raw, int iterations = 600_000)
     {
         var salt = RandomNumberGenerator.GetBytes(16);
-        var hash = Rfc2898DeriveBytes.Pbkdf2(raw, salt, 600_000, HashAlgorithmName.SHA256, 32);
-        return $"600000:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
+        var hash = Rfc2898DeriveBytes.Pbkdf2(raw, salt, iterations, HashAlgorithmName.SHA256, 32);
+        return $"{iterations}:{Convert.ToBase64String(salt)}:{Convert.ToBase64String(hash)}";
     }
 
     /// <summary>恒定时间比较 Token Hash。</summary>

@@ -280,13 +280,19 @@ public class AuthService : IAuthService
 
         // 计算提交 token 的 hash
         // 由于 PBKDF2 每次 hash 带 random salt，不能直接 hash 后查数据库
-        // 需要遍历未撤销的 token 逐一验证
-        var activeTokens = await _db.RefreshTokens
-            .Where(t => t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+        // 需要遍历候选 token 逐一验证
+        //
+        // 候选范围 = 未过期且（未撤销 或 撤销时间在宽限期内）：
+        // 宽限期（Grace Period）覆盖 Rotation 丢失场景——客户端因网络超时/并发重试/进程中断
+        // 未保存新 token 时，旧 token 已被撤销，重放应换取新 token 而非 401（401 会导致客户端软登出）。
+        var now = DateTime.UtcNow;
+        var graceCutoff = now.AddSeconds(-_opt.RefreshGracePeriodSeconds);
+        var candidateTokens = await _db.RefreshTokens
+            .Where(t => t.ExpiresAt > now && (t.RevokedAt == null || t.RevokedAt > graceCutoff))
             .ToListAsync(ct);
 
         RefreshToken? matchedToken = null;
-        foreach (var t in activeTokens)
+        foreach (var t in candidateTokens)
         {
             if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
             {
@@ -298,6 +304,15 @@ public class AuthService : IAuthService
         if (matchedToken is null)
             throw new BusinessException("RefreshToken 无效或已过期", 401, "REFRESH_TOKEN_INVALID");
 
+        // 宽限期内已撤销的旧 token：视为合法重试（新 token 未送达客户端），直接再签发一对新 token。
+        // 不再抛 401——那会让客户端清空登录态（软登出），造成"掉线"故障。
+        if (matchedToken.RevokedAt is not null)
+        {
+            var graceUser = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == matchedToken.UserId, ct)
+                ?? throw new UnauthorizedException();
+            return await BuildAuthResponseAsync(graceUser, false, ct);
+        }
+
         // 并发安全：原子 CAS 撤销旧 Token
         // EF Core tracked entity + [ConcurrencyCheck] on RevokedAt
         // SaveChanges 会生成 UPDATE ... WHERE Id = @p0 AND RevokedAt IS NULL
@@ -308,13 +323,14 @@ public class AuthService : IAuthService
         {
             await _db.ExecuteInTransactionAsync(async () =>
             {
-                // 二次校验：虽然前面已 SELECT 过，但事务开始时可能已被其他请求撤销
-                if (matchedToken.RevokedAt is not null)
+                // 二次校验：虽然前面已 SELECT 过，但事务开始时可能已被其他请求撤销。
+                // 该竞争必然发生在毫秒级窗口内（宽限期内），视为合法重试：
+                // 跳过撤销，直接查用户走 rotation（与 DbUpdateConcurrencyException 分支同语义）。
+                if (matchedToken.RevokedAt is null)
                 {
-                    throw new BusinessException("RefreshToken 已被撤销，请使用新 Token", 401, "REFRESH_TOKEN_REVOKED");
+                    matchedToken.RevokedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync(ct);  // [ConcurrencyCheck] 生成原子 CAS
                 }
-                matchedToken.RevokedAt = DateTime.UtcNow;
-                await _db.SaveChangesAsync(ct);  // [ConcurrencyCheck] 生成原子 CAS
 
                 // 查用户
                 var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == matchedToken.UserId, ct)
@@ -324,8 +340,12 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // 并发场景下被其他请求先撤销了
-            throw new BusinessException("RefreshToken 已被撤销，请使用新 Token", 401, "REFRESH_TOKEN_REVOKED");
+            // 并发请求携带同一 token 抢先撤销（毫秒级竞争，必然在宽限期内）：
+            // 视为合法重试再签发新 token，避免 401 导致客户端误软登出掉线
+            // （实测案例：两设备/进程 4 秒内先后 refresh 同一 token，后到者曾因此 401 掉线）。
+            var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == matchedToken.UserId, ct)
+                ?? throw new UnauthorizedException();
+            userHolder.Add(user);
         }
 
         // 事务外：生成新 Token 对（BuildAuthResponseAsync 会开自己的事务）
