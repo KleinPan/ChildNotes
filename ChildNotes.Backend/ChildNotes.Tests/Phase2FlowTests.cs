@@ -43,7 +43,8 @@ public class Phase2FlowTests
         Assert.Equal("000000", body.GetProperty("state").GetString());
         var data = body.GetProperty("data");
         Assert.True(data.GetProperty("shareReferrerId").GetString()!.StartsWith("u_"));
-        Assert.Equal(0, data.GetProperty("points").GetInt64());
+        // 新用户注册即赠送 NewUserBonusPoints（AuthService.VerifyCodeAsync → EnsureUserPointsAsync）
+        Assert.Equal(PointsConstants.NewUserBonusPoints, data.GetProperty("points").GetInt64());
     }
 
     [Fact]
@@ -92,7 +93,8 @@ public class Phase2FlowTests
                 Id = Guid.NewGuid().ToString("N"),
                 Title = "测试抽奖",
                 Status = "active",
-                CostPoints = 30,
+                // 新用户注册自带 NewUserBonusPoints，成本须高于它才能触发"积分不足"
+                CostPoints = PointsConstants.NewUserBonusPoints + 30,
                 DrawTime = DateTime.UtcNow.AddDays(1),
                 StartTime = DateTime.UtcNow.AddDays(-1),
                 WinnerCount = 1,
@@ -116,9 +118,10 @@ public class Phase2FlowTests
         using var factory = NewFactory();
         var referrerClient = await NewAuthClientAsync(factory, "ref_" + Guid.NewGuid().ToString("N")[..6]);
 
-        // 拿推荐码
+        // 拿推荐码（同时记录绑定前积分，注册赠送已入账）
         var dash = await referrerClient.GetFromJsonAsync<JsonElement>("/api/points/dashboard");
         var referrerCode = dash.GetProperty("data").GetProperty("shareReferrerId").GetString()!;
+        var pointsBefore = dash.GetProperty("data").GetProperty("points").GetInt64();
 
         // 被邀请人注册后调用绑定
         var invitedEmailPrefix = "inv_" + Guid.NewGuid().ToString("N")[..6];
@@ -133,9 +136,9 @@ public class Phase2FlowTests
             await inviteSvc.BindReferrerAsync(invitedUser.Id, referrerCode, newUser: true);
         }
 
-        // 推荐人积分应 +100
+        // 推荐人积分应 +InviteRewardPoints（在注册赠送基础上叠加）
         var dash2 = await referrerClient.GetFromJsonAsync<JsonElement>("/api/points/dashboard");
-        Assert.Equal(100, dash2.GetProperty("data").GetProperty("points").GetInt64());
+        Assert.Equal(pointsBefore + PointsConstants.InviteRewardPoints, dash2.GetProperty("data").GetProperty("points").GetInt64());
         var invites = dash2.GetProperty("data").GetProperty("inviteRecords");
         Assert.Equal(1, invites.GetArrayLength());
     }
