@@ -472,7 +472,9 @@ public class AiNoteParseTests
     public void RuleParseMulti_StructuredCompound_ParsesBothEvents()
     {
         var svc = NewServiceWithFailingAi();
-        var items = svc.ParseByRulesMulti("9点50左右吃一个鸡蛋羹和小半碗稀饭，10点10分喝100奶");
+        // 传入固定上午时间，让"9点50"/"10点10分"按"最近的过去时刻"算法稳定解析为 AM，
+        // 避免测试在晚间运行时（now > 21:50）被解析为 21:50 导致时间敏感失败
+        var items = svc.ParseByRulesMulti("9点50左右吃一个鸡蛋羹和小半碗稀饭，10点10分喝100奶", new DateTime(2026, 8, 26, 10, 0, 0));
         Assert.True(items.Count >= 2, $"应解析出 2 条，实际 {items.Count}");
 
         // 第一条：辅食，时间 09:50，foodName 应为"鸡蛋羹、稀饭"（无左右/个/小残留）
@@ -877,6 +879,64 @@ public class AiNoteParseTests
         var result = AiNoteRuleParser.NormalizeAmbiguousTime(llmTime, originalText);
         // 显式时段词原样返回（不归一化、不修正）
         Assert.Equal(llmTime, result);
+    }
+
+    /// <summary>
+    /// 服务器 UTC 时区 bug 回归测试：
+    /// 用户北京时间 20:28 输入"6点半喝了130奶"，LLM 被误导返回 06:30。
+    /// 修复后后端传 ChinaTime.Now（CST 20:28）作基准，应修正为 18:30（最近的过去），
+    /// 而不是用服务器本地时间 UTC 12:28 判定 18:30 是"未来"而保持 06:30。
+    /// </summary>
+    [Fact]
+    public void NormalizeTimeFields_ServerUtcBug_CnNowBasePicksPm()
+    {
+        // LLM 返回 06:30（被 UTC prompt 误导）
+        var items = new List<AiNoteParseItem> { new() { RecordType = RecordType.Feed, Time = "06:30" } };
+        // 基准 = 北京时间 20:28（修复后 AiNoteService 传 ChinaTime.Now）
+        var cnNow = new DateTime(2026, 8, 26, 20, 28, 0);
+        AiNoteRuleParser.NormalizeTimeFields(items, "6点半喝了130奶", cnNow);
+        Assert.Equal("2026-08-26 18:30", items[0].Time);
+    }
+
+    /// <summary>
+    /// 服务器 UTC 时区 bug 回归测试（3点20 场景）：
+    /// 用户北京时间 20:27 输入"3点20大便一次"，LLM 返回 03:20，
+    /// 以 CST 20:27 为基准应修正为 15:20。
+    /// </summary>
+    [Fact]
+    public void NormalizeTimeFields_ServerUtcBug_AmToPm()
+    {
+        var items = new List<AiNoteParseItem> { new() { RecordType = RecordType.Diaper, Time = "03:20" } };
+        var cnNow = new DateTime(2026, 8, 26, 20, 27, 0);
+        AiNoteRuleParser.NormalizeTimeFields(items, "3点20大便一次", cnNow);
+        Assert.Equal("2026-08-26 15:20", items[0].Time);
+    }
+
+    /// <summary>
+    /// 凌晨场景（此前"1点半"问题的方向相反验证）：
+    /// 用户北京时间 05:00 输入"1点半喝了20ml"，LLM 返回 13:30，
+    /// 以 CST 05:00 为基准：PM 13:30 未到、AM 01:30 已过去 → 选 01:30。
+    /// </summary>
+    [Fact]
+    public void NormalizeTimeFields_EarlyMorningPmToAm()
+    {
+        var items = new List<AiNoteParseItem> { new() { RecordType = RecordType.Feed, Time = "13:30" } };
+        var cnNow = new DateTime(2026, 8, 26, 5, 0, 0);
+        AiNoteRuleParser.NormalizeTimeFields(items, "1点半喝了20ml", cnNow);
+        Assert.Equal("2026-08-26 01:30", items[0].Time);
+    }
+
+    /// <summary>
+    /// ChinaTime：北京时间应为 UTC+8（不依赖系统时区，服务器 UTC 环境下仍正确）
+    /// </summary>
+    [Fact]
+    public void ChinaTime_IsUtcPlus8()
+    {
+        var utcNow = DateTime.UtcNow;
+        var cn = ChinaTime.Now;
+        var diff = cn - utcNow;
+        // 时区偏移恰好 8 小时（允许跨越秒级边界的少量误差）
+        Assert.InRange(diff.TotalHours, 7.99, 8.01);
     }
 
     /// <summary>

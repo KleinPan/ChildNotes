@@ -1075,14 +1075,15 @@ public static class AiNoteRuleParser
     /// </summary>
     /// <param name="items">解析结果列表（原地修改 Time 字段）</param>
     /// <param name="originalText">原始输入文本，用于判断是否含时段词</param>
-    public static void NormalizeTimeFields(List<AiNoteParseItem> items, string originalText)
+    /// <param name="now">"取最近过去时刻"的基准时间。前端不传（手机本地时区即用户时区）；后端必须传 ChinaTime.Now（服务器时区为 UTC）</param>
+    public static void NormalizeTimeFields(List<AiNoteParseItem> items, string originalText, DateTime? now = null)
     {
         if (items is null || items.Count == 0) return;
         foreach (var it in items)
         {
             if (string.IsNullOrEmpty(it.Time)) continue;
             var normalized = NormalizeTime(it.Time, "yyyy-MM-dd HH:mm");
-            it.Time = NormalizeAmbiguousTime(normalized, originalText);
+            it.Time = NormalizeAmbiguousTime(normalized, originalText, "yyyy-MM-dd HH:mm", now);
         }
     }
 

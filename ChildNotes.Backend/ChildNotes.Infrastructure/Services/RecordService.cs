@@ -6,6 +6,7 @@ using ChildNotes.Shared.Dtos;
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
+using ChildNotes.Shared.Services;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -104,7 +105,7 @@ public class RecordService : IRecordService
             ?? throw new NotFoundException("睡眠记录不存在");
         var dto = JsonSerializer.Deserialize<SleepRecordDto>(rec.PayloadJson)
             ?? throw new BusinessException("记录解析失败");
-        var end = DateTime.Now;
+        var end = ChinaTime.Now;
         dto.EndTime = end.ToString("O");
         dto.Duration = (int)(end - rec.RecordTime).TotalMinutes;
         rec.DurationSec = dto.Duration * 60;
@@ -178,14 +179,14 @@ public class RecordService : IRecordService
             if (DateTime.TryParse(sleep.StartTime, out var st)) return st;
             // StartTime 是 "HH:mm" 格式时，结合当天日期
             if (TimeSpan.TryParse(sleep.StartTime, out var tp))
-                return DateTime.Today + tp;
+                return ChinaTime.Today + tp;
         }
 
         var timeProp = dto.GetType().GetProperty("Time");
         var timeStr = timeProp?.GetValue(dto)?.ToString();
-        if (string.IsNullOrEmpty(timeStr)) return DateTime.Now;
+        if (string.IsNullOrEmpty(timeStr)) return ChinaTime.Now;
         if (DateTime.TryParse(timeStr, out var t)) return t;
-        return DateTime.Now;
+        return ChinaTime.Now;
     }
 
     private async Task<string?> ResolveBabyIdAsync(string userId, string? babyId, CancellationToken ct)

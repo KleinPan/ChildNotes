@@ -170,7 +170,7 @@ public partial class AiNoteService : IAiNoteService
 
         // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
         _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ParseMode={ParseMode} ForceAi={ForceAi} 文本={Text}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ParseMode ?? "(null)", req.ForceAi, text);
+            ChinaTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ParseMode ?? "(null)", req.ForceAi, text);
 
         // 每日次数限制：原子地检查额度并递增（防止并发绕过限制）
         var uid = _current.RequireUserId();
@@ -193,7 +193,10 @@ public partial class AiNoteService : IAiNoteService
         // 3. 否则调 AI 解析（1-3秒）；AI 失败则用规则结果兜底
         // 复杂文本启发式（ShouldForceAi）：长文本或多逗号场景规则无法准确剥离描述性语句，
         // 应交由 AI 处理；规则解析仍会作为 AI 失败时的兜底执行。
-        var ruleItems = AiNoteRuleParser.ParseMulti(text);
+        // 服务器时区为 UTC，规则解析的"当前时间"基准必须用北京时间（用户时区），
+        // 否则"取最近过去时刻"类推断会整体偏移 8 小时
+        var cnNow = ChinaTime.Now;
+        var ruleItems = AiNoteRuleParser.ParseMulti(text, cnNow);
         var ruleHighConfidence = ruleItems.All(it => it.Confidence >= RuleFastPathThreshold);
         var shouldForceAi = AiNoteRuleParser.ShouldForceAi(text);
 
@@ -230,12 +233,12 @@ public partial class AiNoteService : IAiNoteService
         }
 
         // 时间后处理（前后端共用归一化 + 后端独有的继承/兜底）：
-        // 1. 先用共用方法对所有非空 Time 做归一化 + 12 小时制歧义修正
+        // 1. 先用共用方法对所有非空 Time 做归一化 + 12 小时制歧义修正（基准传北京时间）
         // 2. 再处理无 Time 的记录：继承同批次前一条记录的 time；前面都无 time 时兜底为当前时间
         // 3. 补剂用药：用常见药品/补充剂标签库补全完整药剂名
-        AiNoteRuleParser.NormalizeTimeFields(items, text);
+        AiNoteRuleParser.NormalizeTimeFields(items, text, cnNow);
 
-        var now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
+        var now = cnNow.ToString("yyyy-MM-dd HH:mm");
         string? lastTime = null; // 同批次已处理的最后一条非空 time（归一化后）
         foreach (var it in items)
         {
@@ -277,7 +280,10 @@ public partial class AiNoteService : IAiNoteService
     private async Task<List<AiNoteParseItem>> ParseByAiAsync(string text, CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
-        var prompt = SystemPrompt.Replace("{NowText}", DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
+        // prompt 里的当前时间必须是用户时区（北京时间）：
+        // 服务器时区为 UTC，用 DateTime.Now 会给 LLM 错误的当前时间，误导其时间推断
+        // （如用户晚上 8 点输入"6点半"，LLM 以为现在是中午 12:28，推断成早上 6:30）
+        var prompt = SystemPrompt.Replace("{NowText}", ChinaTime.Now.ToString("yyyy-MM-dd HH:mm"));
         var (raw, _) = await _ai.ChatAsync(prompt, text, ct);
         sw.Stop();
         _logger.LogInformation("[AI-LOG] DeepSeek 调用成功 {Ms}ms respLen={Len}", sw.ElapsedMilliseconds, raw?.Length ?? 0);

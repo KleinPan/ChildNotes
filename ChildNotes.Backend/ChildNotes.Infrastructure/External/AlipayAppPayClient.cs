@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using ChildNotes.Core.Config;
+using ChildNotes.Shared.Services;
 
 namespace ChildNotes.Infrastructure.External;
 
@@ -162,7 +163,8 @@ public class AlipayAppPayClient
             ["charset"] = "utf-8",
             ["method"] = "alipay.trade.app.pay",
             ["sign_type"] = _opt.SignType,
-            ["timestamp"] = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            // 支付宝开放平台要求 timestamp 为 GMT+8 时间；服务器时区为 UTC，须显式转北京时间
+            ["timestamp"] = ChinaTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
             ["version"] = "1.0",
         };
 
