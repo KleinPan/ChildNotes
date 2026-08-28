@@ -19,47 +19,10 @@
             </Grid>
         </Border>
 
-        <!-- 内容区 -->
+        <!-- 内容区：会员/积分入口已提级到「我的」页，此处保留空容器（登录/退出登录在底部按钮区） -->
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+            <StackPanel />
 
-                <Border Classes="section-title">
-                    <TextBlock Text="{DynamicResource Account_Section_Assets}"/>
-                </Border>
-
-                <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
-                    <StackPanel>
-                        <!-- 会员中心 -->
-                        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto,Auto"
-                              PointerPressed="OnMembershipTap">
-                            <Border Grid.Column="0" Width="24" Height="24"
-                                    Background="{StaticResource FeedingOrangeBrush}"
-                                    CornerRadius="{StaticResource Radius.XS}">
-                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
-                                           Text="V"/>
-                            </Border>
-                            <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
-                                       Text="{DynamicResource Mine_Membership}"/>
-                            <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
-                                       Foreground="{StaticResource TextPlaceholderBrush}"
-                                       Text="›"/>
-                        </Grid>
-                        <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}"/>
-                        <!-- 积分任务 -->
-                        <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto"
-                              PointerPressed="OnPointsTap">
-                            <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
-                                       Text="🎁"/>
-                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
-                                       Text="{DynamicResource Mine_Points}"/>
-                            <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
-                                       Foreground="{StaticResource TextPlaceholderBrush}"
-                                       Text="›"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-
-            </StackPanel>
         </ScrollViewer>
 
         <!-- 底部按钮：未登录显示"登录/注册"（主按钮），已登录显示"退出登录"（红字次按钮） -->

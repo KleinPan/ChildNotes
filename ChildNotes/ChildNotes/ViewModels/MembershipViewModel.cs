@@ -139,6 +139,12 @@ public partial class MembershipViewModel : ViewModelBase
                 _ = PollOrderStatusAsync(resp.OrderNo);
             }
         }
+        catch (MembershipApiException ex)
+        {
+            // 后端业务错误（如 ALIPAY_NOT_CONFIGURED），展示真实原因而非"请检查网络"
+            DevLogger.Log("Membership", $"CreateOrder failed: {ex.Message} ({ex.ErrorCode})");
+            DisplayToast(string.Format(_locale.GetString("Membership_ErrCreateOrderDetail", "创建订单失败：{0}"), ex.Message));
+        }
         catch (Exception ex)
         {
             DevLogger.Log("Membership", "Pay failed: " + ex);

@@ -159,6 +159,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Common_Collapse"] = "收起";
         this["Common_Loading"] = "加载中...";
         this["Common_Empty"] = "暂无数据";
+        // 积分抵扣确认弹窗共用按钮/链接文案（AI 记 / AI 分析两处复用）
+        this["Common_ContinueWithPoints"] = "积分抵扣继续";
+        this["Common_UpgradeMembership"] = "升级会员，解锁更多次数";
 
         // ===== MineView =====
         this["Mine_Section_Baby"] = "宝宝";
@@ -194,7 +197,6 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
 
         // ===== AccountCenterView =====
         this["Account_Title"] = "账户中心";
-        this["Account_Section_Assets"] = "账户资产";
         this["Account_LoginRegister"] = "登录 / 注册";
 
         // ===== AppSettingsView =====
@@ -439,6 +441,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiAnalysis_ErrPointsDaily"] = "积分不足，请每日签到获取积分";
         this["AiAnalysis_ErrWeeklyLimitMember"] = "本周 AI 分析次数已用完，升级会员可享 10 次/周";
         this["AiAnalysis_ErrWeeklyLimitUpgrade"] = "本周次数已达上限，升级会员解锁更多次数";
+        // 本周免费次数用尽 → 积分抵扣三选确认弹窗（积分抵扣继续 / 升级会员 / 取消）
+        this["AiAnalysis_OverageTitle"] = "本周免费次数已用完";
+        this["AiAnalysis_OverageMsg"] = "可用积分抵扣继续（本次共消耗 {0} 积分）";
         this["AiAnalysis_ErrFailed"] = "分析失败：{0}";
 
         // ===== AiSettingsView =====
@@ -705,6 +710,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         // ===== QuickInputView =====
         this["QuickInput_Placeholder"] = "用一句话记录，AI 帮你分类";
         this["QuickInput_Send"] = "发送";
+        // AI 记免费次数用尽 → 积分抵扣三选弹窗（积分抵扣继续 / 升级会员 / 取消）
+        this["QuickInput_OverageTitle"] = "今日 AI 记次数已达上限";
+        this["QuickInput_OverageMsg"] = "可消耗 {0} 积分抵扣继续";
         this["QuickInput_MoreTypes"] = "更多记录类型";
 
         // ===== RecordSheetView =====
@@ -917,6 +925,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Common_Collapse"] = "Collapse";
         this["Common_Loading"] = "Loading...";
         this["Common_Empty"] = "No data";
+        // Points-overage confirm dialog shared texts (used by both AI Note and AI Analysis)
+        this["Common_ContinueWithPoints"] = "Continue with Points";
+        this["Common_UpgradeMembership"] = "Upgrade membership for more";
 
         // ===== MineView =====
         this["Mine_Section_Baby"] = "Baby";
@@ -925,6 +936,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Growth"] = "Growth & Data";
         this["Mine_Section_App"] = "App";
         this["Mine_Section_Other"] = "Other";
+        this["Mine_Section_MembershipPoints"] = "Membership & Points";
         this["Mine_BabyManager"] = "Personnel";
         this["Mine_BabyCount_Suffix"] = " babies";
         this["Mine_Family"] = "Family Management";
@@ -1191,6 +1203,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["AiAnalysis_ErrPointsDaily"] = "Not enough points, check in daily to earn points";
         this["AiAnalysis_ErrWeeklyLimitMember"] = "Weekly AI analysis limit reached, upgrade to membership for 10/week";
         this["AiAnalysis_ErrWeeklyLimitUpgrade"] = "Weekly limit reached, upgrade membership for more";
+        // Points-overage confirm dialog (continue with points / upgrade membership / cancel)
+        this["AiAnalysis_OverageTitle"] = "Weekly Free Limit Reached";
+        this["AiAnalysis_OverageMsg"] = "Use points to continue ({0} points in total for this analysis)";
         this["AiAnalysis_ErrFailed"] = "Analysis failed: {0}";
 
         // ===== AiSettingsView =====
@@ -1311,6 +1326,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Membership_PlanYearly"] = "Yearly";
         this["Membership_PlanNone"] = "None";
         this["Membership_ErrCreateOrder"] = "Failed to create order, check network";
+        this["Membership_ErrCreateOrderDetail"] = "Failed to create order: {0}";
         this["Membership_PaySuccessMock"] = "Payment success (Mock mode)";
         this["Membership_PayFailed"] = "Payment failed: {0}";
         this["Membership_SubscribeOk"] = "Membership activated!";
@@ -1470,6 +1486,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         // ===== QuickInputView =====
         this["QuickInput_Placeholder"] = "Type a sentence, AI categorizes it";
         this["QuickInput_Send"] = "Send";
+        // AI Note free-limit-reached points-overage confirm dialog (continue with points / upgrade membership / cancel)
+        this["QuickInput_OverageTitle"] = "Daily AI Note Limit Reached";
+        this["QuickInput_OverageMsg"] = "Spend {0} points to continue";
         this["QuickInput_MoreTypes"] = "More record types";
 
         // ===== RecordSheetView =====

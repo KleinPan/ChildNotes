@@ -51,6 +51,14 @@ public partial class DialogHost : UserControl
     public static readonly StyledProperty<bool> IsDangerConfirmProperty =
         AvaloniaProperty.Register<DialogHost, bool>(nameof(IsDangerConfirm));
 
+    /// <summary>可选：底部链接按钮文本（如"升级会员，解锁更多次数"）。为空时不显示链接按钮。</summary>
+    public static readonly StyledProperty<string?> LinkTextProperty =
+        AvaloniaProperty.Register<DialogHost, string?>(nameof(LinkText));
+
+    /// <summary>可选：底部链接按钮命令（与 <see cref="LinkText"/> 配套，如跳转会员中心）。</summary>
+    public static readonly StyledProperty<ICommand?> LinkCommandProperty =
+        AvaloniaProperty.Register<DialogHost, ICommand?>(nameof(LinkCommand));
+
     private bool _wasOpen = false;
 
     public DialogHost()
@@ -318,5 +326,19 @@ public partial class DialogHost : UserControl
     {
         get => GetValue(IsDangerConfirmProperty);
         set => SetValue(IsDangerConfirmProperty, value);
+    }
+
+    /// <summary>可选：底部链接按钮文本。为空（默认）时链接按钮不显示，现有两按钮用法零影响。</summary>
+    public string? LinkText
+    {
+        get => GetValue(LinkTextProperty);
+        set => SetValue(LinkTextProperty, value);
+    }
+
+    /// <summary>可选：底部链接按钮命令（如"升级会员"跳转）。</summary>
+    public ICommand? LinkCommand
+    {
+        get => GetValue(LinkCommandProperty);
+        set => SetValue(LinkCommandProperty, value);
     }
 }

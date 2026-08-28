@@ -140,7 +140,8 @@ public class AiAccuracyEvaluationTests
     private static AiNoteService NewServiceWithFailingAi()
     {
         var failingAi = new FailingDeepSeekClient();
-        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance, null!, null!);
+        // 仅调用 ParseByRulesMulti（不触达 wallet），依赖传 null!
+        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance, null!, null!, null!);
     }
 
     /// <summary>

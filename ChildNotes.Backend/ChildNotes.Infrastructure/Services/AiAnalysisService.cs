@@ -47,7 +47,7 @@ public class AiAnalysisService : IAiAnalysisService
     /// <summary>当前 AI 喂养分析消耗的积分数量（由配置动态控制）。</summary>
     public int AnalysisCostPoints => _cost.AnalysisCost;
 
-    public async Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, string? babyId, CancellationToken ct = default)
+    public async Task<AiAnalysisRecordDto> GenerateAsync(GenerateAiAnalysisRequest req, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
         var (start, end) = ResolveAnalysisRange(req);
@@ -71,12 +71,35 @@ public class AiAnalysisService : IAiAnalysisService
         // 每周次数限制：原子地检查额度并递增（防止并发绕过限制）
         var limit = await _membership.GetAiAnalysisWeeklyLimitAsync(uid, ct);
         var (ok, used) = await _membership.TryIncrementAiAnalysisUsageAsync(uid, ct);
+        // 超限抵扣积分（0 = 非抵扣场景）。AI 调用失败退还时需与正常消耗一并退还。
+        var overagePoints = 0;
         if (!ok)
-            throw new BusinessException($"本周 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
+        {
+            if (!usePointsForOverage)
+                throw new BusinessException($"本周 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
+
+            // 超限积分抵扣：先原子扣抵扣积分（积分不足时 ChangeAsync 抛 INSUFFICIENT_POINTS 直接透传，
+            // 此时次数未递增、抵扣积分未扣成功，无需回滚），成功后强制递增次数（允许超限）。
+            // 会员/免费用户统一走此逻辑，不做区分。
+            overagePoints = MembershipConstants.AiAnalysisOveragePointsCost;
+            await _wallet.ChangeAsync(uid, -overagePoints, ct);
+            await _membership.ForceIncrementAiAnalysisUsageAsync(uid, ct);
+        }
 
         // 调用 AI 前先扣积分（积分不足抛 BusinessException(INSUFFICIENT_POINTS)）
-        // ExecuteUpdateAsync 立即落库，无需事务包裹
-        await _wallet.ChangeAsync(uid, -_cost.AnalysisCost, ct);
+        // ExecuteUpdateAsync 立即落库，无需事务包裹。
+        // 抵扣场景下若正常消耗积分不足：回滚已扣的超限抵扣积分与已递增的次数，
+        // 避免出现"扣了抵扣积分却没拿到分析结果"的部分消耗。
+        try
+        {
+            await _wallet.ChangeAsync(uid, -_cost.AnalysisCost, ct);
+        }
+        catch (BusinessException) when (overagePoints > 0)
+        {
+            try { await _wallet.ChangeAsync(uid, overagePoints, ct); } catch { }
+            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); } catch { }
+            throw;
+        }
 
         string analysisText;
         string model;
@@ -94,8 +117,9 @@ public class AiAnalysisService : IAiAnalysisService
         }
         catch
         {
-            // AI 调用失败：退还已扣积分和已递增的次数（best-effort，失败仅记日志不阻塞异常传播）
-            try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost, ct); } catch { }
+            // AI 调用失败：退还超限抵扣积分 + 正常消耗积分（合并为一次原子加回）和已递增的次数
+            // （best-effort，失败仅记日志不阻塞异常传播）
+            try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost + overagePoints, ct); } catch { }
             try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); } catch { }
             throw;
         }

@@ -30,12 +30,25 @@ public sealed class MembershipApiClient : BaseApiClient
         return resp is null ? null : await ReadDataAsync<MembershipStatusDto>(resp, ct);
     }
 
-    /// <summary>创建支付订单。</summary>
+    /// <summary>
+    /// 创建支付订单。
+    /// 网络/鉴权失败返回 null（调用方走"请检查网络"提示）；
+    /// 后端业务错误（如套餐不存在、支付宝未配置）抛 <see cref="MembershipApiException"/>，携带后端 msg/code。
+    /// </summary>
     public async Task<CreateOrderResponse?> CreateOrderAsync(string planType, string channel, CancellationToken ct = default)
     {
         var body = Serialize(new { PlanType = planType, Channel = channel });
-        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/membership/orders", body, ct);
-        return resp is null ? null : await ReadDataAsync<CreateOrderResponse>(resp, ct);
+        // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
+        // 导致后端业务错误（支付宝未配置等）的 msg/code 丢失，
+        // 最终统一提示"请检查网络"，掩盖真实错误。
+        using var resp = await SendWithErrorAsync(_cfgRepo, HttpMethod.Post, "/api/membership/orders", body, ct);
+        if (resp is null) return null;
+        if (!resp.IsSuccessStatusCode)
+        {
+            var (msg, code) = await ReadErrorAsync(resp, ct);
+            throw new MembershipApiException(msg, code);
+        }
+        return await ReadDataAsync<CreateOrderResponse>(resp, ct);
     }
 
     /// <summary>查询订单状态（支付完成后轮询）。</summary>
@@ -76,5 +89,20 @@ public sealed class MembershipApiClient : BaseApiClient
             DevLogger.Log("Membership", $"[DevActivate] 异常：{ex.GetType().Name}: {ex.Message}", DevLogger.Level.Error);
             return false;
         }
+    }
+}
+
+/// <summary>
+/// 会员 API 业务异常：携带后端返回的错误码（如 ALIPAY_NOT_CONFIGURED）。
+/// 供 ViewModel 区分"支付宝未配置"等可操作错误与网络错误。
+/// </summary>
+public sealed class MembershipApiException : Exception
+{
+    /// <summary>后端返回的业务错误码（如 ALIPAY_NOT_CONFIGURED），可能为 null。</summary>
+    public string? ErrorCode { get; }
+
+    public MembershipApiException(string message, string? errorCode) : base(message)
+    {
+        ErrorCode = errorCode;
     }
 }

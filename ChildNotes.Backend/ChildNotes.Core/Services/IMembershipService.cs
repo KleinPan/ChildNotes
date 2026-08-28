@@ -43,6 +43,12 @@ public interface IMembershipService
     Task<(bool ok, int used)> TryIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
+    /// 强制递增今日 AI 记调用次数（+1，允许 UsedCount 超过当日限额）。
+    /// 仅供"免费次数用尽后积分抵扣"场景使用：扣抵扣积分成功后放行本次调用。
+    /// </summary>
+    Task<int> ForceIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
     /// 获取用户今日 AI 记已用次数。
     /// </summary>
     Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default);
@@ -64,6 +70,12 @@ public interface IMembershipService
     /// 解决"先 SELECT 检查 + 后 UPDATE 递增"的 TOCTOU 并发漏洞。
     /// </summary>
     Task<(bool ok, int used)> TryIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 强制递增本周 AI 分析调用次数（+1，允许 UsedCount 超过本周限额）。
+    /// 仅供"免费次数用尽后积分抵扣"场景使用：扣抵扣积分成功后放行本次调用。
+    /// </summary>
+    Task<int> ForceIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
     /// 递减本周 AI 分析调用次数（-1，不低于 0）。用于 AI 调用失败时退还次数。

@@ -21,6 +21,12 @@ public static class MembershipConstants
     /// <summary>会员抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public const decimal MemberLotteryDiscount = 0.8m;
 
+    /// <summary>免费次数用尽后，AI 记积分抵扣单价（积分/次）。</summary>
+    public const int AiNoteOveragePointsCost = 5;
+
+    /// <summary>免费次数用尽后，AI 分析积分抵扣单价（积分/次，不含该次正常积分消耗）。</summary>
+    public const int AiAnalysisOveragePointsCost = 20;
+
     /// <summary>普通用户成长记录图片同步压缩参数：最大边 1280px，JPEG 质量 85%。</summary>
     public const int FreePhotoMaxEdge = 1280;
     public const int FreePhotoJpegQuality = 85;

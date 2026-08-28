@@ -23,10 +23,10 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     /// babyId 通过查询参数传递（后端 ResolveBabyIdFromRequest 支持 header/query 两种方式）。
     /// 成功返回 DTO；积分不足抛 <see cref="AiAnalysisApiException"/>；其他失败返回 null。
     /// </summary>
-    public async Task<ServerAiAnalysisDto?> GenerateAsync(DateTime start, DateTime end, string? babyId, CancellationToken ct = default)
+    public async Task<ServerAiAnalysisDto?> GenerateAsync(DateTime start, DateTime end, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
         var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
-        var body = Serialize(new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") });
+        var body = Serialize(BuildGenerateBody(start, end, usePointsForOverage));
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, path, body, ct);
         return resp is null ? null : await ReadDataAsync<ServerAiAnalysisDto>(resp, ct);
     }
@@ -35,10 +35,10 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     /// 调用后端生成分析，失败时抛出带错误码的异常（而非返回 null）。
     /// 供需要区分"积分不足"等业务错误的调用方使用。
     /// </summary>
-    public async Task<ServerAiAnalysisDto> GenerateWithErrorsAsync(DateTime start, DateTime end, string? babyId, CancellationToken ct = default)
+    public async Task<ServerAiAnalysisDto> GenerateWithErrorsAsync(DateTime start, DateTime end, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
         var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
-        var body = Serialize(new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") });
+        var body = Serialize(BuildGenerateBody(start, end, usePointsForOverage));
         // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
         // 导致后端业务错误（积分不足/次数上限/日期非法等）的 msg/code 丢失，
         // 最终统一抛"后端服务不可用"，掩盖真实错误。
@@ -53,6 +53,16 @@ public sealed class AiAnalysisApiClient : BaseApiClient
         var dto = await ReadDataAsync<ServerAiAnalysisDto>(resp, ct);
         return dto ?? throw new AiAnalysisApiException("后端返回数据格式异常", null);
     }
+
+    /// <summary>
+    /// 构造 /generate 请求体。
+    /// <paramref name="usePointsForOverage"/> 为 true 时（免费次数用尽后用户选择积分抵扣），
+    /// 才把 UsePointsForOverage=true 序列化进请求体；默认 false 不携带该字段。
+    /// </summary>
+    private static object BuildGenerateBody(DateTime start, DateTime end, bool usePointsForOverage)
+        => usePointsForOverage
+            ? new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd"), UsePointsForOverage = true }
+            : new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") };
 
     /// <summary>调用后端列出当前宝宝的分析记录。</summary>
     public async Task<List<ServerAiAnalysisDto>?> ListAsync(string? babyId, CancellationToken ct = default)
@@ -81,23 +91,6 @@ public sealed class AiAnalysisApiClient : BaseApiClient
         catch
         {
             return PointsConstants.AiAnalysisDefaultCost;
-        }
-    }
-
-    /// <summary>从错误响应中提取 msg 和 code 字段。</summary>
-    private static async Task<(string msg, string? code)> ReadErrorAsync(HttpResponseMessage resp, CancellationToken ct)
-    {
-        try
-        {
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(json);
-            var msg = doc.RootElement.TryGetProperty("msg", out var m) ? m.GetString() ?? "请求失败" : "请求失败";
-            var code = doc.RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
-            return (msg, code);
-        }
-        catch
-        {
-            return ($"请求失败 ({(int)resp.StatusCode})", null);
         }
     }
 }

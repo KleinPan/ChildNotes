@@ -105,7 +105,7 @@ public sealed class AiAnalysisService
         return _repo.FindByRange(_state.CurrentBaby.Id, start, end) is not null;
     }
 
-    public async Task<AiAnalysisRecord> GenerateAsync(DateTime start, DateTime end, CancellationToken ct = default)
+    public async Task<AiAnalysisRecord> GenerateAsync(DateTime start, DateTime end, CancellationToken ct = default, bool usePointsForOverage = false)
     {
         var baby = _state.CurrentBaby ?? throw new InvalidOperationException("请先选择宝宝");
 
@@ -116,7 +116,7 @@ public sealed class AiAnalysisService
         // server 模式：调后端 /generate，后端负责数据聚合、幂等、AI 调用
         if (IsServerSource())
         {
-            return await GenerateViaServerAsync(baby, start, end, ct);
+            return await GenerateViaServerAsync(baby, start, end, ct, usePointsForOverage);
         }
 
         // local 模式：本地聚合数据 + 本地 LLM
@@ -156,10 +156,13 @@ public sealed class AiAnalysisService
         return record;
     }
 
-    /// <summary>server 模式生成：调用后端 /api/smart-analysis/generate，积分不足时抛 AiAnalysisApiException。</summary>
-    private async Task<AiAnalysisRecord> GenerateViaServerAsync(Baby baby, DateTime start, DateTime end, CancellationToken ct)
+    /// <summary>
+    /// server 模式生成：调用后端 /api/smart-analysis/generate，积分不足时抛 AiAnalysisApiException。
+    /// <paramref name="usePointsForOverage"/> 为 true 时（免费次数用尽后用户选择积分抵扣）透传给后端。
+    /// </summary>
+    private async Task<AiAnalysisRecord> GenerateViaServerAsync(Baby baby, DateTime start, DateTime end, CancellationToken ct, bool usePointsForOverage)
     {
-        var dto = await _apiClient.GenerateWithErrorsAsync(start, end, baby.Id, ct);
+        var dto = await _apiClient.GenerateWithErrorsAsync(start, end, baby.Id, usePointsForOverage, ct);
         return MapFromDto(dto);
     }
 

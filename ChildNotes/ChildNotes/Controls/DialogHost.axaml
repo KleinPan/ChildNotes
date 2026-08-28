@@ -25,6 +25,13 @@
                                 x:Name="ConfirmButton"/>
                     </Grid>
                 </StackPanel>
+                <!-- 可选第三动作：底部链接按钮（如"升级会员，解锁更多次数"），LinkText 为空时不显示 -->
+                <Button x:Name="LinkButton" Content="{Binding LinkText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
+                        Command="{Binding LinkCommand, RelativeSource={RelativeSource AncestorType=controls:DialogHost}}"
+                        HorizontalAlignment="Center" Padding="8,2" MinHeight="0" Margin="0,2,0,-2"
+                        Background="Transparent" BorderThickness="0" Cursor="Hand"
+                        Foreground="{StaticResource BrandPrimaryBrush}" FontSize="{StaticResource FontSize.Caption}"
+                        IsVisible="{Binding LinkText, RelativeSource={RelativeSource AncestorType=controls:DialogHost}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             </StackPanel>
         </Border>
     </Panel>

@@ -34,6 +34,44 @@
                 </Grid>
             </Border>
 
+            <!-- 会员与积分：从账户中心提级的常用入口（会员中心 / 积分任务） -->
+            <Border Classes="section-title">
+                <TextBlock Text="{DynamicResource Mine_Section_MembershipPoints}" />
+            </Border>
+
+            <Border Margin="12,4" Background="{StaticResource SurfaceCardBrush}" CornerRadius="{StaticResource Radius.Medium}">
+                <StackPanel>
+                    <!-- 会员中心：右侧显示会员状态副文案 -->
+                    <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto,Auto" PointerPressed="OnMembershipTap">
+                        <Border Grid.Column="0" Width="24" Height="24"
+                                Background="{StaticResource FeedingOrangeBrush}"
+                                CornerRadius="{StaticResource Radius.XS}">
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource SurfaceCardBrush}"
+                                       Text="V" />
+                        </Border>
+                        <TextBlock Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
+                                   Text="{DynamicResource Mine_Membership}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Label}"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Text="{Binding MembershipStatusText}" />
+                        <TextBlock Grid.Column="3" Margin="8,0,0,0" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
+                                   Text="›" />
+                    </Grid>
+                    <Border Height="1" Margin="14,0" Background="{StaticResource SurfaceDividerBrush}" />
+                    <!-- 积分任务 -->
+                    <Grid Margin="14,12" ColumnDefinitions="Auto,*,Auto" PointerPressed="OnPointsTap">
+                        <TextBlock Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center" FontSize="20"
+                                   Text="🎁" />
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="{StaticResource FontSize.Body}"
+                                   Text="{DynamicResource Mine_Points}" />
+                        <TextBlock Grid.Column="2" VerticalAlignment="Center" FontSize="20"
+                                   Foreground="{StaticResource TextPlaceholderBrush}"
+                                   Text="›" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <Border Classes="section-title">
                 <TextBlock Text="{DynamicResource Mine_Section_Baby}" />
             </Border>

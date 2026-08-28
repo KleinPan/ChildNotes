@@ -176,8 +176,6 @@ public partial class MainShellViewModel : ViewModelBase
         () => new AccountCenterViewModel(),
         vm =>
         {
-            vm.OpenMembershipRequested += OpenMembership;
-            vm.OpenPointsRequested += OpenPoints;
             vm.LogoutRequested += OnLogout;
             vm.OpenLoginRequested += OnOpenLogin;
         },
@@ -403,12 +401,14 @@ public partial class MainShellViewModel : ViewModelBase
         // QuickMenu：首页 + 按钮立即可能被点击，且 OnIsRecordSheetOpenChanged 会访问 QuickMenu
         _quickMenu = new QuickMenuViewModel();
         _quickMenu.OpenRecordRequested += OpenQuickRecord;
-        // QuickInput：首页底部输入栏立即显示，Saved/MembershipRequired/ToggleActionsRequested/CloseActionsRequested
+        // QuickInput：首页底部输入栏立即显示，Saved/MembershipRequired/PointsRequired/ToggleActionsRequested/CloseActionsRequested
         //   事件必须在用户交互前订阅
         _quickInput = new QuickInputViewModel();
         _quickInput.Saved += OnRecordSaved;
         // AI 记次数用尽 → 跳转会员中心
         _quickInput.MembershipRequired += OpenMembership;
+        // AI 记积分抵扣时积分不足 → 跳转积分任务页（签到获取积分）
+        _quickInput.PointsRequired += OpenPoints;
         // + 按钮点击 → 转发到功能面板展开/收起
         _quickInput.ToggleActionsRequested += () => QuickMenu.ToggleMenuCommand.Execute(null);
         // 输入内容时强制收起功能面板

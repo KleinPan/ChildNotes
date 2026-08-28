@@ -128,7 +128,11 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// 可选解析模式覆盖：传入非空值时强制使用该模式（不读 LlmConfig.ParseMode）。
     /// 供"重新识别"按钮等场景强制精准模式使用；普通输入留空走用户设置。
     /// </param>
-    public async Task<List<AiNoteParseItem>> ParseAsync(string text, string? overrideParseMode = null)
+    /// <param name="usePointsForOverage">
+    /// 免费次数用尽后用户选择积分抵扣时传 true，透传给后端携带 UsePointsForOverage=true；
+    /// 该模式下后端返回 INSUFFICIENT_POINTS 时向上抛出（不降级），由 ViewModel 引导用户去积分任务页。
+    /// </param>
+    public async Task<List<AiNoteParseItem>> ParseAsync(string text, string? overrideParseMode = null, bool usePointsForOverage = false)
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
@@ -145,7 +149,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         List<AiNoteParseItem>? aiItems = null;
         if (preferServer)
         {
-            aiItems = await TryServerAsync(text, parseMode);
+            aiItems = await TryServerAsync(text, parseMode, usePointsForOverage);
         }
         else
         {
@@ -171,10 +175,13 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// <summary>
     /// 尝试调用后端解析接口；未配置或一般失败时返回 null（降级到本地 LLM/规则）。
     /// AI 记次数用尽（AI_NOTE_LIMIT_EXCEEDED）时抛出 <see cref="AiNoteApiException"/>，
-    /// 不降级，由上层提示用户升级会员。
+    /// 不降级，由上层提示用户升级会员或积分抵扣。
+    /// 积分抵扣模式下积分不足（INSUFFICIENT_POINTS）时同样向上抛出，
+    /// 由 ViewModel 引导用户去积分任务页（签到获取积分）。
     /// <param name="parseMode">解析模式，见 <see cref="ParseMode"/>；透传给后端决定是否跳过规则快速路径。</param>
+    /// <param name="usePointsForOverage">免费次数用尽后用户选择积分抵扣时传 true，透传给后端。</param>
     /// </summary>
-    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text, string parseMode)
+    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text, string parseMode, bool usePointsForOverage)
     {
         var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
         if (string.IsNullOrEmpty(serverUrl))
@@ -185,16 +192,23 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
         DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note ParseMode={parseMode}");
         try
         {
-            var batch = await _apiClient.ParseWithErrorsAsync(text, parseMode);
+            var batch = await _apiClient.ParseWithErrorsAsync(text, parseMode, usePointsForOverage);
             DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{batch.Items.Count} 条");
             return batch.Items;
         }
         catch (AiNoteApiException ex)
         {
-            // AI 次数用尽：不降级，向上抛出由 ViewModel 引导用户升级会员
+            // AI 次数用尽：不降级，向上抛出由 ViewModel 弹积分抵扣/升级会员三选弹窗
             if (ex.IsAiNoteLimitExceeded)
             {
                 DevLogger.Log("AiNote", "[AI-LOG] AI 记次数已用尽，不降级", DevLogger.Level.Warn);
+                throw;
+            }
+            // 积分抵扣模式下积分不足：不降级（降级会让用户以为抵扣成功却走了本地规则），
+            // 向上抛出由 ViewModel 提示并引导去积分任务页
+            if (usePointsForOverage && ex.IsInsufficientPoints)
+            {
+                DevLogger.Log("AiNote", "[AI-LOG] 积分抵扣失败：积分不足，不降级", DevLogger.Level.Warn);
                 throw;
             }
             // 其他业务错误（如文本为空等）：降级到本地

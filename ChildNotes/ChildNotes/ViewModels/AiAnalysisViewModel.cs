@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
 using ChildNotes.Services;
+using ChildNotes.Shared.Constants;
 
 namespace ChildNotes.ViewModels;
 
@@ -47,6 +48,11 @@ public partial class AiAnalysisViewModel : ViewModelBase
     [ObservableProperty] private bool _allLoaded;
     /// <summary>是否还有更多历史记录可加载。</summary>
     [ObservableProperty] private bool _hasMore;
+
+    /// <summary>是否显示"免费次数用尽"积分抵扣确认弹窗（三选：积分抵扣继续 / 升级会员 / 取消）。</summary>
+    [ObservableProperty] private bool _showOverageConfirm;
+    /// <summary>积分抵扣确认弹窗消息文案（弹出时按当前分析成本 + 抵扣单价计算合计积分）。</summary>
+    [ObservableProperty] private string _overageMsg = string.Empty;
 
     /// <summary>懒加载分页大小：首次进入页面仅加载最近 5 条记录。</summary>
     private const int InitialPageSize = 5;
@@ -226,7 +232,14 @@ public partial class AiAnalysisViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task Generate()
+    private Task Generate() => GenerateCoreAsync(usePointsForOverage: false);
+
+    /// <summary>
+    /// 生成分析核心逻辑。
+    /// <paramref name="usePointsForOverage"/> 为 true 时表示免费次数用尽后用户选择积分抵扣，
+    /// 携带 UsePointsForOverage=true 重新请求同一接口（后端额外扣积分放行本次超限请求）。
+    /// </summary>
+    private async Task GenerateCoreAsync(bool usePointsForOverage)
     {
         if (Generating || !RangeValid || StartDate is null || EndDate is null) return;
 
@@ -239,7 +252,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
         }
 
         // 积分不足提示 + 提供充值入口（server 模式下才校验，local 模式不消耗积分）
-        if (config.NoteSource == "server" && !PointsSufficient)
+        if (config.NoteSource == "server" && !PointsSufficient && !usePointsForOverage)
         {
             ErrorMessage = InsufficientTip;
             DisplayToast(string.Format(_locale.GetString("AiAnalysis_ErrPointsShort", "积分不足，需 {0} 积分，当前 {1} 积分"), AnalysisCost, CurrentPoints));
@@ -257,7 +270,7 @@ public partial class AiAnalysisViewModel : ViewModelBase
 
         try
         {
-            var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date, _generateCts.Token);
+            var record = await _aiService.GenerateAsync(StartDate.Value.Date, EndDate.Value.Date, _generateCts.Token, usePointsForOverage);
             // 生成后刷新积分余额（server 模式扣了积分）
             if (config.NoteSource == "server")
             {
@@ -310,10 +323,30 @@ public partial class AiAnalysisViewModel : ViewModelBase
                     CurrentPoints = dashboard.Points;
                 }
                 RefreshPointsSufficiency();
-                ErrorMessage = string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFinal", "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分"), AnalysisCost, CurrentPoints);
-                DisplayToast(_locale.GetString("AiAnalysis_ErrPointsDaily", "积分不足，请每日签到获取积分"));
+                // 积分抵扣模式下积分不足（免费次数已用尽 + 积分余额不够抵扣）：
+                // 提示并引导去积分任务页（签到获取积分）
+                if (usePointsForOverage)
+                {
+                    ErrorMessage = string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFinal", "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分"), AnalysisCost + MembershipConstants.AiAnalysisOveragePointsCost, CurrentPoints);
+                    DisplayToast(_locale.GetString("AiAnalysis_ErrPointsDaily", "积分不足，请每日签到获取积分"));
+                    PointsRequired?.Invoke();
+                }
+                else
+                {
+                    ErrorMessage = string.Format(_locale.GetString("AiAnalysis_ErrPointsShortFinal", "积分不足，本次分析需 {0} 积分，当前余额 {1} 积分"), AnalysisCost, CurrentPoints);
+                    DisplayToast(_locale.GetString("AiAnalysis_ErrPointsDaily", "积分不足，请每日签到获取积分"));
+                }
             }
-            // AI 分析次数用尽（本周）：提示并跳转会员中心
+            // AI 分析免费次数用尽（本周）：弹积分抵扣三选弹窗（积分抵扣继续 / 升级会员 / 取消）
+            else if (ex.IsAiLimitExceeded && !usePointsForOverage)
+            {
+                // 合计积分 = 正常分析消耗 + 超限抵扣单价（如 10 + 20 = 30，更透明）
+                OverageMsg = string.Format(
+                    _locale.GetString("AiAnalysis_OverageMsg", "可用积分抵扣继续（本次共消耗 {0} 积分）"),
+                    AnalysisCost + MembershipConstants.AiAnalysisOveragePointsCost);
+                ShowOverageConfirm = true;
+            }
+            // 已带积分抵扣仍返回次数上限（后端不应出现，防御性兜底）
             else if (ex.IsAiLimitExceeded)
             {
                 ErrorMessage = _locale.GetString("AiAnalysis_ErrWeeklyLimitMember", "本周 AI 分析次数已用完，升级会员可享 10 次/周");
@@ -340,6 +373,28 @@ public partial class AiAnalysisViewModel : ViewModelBase
             _generateCts?.Dispose();
             _generateCts = null;
         }
+    }
+
+    // ===== 免费次数用尽：积分抵扣三选弹窗（积分抵扣继续 / 升级会员 / 取消） =====
+
+    /// <summary>确认积分抵扣：关闭弹窗，携带 usePointsForOverage=true 重新生成。</summary>
+    [RelayCommand]
+    private async Task ConfirmOverage()
+    {
+        ShowOverageConfirm = false;
+        await GenerateCoreAsync(usePointsForOverage: true);
+    }
+
+    /// <summary>取消积分抵扣弹窗（放弃本次生成）。</summary>
+    [RelayCommand]
+    private void CancelOverage() => ShowOverageConfirm = false;
+
+    /// <summary>升级会员：关闭弹窗并跳转会员中心（复用现有 MembershipRequired 事件链路）。</summary>
+    [RelayCommand]
+    private void UpgradeForOverage()
+    {
+        ShowOverageConfirm = false;
+        MembershipRequired?.Invoke();
     }
 
     /// <summary>取消正在进行的 AI 分析请求。</summary>

@@ -62,6 +62,12 @@ public class MembershipStatusDto
     /// <summary>本周 AI 分析次数上限。</summary>
     public int AiAnalysisWeeklyLimit { get; set; }
 
+    /// <summary>AI 记免费次数用尽后，积分抵扣单价（积分/次）。见 MembershipConstants.AiNoteOveragePointsCost。</summary>
+    public int AiNoteOveragePointsCost { get; set; }
+
+    /// <summary>AI 分析免费次数用尽后，积分抵扣单价（积分/次，不含该次正常积分消耗）。见 MembershipConstants.AiAnalysisOveragePointsCost。</summary>
+    public int AiAnalysisOveragePointsCost { get; set; }
+
     /// <summary>抽奖积分消耗折扣（1 = 原价，0.8 = 8 折）。</summary>
     public decimal LotteryDiscount { get; set; } = 1m;
 }

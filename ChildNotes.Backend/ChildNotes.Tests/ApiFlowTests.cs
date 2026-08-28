@@ -378,6 +378,12 @@ public class ApiFactory : WebApplicationFactory<Program>
                 opt.ResendIntervalSeconds = 0;
                 opt.CodeTtlSeconds = 600;
             });
+            // 测试环境放宽接口限流：默认 5 req/s 会让"用尽免费次数"类测试（连续 10+ 次调用）触发 429
+            services.PostConfigure<Core.Config.RateLimitOptions>(opt =>
+            {
+                opt.MaxRequestsPerSecond = 1000;
+                opt.BlacklistRequestsPerSecond = 2000;
+            });
             // 替换 IEmailSender 为测试 Stub，避免真实 SMTP 调用
             services.RemoveAll<Core.Services.IEmailSender>();
             services.AddSingleton<Core.Services.IEmailSender>(_ => _emailSender);

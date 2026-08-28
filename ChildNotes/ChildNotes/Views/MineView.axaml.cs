@@ -17,6 +17,16 @@ public partial class MineView : UserControl
         if (FindShell() is { } vm) vm.OpenAccountCenter();
     }
 
+    private void OnMembershipTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenMembership();
+    }
+
+    private void OnPointsTap(object? sender, PointerPressedEventArgs e)
+    {
+        if (FindShell() is { } vm) vm.OpenPoints();
+    }
+
     private void OnBabyManagerTap(object? sender, PointerPressedEventArgs e)
     {
         if (FindShell() is { } vm) vm.OpenBabyManager();

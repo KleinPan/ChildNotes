@@ -34,6 +34,7 @@ public partial class AiNoteService : IAiNoteService
     private readonly DeepSeekClient _ai;
     private readonly IMembershipService _membership;
     private readonly ICurrentUserService _current;
+    private readonly PointsWalletService _wallet;
 
     private const string SystemPrompt = """
 你是一名育儿记录解析助手。请将用户输入的自然语言文本解析为一条或多条结构化的育儿记录，并仅输出 JSON 数组。
@@ -151,15 +152,16 @@ public partial class AiNoteService : IAiNoteService
         PropertyNameCaseInsensitive = true,
     };
 
-    public AiNoteService(DeepSeekClient ai, ILogger<AiNoteService> logger, IMembershipService membership, ICurrentUserService current)
+    public AiNoteService(DeepSeekClient ai, ILogger<AiNoteService> logger, IMembershipService membership, ICurrentUserService current, PointsWalletService wallet)
     {
         _ai = ai;
         _logger = logger;
         _membership = membership;
         _current = current;
+        _wallet = wallet;
     }
 
-    public async Task<AiNoteParseBatchResponse> ParseAsync(AiNoteParseRequest req, string? babyId, CancellationToken ct = default)
+    public async Task<AiNoteParseBatchResponse> ParseAsync(AiNoteParseRequest req, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(req?.Text))
             throw new BusinessException("记录文本不能为空", 400);
@@ -177,7 +179,18 @@ public partial class AiNoteService : IAiNoteService
         var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
         var (ok, used) = await _membership.TryIncrementAiNoteUsageAsync(uid, ct);
         if (!ok)
-            throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
+        {
+            if (!usePointsForOverage)
+                throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
+
+            // 超限积分抵扣：先原子扣抵扣积分（积分不足时 ChangeAsync 抛 INSUFFICIENT_POINTS 直接透传，
+            // 此时次数未递增、积分未扣成功，无需回滚），成功后强制递增次数（允许超限）放行本次调用。
+            // 会员/免费用户统一走此逻辑，不做区分。
+            await _wallet.ChangeAsync(uid, -MembershipConstants.AiNoteOveragePointsCost, ct);
+            used = await _membership.ForceIncrementAiNoteUsageAsync(uid, ct);
+            _logger.LogInformation("[AI-LOG] 超限积分抵扣放行 | 用户={Uid} 抵扣积分={Points} 抵扣后已用次数={Used}/{Limit}",
+                uid, MembershipConstants.AiNoteOveragePointsCost, used, limit);
+        }
 
         // ===== 解析模式路由 =====
         // ParseMode 是新字段（fast/precise），ForceAi 是旧字段（兼容）。

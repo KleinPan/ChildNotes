@@ -49,9 +49,9 @@ public class AiNoteParseTests
     private static AiNoteService NewServiceWithFailingAi()
     {
         // 用一个会抛异常的 DeepSeekClient stub，强制走规则解析路径
-        // 注：membership/current 仅在 ParseAsync 中使用，单元测试走 ParseByRulesMulti 不触达，传 null
+        // 注：membership/current/wallet 仅在 ParseAsync 中使用，单元测试走 ParseByRulesMulti 不触达，传 null!
         var failingAi = new FailingDeepSeekClient();
-        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance, null!, null!);
+        return new AiNoteService(failingAi, NullLogger<AiNoteService>.Instance, null!, null!, null!);
     }
 
     [Theory]

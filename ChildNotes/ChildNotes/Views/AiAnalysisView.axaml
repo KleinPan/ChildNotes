@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ChildNotes.ViewModels"
              xmlns:m="using:ChildNotes.Models"
+             xmlns:controls="using:ChildNotes.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="390" d:DesignHeight="844"
@@ -184,6 +185,22 @@
                 Background="{StaticResource MaskBrush}" CornerRadius="{StaticResource Radius.Small}" Padding="20,10" IsVisible="{Binding ShowToast}">
             <TextBlock Text="{Binding ToastMessage}" Foreground="{StaticResource SurfaceCardBrush}" FontSize="{StaticResource FontSize.Label}" TextWrapping="Wrap" MaxWidth="320"/>
         </Border>
+
+        <!-- 本周免费次数用尽 → 积分抵扣三选确认弹窗（积分抵扣继续 / 升级会员链接 / 取消） -->
+        <controls:DialogHost Grid.Row="0" Grid.RowSpan="3"
+                             Title="{DynamicResource AiAnalysis_OverageTitle}"
+                             CancelText="{DynamicResource Common_Cancel}"
+                             ConfirmText="{DynamicResource Common_ContinueWithPoints}"
+                             LinkText="{DynamicResource Common_UpgradeMembership}"
+                             LinkCommand="{Binding UpgradeForOverageCommand}"
+                             CancelCommand="{Binding CancelOverageCommand}"
+                             ConfirmCommand="{Binding ConfirmOverageCommand}"
+                             IsOpen="{Binding ShowOverageConfirm}">
+            <controls:DialogHost.MessageContent>
+                <TextBlock Text="{Binding OverageMsg}" FontSize="{StaticResource FontSize.Label}"
+                           Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center"/>
+            </controls:DialogHost.MessageContent>
+        </controls:DialogHost>
 
     </Grid>
 </UserControl>

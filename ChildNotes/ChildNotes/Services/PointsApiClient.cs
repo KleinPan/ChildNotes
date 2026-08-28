@@ -93,23 +93,6 @@ public sealed class PointsApiClient : BaseApiClient
         var dto = await ReadDataAsync<ClaimTaskResult>(resp, ct);
         return dto ?? throw new PointsApiException("后端返回数据格式异常", null);
     }
-
-    /// <summary>从错误响应中提取 msg 和 code 字段。</summary>
-    private static async Task<(string msg, string? code)> ReadErrorAsync(HttpResponseMessage resp, CancellationToken ct)
-    {
-        try
-        {
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(json);
-            var msg = doc.RootElement.TryGetProperty("msg", out var m) ? m.GetString() ?? "请求失败" : "请求失败";
-            var code = doc.RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
-            return (msg, code);
-        }
-        catch
-        {
-            return ($"请求失败 ({(int)resp.StatusCode})", null);
-        }
-    }
 }
 
 /// <summary>后端返回的任务项（对应 TaskTemplateDto）。</summary>

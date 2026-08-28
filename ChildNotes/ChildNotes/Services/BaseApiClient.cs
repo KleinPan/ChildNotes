@@ -167,6 +167,23 @@ public abstract class BaseApiClient
         }
     }
 
+    /// <summary>从错误响应的 {state,msg,code} 信封中提取 msg 和 code 字段。</summary>
+    protected static async Task<(string msg, string? code)> ReadErrorAsync(HttpResponseMessage resp, CancellationToken ct)
+    {
+        try
+        {
+            var json = await resp.Content.ReadAsStringAsync(ct);
+            using var doc = JsonDocument.Parse(json);
+            var msg = doc.RootElement.TryGetProperty("msg", out var m) ? m.GetString() ?? "请求失败" : "请求失败";
+            var code = doc.RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
+            return (msg, code);
+        }
+        catch
+        {
+            return ($"请求失败 ({(int)resp.StatusCode})", null);
+        }
+    }
+
     /// <summary>从 {state,msg,data} 信封中提取 data 字段并反序列化。</summary>
     protected static T? ExtractData<T>(string json)
     {
