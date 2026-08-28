@@ -170,6 +170,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Mine_Section_Growth"] = "成长与数据";
         this["Mine_Section_App"] = "应用";
         this["Mine_Section_Other"] = "其他";
+        this["Mine_Section_MembershipPoints"] = "会员与积分";
         this["Mine_BabyManager"] = "人员管理";
         this["Mine_BabyCount_Suffix"] = "个宝宝";
         this["Mine_Family"] = "家人管理";
