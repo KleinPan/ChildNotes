@@ -21,12 +21,13 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     /// <summary>
     /// 调用后端生成 7 天喂养分析。
     /// babyId 通过查询参数传递（后端 ResolveBabyIdFromRequest 支持 header/query 两种方式）。
+    /// usePointsForOverage 同样通过查询参数传递（后端 Controller 为 [FromQuery] 绑定，放 body 不生效）。
     /// 成功返回 DTO；积分不足抛 <see cref="AiAnalysisApiException"/>；其他失败返回 null。
     /// </summary>
     public async Task<ServerAiAnalysisDto?> GenerateAsync(DateTime start, DateTime end, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
-        var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
-        var body = Serialize(BuildGenerateBody(start, end, usePointsForOverage));
+        var path = BuildGeneratePath(babyId, usePointsForOverage);
+        var body = Serialize(new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") });
         using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, path, body, ct);
         return resp is null ? null : await ReadDataAsync<ServerAiAnalysisDto>(resp, ct);
     }
@@ -37,8 +38,8 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     /// </summary>
     public async Task<ServerAiAnalysisDto> GenerateWithErrorsAsync(DateTime start, DateTime end, string? babyId, bool usePointsForOverage = false, CancellationToken ct = default)
     {
-        var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
-        var body = Serialize(BuildGenerateBody(start, end, usePointsForOverage));
+        var path = BuildGeneratePath(babyId, usePointsForOverage);
+        var body = Serialize(new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") });
         // 用 SendWithErrorAsync 而非 SendAsync：后者会把所有非 2xx 响应吞成 null，
         // 导致后端业务错误（积分不足/次数上限/日期非法等）的 msg/code 丢失，
         // 最终统一抛"后端服务不可用"，掩盖真实错误。
@@ -55,14 +56,14 @@ public sealed class AiAnalysisApiClient : BaseApiClient
     }
 
     /// <summary>
-    /// 构造 /generate 请求体。
-    /// <paramref name="usePointsForOverage"/> 为 true 时（免费次数用尽后用户选择积分抵扣），
-    /// 才把 UsePointsForOverage=true 序列化进请求体；默认 false 不携带该字段。
+    /// 构造 /generate 请求路径：积分抵扣模式时追加 usePointsForOverage=true 查询参数
+    /// （后端 Controller 用 [FromQuery] 绑定，放请求体不生效）。
     /// </summary>
-    private static object BuildGenerateBody(DateTime start, DateTime end, bool usePointsForOverage)
-        => usePointsForOverage
-            ? new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd"), UsePointsForOverage = true }
-            : new { StartDate = start.ToString("yyyy-MM-dd"), EndDate = end.ToString("yyyy-MM-dd") };
+    private static string BuildGeneratePath(string? babyId, bool usePointsForOverage)
+    {
+        var path = $"/api/smart-analysis/generate?babyId={Uri.EscapeDataString(babyId ?? "")}";
+        return usePointsForOverage ? path + "&usePointsForOverage=true" : path;
+    }
 
     /// <summary>调用后端列出当前宝宝的分析记录。</summary>
     public async Task<List<ServerAiAnalysisDto>?> ListAsync(string? babyId, CancellationToken ct = default)
