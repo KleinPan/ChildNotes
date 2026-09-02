@@ -243,8 +243,18 @@ public class SyncService : ISyncService
         }
         else
         {
-            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
-                item.Id, existing.UpdatedAt, item.UpdatedAt);
+            if (item.UpdatedAt == existing.UpdatedAt)
+            {
+                // 时间戳相等视为幂等重推成功：客户端历史版本保留 100ns 精度时间戳，
+                // 被 PostgreSQL 截断后与服务端存储值相等，严格大于判断永不成立，
+                // 会导致该记录被永久跳过、客户端整批不 MarkSynced 而无限重推。
+                babiesUpserted++;
+            }
+            else
+            {
+                _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                    item.Id, existing.UpdatedAt, item.UpdatedAt);
+            }
         }
     }
 
@@ -298,8 +308,16 @@ public class SyncService : ISyncService
         }
         else
         {
-            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
-                item.Id, existing.UpdatedAt, item.UpdatedAt);
+            if (item.UpdatedAt == existing.UpdatedAt)
+            {
+                // 时间戳相等视为幂等重推成功（修复说明同 Babies 分支）
+                recordsUpserted++;
+            }
+            else
+            {
+                _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                    item.Id, existing.UpdatedAt, item.UpdatedAt);
+            }
         }
     }
 
@@ -340,8 +358,16 @@ public class SyncService : ISyncService
         }
         else
         {
-            _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
-                item.Id, existing.UpdatedAt, item.UpdatedAt);
+            if (item.UpdatedAt == existing.UpdatedAt)
+            {
+                // 时间戳相等视为幂等重推成功（修复说明同 Babies 分支）
+                milestonesUpserted++;
+            }
+            else
+            {
+                _logger.LogDebug("LWW skipped: id={Id}, remote_updated={RemoteUpdated}, push_updated={PushUpdated}",
+                    item.Id, existing.UpdatedAt, item.UpdatedAt);
+            }
         }
     }
 
