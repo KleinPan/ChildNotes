@@ -623,9 +623,11 @@ public sealed class ApiSyncService : BaseApiClient
     private static DateTime ToLocal(DateTime dt)
         => (dt.Kind == DateTimeKind.Utc ? dt : DateTime.SpecifyKind(dt, DateTimeKind.Utc)).ToLocalTime();
 
-    /// <summary>把应用层的本地时间转回 UTC，用于上送服务器。</summary>
+    /// <summary>把应用层的本地时间转回 UTC，用于上送服务器。
+    /// 同时截断到微秒精度：存量数据（本次修复前写入）仍带 100ns 余数，
+    /// 若原样上送，服务端 PostgreSQL 截断后与存储值相等，LWW 严格大于判断失败被跳过。</summary>
     private static DateTime ToUtc(DateTime dt)
-        => dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+        => (dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime()).TruncateToMicroseconds();
 
     /// <summary>
     /// Push 映射（家庭业务表）：UserId 注入当前 CloudUserId（创建者归因），FamilyId 注入当前绑定家庭。

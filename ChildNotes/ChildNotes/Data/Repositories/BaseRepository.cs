@@ -114,7 +114,9 @@ public static class DbParam
     public static SqliteCommand AddUtc(this SqliteCommand cmd, string name, DateTime value)
     {
         var utc = value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
-        cmd.Parameters.AddWithValue(name, utc.ToString("O"));
+        // 截断到微秒：与 PostgreSQL timestamp(6) 精度对齐，防止 Push 时间戳
+        // 经服务端截断后与存储值相等，触发 LWW 跳过导致记录反复重推
+        cmd.Parameters.AddWithValue(name, utc.TruncateToMicroseconds().ToString("O"));
         return cmd;
     }
 
