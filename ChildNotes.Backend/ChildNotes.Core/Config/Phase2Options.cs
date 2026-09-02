@@ -11,6 +11,13 @@ public class DeepSeekOptions
     public string ReasoningEffort { get; set; } = "high";
 
     /// <summary>
+    /// 单端点调用超时（秒），主用/备用端点共用。
+    /// 必须小于 App 端 HTTP 30 秒超时：主用超时后降级备用端点，保证总耗时仍在 30 秒内返回。
+    /// 端点超时视为端点故障（非用户取消），会触发 Fallback 降级。&lt;=0 时使用默认 20 秒。
+    /// </summary>
+    public int EndpointTimeoutSeconds { get; set; } = 20;
+
+    /// <summary>
     /// 备用 LLM 配置（可选）。主用调用失败（网络异常/非 2xx/超时）时自动降级到此项。
     /// 留空（或 ApiKey 为空）则禁用降级。Temperature/MaxTokens/ThinkingEnabled 等参数沿用主配置。
     /// </summary>

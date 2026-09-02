@@ -20,6 +20,7 @@ public class DeepSeekClient
     private readonly HttpClient _http;
     private readonly DeepSeekOptions _opt;
     private readonly ILogger<DeepSeekClient> _logger;
+    private readonly TimeSpan _endpointTimeout;
 
     public DeepSeekClient(HttpClient http, IOptions<DeepSeekOptions> opt, ILogger<DeepSeekClient> logger)
     {
@@ -29,6 +30,9 @@ public class DeepSeekClient
         // HttpClient 的 BaseAddress/Authorization 在每次调用前动态设置（支持主备双端点），
         // 不在构造函数写死，避免切换备用端点时残留主用配置。
         _http.Timeout = TimeSpan.FromSeconds(120);
+        // 单端点超时：必须小于 App 端 30 秒 HTTP 超时，主用超时后还能降级备用端点并在 30 秒内返回。
+        var seconds = _opt.EndpointTimeoutSeconds > 0 ? _opt.EndpointTimeoutSeconds : 20;
+        _endpointTimeout = TimeSpan.FromSeconds(seconds);
     }
 
     public virtual async Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)
@@ -50,10 +54,15 @@ public class DeepSeekClient
         }
     }
 
-    /// <summary>调用指定端点（主用/备用共用逻辑）。</summary>
+    /// <summary>调用指定端点（主用/备用共用逻辑）。timeout 为单端点超时，超时视为端点故障以触发降级。</summary>
     private async Task<(string text, string model)> CallEndpointAsync(
         string baseUrl, string apiKey, string model, string systemPrompt, string userMessage, CancellationToken ct)
     {
+        // 端点级超时：linked CTS 同时受用户取消（ct）和超时控制。
+        // 超时抛出的 OCE 会被下方转换为端点故障，从而触发 Fallback 降级（用户主动取消不降级）。
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        timeoutCts.CancelAfter(_endpointTimeout);
+        var requestCt = timeoutCts.Token;
         // 每次调用前重置 HttpClient 的 BaseAddress/Authorization（主备端点切换关键）
         _http.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
@@ -86,10 +95,10 @@ public class DeepSeekClient
             // 注意：请求路径不能以 "/" 开头，否则会替换 BaseAddress 的路径段
             // （如 BaseAddress=https://api.1xm.ai/v1/ + "/chat/completions" 会变成 https://api.1xm.ai/chat/completions）
             // 使用相对路径 "chat/completions" 才能正确拼接为 .../v1/chat/completions
-            resp = await _http.PostAsJsonAsync("chat/completions", body, ct);
+            resp = await _http.PostAsJsonAsync("chat/completions", body, requestCt);
             if (!resp.IsSuccessStatusCode)
             {
-                errBody = await resp.Content.ReadAsStringAsync(ct);
+                errBody = await resp.Content.ReadAsStringAsync(requestCt);
                 sw.Stop();
                 _logger.LogError("DeepSeek 调用失败 {Ms}ms status={Status} req={Req} err={Err}",
                     sw.ElapsedMilliseconds, (int)resp.StatusCode, reqSummary, TruncateForLog(errBody, 200));
@@ -97,7 +106,7 @@ public class DeepSeekClient
             }
 
             // 先读响应为字符串再解析：解析失败时可打印原文便于诊断（如网关返回 HTML 首页）
-            var rawBody = await resp.Content.ReadAsStringAsync(ct);
+            var rawBody = await resp.Content.ReadAsStringAsync(requestCt);
             string text;
             string respModel;
             try
@@ -125,6 +134,14 @@ public class DeepSeekClient
             sw.Stop();
             _logger.LogWarning("DeepSeek 调用取消 {Ms}ms req={Req}", sw.ElapsedMilliseconds, reqSummary);
             throw;
+        }
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !ct.IsCancellationRequested)
+        {
+            // 端点超时（非用户取消）：转换为端点故障抛出，触发 ChatAsync 中的 Fallback 降级
+            sw.Stop();
+            _logger.LogWarning("[AI-LOG] DeepSeek 端点超时 {Ms}ms (>{Timeout}s) req={Req} url={Url}",
+                sw.ElapsedMilliseconds, _endpointTimeout.TotalSeconds, reqSummary, baseUrl);
+            throw new InvalidOperationException($"DeepSeek endpoint timeout after {_endpointTimeout.TotalSeconds}s ({baseUrl})");
         }
         catch (InvalidOperationException)
         {
