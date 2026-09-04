@@ -20,6 +20,8 @@ namespace ChildNotes.Infrastructure.Services;
 /// 3. 规则置信度低（有任一条目 &lt; 0.6）→ 调 AI 解析（1-3秒）
 /// 4. AI 失败 → 用规则结果兜底（置信度下调到 0.4）
 /// 5. ForceAi=true → 跳过规则直接走 AI
+/// 6. 积分抵扣放行的调用（usePointsForOverage 且次数超限）强制走 AI；
+///    AI 失败时退还抵扣积分并回滚次数，避免"扣了积分却只拿到规则结果"。
 ///
 /// 支持复合语句切分（如"睡了一觉，喝了奶，换了尿布"→3条记录）。
 /// 注意：本服务仅做解析，不落库；调用方需自行持久化。
@@ -178,6 +180,8 @@ public partial class AiNoteService : IAiNoteService
         var uid = _current.RequireUserId();
         var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
         var (ok, used) = await _membership.TryIncrementAiNoteUsageAsync(uid, ct);
+        // 本次调用是否通过积分抵扣放行（用于强制走 AI + AI 失败时退还）
+        var paidOverage = false;
         if (!ok)
         {
             if (!usePointsForOverage)
@@ -188,6 +192,7 @@ public partial class AiNoteService : IAiNoteService
             // 会员/免费用户统一走此逻辑，不做区分。
             await _wallet.ChangeAsync(uid, -MembershipConstants.AiNoteOveragePointsCost, ct);
             used = await _membership.ForceIncrementAiNoteUsageAsync(uid, ct);
+            paidOverage = true;
             _logger.LogInformation("[AI-LOG] 超限积分抵扣放行 | 用户={Uid} 抵扣积分={Points} 抵扣后已用次数={Used}/{Limit}",
                 uid, MembershipConstants.AiNoteOveragePointsCost, used, limit);
         }
@@ -214,18 +219,21 @@ public partial class AiNoteService : IAiNoteService
         var shouldForceAi = AiNoteRuleParser.ShouldForceAi(text);
 
         List<AiNoteParseItem> items;
-        if (!preferAi && !shouldForceAi && ruleHighConfidence)
+        if (!preferAi && !paidOverage && !shouldForceAi && ruleHighConfidence)
         {
             // 快速路径：规则置信度足够高且非复杂文本，直接返回，不调 AI
+            // （积分抵扣放行的调用不走此路径：用户花了积分，必须给出 AI 结果）
             _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf} Text={Text}",
                 ruleItems.Count, ruleItems.Min(it => it.Confidence), text);
             items = ruleItems;
         }
         else
         {
-            // 慢速路径：规则置信度不足、复杂文本、或精准模式/强制 AI，调 AI 解析
+            // 慢速路径：规则置信度不足、复杂文本、积分抵扣放行、或精准模式/强制 AI，调 AI 解析
             if (preferAi)
                 _logger.LogInformation("[AI-LOG] 精准模式/强制AI跳过规则快速路径 ParseMode={ParseMode} ForceAi={ForceAi} Text={Text}", parseMode, req.ForceAi, text);
+            else if (paidOverage)
+                _logger.LogInformation("[AI-LOG] 积分抵扣放行强制AI跳过规则快速路径 Text={Text}", text);
             else if (shouldForceAi)
                 _logger.LogInformation("[AI-LOG] 复杂文本强制AI跳过规则快速路径 Text={Text}", text);
             try
@@ -236,6 +244,15 @@ public partial class AiNoteService : IAiNoteService
             {
                 // AI 失败：用规则结果兜底，置信度下调
                 _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底。Text={Text}", text);
+                if (paidOverage)
+                {
+                    // 积分抵扣放行后 AI 调用失败：退还抵扣积分 + 回滚已强制递增的次数（best-effort），
+                    // 避免出现"扣了积分却只拿到规则兜底结果"的部分消耗。
+                    // 与 AiAnalysisService 的失败退还逻辑对齐。
+                    _logger.LogInformation("[AI-LOG] 抵扣积分退还 | 用户={Uid} 退还积分={Points}", uid, MembershipConstants.AiNoteOveragePointsCost);
+                    try { await _wallet.ChangeAsync(uid, MembershipConstants.AiNoteOveragePointsCost, ct); } catch { }
+                    try { await _membership.DecrementAiNoteUsageAsync(uid, ct); } catch { }
+                }
                 items = ruleItems;
                 foreach (var it in items)
                 {

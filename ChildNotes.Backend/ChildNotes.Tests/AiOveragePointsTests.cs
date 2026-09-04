@@ -5,10 +5,13 @@ using ChildNotes.Core.Config;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Entities;
 using ChildNotes.Infrastructure.Data;
+using ChildNotes.Infrastructure.External;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace ChildNotes.Tests;
 
@@ -18,13 +21,28 @@ namespace ChildNotes.Tests;
 /// - AI 分析链路（1 次/周免费，每次正常耗 10 积分，超限额外抵扣 20 积分/次）
 /// - 会员状态展示：抵扣单价字段 + 抵扣放行后剩余次数下限 0
 /// - 失败回滚：AI 调用失败 / 正常消耗积分不足时，抵扣积分与次数均回滚
+/// - 抵扣放行强制走 AI：即使规则高置信度文本也不走规则快速路径
 ///
 /// 测试环境 DeepSeek ApiKey 为空 → ChatAsync 抛 InvalidOperationException，
-/// 恰好覆盖"AI 失败回滚"场景；AI 记链路用高置信度规则文本走快速路径，不依赖 AI。
+/// 恰好覆盖"AI 失败回滚"场景；AI 记链路成功场景用 StubSuccessDeepSeekClient 覆盖。
 /// </summary>
 public class AiOveragePointsTests
 {
     private static ApiFactory NewFactory() => new();
+
+    /// <summary>替换 DeepSeekClient 为成功返回 stub 的工厂（模拟 AI 调用成功）。</summary>
+    private sealed class StubAiApiFactory : ApiFactory
+    {
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            base.ConfigureWebHost(builder);
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<DeepSeekClient>();
+                services.AddSingleton<DeepSeekClient>(new StubSuccessDeepSeekClient());
+            });
+        }
+    }
 
     private static async Task<HttpClient> NewAuthClientAsync(ApiFactory factory, string username)
     {
@@ -141,13 +159,14 @@ public class AiOveragePointsTests
     [Fact]
     public async Task AiNote_Overage_WithFlag_DeductsPointsAndSucceeds()
     {
-        using var factory = NewFactory();
+        using var factory = new StubAiApiFactory();
         var email = "note2_" + Guid.NewGuid().ToString("N")[..6];
         var client = await NewAuthClientAsync(factory, email);
 
         await ExhaustNoteQuotaAsync(client, MembershipConstants.FreeDailyAiNoteLimit);
 
         // 第 11 次带 usePointsForOverage=true → 扣 5 积分放行
+        // 输入"喝了120ml奶"是规则高置信度文本，但抵扣放行后必须强制走 AI（不走规则快速路径）
         var resp = await client.PostAsJsonAsync(
             "/api/smart-analysis/parse-note?usePointsForOverage=true",
             new AiNoteParseRequest { Text = "喝了120ml奶" });
@@ -156,6 +175,10 @@ public class AiOveragePointsTests
         var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal("000000", body.GetProperty("state").GetString());
         Assert.True(body.GetProperty("data").GetProperty("items").GetArrayLength() >= 1);
+
+        // 验证走的是 AI 结果（stub 返回的专属 summary），证明未走规则快速路径
+        Assert.Equal("AI解析结果",
+            body.GetProperty("data").GetProperty("items")[0].GetProperty("summary").GetString());
 
         // 积分扣减：注册赠送 100 - 抵扣 5 = 95
         Assert.Equal(PointsConstants.NewUserBonusPoints - MembershipConstants.AiNoteOveragePointsCost,
@@ -166,6 +189,32 @@ public class AiOveragePointsTests
         Assert.Equal(MembershipConstants.FreeDailyAiNoteLimit + 1, status.GetProperty("aiNoteUsedToday").GetInt32());
         Assert.Equal(0, status.GetProperty("aiNoteRemainingToday").GetInt32());
         Assert.Equal(MembershipConstants.AiNoteOveragePointsCost, status.GetProperty("aiNoteOveragePointsCost").GetInt32());
+    }
+
+    [Fact]
+    public async Task AiNote_Overage_WithFlag_AiFailure_RefundsPointsAndRollsBackUsage()
+    {
+        using var factory = NewFactory();
+        var email = "note2f_" + Guid.NewGuid().ToString("N")[..6];
+        var client = await NewAuthClientAsync(factory, email);
+
+        await ExhaustNoteQuotaAsync(client, MembershipConstants.FreeDailyAiNoteLimit);
+
+        // 抵扣放行后强制走 AI → 测试环境 AI 失败 → 降级规则兜底，
+        // 但必须退还抵扣积分并回滚次数，避免"扣了积分却只拿到规则结果"
+        var resp = await client.PostAsJsonAsync(
+            "/api/smart-analysis/parse-note?usePointsForOverage=true",
+            new AiNoteParseRequest { Text = "喝了120ml奶" });
+        var respBody = await resp.Content.ReadAsStringAsync();
+        Assert.True(resp.IsSuccessStatusCode, respBody);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("000000", body.GetProperty("state").GetString());
+        Assert.True(body.GetProperty("data").GetProperty("items").GetArrayLength() >= 1);
+
+        // 抵扣积分已退还（100），次数已回滚到 10（ForceIncrement 的 +1 被递减）
+        Assert.Equal(PointsConstants.NewUserBonusPoints, await GetPointsAsync(client));
+        var status = await GetStatusAsync(client);
+        Assert.Equal(MembershipConstants.FreeDailyAiNoteLimit, status.GetProperty("aiNoteUsedToday").GetInt32());
     }
 
     [Fact]
@@ -304,5 +353,22 @@ public class AiOveragePointsTests
         // 初始剩余次数不为负
         Assert.True(status.GetProperty("aiNoteRemainingToday").GetInt32() >= 0);
         Assert.True(status.GetProperty("aiAnalysisRemainingThisWeek").GetInt32() >= 0);
+    }
+
+    /// <summary>Stub：AI 调用成功，返回固定解析结果（summary 带专属标记，用于区分 AI 与规则结果）。</summary>
+    private sealed class StubSuccessDeepSeekClient : DeepSeekClient
+    {
+        public StubSuccessDeepSeekClient() : base(
+            new HttpClient(),
+            Microsoft.Extensions.Options.Options.Create(new DeepSeekOptions { ApiKey = "stub" }),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<DeepSeekClient>.Instance)
+        { }
+
+        public override Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)
+            => Task.FromResult(
+                ("""
+                [{"recordType":"feed","recordSubType":"bottle","amount":120,"summary":"AI解析结果","confidence":0.9}]
+                """,
+                "stub-model"));
     }
 }

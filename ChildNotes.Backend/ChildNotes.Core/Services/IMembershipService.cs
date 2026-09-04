@@ -54,6 +54,12 @@ public interface IMembershipService
     Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default);
 
     /// <summary>
+    /// 递减用户今日 AI 记调用次数（-1，不低于 0）。
+    /// 仅供"积分抵扣放行后 AI 调用失败退还"场景回滚 ForceIncrement 使用。
+    /// </summary>
+    Task DecrementAiNoteUsageAsync(string userId, CancellationToken ct = default);
+
+    /// <summary>
     /// 获取当前用户的 AI 分析每周次数限制（根据会员状态决定）。
     /// </summary>
     Task<int> GetAiAnalysisWeeklyLimitAsync(string userId, CancellationToken ct = default);

@@ -222,6 +222,9 @@ public class MembershipService : IMembershipService
     public Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default)
         => GetUsedAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
 
+    public Task DecrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
+        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+
     public async Task<int> GetAiAnalysisWeeklyLimitAsync(string userId, CancellationToken ct = default)
     {
         var user = await _db.AppUsers.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId, ct);
@@ -244,31 +247,8 @@ public class MembershipService : IMembershipService
     public Task<int> ForceIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
         => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
 
-    public async Task DecrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
-    {
-        var periodStart = GetWeekStartUtc(DateTime.UtcNow);
-
-        // InMemory 不支持 ExecuteUpdateAsync，降级到 EF 跟踪模式（测试环境无并发）
-        if (_db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
-        {
-            var record = await _db.AiUsageRecords.FirstOrDefaultAsync(
-                x => x.UserId == userId && x.UsageType == MembershipConstants.UsageTypeAiAnalysis
-                    && x.PeriodStart == periodStart, ct);
-            if (record is null || record.UsedCount <= 0) return;
-            record.UsedCount--;
-            record.UpdatedAt = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-            return;
-        }
-
-        // 原子递减，不低于 0
-        await _db.AiUsageRecords
-            .Where(x => x.UserId == userId && x.UsageType == MembershipConstants.UsageTypeAiAnalysis
-                && x.PeriodStart == periodStart && x.UsedCount > 0)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(x => x.UsedCount, x => x.UsedCount - 1)
-                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
-    }
+    public Task DecrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
+        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
 
     public Task<int> GetAiAnalysisUsedThisWeekAsync(string userId, CancellationToken ct = default)
         => GetUsedAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
@@ -356,6 +336,33 @@ public class MembershipService : IMembershipService
             return existing.UsedCount;
         }
         return 1;
+    }
+
+    /// <summary>
+    /// 通用次数递减逻辑（-1，不低于 0）。
+    /// PostgreSQL 走 ExecuteUpdateAsync 原子递减；InMemory 走 EF 跟踪（测试环境无并发）。
+    /// </summary>
+    private async Task DecrementUsageAsync(string userId, string usageType, DateTime periodStart, CancellationToken ct)
+    {
+        // InMemory 不支持 ExecuteUpdateAsync，降级到 EF 跟踪模式（测试环境无并发）
+        if (_db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            var record = await _db.AiUsageRecords.FirstOrDefaultAsync(
+                x => x.UserId == userId && x.UsageType == usageType && x.PeriodStart == periodStart, ct);
+            if (record is null || record.UsedCount <= 0) return;
+            record.UsedCount--;
+            record.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            return;
+        }
+
+        // 原子递减，不低于 0
+        await _db.AiUsageRecords
+            .Where(x => x.UserId == userId && x.UsageType == usageType
+                && x.PeriodStart == periodStart && x.UsedCount > 0)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.UsedCount, x => x.UsedCount - 1)
+                .SetProperty(x => x.UpdatedAt, DateTime.UtcNow), ct);
     }
 
     /// <summary>
