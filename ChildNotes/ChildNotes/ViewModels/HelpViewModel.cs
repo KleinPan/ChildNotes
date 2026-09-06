@@ -62,7 +62,7 @@ public partial class HelpViewModel : ViewModelBase
                     _locale.GetString("Help_Types_1", "· 喂奶：\"喝了120ml奶\"、\"亲喂左10右15分\"、\"吸出80ml\""),
                     _locale.GetString("Help_Types_2", "· 睡眠：\"睡了30分钟\"、\"11点半睡到12点40\"（自动计算时长）"),
                     _locale.GetString("Help_Types_3", "· 尿布：\"换了尿布便便\"、\"尿布干爽\"、\"又尿又拉\""),
-                    _locale.GetString("Help_Types_4", "· 体温：\"体温38.5度\"、\"发烧37.8℃\""),
+                    _locale.GetString("Help_Types_4", "· 体温：\"体温38.5度\"、\"发烧37.8°C\""),
                     _locale.GetString("Help_Types_5", "· 用药/营养：\"吃了半包保泰康颗粒\"、\"吃了1粒维D\"、\"喝了5滴伊可新\""),
                     _locale.GetString("Help_Types_6", "· 身高体重：\"身高75cm 体重9.5kg\""),
                 },

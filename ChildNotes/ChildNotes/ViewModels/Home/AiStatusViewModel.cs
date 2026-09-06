@@ -63,7 +63,7 @@ public partial class AiStatusViewModel : ObservableObject
         {
             AiStatusIcon = "🌡️";
             AiStatusTitle = FormatTitle(_locale.GetString("Home_Ai_FeverTitle", "{0}体温偏高"), name, noBabyTitle);
-            AiStatusSubtitle = string.Format(_locale.GetString("Home_Ai_SubtitleFever", "当前体温{0}℃"), stats.LatestTemperature?.ToString("F1") ?? string.Empty);
+            AiStatusSubtitle = string.Format(_locale.GetString("Home_Ai_SubtitleFever", "当前体温{0}°C"), stats.LatestTemperature?.ToString("F1") ?? string.Empty);
             SetStaticTip(cfg.FeverTip);
         }
         else if (stats.HasDiarrhea)

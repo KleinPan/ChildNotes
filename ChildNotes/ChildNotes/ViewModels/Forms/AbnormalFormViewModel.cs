@@ -73,7 +73,7 @@ public partial class AbnormalFormViewModel : ObservableObject, IRecordFormViewMo
         {
             if (!decimal.TryParse(TemperatureText, out var t) || t < 30 || t > 45)
             {
-                error = _locale.GetString("Form_ErrTemperatureRange", "请输入有效体温（30-45℃）");
+                error = _locale.GetString("Form_ErrTemperatureRange", "请输入有效体温（30-45°C）");
                 return false;
             }
         }

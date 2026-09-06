@@ -70,7 +70,7 @@ public partial class AbnormalTrackingViewModel : ObservableObject
         {
             var summaryParts = new List<string>();
             if (latestAbnormal.TemperatureValue.HasValue)
-                summaryParts.Add($"{latestAbnormal.TemperatureValue:F1}℃");
+                summaryParts.Add($"{latestAbnormal.TemperatureValue:F1}°C");
             AbnormalRecordDto? dto = null;
             try { dto = latestAbnormal.GetPayload<AbnormalRecordDto>(); } catch { }
             if (dto is not null)

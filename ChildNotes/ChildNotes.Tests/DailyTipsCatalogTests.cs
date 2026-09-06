@@ -38,13 +38,13 @@ public class DailyTipsCatalogTests : IDisposable
 
         Assert.Equal(12, cfg.DailyTips.Count);
         Assert.Contains("母乳喂养的宝宝每天大便2-5次是正常的哦", cfg.DailyTips);
-        Assert.Contains("洗澡水温37-38℃最合适，用手肘试温", cfg.DailyTips);
-        Assert.Contains("宝宝的体温在36.5-37.5℃之间都是正常的", cfg.DailyTips);
+        Assert.Contains("洗澡水温37-38°C最合适，用手肘试温", cfg.DailyTips);
+        Assert.Contains("宝宝的体温在36.5-37.5°C之间都是正常的", cfg.DailyTips);
 
         // 验证异常状态提示默认值
         Assert.Equal("多喂温水，物理降温，持续发热请及时就医", cfg.FeverTip);
         Assert.Equal("注意补充水分和电解质，清淡饮食为主", cfg.DiarrheaTip);
-        Assert.Equal("洗澡水温37-38℃最合适，用手肘试温", cfg.DefaultTip);
+        Assert.Equal("洗澡水温37-38°C最合适，用手肘试温", cfg.DefaultTip);
 
         // 验证标题模板默认值（对齐小程序 good-status babyName + '状态良好'）
         Assert.Equal("{0}状态良好", cfg.GoodTitleTemplate);
@@ -149,7 +149,7 @@ public class DailyTipsCatalogTests : IDisposable
         var cfg = DailyTipsCatalog.Load(path);
 
         Assert.Equal("多喂温水，物理降温，持续发热请及时就医", cfg.FeverTip);
-        Assert.Equal("洗澡水温37-38℃最合适，用手肘试温", cfg.DefaultTip);
+        Assert.Equal("洗澡水温37-38°C最合适，用手肘试温", cfg.DefaultTip);
     }
 
     [Fact]

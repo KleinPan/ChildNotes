@@ -430,11 +430,11 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_Temperature}" />
-                                    <!--  对齐小程序 temperature-form：输入框右侧显示 ℃ 单位  -->
+                                    <!--  对齐小程序 temperature-form：输入框右侧显示温度单位（用 °C 而非 ℃，WQY 字体的 ℃ 是空字形渲染不出来）  -->
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBox x:Name="TemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperaturePlaceholder}" Text="{Binding TemperatureForm.TemperatureText}" />
                                         <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
-                                                   FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="℃" />
+                                                   FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="°C" />
                                     </Grid>
                                 </StackPanel>
                             </Border>
@@ -860,11 +860,11 @@
                             <Border Classes="form-section">
                                 <StackPanel>
                                     <TextBlock Classes="form-label" Text="{DynamicResource RS_TemperatureOptional}" />
-                                    <!--  对齐小程序 temperature-form：输入框右侧显示 ℃ 单位  -->
+                                    <!--  对齐小程序 temperature-form：输入框右侧显示温度单位（用 °C 而非 ℃，WQY 字体的 ℃ 是空字形渲染不出来）  -->
                                     <Grid ColumnDefinitions="*,Auto">
                                         <TextBox x:Name="AbnormalTemperatureTextBox" Classes="form-input" PlaceholderText="{DynamicResource RS_TemperatureFeverHint}" Text="{Binding AbnormalForm.TemperatureText}" />
                                         <TextBlock Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"
-                                                   FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="℃" />
+                                                   FontSize="{StaticResource FontSize.Label}" Foreground="{StaticResource TextSecondaryBrush}" Text="°C" />
                                     </Grid>
                                 </StackPanel>
                             </Border>

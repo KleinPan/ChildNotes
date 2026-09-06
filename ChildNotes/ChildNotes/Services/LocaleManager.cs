@@ -258,7 +258,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Home_Ai_NoRecordTitle"] = "{0}今天还没记录";
         this["Home_Ai_NoBabyTitle"] = "未添加宝宝";
         this["Home_Ai_SubtitleGood"] = "正在快乐成长中~";
-        this["Home_Ai_SubtitleFever"] = "当前体温{0}℃";
+        this["Home_Ai_SubtitleFever"] = "当前体温{0}°C";
         this["Home_Ai_SubtitleDiarrhea"] = "今日有腹泻记录";
         this["Home_Ai_SubtitleGreat"] = "吃得好睡得香~";
         this["Home_Ai_SubtitleNoRecord"] = "点击下方快捷按钮开始吧";
@@ -656,7 +656,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Help_Types_1"] = "· 喂奶：\"喝了120ml奶\"、\"亲喂左10右15分\"、\"吸出80ml\"";
         this["Help_Types_2"] = "· 睡眠：\"睡了30分钟\"、\"11点半睡到12点40\"（自动计算时长）";
         this["Help_Types_3"] = "· 尿布：\"换了尿布便便\"、\"尿布干爽\"、\"又尿又拉\"";
-        this["Help_Types_4"] = "· 体温：\"体温38.5度\"、\"发烧37.8℃\"";
+        this["Help_Types_4"] = "· 体温：\"体温38.5度\"、\"发烧37.8°C\"";
         this["Help_Types_5"] = "· 用药/营养：\"吃了半包保泰康颗粒\"、\"吃了1粒维D\"、\"喝了5滴伊可新\"";
         this["Help_Types_6"] = "· 身高体重：\"身高75cm 体重9.5kg\"";
         this["Help_Section_Config"] = "AI 配置";
@@ -737,9 +737,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_StartTime"] = "开始时间";
         this["RS_EndDate"] = "结束日期";
         this["RS_EndTime"] = "结束时间";
-        this["RS_Temperature"] = "体温（℃）";
+        this["RS_Temperature"] = "体温（°C）";
         this["RS_TemperaturePlaceholder"] = "输入体温";
-        this["RS_TemperatureFeverWarn"] = "⚠️ 体温 ≥ 37.3℃，保存后将触发发烧追踪";
+        this["RS_TemperatureFeverWarn"] = "⚠️ 体温 ≥ 37.3°C，保存后将触发发烧追踪";
         this["RS_WaterAmount"] = "喝水量（ml）";
         this["RS_WaterAmountPlaceholder"] = "输入喝水量";
         this["RS_Height"] = "身高";
@@ -777,9 +777,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_Reaction_Allergy"] = "过敏";
         this["RS_Reaction_Vomit"] = "呕吐";
         this["RS_Reaction_Diarrhea"] = "腹泻";
-        this["RS_TemperatureOptional"] = "体温（℃，选填）";
+        this["RS_TemperatureOptional"] = "体温（°C，选填）";
         this["RS_TemperatureFeverHint"] = "如有发热请填写";
-        this["RS_TemperatureFeverMonitor"] = "⚠️ 体温 ≥ 37.3℃，建议持续监测并注意补水";
+        this["RS_TemperatureFeverMonitor"] = "⚠️ 体温 ≥ 37.3°C，建议持续监测并注意补水";
         this["RS_RespiratoryLabel"] = "呼吸道症状（可多选）";
         this["RS_Resp_CoughMild"] = "咳嗽(轻微)";
         this["RS_Resp_CoughSevere"] = "咳嗽(频繁)";
@@ -839,7 +839,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_DelUnitConfirmMsg"] = "确定删除单位「{0}」吗？";
         // Form validation messages
         this["Form_ErrAbnormalEmpty"] = "请至少填写一项异常症状";
-        this["Form_ErrTemperatureRange"] = "请输入有效体温（30-45℃）";
+        this["Form_ErrTemperatureRange"] = "请输入有效体温（30-45°C）";
         this["Form_ErrActivityName"] = "请输入活动名称";
         this["Form_ErrBreastDuration"] = "请输入亲喂时长";
         this["Form_ErrMilkAmount"] = "请输入奶量";
@@ -1024,7 +1024,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Home_Ai_NoRecordTitle"] = "{0} has no records today";
         this["Home_Ai_NoBabyTitle"] = "No baby added";
         this["Home_Ai_SubtitleGood"] = "Growing happily~";
-        this["Home_Ai_SubtitleFever"] = "Current temp {0}℃";
+        this["Home_Ai_SubtitleFever"] = "Current temp {0}°C";
         this["Home_Ai_SubtitleDiarrhea"] = "Diarrhea recorded today";
         this["Home_Ai_SubtitleGreat"] = "Eating well, sleeping well~";
         this["Home_Ai_SubtitleNoRecord"] = "Tap a quick button below to start";
@@ -1428,7 +1428,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["Help_Types_1"] = "· Feed: \"120ml milk\", \"breast L10 R15 min\", \"pumped 80ml\"";
         this["Help_Types_2"] = "· Sleep: \"slept 30 min\", \"11:30-12:40\" (auto duration)";
         this["Help_Types_3"] = "· Diaper: \"poop diaper\", \"dry diaper\", \"both\"";
-        this["Help_Types_4"] = "· Temperature: \"temp 38.5\", \"fever 37.8℃\"";
+        this["Help_Types_4"] = "· Temperature: \"temp 38.5\", \"fever 37.8°C\"";
         this["Help_Types_5"] = "· Medicine/supplement: \"half pack of meds\", \"1 vit D\", \"5 drops\"";
         this["Help_Types_6"] = "· Height/weight: \"height 75cm weight 9.5kg\"";
         this["Help_Section_Config"] = "AI config";
@@ -1513,7 +1513,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_StartTime"] = "Start time";
         this["RS_EndDate"] = "End date";
         this["RS_EndTime"] = "End time";
-        this["RS_Temperature"] = "Temperature (℃)";
+        this["RS_Temperature"] = "Temperature (°C)";
         this["RS_TemperaturePlaceholder"] = "Enter temperature";
         this["RS_TemperatureFeverWarn"] = "⚠️ Temp ≥ 37.3°C. Saving will trigger fever tracking";
         this["RS_WaterAmount"] = "Water (ml)";
@@ -1553,9 +1553,9 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_Reaction_Allergy"] = "Allergy";
         this["RS_Reaction_Vomit"] = "Vomit";
         this["RS_Reaction_Diarrhea"] = "Diarrhea";
-        this["RS_TemperatureOptional"] = "Temperature (℃, optional)";
+        this["RS_TemperatureOptional"] = "Temperature (°C, optional)";
         this["RS_TemperatureFeverHint"] = "Fill if fever";
-        this["RS_TemperatureFeverMonitor"] = "⚠️ Temp ≥ 37.3℃, monitor and hydrate";
+        this["RS_TemperatureFeverMonitor"] = "⚠️ Temp ≥ 37.3°C, monitor and hydrate";
         this["RS_RespiratoryLabel"] = "Respiratory (multi-select)";
         this["RS_Resp_CoughMild"] = "Cough (mild)";
         this["RS_Resp_CoughSevere"] = "Cough (frequent)";
@@ -1613,7 +1613,7 @@ internal sealed class LanguageResourceDictionary : ResourceDictionary
         this["RS_DelConfirmMsg"] = "Delete \"{0}\"?";
         this["RS_DelUnitConfirmMsg"] = "Delete unit \"{0}\"?";
         this["Form_ErrAbnormalEmpty"] = "Please fill in at least one symptom";
-        this["Form_ErrTemperatureRange"] = "Enter valid temperature (30-45℃)";
+        this["Form_ErrTemperatureRange"] = "Enter valid temperature (30-45°C)";
         this["Form_ErrActivityName"] = "Please enter activity name";
         this["Form_ErrBreastDuration"] = "Please enter breastfeeding duration";
         this["Form_ErrMilkAmount"] = "Please enter milk amount";

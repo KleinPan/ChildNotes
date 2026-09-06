@@ -389,7 +389,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
                 _ => LocaleManager.Instance.GetString("Rec_Diaper_Default", "换尿布"),
             }, "", "", r.GetPayload<DiaperRecordDto>()?.Consistency ?? ""),
             RecordType.Sleep => BuildSleepText(r),
-            RecordType.Temperature => (LocaleManager.Instance.GetString("Rec_Temperature", "体温"), $"{r.TemperatureValue:F1}℃", "", ""),
+            RecordType.Temperature => (LocaleManager.Instance.GetString("Rec_Temperature", "体温"), $"{r.TemperatureValue:F1}°C", "", ""),
             RecordType.Growth => (LocaleManager.Instance.GetString("Rec_Growth", "成长记录"), $"{(r.HeightCm.HasValue ? string.Format(LocaleManager.Instance.GetString("Rec_GrowthHeight", "身高{0}cm "), r.HeightCm) : "")}{(r.WeightKg.HasValue ? string.Format(LocaleManager.Instance.GetString("Rec_GrowthWeight", "体重{0}kg"), r.WeightKg) : "")}", "", ""),
             RecordType.Supplement => BuildSupplementText(r),
             RecordType.Water => (LocaleManager.Instance.GetString("Rec_Water", "喝水"), r.AmountMl.HasValue ? $"{r.AmountMl}ml" : "", LocaleManager.Instance.GetString("Rec_WaterExtra", "饮水"), ""),
@@ -541,7 +541,7 @@ public sealed partial class RecordDisplayItem : ObservableObject
             try { dto = JsonSerializer.Deserialize<AbnormalRecordDto>(r.PayloadJson); } catch { }
         }
 
-        if (r.TemperatureValue.HasValue) parts.Add($"{r.TemperatureValue:F1}℃");
+        if (r.TemperatureValue.HasValue) parts.Add($"{r.TemperatureValue:F1}°C");
         if (dto is not null)
         {
             if (dto.Respiratory.Count > 0) parts.Add(string.Format(LocaleManager.Instance.GetString("Rec_Abnormal_Respiratory", "呼吸道：{0}"), string.Join("、", dto.Respiratory)));

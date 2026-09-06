@@ -473,7 +473,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             RecordType.Sleep => r.Duration.HasValue
                 ? $"😴 睡眠 {r.Duration}分钟{time}"
                 : $"😴 睡眠{time}",
-            RecordType.Temperature => $"🌡️ 体温 {(r.Temperature ?? 0):F1}℃{time}",
+            RecordType.Temperature => $"🌡️ 体温 {(r.Temperature ?? 0):F1}°C{time}",
             RecordType.Growth => $"📏 {FormatGrowth(r)}{time}",
             RecordType.Supplement => $"💊 {SupplementText(r)}{time}",
             RecordType.Water => $"💧 喝水 {r.Amount ?? 0}ml{time}",
