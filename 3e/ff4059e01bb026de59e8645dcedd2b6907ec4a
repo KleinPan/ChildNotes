@@ -1,0 +1,41 @@
+ChildNotes.Backend/ChildNotes.Infrastructure/Middleware/GlobalExceptionMiddleware.cs
+  s_32a73a9f59ca8b::t_beb327bf26f4fc 1-3,7-59
+  s_32a73a9f59ca8b::t_f6b35748fb1d10 4-6
+ChildNotes.Backend/ChildNotes.Infrastructure/Middleware/RateLimitMiddleware.cs
+  s_32a73a9f59ca8b::t_518eff03adb7cc 21-25,44,48-49,87-91,111,127-128,145-146,148,152,157
+  s_32a73a9f59ca8b::t_7be58d1e05ab60 158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "3eff4059e01bb026de59e8645dcedd2b6907ec4a",
+  "prompts": {},
+  "humans": {
+    "h_60752faec29226": {
+      "author": "KleinPan <964012840@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_32a73a9f59ca8b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a8ac68caff87f96f66599be",
+        "model": "glm-5.3__max"
+      },
+      "human_author": "KleinPan <964012840@qq.com>",
+      "custom_attributes": {
+        "session_id": "6a8ac68caff87f96f66599be",
+        "external_session_id": "6a8ac68caff87f96f66599be",
+        "operation_id": "6aa7abdee674ff34cb528547",
+        "tool_type": "agent",
+        "client_type": "ide",
+        "tool_id": "Write",
+        "source_scene": "unknown",
+        "edit_kind": "file_edit",
+        "tool_use_id": "6aa7abdee674ff34cb528547",
+        "runtime_client": "trae-tob-git-ai",
+        "dedupe_key": "6a8ac68caff87f96f66599be:6aa7abdee674ff34cb528547:afterEdit:9cdf3d69"
+      }
+    }
+  }
+}
