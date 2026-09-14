@@ -1,0 +1,41 @@
+scripts/deploy/bootstrap.sh
+  s_32a73a9f59ca8b::t_858d8e5fafa224 99
+  s_32a73a9f59ca8b::t_cffd4c0c59b089 18
+scripts/deploy/README.md
+  s_32a73a9f59ca8b::t_26419911d10971 332
+  s_32a73a9f59ca8b::t_b53177e8666d22 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "4c234b4cc9829a6b0d80c85b52248cc10e2e2c19",
+  "prompts": {},
+  "humans": {
+    "h_60752faec29226": {
+      "author": "KleinPan <964012840@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_32a73a9f59ca8b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a8ac68caff87f96f66599be",
+        "model": "glm-5.3__max"
+      },
+      "human_author": "KleinPan <964012840@qq.com>",
+      "custom_attributes": {
+        "tool_type": "agent",
+        "client_type": "ide",
+        "dedupe_key": "6a8ac68caff87f96f66599be:6aa7aabfe674ff34cb52850e:afterEdit:1beae73b",
+        "source_scene": "unknown",
+        "edit_kind": "file_edit",
+        "tool_use_id": "6aa7aabfe674ff34cb52850e",
+        "tool_id": "Edit",
+        "runtime_client": "trae-tob-git-ai",
+        "session_id": "6a8ac68caff87f96f66599be",
+        "operation_id": "6aa7aabfe674ff34cb52850e",
+        "external_session_id": "6a8ac68caff87f96f66599be"
+      }
+    }
+  }
+}
