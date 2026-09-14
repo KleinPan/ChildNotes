@@ -1,0 +1,123 @@
+ChildNotes/ChildNotes/ViewModels/HelpViewModel.cs
+  s_32a73a9f59ca8b::t_ea42040db57060 30-38
+ChildNotes/ChildNotes/Services/ApiSyncService.cs
+  s_32a73a9f59ca8b::t_c1c5b5cc5d0368 28,434
+  s_32a73a9f59ca8b::t_3fc12537154aa9 42-45,47
+  s_32a73a9f59ca8b::t_97c45e6d9ac202 152
+  s_32a73a9f59ca8b::t_d2cc6c522e5358 435-438,440
+  s_32a73a9f59ca8b::t_3e67180731dd1b 188
+  s_32a73a9f59ca8b::t_ff3ec40e339df0 165,167,169,171
+  s_32a73a9f59ca8b::t_c2466b3ad51cca 439
+  s_32a73a9f59ca8b::t_6d412c98f39ae8 634
+  s_32a73a9f59ca8b::t_410ab6dcfb6669 111-112,114,120
+  s_32a73a9f59ca8b::t_2516e5dcfee0cc 231-237,241,248-262,264-339,347-349,352,354-356,359,363-368,377,383,397-400
+ChildNotes/ChildNotes/Data/Repositories/MilestoneRepository.cs
+  s_32a73a9f59ca8b::t_fc9a5edd6f5a4a 87-91
+ChildNotes/ChildNotes/ViewModels/MineViewModel.cs
+  s_32a73a9f59ca8b::t_927d00f71513e7 88-96
+ChildNotes/ChildNotes/Data/Repositories/SyncConfigRepository.cs
+  s_32a73a9f59ca8b::t_5c6c45f3e76dd1 469-473
+  s_32a73a9f59ca8b::t_7078705712aa15 106-108
+  s_32a73a9f59ca8b::t_3a48947fbc040e 77-78,93-95,100-105
+  s_32a73a9f59ca8b::t_2b4195090ec41e 22
+ChildNotes/ChildNotes/ViewModels/RecordSheetViewModel.cs
+  s_32a73a9f59ca8b::t_f9f2d43dd6994d 83-84,103-104
+ChildNotes/ChildNotes/ViewModels/Home/AiStatusViewModel.cs
+  s_32a73a9f59ca8b::t_359ff5de72cd7a 44-57
+ChildNotes/ChildNotes/Data/Repositories/BabyRepository.cs
+  s_32a73a9f59ca8b::t_49c3406d5ab6a6 65-69
+ChildNotes/ChildNotes/Models/SyncConfig.cs
+  s_32a73a9f59ca8b::t_c1dc1a138a001d 59-64
+ChildNotes/ChildNotes/ViewModels/MainShellViewModel.cs
+  s_32a73a9f59ca8b::t_b85463e5f2b37f 799-813
+  s_32a73a9f59ca8b::t_d22ae60a11563d 451-453
+ChildNotes/ChildNotes/ViewModels/AppSettingsViewModel.cs
+  s_32a73a9f59ca8b::t_2ae21e23fa16f8 32-40
+ChildNotes/ChildNotes/ViewModels/Home/HomeCoreViewModel.cs
+  s_32a73a9f59ca8b::t_5337d4bfc9a1b2 53-61
+ChildNotes/ChildNotes/ViewModels/AiAnalysisViewModel.cs
+  s_32a73a9f59ca8b::t_bd281563001293 101-108
+  s_32a73a9f59ca8b::t_fe8a15f7852439 100
+ChildNotes/ChildNotes/Services/SyncMappers.cs
+  s_32a73a9f59ca8b::t_6fc9e0e463fc40 1-142
+ChildNotes/ChildNotes/Services/UploadService.cs
+  s_32a73a9f59ca8b::t_b7f92f66f1fc2d 212
+  s_32a73a9f59ca8b::t_86d8c26a2a44e5 178-181,183-184
+ChildNotes/ChildNotes/Services/ApiEnvelope.cs
+  s_32a73a9f59ca8b::t_1d3e26b3cfe281 1-73
+ChildNotes/ChildNotes/ViewModels/PointsViewModel.cs
+  s_32a73a9f59ca8b::t_5192b302cec470 44-52
+ChildNotes/ChildNotes/ViewModels/BabyManagerViewModel.cs
+  s_32a73a9f59ca8b::t_9b25f9a0cd4b86 129-137
+ChildNotes/ChildNotes/Services/AuthService.cs
+  s_32a73a9f59ca8b::t_a48c6b2ffbf07d 533
+  s_32a73a9f59ca8b::t_65bd8c0ec39f32 166,171
+  s_32a73a9f59ca8b::t_9e2a1c5483975a 115,120
+ChildNotes/ChildNotes/ViewModels/Home/AbnormalTrackingViewModel.cs
+  s_32a73a9f59ca8b::t_00c62d02894c88 42-50
+ChildNotes/ChildNotes/ViewModels/FeedingViewModel.cs
+  s_32a73a9f59ca8b::t_1aa94899b1b2df 64-72
+ChildNotes/ChildNotes/Services/Push/PushApiClient.cs
+  s_32a73a9f59ca8b::t_0719825726817f 9-11,14,28-32,36,50,53,55-57
+ChildNotes/ChildNotes/ViewModels/MilestoneEditViewModel.cs
+  s_32a73a9f59ca8b::t_d028daaa718244 259-276,289-293,295-304,306
+  s_32a73a9f59ca8b::t_be07dce9a2d5dd 181
+  s_32a73a9f59ca8b::t_0add2db24224bc 58-60
+  s_32a73a9f59ca8b::t_19aed56e5d1e7d 96-104
+ChildNotes/ChildNotes/Services/BaseApiClient.cs
+  s_32a73a9f59ca8b::t_8577a82c7a4ecf 25-26,33-43,46-56,59-60,65-66,68-69,72,74,80,87-88,90,94-106,108-122,124-128,130-134,136-137,139
+  s_32a73a9f59ca8b::t_014e56ceffb212 151-152,159-163,181-182,198-200,202,204
+ChildNotes/ChildNotes/Controls/AvatarImage.cs
+  s_32a73a9f59ca8b::t_8d8593831bee20 93
+  s_32a73a9f59ca8b::t_49936b59cf41fe 26,29-33
+  s_32a73a9f59ca8b::t_6c6bf5d411bb92 34
+  s_32a73a9f59ca8b::t_287e3426538cb1 133-150,154,156-161
+ChildNotes/ChildNotes/ViewModels/GrowthViewModel.cs
+  s_32a73a9f59ca8b::t_8483b94911456a 185-187
+  s_32a73a9f59ca8b::t_b0d263f4348f1e 293-294,299-300,302-306,321,331,341-359
+  s_32a73a9f59ca8b::t_93638d306d35af 301,360
+ChildNotes/ChildNotes/Data/DbInitializer.cs
+  s_32a73a9f59ca8b::t_b9a0f7be458fa5 33-34,36
+  s_32a73a9f59ca8b::t_ee6c418544716a 304-305
+ChildNotes/ChildNotes/App.axaml.cs
+  s_32a73a9f59ca8b::t_14d57e01ac3483 71
+  s_32a73a9f59ca8b::t_0d678b01cfab76 70
+ChildNotes/ChildNotes/Data/Repositories/RecordRepository.cs
+  s_32a73a9f59ca8b::t_4edf22515c72e2 81-88
+ChildNotes/ChildNotes/Data/Repositories/PointsRepository.cs
+  s_32a73a9f59ca8b::t_78a65deeef9f5b 59-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "8ab1b3b918be2f3bfe16a6da4dfa8d917b4d8efc",
+  "prompts": {},
+  "humans": {
+    "h_60752faec29226": {
+      "author": "KleinPan <964012840@qq.com>"
+    }
+  },
+  "sessions": {
+    "s_32a73a9f59ca8b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a8ac68caff87f96f66599be",
+        "model": "glm-5.3__max"
+      },
+      "human_author": "KleinPan <964012840@qq.com>",
+      "custom_attributes": {
+        "tool_use_id": "6aa7ac0be674ff34cb528550",
+        "tool_type": "agent",
+        "runtime_client": "trae-tob-git-ai",
+        "source_scene": "unknown",
+        "session_id": "6a8ac68caff87f96f66599be",
+        "external_session_id": "6a8ac68caff87f96f66599be",
+        "client_type": "ide",
+        "tool_id": "Edit",
+        "operation_id": "6aa7ac0be674ff34cb528550",
+        "edit_kind": "file_edit",
+        "dedupe_key": "6a8ac68caff87f96f66599be:6aa7ac0be674ff34cb528550:afterEdit:12077091"
+      }
+    }
+  }
+}
