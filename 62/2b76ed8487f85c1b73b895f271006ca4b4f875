@@ -1,0 +1,45 @@
+ChildNotes.Backend/ChildNotes.Infrastructure/Auth/JwtTokenService.cs
+  s_32a73a9f59ca8b::t_13dda0d7974f59 56-58,62,67-74
+ChildNotes.Backend/ChildNotes.Infrastructure/Data/Migrations/20260914055214_AddRefreshTokenFastHash.Designer.cs
+  s_32a73a9f59ca8b::t_8d3e48cf15be49 1-1290
+ChildNotes.Backend/ChildNotes.Infrastructure/Data/Migrations/20260914055214_AddRefreshTokenFastHash.cs
+  s_32a73a9f59ca8b::t_8d3e48cf15be49 1-37
+ChildNotes.Backend/ChildNotes.Tests/ApiFlowTests.cs
+  s_32a73a9f59ca8b::t_5bd80c45e491de 270-303
+ChildNotes.Backend/ChildNotes.Infrastructure/Services/AuthService.cs
+  s_32a73a9f59ca8b::t_19d92508263fc5 461,469
+  s_32a73a9f59ca8b::t_f8bdaa25d52390 281-284,291,293-299,301-305,307-311,328-333,335-339,341-345
+ChildNotes.Backend/ChildNotes.Core/Entities/RefreshToken.cs
+  s_32a73a9f59ca8b::t_52024c5da272df 15,18-25
+ChildNotes.Backend/ChildNotes.Infrastructure/Data/ChildNotesDbContext.cs
+  s_32a73a9f59ca8b::t_5a3a1e37233e89 441-442
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "622b76ed8487f85c1b73b895f271006ca4b4f875",
+  "prompts": {},
+  "sessions": {
+    "s_32a73a9f59ca8b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a8ac68caff87f96f66599be",
+        "model": "glm-5.3__max"
+      },
+      "human_author": "KleinPan <964012840@qq.com>",
+      "custom_attributes": {
+        "tool_use_id": "6aa78bcfe674ff34cb527ee4",
+        "tool_id": "Edit",
+        "tool_type": "agent",
+        "operation_id": "6aa78bcfe674ff34cb527ee4",
+        "edit_kind": "file_edit",
+        "source_scene": "unknown",
+        "session_id": "6a8ac68caff87f96f66599be",
+        "client_type": "ide",
+        "dedupe_key": "6a8ac68caff87f96f66599be:6aa78bcfe674ff34cb527ee4:afterEdit:49aaf4a5",
+        "runtime_client": "trae-tob-git-ai",
+        "external_session_id": "6a8ac68caff87f96f66599be"
+      }
+    }
+  }
+}
