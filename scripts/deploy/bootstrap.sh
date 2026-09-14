@@ -15,7 +15,7 @@ ROOT="/opt/childnotes"
 LOG_DIR="/var/log/childnotes"
 DB_NAME="child_notes"
 DB_USER="childnotes"
-DB_PASSWORD="childnotes123"
+DB_PASSWORD="$(openssl rand -base64 24 | tr -d '/+=' | head -c 20)"
 
 echo "==> 1. 安装依赖 (curl/jq/tar/postgresql)"
 apt-get update -y
@@ -96,7 +96,7 @@ JSONEOF
   echo "   ================================================"
   echo "   Admin 初始密码: ${ADMIN_PASSWORD}"
   echo "   JWT Secret:     ${JWT_SECRET}"
-  echo "   数据库密码:     ${DB_PASSWORD}  (默认,可改 ${PROD_CFG})"
+  echo "   数据库密码:     ${DB_PASSWORD}"
   echo "   配置文件:       ${PROD_CFG}"
   echo "   ================================================"
   echo ""
