@@ -267,6 +267,40 @@ public class ApiFlowTests
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
     }
 
+    /// <summary>
+    /// 旧格式 token（token_hash_fast 为 null，2026-09 前签发）：应走 PBKDF2
+    /// 慢路径回退验证并成功换新 token 对。
+    /// </summary>
+    [Fact]
+    public async Task Refresh_LegacyToken_WithoutFastHash_StillWorks()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf6_" + Guid.NewGuid().ToString("N")[..6]);
+
+        // 模拟旧数据：清空 fast 哈希列（部署 fast-hash 前签发的 token 均如此）
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.ToList())
+                t.TokenHashFast = null;
+            await db.SaveChangesAsync();
+        }
+
+        // 旧格式 token 刷新：走 PBKDF2 回退路径，应成功
+        var (newAccess, newRefresh) = await RefreshTokensAsync(client, refreshToken);
+        Assert.False(string.IsNullOrEmpty(newAccess));
+        Assert.False(string.IsNullOrEmpty(newRefresh));
+
+        // 新签发的 token 带有 fast 哈希，再刷一次走快路径也应成功
+        var (access2, _) = await RefreshTokensAsync(client, newRefresh);
+        Assert.False(string.IsNullOrEmpty(access2));
+
+        client.DefaultRequestHeaders.Authorization = new("Bearer", access2);
+        var meResp = await client.GetAsync("/api/auth/me");
+        Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
+    }
+
     [Fact]
     public async Task CreateBaby_AutoCreatesOwnerMember()
     {

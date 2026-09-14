@@ -53,13 +53,24 @@ public class JwtTokenService
     }
 
     /// <summary>生成随机 RefreshToken 明文（只返回给客户端，服务端只存 Hash）。</summary>
-    public (string token, DateTime expireAt) CreateRefreshToken(out string hash)
+    /// <param name="hash">PBKDF2 Hash（iterations:salt:hash）。仅作过渡期兼容，验证路径已走 fastHash。</param>
+    /// <param name="fastHash">SHA-256 Hash（Base64）。O(1) 索引查找用，见 RefreshToken.TokenHashFast 注释。</param>
+    public (string token, DateTime expireAt) CreateRefreshToken(out string hash, out string fastHash)
     {
         var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
         hash = HashToken(raw, RefreshTokenHashIterations);
+        fastHash = FastHashToken(raw);
         var expireAt = DateTime.UtcNow.AddDays(_emailOpt.RefreshTokenExpireDays);
         return (raw, expireAt);
     }
+
+    /// <summary>
+    /// 计算 Token 的 SHA-256 快哈希（Base64）。384-bit 高熵 token 无需慢哈希拉伸
+    /// （爆破数学上不可行），SHA-256 + 数据库索引即可实现 O(1) 验证查找，
+    /// 取代旧 PBKDF2 逐条 O(n) 验证（全表实测约 7 秒）。
+    /// </summary>
+    public static string FastHashToken(string raw)
+        => Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
 
     /// <summary>
     /// RefreshToken hash 的 PBKDF2 迭代次数。

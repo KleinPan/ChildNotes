@@ -438,6 +438,8 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
             e.Property(x => x.TokenHash).HasColumnName("token_hash").IsRequired();
+            e.Property(x => x.TokenHashFast).HasColumnName("token_hash_fast");
+            e.HasIndex(x => x.TokenHashFast);
             e.Property(x => x.ExpiresAt).HasColumnName("expires_at").IsRequired();
             e.Property(x => x.RevokedAt).HasColumnName("revoked_at");
             e.Property(x => x.DeviceId).HasColumnName("device_id");

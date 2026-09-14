@@ -12,8 +12,16 @@ public class RefreshToken : ICreatedAuditable
     public string Id { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
 
-    /// <summary>Token PBKDF2 Hash（iterations:salt:hash 格式）。</summary>
+    /// <summary>Token PBKDF2 Hash（iterations:salt:hash 格式）。仅旧数据（2026-09 前）在用，新 token 走 FastHash。</summary>
     public string TokenHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Token SHA-256 快哈希（Base64）。RefreshToken 是 384-bit 高熵随机数，SHA-256
+    /// 足以防御拖库重放（无法从哈希还原原文），且支持 O(1) 索引查找——取代 PBKDF2
+    /// 逐条 O(n) 验证（旧方式全表实测约 7 秒，是 Rotation 响应丢失的诱因之一）。
+    /// 旧数据此列为 null：过渡期（30 天 token 有效期）回退 PBKDF2 验证，过期后可移除。
+    /// </summary>
+    public string? TokenHashFast { get; set; }
 
     /// <summary>过期时间（UTC）。</summary>
     public DateTime ExpiresAt { get; set; }

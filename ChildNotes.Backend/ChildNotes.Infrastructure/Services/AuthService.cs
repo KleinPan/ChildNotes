@@ -278,26 +278,37 @@ public class AuthService : IAuthService
         if (string.IsNullOrEmpty(req.RefreshToken))
             throw new BusinessException("RefreshToken 不能为空", 400, "INVALID_INPUT");
 
-        // 计算提交 token 的 hash
-        // 由于 PBKDF2 每次 hash 带 random salt，不能直接 hash 后查数据库
-        // 需要遍历候选 token 逐一验证
+        // Token 查找分两级：
+        // 1) 快路径：SHA-256(token) 索引 O(1) 查找（新签发 token 均写入 token_hash_fast）
+        // 2) 慢路径回退：快哈希 miss 时（2026-09 前签发的旧 token 无 fast 列），
+        //    遍历候选 token 逐条 PBKDF2 验证。旧 token 30 天有效期自然过期后可移除。
         //
         // 候选范围 = 未过期且（未撤销 或 撤销时间在宽限期内）：
         // 宽限期（Grace Period）覆盖 Rotation 丢失场景——客户端因网络超时/并发重试/进程中断
         // 未保存新 token 时，旧 token 已被撤销，重放应换取新 token 而非 401（401 会导致客户端软登出）。
         var now = DateTime.UtcNow;
         var graceCutoff = now.AddSeconds(-_opt.RefreshGracePeriodSeconds);
-        var candidateTokens = await _db.RefreshTokens
-            .Where(t => t.ExpiresAt > now && (t.RevokedAt == null || t.RevokedAt > graceCutoff))
-            .ToListAsync(ct);
+        var fastHash = JwtTokenService.FastHashToken(req.RefreshToken);
 
-        RefreshToken? matchedToken = null;
-        foreach (var t in candidateTokens)
+        // 快路径：未过期且（未撤销 或 宽限期内撤销）+ fast 哈希命中（索引 O(1)）
+        RefreshToken? matchedToken = await _db.RefreshTokens
+            .FirstOrDefaultAsync(t => t.TokenHashFast == fastHash
+                && t.ExpiresAt > now && (t.RevokedAt == null || t.RevokedAt > graceCutoff), ct);
+
+        // 慢路径回退：旧数据（token_hash_fast 为 null 的历史 token）逐条 PBKDF2 验证
+        if (matchedToken is null)
         {
-            if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+            var candidateTokens = await _db.RefreshTokens
+                .Where(t => t.TokenHashFast == null
+                    && t.ExpiresAt > now && (t.RevokedAt == null || t.RevokedAt > graceCutoff))
+                .ToListAsync(ct);
+            foreach (var t in candidateTokens)
             {
-                matchedToken = t;
-                break;
+                if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+                {
+                    matchedToken = t;
+                    break;
+                }
             }
         }
 
@@ -314,16 +325,24 @@ public class AuthService : IAuthService
             //
             // 一次性保证：恢复动作本身会撤销继任者，同一旧 token 二次重放时
             // 继任者已撤销（无活跃继任者）→ 走 401，防盗用重放。
-            var revokedCandidates = await _db.RefreshTokens
-                .Where(t => t.ExpiresAt > now && t.RevokedAt != null && t.RevokedAt <= graceCutoff)
-                .ToListAsync(ct);
-            RefreshToken? predecessor = null;
-            foreach (var t in revokedCandidates)
+            RefreshToken? predecessor = await _db.RefreshTokens
+                .FirstOrDefaultAsync(t => t.TokenHashFast == fastHash
+                    && t.ExpiresAt > now && t.RevokedAt != null && t.RevokedAt <= graceCutoff, ct);
+
+            // 慢路径回退：旧格式前驱 token
+            if (predecessor is null)
             {
-                if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+                var revokedCandidates = await _db.RefreshTokens
+                    .Where(t => t.TokenHashFast == null
+                        && t.ExpiresAt > now && t.RevokedAt != null && t.RevokedAt <= graceCutoff)
+                    .ToListAsync(ct);
+                foreach (var t in revokedCandidates)
                 {
-                    predecessor = t;
-                    break;
+                    if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+                    {
+                        predecessor = t;
+                        break;
+                    }
                 }
             }
 
@@ -439,7 +458,7 @@ public class AuthService : IAuthService
     private async Task<AuthResponse> BuildAuthResponseAsync(AppUser user, bool newUser, CancellationToken ct)
     {
         var (accessToken, accessExpireAt) = _jwt.CreateAccessToken(user);
-        var (refreshTokenRaw, refreshExpireAt) = _jwt.CreateRefreshToken(out var refreshHash);
+        var (refreshTokenRaw, refreshExpireAt) = _jwt.CreateRefreshToken(out var refreshHash, out var refreshFastHash);
 
         // 存储 refreshToken hash（原子插入，无需事务）
         _db.RefreshTokens.Add(new RefreshToken
@@ -447,6 +466,7 @@ public class AuthService : IAuthService
             Id = Guid.NewGuid().ToString("N"),
             UserId = user.Id,
             TokenHash = refreshHash,
+            TokenHashFast = refreshFastHash,
             ExpiresAt = refreshExpireAt,
             CreatedAt = DateTime.UtcNow,
         });
