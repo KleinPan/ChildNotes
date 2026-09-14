@@ -46,7 +46,7 @@ public class AdminAuthMiddleware
         }
 
         // 通过 AdminAuthService.AuthenticateAsync 校验 token（内部查询 AdminAccounts 表）
-        var admin = await adminAuth.AuthenticateAsync(token);
+        var admin = await adminAuth.AuthenticateAsync(token, ctx.RequestAborted);
         if (admin is null)
         {
             await WriteUnauthorized(ctx, AdminConstants.AdminLoginRequiredMsg);

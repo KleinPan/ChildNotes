@@ -6,7 +6,8 @@ namespace ChildNotes.Infrastructure.Auth;
 /// <summary>
 /// PBKDF2-SHA256 密码哈希实现。
 /// 格式：iterations:salt:hash（Base64 编码，冒号分隔）。
-/// 兼容历史明文密码：Verify 时自动识别，NeedsUpgrade 标记需迁移。
+/// 历史明文密码兼容分支已移除：唯一调用方 Admin 体系的账号创建即走 Hash（PBKDF2 格式），
+/// v5 重构后用户端用户名密码登录已废弃，不存在明文存量。
 /// </summary>
 public class Pbkdf2PasswordHasher : IPasswordHasher
 {
@@ -31,15 +32,9 @@ public class Pbkdf2PasswordHasher : IPasswordHasher
         if (string.IsNullOrEmpty(stored)) return false;
 
         var parts = stored.Split(':');
-        // PBKDF2 格式：iterations:salt:hash（3 段，首段为整数）
-        if (parts.Length == 3 && int.TryParse(parts[0], out var iterations))
-        {
-            return VerifyPbkdf2(password, stored, iterations, parts[1], parts[2]);
-        }
-        // 历史明文格式：直接恒定时间比较（兼容旧数据，NeedsUpgrade 会标记迁移）
-        return CryptographicOperations.FixedTimeEquals(
-            System.Text.Encoding.UTF8.GetBytes(password),
-            System.Text.Encoding.UTF8.GetBytes(stored));
+        // PBKDF2 格式：iterations:salt:hash（3 段，首段为整数）；非此格式一律拒绝
+        if (parts.Length != 3 || !int.TryParse(parts[0], out var iterations)) return false;
+        return VerifyPbkdf2(password, stored, iterations, parts[1], parts[2]);
     }
 
     public bool NeedsUpgrade(string stored)

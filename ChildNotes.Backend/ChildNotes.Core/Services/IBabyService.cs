@@ -11,7 +11,6 @@ public interface IBabyService
     Task<BabyDto> UpdateBabyAsync(UpdateBabyRequest req, CancellationToken ct = default);
     Task<List<BabyFamilyDto>> ListFamilyMembersAsync(CancellationToken ct = default);
     Task<BabyMemberDto> UpdateMyFamilyRoleAsync(UpdateBabyMemberRoleRequest req, CancellationToken ct = default);
-    Task<BabyMemberDto> JoinFamilyViaInviteAsync(JoinFamilyRequest req, CancellationToken ct = default);
 
     /// <summary>owner 移除家庭成员（软删除 BabyMember，Status=removed）。</summary>
     Task RemoveMemberAsync(RemoveMemberRequest req, CancellationToken ct = default);

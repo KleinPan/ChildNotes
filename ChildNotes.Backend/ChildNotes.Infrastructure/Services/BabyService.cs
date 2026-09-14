@@ -72,11 +72,12 @@ public class BabyService : IBabyService
             BirthDate = req.BirthDate,
         };
         _db.Babies.Add(baby);
-        await _db.SaveChangesAsync(ct);
 
-        // 以下两次写入（owner 成员 + 同步现有成员）必须原子：若失败会留下无 owner 的孤儿 Baby。
+        // baby 插入与 owner 成员/家庭成员同步写入同一事务：
+        // 若 baby 先落库而后续写入失败，会留下无 owner 的孤儿 Baby（客户端收到 500 但宝宝已创建）。
         await _db.ExecuteInTransactionAsync(async () =>
         {
+            await _db.SaveChangesAsync(ct); // baby 落库
             // 为创建者建 owner 成员
             var ownerMember = new BabyMember
             {
@@ -119,6 +120,8 @@ public class BabyService : IBabyService
         var babyId = !string.IsNullOrEmpty(req.Id) ? req.Id : (await GetCurrentBabyAsync(null, ct))?.Id
             ?? throw new NotFoundException("未找到宝宝");
         await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
+        // 权限设计（有意）：任何 active 家庭成员都可修改宝宝档案（家庭平等协作模型），
+        // 与 owner-only 的 RemoveMemberAsync 不同。改动前请确认产品语义。
         var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == babyId, ct)
             ?? throw new NotFoundException("宝宝不存在");
         if (req.Name is not null) baby.Name = req.Name;
@@ -133,9 +136,12 @@ public class BabyService : IBabyService
     {
         var uid = _current.RequireUserId();
 
-        // 补建 owner baby_member 记录：早期创建的宝宝可能没有 owner 成员记录
+        // 【历史数据修补·技术债】补建 owner baby_member 记录：早期创建的宝宝可能没有 owner 成员记录
         // （baby_member 功能上线前创建的宝宝），导致家人列表查不到这些宝宝。
         // 仅检查 IsOwner=true 的记录是否存在，避免历史脏数据干扰补建。
+        // TODO: 数据全部补齐后应将此段移入一次性数据修复 migration，读路径保持只读。
+        // 并发防护：两个并发请求同时补建同一宝宝时，(BabyId,UserId) 唯一索引让后插入方抛
+        // DbUpdateException——按幂等处理吞掉（另一请求已完成补建），不能让读接口 500。
         var myBabies = await _db.Babies.Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
         if (myBabies.Count > 0)
         {
@@ -158,7 +164,16 @@ public class BabyService : IBabyService
                         Status = StatusConstants.BabyMember.Active,
                     });
                 }
-                await _db.SaveChangesAsync(ct);
+                try
+                {
+                    await _db.SaveChangesAsync(ct);
+                }
+                catch (DbUpdateException)
+                {
+                    // 并发补建冲突：丢弃本请求的补建实体，继续走只读查询
+                    foreach (var entry in _db.ChangeTracker.Entries<BabyMember>().ToList())
+                        entry.State = EntityState.Detached;
+                }
             }
         }
 
@@ -226,55 +241,6 @@ public class BabyService : IBabyService
             member.RoleName = FamilyRoles.GetRoleName(req.RoleCode);
         }
         await _db.SaveChangesAsync(ct);
-        return new BabyMemberDto
-        {
-            Id = member.Id,
-            BabyId = member.BabyId,
-            UserId = member.UserId,
-            RoleCode = member.RoleCode,
-            RoleName = member.RoleName,
-            Owner = member.IsOwner,
-            Mine = true,
-        };
-    }
-
-    public async Task<BabyMemberDto> JoinFamilyViaInviteAsync(JoinFamilyRequest req, CancellationToken ct = default)
-    {
-        var uid = _current.RequireUserId();
-        var baby = await _db.Babies.FirstOrDefaultAsync(b => b.Id == req.BabyId, ct)
-            ?? throw new NotFoundException("宝宝不存在");
-        var roleName = string.IsNullOrWhiteSpace(req.RoleName) ? FamilyRoles.GetRoleName(req.RoleCode) : req.RoleName;
-
-        // 给宝宝主人名下所有宝宝都建成员记录
-        var ownerBabies = await _db.Babies.Where(b => b.UserId == baby.UserId).ToListAsync(ct);
-        // 一次性查询已存在的 BabyMember，避免 N+1
-        var ownerBabyIds = ownerBabies.Select(b => b.Id).ToList();
-        var existingMemberBabyIds = await _db.BabyMembers
-            .Where(m => ownerBabyIds.Contains(m.BabyId) && m.UserId == uid)
-            .Select(m => m.BabyId).ToListAsync(ct);
-        var now = DateTime.UtcNow;
-        foreach (var b in ownerBabies)
-        {
-            if (existingMemberBabyIds.Contains(b.Id)) continue;
-            _db.BabyMembers.Add(new BabyMember
-            {
-                Id = Guid.NewGuid().ToString("N"),
-                BabyId = b.Id,
-                UserId = uid,
-                RoleCode = req.RoleCode,
-                RoleName = roleName,
-                IsOwner = false,
-                Status = StatusConstants.BabyMember.Active,
-            });
-            // join 时更新 baby.UpdatedAt，让新成员下次增量同步能拉到 baby 记录本身
-            // （否则 baby.UpdatedAt 还是创建时的旧时间，被 since > UpdatedAt 过滤掉，
-            // 导致新成员本地 baby 表没有该宝宝，显示 0 个宝宝）
-            b.UpdatedAt = now;
-        }
-        await _db.SaveChangesAsync(ct);
-
-        var member = await _db.BabyMembers.FirstAsync(
-            m => m.BabyId == req.BabyId && m.UserId == uid, ct);
         return new BabyMemberDto
         {
             Id = member.Id,

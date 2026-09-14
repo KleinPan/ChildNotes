@@ -10,6 +10,7 @@ using ChildNotes.Infrastructure.External;
 using ChildNotes.Infrastructure.Middleware;
 using ChildNotes.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -76,8 +77,28 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
             NameClaimType = "uid",
-            // ClockSkew: 5 秒时钟偏移容差（生产环境建议缩短，开发环境可保留）
-            ClockSkew = TimeSpan.FromSeconds(30),
+            // ClockSkew: 5 秒时钟偏移容差（服务器 NTP 同步正常时的合理值；默认 30s 对 15 分钟有效期的 token 偏大）
+            ClockSkew = TimeSpan.FromSeconds(5),
+        };
+        // JWT 认证失败（未带 token/过期/无效）时统一写 ApiResponse 格式响应体，
+        // 与 BusinessException / RateLimit / AdminAuthMiddleware 的错误信封一致，前端无需兼容多格式
+        opt.Events = new JwtBearerEvents
+        {
+            OnChallenge = async ctx =>
+            {
+                ctx.HandleResponse();
+                if (ctx.Response.HasStarted) return;
+                ctx.Response.StatusCode = 401;
+                ctx.Response.ContentType = "application/json; charset=utf-8";
+                await ctx.Response.WriteAsJsonAsync(ChildNotes.Core.Common.ApiResponse.Fail("未登录或登录已失效"));
+            },
+            OnForbidden = async ctx =>
+            {
+                if (ctx.Response.HasStarted) return;
+                ctx.Response.StatusCode = 403;
+                ctx.Response.ContentType = "application/json; charset=utf-8";
+                await ctx.Response.WriteAsJsonAsync(ChildNotes.Core.Common.ApiResponse.Fail("无权访问该资源"));
+            },
         };
     });
 builder.Services.AddAuthorization();
@@ -123,6 +144,9 @@ builder.Services.AddScoped<IMilestoneService, MilestoneService>();
 builder.Services.Configure<ChildNotes.Core.Config.MembershipOptions>(builder.Configuration.GetSection("Membership"));
 builder.Services.AddSingleton<ChildNotes.Core.Config.MembershipOptions>(sp =>
     sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.MembershipOptions>>().Value);
+// 支付宝客户端：Singleton（无状态，密钥配置运行期不变），替代 MembershipService 内 new
+builder.Services.AddSingleton<AlipayAppPayClient>(sp =>
+    new AlipayAppPayClient(sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.MembershipOptions>>().Value.Alipay));
 builder.Services.AddScoped<IMembershipService, MembershipService>();
 
 // Controllers + 过滤器
@@ -160,9 +184,16 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// CORS
-builder.Services.AddCors(opt => opt.AddDefaultPolicy(p => p
-    .AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+// CORS：默认放开（原生 App 无 Origin 概念）；生产环境可通过 CORS:AllowedOrigins
+// 配置白名单（逗号分隔，如 https://admin.example.com）收紧为已知来源
+var allowedOrigins = builder.Configuration.GetSection("CORS:AllowedOrigins").Get<string[]>();
+builder.Services.AddCors(opt => opt.AddDefaultPolicy(p =>
+{
+    if (allowedOrigins is { Length: > 0 })
+        p.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader();
+    else
+        p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+}));
 
 var app = builder.Build();
 
@@ -184,34 +215,23 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-// 全局异常处理：将未捕获异常统一包装为 ApiResponse，避免泄漏堆栈
-app.Use(async (context, next) =>
-{
-    try
-    {
-        await next();
-    }
-    catch (Exception ex)
-    {
-        var logger = context.RequestServices.GetService<ILogger<Program>>();
-        logger?.LogError(ex, "未处理异常: {Path}", context.Request.Path);
 
-        context.Response.StatusCode = 500;
-        context.Response.ContentType = "application/json; charset=utf-8";
-        var apiResp = ApiResponse.Fail("服务器内部错误，请稍后重试");
-        // 开发/测试环境暴露异常详情，便于排查；生产环境仅返回通用提示
-        if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
-        {
-            apiResp = ApiResponse.Fail($"服务器内部错误：{ex.Message}");
-        }
-        var json = JsonSerializer.Serialize(apiResp, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = null,
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
-        });
-        await context.Response.WriteAsync(json);
-    }
-});
+// 可信代理头处理（Caddy 反代同机部署场景）：把 X-Forwarded-For 从右往左解析，
+// RemoteIpAddress 回填为第一个"非可信代理"的 IP（即真实客户端 IP）。
+// 已知代理仅本机回环（ForwardedHeadersOptions 默认 KnownNetworks 含 127.0.0.0/8 与 ::1/128），
+// 客户端伪造的 XFF 首段会被正确跳过——限流中间件据此取 IP，堵住"伪造 XFF 绕过限流"的路径。
+// 仅当 RateLimit:TrustProxyHeaders=true（部署在反向代理之后）时启用。
+var rateLimitOpt = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.RateLimitOptions>>().Value;
+if (rateLimitOpt.TrustProxyHeaders)
+{
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    });
+}
+
+// 全局异常处理：将未捕获异常统一包装为 ApiResponse，避免泄漏堆栈
+app.UseMiddleware<ChildNotes.Infrastructure.Middleware.GlobalExceptionMiddleware>();
 app.UseMiddleware<RateLimitMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();

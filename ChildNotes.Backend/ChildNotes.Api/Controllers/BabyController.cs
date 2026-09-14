@@ -35,10 +35,6 @@ public class BabyController : AppBaseController
     public async Task<BabyMemberDto> UpdateMyRole([FromBody] UpdateBabyMemberRoleRequest req, CancellationToken ct)
         => await _baby.UpdateMyFamilyRoleAsync(req, ct);
 
-    [HttpPost("family/join")]
-    public async Task<BabyMemberDto> JoinFamily([FromBody] JoinFamilyRequest req, CancellationToken ct)
-        => await _baby.JoinFamilyViaInviteAsync(req, ct);
-
     /// <summary>owner 移除家庭成员（软删除）。</summary>
     [HttpDelete("family/member")]
     public async Task<IActionResult> RemoveMember([FromBody] RemoveMemberRequest req, CancellationToken ct)

@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Security.Cryptography;
+using System.Text;
 using ChildNotes.Core.Common;
 using ChildNotes.Core.Config;
 using ChildNotes.Core.Constants;
@@ -8,28 +11,39 @@ using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Auth;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Infrastructure.Services;
 
 public class AdminAuthService : IAdminAuthService
 {
-    private static readonly object _initLock = new();
+    // 进程内初始化信号量：替代 lock（lock 内无法 await）；并发初始化只有一个请求执行建号
+    private static readonly SemaphoreSlim _initLock = new(1, 1);
+
+    // 登录失败锁定：账号级内存计数，5 次失败锁 15 分钟（进程级，重启清零——限流中间件是第二道防线）
+    private static readonly ConcurrentDictionary<string, (int FailCount, DateTime LockedUntil)> _loginFailures = new();
+    private const int MaxLoginFailures = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
+
     private readonly ChildNotesDbContext _db;
     private readonly AdminOptions _opt;
     private readonly ICurrentAdminService _current;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ILogger<AdminAuthService> _logger;
 
     public AdminAuthService(
         ChildNotesDbContext db,
         IOptions<AdminOptions> opt,
         ICurrentAdminService current,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ILogger<AdminAuthService> logger)
     {
         _db = db;
         _opt = opt.Value;
         _current = current;
         _passwordHasher = passwordHasher;
+        _logger = logger;
     }
 
     public async Task EnsureDefaultAdminAsync(CancellationToken ct = default)
@@ -37,9 +51,11 @@ public class AdminAuthService : IAdminAuthService
         if (await _db.AdminAccounts.AnyAsync(ct)) return;
         if (string.IsNullOrEmpty(_opt.InitPassword)) return;
 
-        lock (_initLock)
+        await _initLock.WaitAsync(ct);
+        try
         {
-            if (_db.AdminAccounts.Any()) return;
+            // 双重检查：等待期间可能已被并发请求创建（username 唯一索引兜底）
+            if (await _db.AdminAccounts.AnyAsync(ct)) return;
             _db.AdminAccounts.Add(new AdminAccount
             {
                 Id = Guid.NewGuid().ToString("N"),
@@ -48,7 +64,11 @@ public class AdminAuthService : IAdminAuthService
                 DisplayName = _opt.InitDisplayName,
                 Status = StatusConstants.Admin.Active,
             });
-            _db.SaveChanges();
+            await _db.SaveChangesAsync(ct);
+        }
+        finally
+        {
+            _initLock.Release();
         }
     }
 
@@ -59,10 +79,28 @@ public class AdminAuthService : IAdminAuthService
         if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
             throw new BusinessException("Invalid username or password", 400);
 
+        // 账号锁定检查：连续失败达阈值后直接拒绝，防在线爆破
+        var now = DateTime.UtcNow;
+        if (_loginFailures.TryGetValue(req.Username, out var failure))
+        {
+            if (failure.LockedUntil > now)
+                throw new BusinessException($"账号已被临时锁定，请于 {(failure.LockedUntil - now).Minutes + 1} 分钟后重试", 429);
+            if (failure.LockedUntil != default && failure.LockedUntil <= now)
+                _loginFailures.TryRemove(req.Username, out _); // 锁定期已过，清除计数
+        }
+
         var admin = await _db.AdminAccounts.FirstOrDefaultAsync(a => a.Username == req.Username, ct);
         if (admin is null || admin.Status != StatusConstants.Admin.Active
             || !_passwordHasher.Verify(req.Password, admin.PasswordHash))
+        {
+            // 审计日志：登录失败（用户名不存在/密码错/状态非 Active），便于追溯爆破尝试
+            _logger.LogWarning("Admin 登录失败: username={Username}", req.Username);
+            RecordLoginFailure(req.Username, now);
             throw new BusinessException("Invalid username or password", 400);
+        }
+
+        // 登录成功：清除失败计数
+        _loginFailures.TryRemove(req.Username, out _);
 
         // 自动迁移历史明文密码到 PBKDF2 格式
         if (_passwordHasher.NeedsUpgrade(admin.PasswordHash))
@@ -70,11 +108,10 @@ public class AdminAuthService : IAdminAuthService
             admin.PasswordHash = _passwordHasher.Hash(req.Password);
         }
 
-        // 生成随机 token 并明文存入数据库（便于调试期间直接查看当前有效 token）
-        // 安全提示：明文存储 token 在数据库泄露后可被直接复用，生产环境应改为哈希存储。
-        // 当前未做环境隔离（Debug/Release 均执行），后续应通过 #if DEBUG 或配置开关限制。
+        // 生成随机 token，数据库只存 SHA-256 哈希（防拖库后直接复用）；
+        // token 为 64 位 hex 高熵随机数，SHA-256 足够（与 RefreshToken.TokenHashFast 同方案）
         var rawToken = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
-        admin.Token = rawToken;
+        admin.Token = HashToken(rawToken);
         admin.TokenExpireAt = DateTime.UtcNow.AddHours(_opt.TokenExpireHours);
         admin.LastLoginAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
@@ -92,8 +129,10 @@ public class AdminAuthService : IAdminAuthService
     public async Task<AdminAccount?> AuthenticateAsync(string? token, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(token)) return null;
+        // 数据库存的是 SHA-256 哈希，按哈希索引查询（token 列有索引）
+        var tokenHash = HashToken(token);
         return await _db.AdminAccounts.FirstOrDefaultAsync(
-            a => a.Token == token && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
+            a => a.Token == tokenHash && a.Status == StatusConstants.Admin.Active && a.TokenExpireAt > DateTime.UtcNow, ct);
     }
 
     public Task<AdminAccount?> GetCurrentAdminAsync(CancellationToken ct = default)
@@ -107,4 +146,18 @@ public class AdminAuthService : IAdminAuthService
         admin.TokenExpireAt = null;
         await _db.SaveChangesAsync(ct);
     }
+
+    private static void RecordLoginFailure(string username, DateTime now)
+    {
+        var updated = _loginFailures.AddOrUpdate(username,
+            _ => (1, default),
+            (_, f) => f.LockedUntil > now ? f : (f.FailCount + 1, f.LockedUntil));
+        if (updated.FailCount >= MaxLoginFailures && updated.LockedUntil == default)
+        {
+            _loginFailures[username] = (updated.FailCount, now.Add(LockoutDuration));
+        }
+    }
+
+    private static string HashToken(string raw)
+        => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));
 }

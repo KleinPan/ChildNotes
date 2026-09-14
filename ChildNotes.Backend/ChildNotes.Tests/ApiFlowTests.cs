@@ -332,6 +332,23 @@ public class ApiFlowTests
         Assert.True(members[0].GetProperty("mine").GetBoolean());
     }
 
+    /// <summary>通过 join-request 审批流加入家庭：member 提交申请，owner 批准。</summary>
+    private static async Task JoinViaApprovalFlowAsync(
+        HttpClient member, HttpClient owner, string babyId, string roleCode)
+    {
+        var reqResp = await member.PostAsJsonAsync("/api/baby/family/join-request",
+            new JoinFamilyRequest { BabyId = babyId, RoleCode = roleCode });
+        var reqBody = await reqResp.Content.ReadAsStringAsync();
+        Assert.True(reqResp.IsSuccessStatusCode, reqBody);
+        var requestId = (await reqResp.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").GetProperty("id").GetString()!;
+
+        var approveResp = await owner.PostAsJsonAsync("/api/baby/family/join-request/process",
+            new ProcessJoinRequestDto { RequestId = requestId, Approve = true });
+        var approveBody = await approveResp.Content.ReadAsStringAsync();
+        Assert.True(approveResp.IsSuccessStatusCode, approveBody);
+    }
+
     [Fact]
     public async Task JoinFamily_AddsMemberToAllOwnerBabies()
     {
@@ -348,14 +365,8 @@ public class ApiFlowTests
         // 用户 B 注册
         var userB = await NewAuthClientAsync(factory, "userB_" + Guid.NewGuid().ToString("N")[..6]);
 
-        // B 通过 baby1Id 加入家庭
-        var joinResp = await userB.PostAsJsonAsync("/api/baby/family/join", new JoinFamilyRequest
-        {
-            BabyId = baby1Id,
-            RoleCode = "mother",
-        });
-        var joinRespBody = await joinResp.Content.ReadAsStringAsync();
-        Assert.True(joinResp.IsSuccessStatusCode, joinRespBody);
+        // B 通过 baby1Id 走审批流加入家庭（owner 批准）
+        await JoinViaApprovalFlowAsync(userB, ownerA, baby1Id, "mother");
 
         // B 查看家庭成员，应能看到 A 名下两个宝宝
         var famResp = await userB.GetAsync("/api/baby/family/members");
@@ -378,9 +389,7 @@ public class ApiFlowTests
             .GetProperty("data").GetProperty("id").GetString()!;
 
         var member = await NewAuthClientAsync(factory, "roleMember_" + Guid.NewGuid().ToString("N")[..6]);
-        var joinResp = await member.PostAsJsonAsync("/api/baby/family/join", new JoinFamilyRequest { BabyId = babyId, RoleCode = "uncle" });
-        var joinRespBody = await joinResp.Content.ReadAsStringAsync();
-        Assert.True(joinResp.IsSuccessStatusCode, joinRespBody);
+        await JoinViaApprovalFlowAsync(member, owner, babyId, "uncle");
 
         // member 修改自己的角色
         var updResp = await member.PutAsJsonAsync("/api/baby/family/my-role", new UpdateBabyMemberRoleRequest
