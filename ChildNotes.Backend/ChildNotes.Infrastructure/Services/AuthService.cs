@@ -302,7 +302,71 @@ public class AuthService : IAuthService
         }
 
         if (matchedToken is null)
+        {
+            // 前驱链恢复（宽限期外的隔夜兜底）：宽限期（120s）只覆盖秒级竞态，覆盖不了
+            // "客户端进程在保存新 token 前被杀、数小时后才重试"的场景（实测案例：
+            // Rotation 后 12 小时重放旧 token 仍 401 → 软登出掉线）。
+            //
+            // 判定依据：重放的已撤销 token 若存在"仍活跃的继任者"（Rotation 撤销旧
+            // token 后 ~0.3s 签发的新 token），该继任者必然从未送达任何客户端
+            //（孤儿 token——响应丢失了），重放方即持有旧 token 的原设备。
+            // 撤销继任者并签发新 token 对，自愈而非 401 软登出。
+            //
+            // 一次性保证：恢复动作本身会撤销继任者，同一旧 token 二次重放时
+            // 继任者已撤销（无活跃继任者）→ 走 401，防盗用重放。
+            var revokedCandidates = await _db.RefreshTokens
+                .Where(t => t.ExpiresAt > now && t.RevokedAt != null && t.RevokedAt <= graceCutoff)
+                .ToListAsync(ct);
+            RefreshToken? predecessor = null;
+            foreach (var t in revokedCandidates)
+            {
+                if (_jwt.VerifyToken(req.RefreshToken, t.TokenHash))
+                {
+                    predecessor = t;
+                    break;
+                }
+            }
+
+            if (predecessor is not null)
+            {
+                var revokedAt = predecessor.RevokedAt!.Value;
+                // 继任者 = 撤销 predecessor 后 10s 内签发、同用户、仍活跃的 token
+                //（Rotation 事务中先撤销后签发，实测间隔 ~0.3s；取最早创建者）
+                var successor = await _db.RefreshTokens
+                    .Where(s => s.UserId == predecessor.UserId && s.RevokedAt == null && s.ExpiresAt > now
+                        && s.CreatedAt >= revokedAt && s.CreatedAt <= revokedAt.AddSeconds(10))
+                    .OrderBy(s => s.CreatedAt)
+                    .FirstOrDefaultAsync(ct);
+
+                if (successor is not null)
+                {
+                    try
+                    {
+                        await _db.ExecuteInTransactionAsync(async () =>
+                        {
+                            // 二次校验 + [ConcurrencyCheck] 原子 CAS：
+                            // 并发恢复竞争时只有一方成功，败者按无效 token 处理
+                            if (successor.RevokedAt is null)
+                            {
+                                successor.RevokedAt = DateTime.UtcNow;
+                                await _db.SaveChangesAsync(ct);
+                            }
+                        }, ct);
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        throw new BusinessException("RefreshToken 无效或已过期", 401, "REFRESH_TOKEN_INVALID");
+                    }
+
+                    var recoveredUser = await _db.AppUsers
+                        .FirstOrDefaultAsync(u => u.Id == predecessor.UserId, ct)
+                        ?? throw new UnauthorizedException();
+                    return await BuildAuthResponseAsync(recoveredUser, false, ct);
+                }
+            }
+
             throw new BusinessException("RefreshToken 无效或已过期", 401, "REFRESH_TOKEN_INVALID");
+        }
 
         // 宽限期内已撤销的旧 token：视为合法重试（新 token 未送达客户端），直接再签发一对新 token。
         // 不再抛 401——那会让客户端清空登录态（软登出），造成"掉线"故障。

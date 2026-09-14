@@ -158,25 +158,110 @@ public class ApiFlowTests
         Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
     }
 
-    /// <summary>宽限期外重放已撤销的旧 token：应返回 401（防盗用重放）。</summary>
+    /// <summary>
+    /// 宽限期外重放已撤销的旧 token，且继任者仍活跃（孤儿 token）：
+    /// 应走前驱链恢复，签发新 token 对而非 401（隔夜掉线自愈）。
+    /// 场景：Rotation 响应丢失（进程在保存新 token 前被杀），次日客户端重放旧 token。
+    /// </summary>
     [Fact]
-    public async Task Refresh_ReplayedRevokedToken_AfterGrace_Returns401()
+    public async Task Refresh_ReplayedRevokedToken_AfterGrace_WithActiveSuccessor_Recovers()
     {
         using var factory = NewFactory();
         var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
             factory, "rf3_" + Guid.NewGuid().ToString("N")[..6]);
 
+        // 第一次 refresh：旧 token 已被服务端撤销，新 token（继任者）仍活跃（模拟响应丢失）
         await RefreshTokensAsync(client, refreshToken);
 
-        // 把旧 token 的撤销时间改到宽限期（默认 120s）之外，模拟过期重放
+        // 所有 token 时间整体回拨 1 小时：撤销时间出宽限期，且继任者 CreatedAt 与
+        // 撤销时间的 ~0.3s 链接关系保持不变（真实前驱-继任结构）
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
-            foreach (var t in db.RefreshTokens.Where(t => t.RevokedAt != null).ToList())
-                t.RevokedAt = DateTime.UtcNow.AddSeconds(-121);
+            foreach (var t in db.RefreshTokens.ToList())
+            {
+                t.CreatedAt = t.CreatedAt.AddHours(-1);
+                if (t.RevokedAt != null) t.RevokedAt = t.RevokedAt.Value.AddHours(-1);
+                t.ExpiresAt = t.ExpiresAt.AddHours(-1);
+            }
             await db.SaveChangesAsync();
         }
 
+        // 宽限期外重放旧 token：应自愈签发新 token 对
+        var (recoveredAccess, _) = await RefreshTokensAsync(client, refreshToken);
+        Assert.False(string.IsNullOrEmpty(recoveredAccess));
+
+        client.DefaultRequestHeaders.Authorization = new("Bearer", recoveredAccess);
+        var meResp = await client.GetAsync("/api/auth/me");
+        Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
+    }
+
+    /// <summary>
+    /// 前驱恢复的一次性保证：同一旧 token 恢复一次后（继任者被撤销），
+    /// 二次重放应返回 401（防盗用重放）。
+    /// </summary>
+    [Fact]
+    public async Task Refresh_ReplayedRevokedToken_RecoveryIsOneShot()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf4_" + Guid.NewGuid().ToString("N")[..6]);
+
+        await RefreshTokensAsync(client, refreshToken);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.ToList())
+            {
+                t.CreatedAt = t.CreatedAt.AddHours(-1);
+                if (t.RevokedAt != null) t.RevokedAt = t.RevokedAt.Value.AddHours(-1);
+                t.ExpiresAt = t.ExpiresAt.AddHours(-1);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // 第一次重放：恢复成功
+        await RefreshTokensAsync(client, refreshToken);
+
+        // 第二次重放同一旧 token：继任者已被恢复动作撤销，无活跃继任者 → 401
+        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshRequest { RefreshToken = refreshToken });
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+    }
+
+    /// <summary>
+    /// 宽限期外重放已撤销的旧 token，且继任者也已撤销（链条已前进，设备持有更新 token）：
+    /// 应返回 401（防盗用重放）。
+    /// </summary>
+    [Fact]
+    public async Task Refresh_ReplayedRevokedToken_AfterGrace_WithRevokedSuccessor_Returns401()
+    {
+        using var factory = NewFactory();
+        var (client, refreshToken) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf5_" + Guid.NewGuid().ToString("N")[..6]);
+
+        // 第一次 refresh：T0 撤销 → S1 活跃
+        var (_, s1) = await RefreshTokensAsync(client, refreshToken);
+
+        // 时间整体回拨出宽限期，保持前驱-继任链接关系
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.ToList())
+            {
+                t.CreatedAt = t.CreatedAt.AddHours(-1);
+                if (t.RevokedAt != null) t.RevokedAt = t.RevokedAt.Value.AddHours(-1);
+                t.ExpiresAt = t.ExpiresAt.AddHours(-1);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // 回拨后再做第二次 refresh（真实时间）：T0 → S1（撤销）→ S2，设备持有 S2。
+        // S1 的撤销发生在"现在"（宽限期内），但 T0 的继任者窗口在一小时前且 S1 已撤销。
+        await RefreshTokensAsync(client, s1);
+
+        // 重放最初的 T0：无活跃继任者（S1 已撤销、S2 不在窗口内）→ 401
         var resp = await client.PostAsJsonAsync("/api/auth/refresh",
             new RefreshRequest { RefreshToken = refreshToken });
         Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
