@@ -41,6 +41,15 @@ public partial class PointsViewModel : ViewModelBase
         RefreshTotalEarnSpentText();
     }
 
+    /// <summary>
+    /// 释放 LocaleManager 订阅。MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
     /// <summary>刷新累计获得/已使用汇总文案。</summary>
     private void RefreshTotalEarnSpentText()
     {

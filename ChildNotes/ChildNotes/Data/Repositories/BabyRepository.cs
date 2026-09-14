@@ -62,6 +62,11 @@ public sealed class BabyRepository : BaseRepository
         => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
             cmd => cmd.AddUtc("@s", since), Map);
 
+    /// <summary>分页变体（LIMIT/OFFSET）：Push 分批上送用（同步期间表无写入，OFFSET 稳定）。</summary>
+    public List<Baby> GetByUpdatedAt(DateTime since, int limit, int offset)
+        => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at LIMIT @l OFFSET @o",
+            cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset), Map);
+
     /// <summary>
     /// 以 LWW（updated_at 比较）合并远端下发的 baby。返回是否实际写入。
     /// 优化：原实现 SELECT + UPDATE/INSERT 两次往返，改用单条 INSERT ON CONFLICT 一次完成。

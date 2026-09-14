@@ -56,6 +56,13 @@ public sealed class PointsRepository : BaseRepository
             cmd => cmd.AddUtc("@s", since),
             MapSignIn);
 
+    /// <summary>分页变体（LIMIT/OFFSET）：Push 分批上送用（同步期间表无写入，OFFSET 稳定）。</summary>
+    public List<SignInRecord> GetSignInsByCreatedAt(DateTime since, int limit, int offset)
+        => Query(
+            "SELECT id, user_id, sign_date, continuous_days, reward, created_at FROM sign_in_record WHERE created_at > @s ORDER BY created_at LIMIT @l OFFSET @o",
+            cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset),
+            MapSignIn);
+
     public UserPoints GetOrCreate(string userId)
     {
         var existing = QueryFirstOrDefault(

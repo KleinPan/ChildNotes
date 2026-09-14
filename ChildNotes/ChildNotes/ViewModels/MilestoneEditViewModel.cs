@@ -55,6 +55,9 @@ public sealed class MilestonePhotoItem : ObservableObject
         IsUploading = false;
     }
 
+    /// <summary>后台上传任务（AddPhotoAsync 启动时填充；null 表示未在上传）。供 Save 等待上传完成。</summary>
+    public Task? UploadTask { get; set; }
+
     /// <summary>序列化时使用的最终路径：优先远程 URL，回退本地路径。</summary>
     public string ToStoredPath() => !string.IsNullOrWhiteSpace(RemoteUrl) ? RemoteUrl : Source;
 }
@@ -88,6 +91,15 @@ public partial class MilestoneEditViewModel : ViewModelBase
         SheetTitle = string.IsNullOrEmpty(_editingId)
             ? _locale.GetString("Growth_AddTitle", "添加成长时刻")
             : _locale.GetString("Growth_EditAdd", "编辑成长时刻");
+    }
+
+    /// <summary>
+    /// 释放 LocaleManager 订阅。GrowthViewModel 随 MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
     }
 
     /// <summary>表单内编辑中的照片列表。</summary>
@@ -166,7 +178,7 @@ public partial class MilestoneEditViewModel : ViewModelBase
 
         // 3. 后台异步上传到服务器（不阻塞 UI，失败静默保留本地路径）
         item.IsUploading = true;
-        _ = UploadPhotoAsync(item);
+        item.UploadTask = UploadPhotoAsync(item);
     }
 
     /// <summary>
@@ -244,25 +256,26 @@ public partial class MilestoneEditViewModel : ViewModelBase
             return;
         }
 
-        // 保存逻辑（含等待图片上传 + DB 写入）移到后台线程
+        // 等待图片上传完成：不占线程（原 Thread.Sleep 轮询占 ThreadPool 线程），
+        // 弱网下 5 秒太短会回退本地路径（跨设备不可达），保持 30 秒超时语义
+        await WaitForUploadsAsync(TimeSpan.FromSeconds(30));
+
+        var photos = Photos.Select(p => p.ToStoredPath()).ToList();
+        var m = new Milestone
+        {
+            Id = _editingId,
+            UserId = _state.GetLocalDataSpaceId(),
+            BabyId = _state.CurrentBabyId,
+            Title = Title.Trim(),
+            Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
+            RecordDate = RecordDate.LocalDateTime.Date,
+            PhotosJson = JsonSerializer.Serialize(photos),
+            DeviceId = _cfgRepo.Get().DeviceId,
+        };
+
+        // DB 写入移到后台线程
         await Task.Run(() =>
         {
-            // 等待图片上传完成：弱网下 5 秒太短会回退本地路径（跨设备不可达），提高到 30 秒
-            WaitForUploads(TimeSpan.FromSeconds(30));
-
-            var photos = Photos.Select(p => p.ToStoredPath()).ToList();
-            var m = new Milestone
-            {
-                Id = _editingId,
-                UserId = _state.GetLocalDataSpaceId(),
-                BabyId = _state.CurrentBabyId,
-                Title = Title.Trim(),
-                Content = string.IsNullOrWhiteSpace(Content) ? null : Content.Trim(),
-                RecordDate = RecordDate.LocalDateTime.Date,
-                PhotosJson = JsonSerializer.Serialize(photos),
-                DeviceId = _cfgRepo.Get().DeviceId,
-            };
-
             if (string.IsNullOrEmpty(_editingId))
                 _repo.Insert(m);
             else
@@ -273,13 +286,24 @@ public partial class MilestoneEditViewModel : ViewModelBase
         Saved?.Invoke();
     }
 
-    /// <summary>等待所有 IsUploading=true 的图片完成上传。超时后强制结束。</summary>
-    private void WaitForUploads(TimeSpan timeout)
+    /// <summary>
+    /// 等待所有 IsUploading=true 的图片完成上传。超时后强制结束（序列化回退本地路径，下次编辑可重传）。
+    /// UploadPhotoAsync 内部已捕获全部异常，任务不会 fault；TimeoutException 单独吞掉以保留原超时语义。
+    /// </summary>
+    private async Task WaitForUploadsAsync(TimeSpan timeout)
     {
-        var deadline = DateTime.Now + timeout;
-        while (DateTime.Now < deadline && Photos.Any(p => p.IsUploading))
+        var pending = Photos.Where(p => p.IsUploading)
+            .Select(p => p.UploadTask)
+            .OfType<Task>()
+            .ToList();
+        if (pending.Count == 0) return;
+        try
         {
-            Thread.Sleep(100);
+            await Task.WhenAll(pending).WaitAsync(timeout);
+        }
+        catch (TimeoutException)
+        {
+            // 超时强制结束：未完成的图片序列化时回退本地路径
         }
     }
 

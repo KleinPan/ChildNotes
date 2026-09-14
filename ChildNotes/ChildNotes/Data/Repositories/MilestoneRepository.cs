@@ -84,6 +84,11 @@ public sealed class MilestoneRepository : BaseRepository
         => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
             cmd => cmd.AddUtc("@s", since), Map);
 
+    /// <summary>分页变体（LIMIT/OFFSET）：Push 分批上送用（同步期间表无写入，OFFSET 稳定）。</summary>
+    public List<Milestone> GetByUpdatedAt(DateTime since, int limit, int offset)
+        => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at LIMIT @l OFFSET @o",
+            cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset), Map);
+
     /// <summary>以 LWW（updated_at 比较）合并远端下发的里程碑。返回是否实际写入。</summary>
     public bool UpsertFromSync(Milestone item)
     {

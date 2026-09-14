@@ -1,7 +1,6 @@
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 using ChildNotes.Models;
@@ -41,13 +40,7 @@ public sealed class AuthService
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNamingPolicy = null,
-        // 后端 camelCase（accessToken/refreshToken 等），前端 DTO 用 PascalCase
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = ApiEnvelope.JsonOpts;
 
     /// <summary>当前登录用户（本地缓存）。未登录时为 null。</summary>
     public AppUser? CurrentUser { get; private set; }
@@ -119,12 +112,12 @@ public sealed class AuthService
             var json = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                var msg = ExtractMessage(json);
+                var msg = ApiEnvelope.ExtractMessage(json);
                 DevLogger.Log("Auth", $"SendCode fail: {(int)resp.StatusCode} {msg}");
                 return new SendCodeResult(false, msg ?? $"发送失败（HTTP {(int)resp.StatusCode}）");
             }
             // 后端包装为 {state,msg,data}；data.Sent=true 表示已发送
-            var sent = ExtractData<SendCodeDto>(json)?.Sent ?? false;
+            var sent = ApiEnvelope.ExtractData<SendCodeDto>(json, "Auth")?.Sent ?? false;
             DevLogger.Log("Auth", $"SendCode ok: email={trimmed}, sent={sent}");
             return new SendCodeResult(true, "验证码已发送");
         }
@@ -170,12 +163,12 @@ public sealed class AuthService
             var json = await resp.Content.ReadAsStringAsync(ct);
             if (!resp.IsSuccessStatusCode)
             {
-                var msg = ExtractMessage(json);
+                var msg = ApiEnvelope.ExtractMessage(json);
                 DevLogger.Log("Auth", $"VerifyCode fail: {(int)resp.StatusCode} {msg}");
                 return new VerifyCodeResult(false, msg ?? $"验证失败（HTTP {(int)resp.StatusCode}）");
             }
 
-            var auth = ExtractData<AuthResponseDto>(json);
+            var auth = ApiEnvelope.ExtractData<AuthResponseDto>(json, "Auth");
             if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
             {
                 DevLogger.Log("Auth", "VerifyCode fail: 响应缺少 data.accessToken");
@@ -537,7 +530,7 @@ public sealed class AuthService
                     }
                     return null;
                 }
-                var auth = ExtractData<AuthResponseDto>(json);
+                var auth = ApiEnvelope.ExtractData<AuthResponseDto>(json, "Auth");
                 if (auth is null || string.IsNullOrEmpty(auth.AccessToken))
                 {
                     DevLogger.Log("Auth", "Refresh fail: 响应缺少 data.accessToken");
@@ -662,33 +655,7 @@ public sealed class AuthService
 
     private static string Serialize<T>(T obj) => JsonSerializer.Serialize(obj, JsonOpts);
 
-    private static T? ExtractData<T>(string json)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("data", out var data)) return default;
-            return JsonSerializer.Deserialize<T>(data.GetRawText(), JsonOpts);
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("Auth", "ExtractData parse fail: " + ex.Message);
-            return default;
-        }
-    }
-
-    private static string? ExtractMessage(string json)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (doc.RootElement.TryGetProperty("msg", out var msg) &&
-                msg.ValueKind == JsonValueKind.String)
-                return msg.GetString();
-        }
-        catch { }
-        return null;
-    }
+    // ExtractData/ExtractMessage 已收口到 ApiEnvelope 共享实现（本类调用处直接使用 ApiEnvelope）
 
     private static AppUser ToAppUser(LoginUserDto dto) => new()
     {

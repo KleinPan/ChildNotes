@@ -1,6 +1,3 @@
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.Json;
 using ChildNotes.Data.Repositories;
 using ChildNotes.Infrastructure;
 
@@ -9,13 +6,14 @@ namespace ChildNotes.Services.Push;
 /// <summary>
 /// 后端推送 API 的默认实现：调用 /api/push/register-token 与 /api/push/unregister-token。
 ///
-/// v5：AccessToken 从 ISecureStorage 读取（非明文 SQLite）；缺失时尝试 RefreshToken 续期。
+/// v5：AccessToken 从 ISecureStorage 读取（非明文 SQLite）；缺失/过期时尝试 RefreshToken 续期。
+/// 继承 BaseApiClient 复用 SendAsync（含 token 获取/401 Refresh 重试）与共享 HttpClient，
+/// 删除原自带的静态 HttpClient 与手写 token/refresh 逻辑。
 /// 后端接口未实现时静默吞掉异常（推送为辅助功能，不应阻塞主流程）。
 /// </summary>
-public sealed class PushApiClient : IPushService
+public sealed class PushApiClient : BaseApiClient, IPushService
 {
     private readonly SyncConfigRepository _cfgRepo;
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(10) };
 
     public PushApiClient(SyncConfigRepository cfgRepo)
     {
@@ -27,40 +25,15 @@ public sealed class PushApiClient : IPushService
         try
         {
             var cfg = _cfgRepo.Get();
-            var serverUrl = cfg.ServerUrl;
-            if (string.IsNullOrWhiteSpace(serverUrl)) return;
-
-            // v5：从 SecureStorage 读取 AccessToken
-            var auth = ServiceProvider.Instance.AuthService;
-            var accessToken = await auth.GetAccessTokenAsync();
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                accessToken = await auth.RefreshAccessTokenAsync();
-                if (string.IsNullOrEmpty(accessToken))
-                {
-                    DevLogger.Log("Push", "RegisterToken skipped: token 缺失且 Refresh 失败");
-                    return;
-                }
-            }
-
-            var url = $"{serverUrl.TrimEnd('/')}/api/push/register-token";
-            var body = JsonSerializer.Serialize(new { token, platform = platformId });
-            using var req = new HttpRequestMessage(HttpMethod.Post, url)
-            {
-                Content = new StringContent(body, Encoding.UTF8, "application/json")
-            };
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            req.Headers.Add("X-Device-Id", cfg.DeviceId ?? string.Empty);
-
-            using var resp = await Http.SendAsync(req);
-            if (!resp.IsSuccessStatusCode)
-            {
-                DevLogger.Log("Push", $"RegisterToken failed: {(int)resp.StatusCode} {resp.ReasonPhrase}");
-            }
-            else
+            // X-Device-Id 头：BaseApiClient 不感知业务头，经 extraHeaders 透传
+            var headers = new Dictionary<string, string> { ["X-Device-Id"] = cfg.DeviceId ?? string.Empty };
+            using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/push/register-token",
+                Serialize(new { token, platform = platformId }), CancellationToken.None, headers);
+            if (resp is not null && resp.IsSuccessStatusCode)
             {
                 DevLogger.Log("Push", $"RegisterToken ok: platform={platformId}");
             }
+            // 失败已在 BaseApiClient 内记日志；推送为辅助功能，静默处理
         }
         catch (Exception ex)
         {
@@ -74,27 +47,14 @@ public sealed class PushApiClient : IPushService
         try
         {
             var cfg = _cfgRepo.Get();
-            var serverUrl = cfg.ServerUrl;
-            if (string.IsNullOrWhiteSpace(serverUrl)) return;
-
-            var auth = ServiceProvider.Instance.AuthService;
-            var accessToken = await auth.GetAccessTokenAsync();
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                accessToken = await auth.RefreshAccessTokenAsync();
-                if (string.IsNullOrEmpty(accessToken)) return;
-            }
-
-            var url = $"{serverUrl.TrimEnd('/')}/api/push/unregister-token";
-            using var req = new HttpRequestMessage(HttpMethod.Post, url);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            Dictionary<string, string>? headers = null;
             if (!string.IsNullOrEmpty(cfg.DeviceId))
             {
-                req.Headers.Add("X-Device-Id", cfg.DeviceId);
+                headers = new Dictionary<string, string> { ["X-Device-Id"] = cfg.DeviceId };
             }
-
-            using var resp = await Http.SendAsync(req);
-            DevLogger.Log("Push", $"UnregisterToken: {(int)resp.StatusCode}");
+            using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/push/unregister-token",
+                null, CancellationToken.None, headers);
+            DevLogger.Log("Push", $"UnregisterToken: {(resp is null ? 0 : (int)resp.StatusCode)}");
         }
         catch (Exception ex)
         {

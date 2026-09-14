@@ -67,6 +67,8 @@ public partial class App : Application
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
                 desktop.MainWindow ??= new MainWindow();
+                // 桌面端退出时刷盘日志（异步 sink 落盘）；Android 不受影响
+                desktop.Exit += (_, _) => ReleaseLogger.Shutdown();
                 DevLogger.Log("Startup", $"Lifetime=Desktop, MainWindow created: {sw.ElapsedMilliseconds}ms");
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)

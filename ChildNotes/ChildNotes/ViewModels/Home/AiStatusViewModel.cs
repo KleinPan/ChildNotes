@@ -41,6 +41,20 @@ public partial class AiStatusViewModel : ObservableObject
         AiStatusSubtitle = _locale.GetString("Home_Ai_SubtitleGood", "正在快乐成长中~");
     }
 
+    /// <summary>停止提示轮播（切走 Home Tab / 登出时调用，避免 timer 后台空转）。</summary>
+    public void StopCarousel() => _tipCarouselTimer.Stop();
+
+    /// <summary>
+    /// 释放 LocaleManager 订阅并停止轮播 timer。
+    /// MainShellViewModel 登出/重进时被重建，旧实例若不退订会被
+    /// 单例 LocaleManager（LanguageChanged 事件）强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        StopCarousel();
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
     /// <summary>根据今日统计刷新 AI 状态（从 RefreshAsync 快照调用）。</summary>
     public void RefreshAiStatus(DayStats? stats, string babyName)
     {

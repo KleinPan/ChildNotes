@@ -182,9 +182,9 @@ public partial class GrowthViewModel : ViewModelBase, IActivatable
             }
             else
             {
-                // 远程图：直接下载原图（已是压缩后的同步图，无需再降采样）
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-                using var resp = await http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead);
+                // 远程图：直接下载原图（已是压缩后的同步图，无需再降采样）。
+                // 复用 RemoteThumbCache 的静态 HttpClient（同为 30s 超时），避免每次预览 new HttpClient 握手
+                using var resp = await RemoteThumbCache.Http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead);
                 if (!resp.IsSuccessStatusCode) return;
                 await using var stream = await resp.Content.ReadAsStreamAsync();
                 using var ms = new MemoryStream();
@@ -290,12 +290,20 @@ public sealed class MilestoneThumbItem : ObservableObject
     }
 }
 
-/// <summary>远程缩略图进程内缓存：同 URL 只下载一次，避免列表滚动/重建重复请求。</summary>
+/// <summary>远程缩略图进程内缓存：同 URL 只下载一次，避免列表滚动/重建重复请求。
+/// 缓存容量上限 100 条（FIFO 淘汰最旧），防止长列表浏览内存无限增长。</summary>
 internal static class RemoteThumbCache
 {
     private static readonly ConcurrentDictionary<string, Bitmap?> _cache = new();
     private static readonly ConcurrentDictionary<string, Task<Bitmap?>> _loading = new();
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
+    // internal 供 GrowthViewModel 大图预览复用（同为 30s 超时）
+    internal static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
+
+    /// <summary>缓存容量上限：超限淘汰最旧条目（插入顺序 FIFO）。</summary>
+    private const int CacheCapacity = 100;
+    /// <summary>插入顺序队列（与 _cache 同步维护，锁保护）。</summary>
+    private static readonly Queue<string> _insertOrder = new();
+    private static readonly object _cacheLock = new();
 
     public static bool TryGet(string url, out Bitmap? bmp) => _cache.TryGetValue(url, out bmp);
 
@@ -310,6 +318,7 @@ internal static class RemoteThumbCache
                 using var resp = await Http.GetAsync(u, HttpCompletionOption.ResponseHeadersRead);
                 if (!resp.IsSuccessStatusCode)
                 {
+                    // 下载失败不写缓存，下次可重试
                     DevLogger.Log("GrowthThumb", $"下载失败: {(int)resp.StatusCode}");
                     return null;
                 }
@@ -319,7 +328,7 @@ internal static class RemoteThumbCache
                 await stream.CopyToAsync(ms);
                 ms.Position = 0;
                 var bmp = await Task.Run(() => Bitmap.DecodeToWidth(ms, 200));
-                _cache.TryAdd(u, bmp);
+                AddToCache(u, bmp);
                 return bmp;
             }
             finally
@@ -328,5 +337,25 @@ internal static class RemoteThumbCache
             }
         });
         return await task;
+    }
+
+    /// <summary>写入缓存并在超上限时淘汰最旧位图。失败结果（null）不入缓存，允许下次重试。</summary>
+    private static void AddToCache(string url, Bitmap? bmp)
+    {
+        if (bmp is null) return;
+        lock (_cacheLock)
+        {
+            if (_cache.ContainsKey(url)) return;
+            _cache.TryAdd(url, bmp);
+            _insertOrder.Enqueue(url);
+            while (_insertOrder.Count > CacheCapacity)
+            {
+                var oldest = _insertOrder.Dequeue();
+                if (_cache.TryRemove(oldest, out var oldBmp) && oldBmp is not null)
+                {
+                    try { oldBmp.Dispose(); } catch { }
+                }
+            }
+        }
     }
 }

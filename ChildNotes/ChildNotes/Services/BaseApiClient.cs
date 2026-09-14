@@ -22,15 +22,8 @@ public abstract class BaseApiClient
 {
     private protected static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(30) };
 
-    protected static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        PropertyNamingPolicy = null,
-        // 后端 ASP.NET Core 默认 camelCase 序列化（serverTime/expireAt 等），
-        // 前端 DTO 用 PascalCase（ServerTime/ExpireAt）。开启大小写不敏感，
-        // 避免字段名大小写不匹配导致 DateTime 等类型用默认值（0001-01-01）。
-        PropertyNameCaseInsensitive = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    };
+    // 共享 JSON 序列化选项（收口到 ApiEnvelope 统一维护，行为不变）
+    protected static readonly JsonSerializerOptions JsonOpts = ApiEnvelope.JsonOpts;
 
     /// <summary>
     /// 使用 SecureStorage 中的 AccessToken 发送请求。
@@ -38,85 +31,112 @@ public abstract class BaseApiClient
     /// </summary>
     protected async Task<HttpResponseMessage?> SendAsync(
         SyncConfigRepository cfgRepo,
+        HttpMethod method, string path, string? body, CancellationToken ct,
+        IReadOnlyDictionary<string, string>? extraHeaders = null)
+        => await SendWithAuthAsync(cfgRepo, method, path, body, ct, swallowNonSuccess: true, extraHeaders);
+
+    /// <summary>
+    /// 与 <see cref="SendAsync"/> 行为一致，但非 2xx 响应会返回 <see cref="HttpResponseMessage"/>
+    /// 而非 null，供调用方读取后端业务错误体（{state,msg,data} 信封中的 msg/code）。
+    /// 仅以下情况返回 null：token 缺失且 Refresh 失败、网络异常、401 重试仍失败。
+    /// </summary>
+    protected async Task<HttpResponseMessage?> SendWithErrorAsync(
+        SyncConfigRepository cfgRepo,
         HttpMethod method, string path, string? body, CancellationToken ct)
+        => await SendWithAuthAsync(cfgRepo, method, path, body, ct, swallowNonSuccess: false, null);
+
+    /// <summary>
+    /// SendAsync/SendWithErrorAsync 的共享核心（两方法 90% 重复收口）：
+    /// ServerUrl 回退、token 获取（含 JWT exp 预检）、401 Refresh 重试。
+    /// 差异仅在 swallowNonSuccess：非 2xx 是否返回响应对象供调用方读取业务错误体。
+    /// </summary>
+    private async Task<HttpResponseMessage?> SendWithAuthAsync(
+        SyncConfigRepository cfgRepo,
+        HttpMethod method, string path, string? body, CancellationToken ct,
+        bool swallowNonSuccess, IReadOnlyDictionary<string, string>? extraHeaders)
     {
         var cfg = cfgRepo.Get();
-        if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
-        {
-            DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
-            return null;
-        }
+        // ServerUrl 为空回退默认地址：默认 DB 里 server_url 是空串，
+        // 此前"提前 return"会让 5 个 API 客户端在默认配置下全部失效（修复：删除短路）
         var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
             ? ServerEndpoints.Primary
             : cfg.ServerUrl!;
 
-        var auth = ServiceProvider.Instance.AuthService;
-        var token = await auth.GetAccessTokenAsync(ct);
-        if (string.IsNullOrWhiteSpace(token))
+        var token = await GetUsableAccessTokenAsync(ct);
+        if (string.IsNullOrEmpty(token))
         {
-            // AccessToken 缺失：尝试用 RefreshToken 续期
-            token = await auth.RefreshAccessTokenAsync(ct);
-            if (string.IsNullOrEmpty(token))
-            {
-                DevLogger.Log(GetType().Name, $"{method} {path}: token 缺失且 Refresh 失败");
-                return null;
-            }
+            DevLogger.Log(GetType().Name, $"{method} {path}: token 缺失且 Refresh 失败");
+            return null;
         }
 
-        var resp = await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess: true);
+        var resp = await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess, extraHeaders);
         // 401 时 SendCoreAsync 已删除 AccessToken，这里尝试 Refresh 续期重试一次
+        var auth = ServiceProvider.Instance.AuthService;
         if (resp is null && string.IsNullOrEmpty(await auth.GetAccessTokenAsync(ct)))
         {
             var newToken = await auth.RefreshAccessTokenAsync(ct);
             if (!string.IsNullOrEmpty(newToken))
             {
-                resp = await SendCoreAsync(serverUrl, newToken, method, path, body, ct, swallowNonSuccess: true);
+                resp = await SendCoreAsync(serverUrl, newToken, method, path, body, ct, swallowNonSuccess, extraHeaders);
             }
         }
         return resp;
     }
 
     /// <summary>
-    /// 与 <see cref="SendAsync"/> 行为一致，但非 2xx 响应会返回 <see cref="HttpResponseMessage"/>
-    /// 而非 null，供调用方读取后端业务错误体（{state,msg,data} 信封中的 msg/code）。
-    /// 仅以下情况返回 null：server 未配置、token 缺失且 Refresh 失败、网络异常、401 重试仍失败。
+    /// 获取可用 AccessToken：缺失或 JWT exp 已过期时尝试 RefreshToken 续期。
+    /// BaseApiClient 发送路径与 UploadService 共享（收口第三份手写 token 获取）。
     /// </summary>
-    protected async Task<HttpResponseMessage?> SendWithErrorAsync(
-        SyncConfigRepository cfgRepo,
-        HttpMethod method, string path, string? body, CancellationToken ct)
+    internal static async Task<string?> GetUsableAccessTokenAsync(CancellationToken ct)
     {
-        var cfg = cfgRepo.Get();
-        if (string.IsNullOrWhiteSpace(cfg.ServerUrl))
-        {
-            DevLogger.Log(GetType().Name, $"{method} {path}: server 未配置");
-            return null;
-        }
-        var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl)
-            ? ServerEndpoints.Primary
-            : cfg.ServerUrl!;
-
         var auth = ServiceProvider.Instance.AuthService;
         var token = await auth.GetAccessTokenAsync(ct);
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            token = await auth.RefreshAccessTokenAsync(ct);
-            if (string.IsNullOrEmpty(token))
-            {
-                DevLogger.Log(GetType().Name, $"{method} {path}: token 缺失且 Refresh 失败");
-                return null;
-            }
-        }
+        if (!string.IsNullOrWhiteSpace(token) && !IsJwtExpired(token))
+            return token;
+        return await auth.RefreshAccessTokenAsync(ct);
+    }
 
-        var resp = await SendCoreAsync(serverUrl, token, method, path, body, ct, swallowNonSuccess: false);
-        if (resp is null && string.IsNullOrEmpty(await auth.GetAccessTokenAsync(ct)))
+    /// <summary>
+    /// 轻量 JWT exp 解码：手写 Base64Url 解码 + 字符串查找 exp claim。
+    /// 不引入 JWT 库，兼容 AOT/Trimming。解析失败返回 false（不拦截，让 401 处理）。
+    /// 从 ApiSyncService 上移共享（所有客户端 token 获取统一预检，避免白吃一次 401 往返）。
+    /// </summary>
+    protected static bool IsJwtExpired(string jwt)
+    {
+        try
         {
-            var newToken = await auth.RefreshAccessTokenAsync(ct);
-            if (!string.IsNullOrEmpty(newToken))
-            {
-                resp = await SendCoreAsync(serverUrl, newToken, method, path, body, ct, swallowNonSuccess: false);
-            }
+            var parts = jwt.Split('.');
+            if (parts.Length < 2) return false;
+            var payload = Encoding.UTF8.GetString(Base64UrlDecode(parts[1]));
+            // 简单查找 "exp":1234567890（Unix 秒）
+            var key = "\"exp\"";
+            var idx = payload.IndexOf(key, StringComparison.Ordinal);
+            if (idx < 0) return false;
+            idx += key.Length;
+            while (idx < payload.Length && (payload[idx] == ':' || payload[idx] == ' ')) idx++;
+            var start = idx;
+            while (idx < payload.Length && char.IsDigit(payload[idx])) idx++;
+            if (idx <= start) return false;
+            var exp = long.Parse(payload.AsSpan(start, idx - start));
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            return now >= exp;
         }
-        return resp;
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static byte[] Base64UrlDecode(string s)
+    {
+        var sb = new StringBuilder(s);
+        sb.Replace('-', '+').Replace('_', '/');
+        switch (sb.Length % 4)
+        {
+            case 2: sb.Append("=="); break;
+            case 3: sb.Append("="); break;
+        }
+        return Convert.FromBase64String(sb.ToString());
     }
 
     /// <summary>使用显式 token 发送（用于暂未持久化 token 的多步流程，如登录验证码验证）。</summary>
@@ -128,13 +148,19 @@ public abstract class BaseApiClient
     private static async Task<HttpResponseMessage?> SendCoreAsync(
         string serverUrl, string token,
         HttpMethod method, string path, string? body, CancellationToken ct,
-        bool swallowNonSuccess = true)
+        bool swallowNonSuccess = true,
+        IReadOnlyDictionary<string, string>? extraHeaders = null)
     {
         var url = serverUrl.TrimEnd('/') + path;
         using var req = new HttpRequestMessage(method, url);
         if (body is not null)
             req.Content = new StringContent(body, Encoding.UTF8, "application/json");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (extraHeaders is not null)
+        {
+            foreach (var (name, value) in extraHeaders)
+                req.Headers.TryAddWithoutValidation(name, value);
+        }
         try
         {
             var resp = await Http.SendAsync(req, ct);
@@ -152,6 +178,8 @@ public abstract class BaseApiClient
                 if (swallowNonSuccess)
                 {
                     var text = await resp.Content.ReadAsStringAsync(ct);
+                    // 错误响应体可能很大（如 HTML 错误页），截断到 500 字符避免日志膨胀
+                    if (text.Length > 500) text = text[..500] + "…(truncated)";
                     DevLogger.Log("ApiClient", $"{method} {path} fail: {(int)resp.StatusCode} {text}");
                     resp.Dispose();
                     return null;
@@ -167,38 +195,13 @@ public abstract class BaseApiClient
         }
     }
 
-    /// <summary>从错误响应的 {state,msg,code} 信封中提取 msg 和 code 字段。</summary>
-    protected static async Task<(string msg, string? code)> ReadErrorAsync(HttpResponseMessage resp, CancellationToken ct)
-    {
-        try
-        {
-            var json = await resp.Content.ReadAsStringAsync(ct);
-            using var doc = JsonDocument.Parse(json);
-            var msg = doc.RootElement.TryGetProperty("msg", out var m) ? m.GetString() ?? "请求失败" : "请求失败";
-            var code = doc.RootElement.TryGetProperty("code", out var c) ? c.GetString() : null;
-            return (msg, code);
-        }
-        catch
-        {
-            return ($"请求失败 ({(int)resp.StatusCode})", null);
-        }
-    }
+    /// <summary>从错误响应的 {state,msg,code} 信封中提取 msg 和 code 字段（共享实现见 ApiEnvelope）。</summary>
+    protected static Task<(string msg, string? code)> ReadErrorAsync(HttpResponseMessage resp, CancellationToken ct)
+        => ApiEnvelope.ReadErrorAsync(resp, ct);
 
-    /// <summary>从 {state,msg,data} 信封中提取 data 字段并反序列化。</summary>
+    /// <summary>从 {state,msg,data} 信封中提取 data 字段并反序列化（共享实现见 ApiEnvelope）。</summary>
     protected static T? ExtractData<T>(string json)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            if (!doc.RootElement.TryGetProperty("data", out var data)) return default;
-            return JsonSerializer.Deserialize<T>(data.GetRawText(), JsonOpts);
-        }
-        catch (Exception ex)
-        {
-            DevLogger.Log("ApiClient", "Parse fail: " + ex.Message);
-            return default;
-        }
-    }
+        => ApiEnvelope.ExtractData<T>(json, "ApiClient");
 
     /// <summary>读取响应体并提取 data 字段。</summary>
     protected static async Task<T?> ReadDataAsync<T>(HttpResponseMessage resp, CancellationToken ct)

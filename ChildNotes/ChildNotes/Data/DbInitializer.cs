@@ -30,8 +30,10 @@ public static class DbInitializer
     ///          跳过 DDL、列不存在，AiAnalysisRepository.GetLlmConfig 查询该列抛
     ///          "no such column: parse_mode" → AI 分析设置页打不开（v0.7.29）。
     ///        必须递增版本号让 v8 老库重跑 DDL 补列，否则重蹈 v0.7.21 覆辙。
+    /// v9→v10：sync_config 表新增 backup_date 列（同步前备份降频：记录上次备份日期，
+    ///        仅"首次同步/当日首次"时执行全库 VACUUM INTO）。递增版本号让 v9 老库补列。
     /// </summary>
-    public const int CurrentSchemaVersion = 9;
+    public const int CurrentSchemaVersion = 10;
 
     public static void Initialize(DbConnectionFactory factory)
     {
@@ -299,6 +301,8 @@ VALUES (1, 0, '', '', '');
 
         // sync_config 增量迁移：device_id 字段（用于设备级追踪与冲突归因）
         AddColumnIfNotExists(conn, "sync_config", "device_id", "TEXT");
+        // v10 增量迁移：backup_date 字段（同步前备份降频，记录上次备份日期，本地日期 yyyy-MM-dd）
+        AddColumnIfNotExists(conn, "sync_config", "backup_date", "TEXT");
 
         // ===== 同步日志表（保留最近 10 条，用于数据同步页底部展示）=====
         conn.ExecuteNonQuery(@"

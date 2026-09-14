@@ -56,6 +56,12 @@ public sealed class SyncConfig
     public string? LastSyncStatus { get; set; }
     public string? LastSyncMsg { get; set; }
 
+    /// <summary>
+    /// 上次同步前数据库备份的日期（schema v10，格式 yyyy-MM-dd）。
+    /// 用于备份降频：仅"首次同步"或"当日首次"时执行全库 VACUUM INTO，null 表示从未备份。
+    /// </summary>
+    public DateTime? BackupDate { get; set; }
+
     /// <summary>设备唯一标识（首次启动生成，用于冲突归因与 device_id 字段）。</summary>
     public string DeviceId { get; set; } = string.Empty;
 }

@@ -98,6 +98,15 @@ public partial class AiAnalysisViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// 释放 LocaleManager 订阅。MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
+    /// <summary>
     /// 异步加载：DB 查询放到后台线程，UI 线程仅做集合填充。
     /// 用于弹层"先打开再加载"模式，避免阻塞 UI。
     /// </summary>

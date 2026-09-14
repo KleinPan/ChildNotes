@@ -40,6 +40,15 @@ public partial class AbnormalTrackingViewModel : ObservableObject
     }
 
     /// <summary>
+    /// 释放 LocaleManager 订阅。MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
+    /// <summary>
     /// 从快照数据应用异常/生病追踪状态（不再重复查询 DB）。
     /// 依据今日 DayStats 的三态标志（发烧/腹泻/其他异常），
     /// 并从异常记录中提取最新摘要。对齐小程序首页 getTodayStats 驱动的状态展示。

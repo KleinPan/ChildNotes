@@ -23,8 +23,14 @@ public sealed class AvatarImage : Image
 
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(15) };
 
-    /// <summary>URL → Bitmap 缓存，避免列表滚动和页面切换重复下载。</summary>
+    /// <summary>URL → Bitmap 缓存，避免列表滚动和页面切换重复下载。容量上限 128 条（FIFO 淘汰最旧）。</summary>
     private static readonly ConcurrentDictionary<string, Bitmap> Cache = new();
+
+    /// <summary>缓存容量上限：超限淘汰最旧条目（插入顺序 FIFO），防止长期使用内存无限增长。</summary>
+    private const int CacheCapacity = 128;
+    /// <summary>插入顺序队列（与 Cache 同步维护，锁保护）。</summary>
+    private static readonly Queue<string> _insertOrder = new();
+    private static readonly object _cacheLock = new();
 
     private int _loadVersion; // 防止旧加载覆盖新赋值
 
@@ -84,7 +90,7 @@ public sealed class AvatarImage : Image
                         return Bitmap.DecodeToWidth(ms, 160);
                     });
                     if (bmp is not null)
-                        Cache[path] = bmp;
+                        AddToCache(path, bmp);
                 }
             }
             else
@@ -124,13 +130,35 @@ public sealed class AvatarImage : Image
         });
     }
 
+    /// <summary>写入缓存并在超上限时淘汰最旧位图（容量 128，FIFO）。</summary>
+    private static void AddToCache(string key, Bitmap bmp)
+    {
+        lock (_cacheLock)
+        {
+            if (!Cache.TryAdd(key, bmp)) return;
+            _insertOrder.Enqueue(key);
+            while (_insertOrder.Count > CacheCapacity)
+            {
+                var oldest = _insertOrder.Dequeue();
+                if (Cache.TryRemove(oldest, out var oldBmp))
+                {
+                    try { oldBmp.Dispose(); } catch { }
+                }
+            }
+        }
+    }
+
     /// <summary>清空 URL→Bitmap 缓存（内存紧张或切换宝宝时调用）。</summary>
     public static void ClearCache()
     {
-        foreach (var kv in Cache)
+        lock (_cacheLock)
         {
-            try { kv.Value.Dispose(); } catch { }
+            foreach (var kv in Cache)
+            {
+                try { kv.Value.Dispose(); } catch { }
+            }
+            Cache.Clear();
+            _insertOrder.Clear();
         }
-        Cache.Clear();
     }
 }

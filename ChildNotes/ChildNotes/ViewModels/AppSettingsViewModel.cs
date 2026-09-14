@@ -29,6 +29,15 @@ public partial class AppSettingsViewModel : ViewModelBase
 
     private void OnLanguageChanged(AppLanguage lang) => OnPropertyChanged(nameof(LanguageDisplayText));
 
+    /// <summary>
+    /// 释放 LocaleManager 订阅。MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
     [RelayCommand] private void OpenLanguage() => OpenLanguageRequested?.Invoke();
     [RelayCommand] private void OpenAiSettings() => OpenAiSettingsRequested?.Invoke();
     [RelayCommand] private void OpenReminder() => OpenReminderRequested?.Invoke();

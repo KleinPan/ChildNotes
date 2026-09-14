@@ -50,6 +50,15 @@ public partial class HomeCoreViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// 释放 LocaleManager 订阅。MainShellViewModel 登出/重进时被重建，
+    /// 旧实例若不退订会被单例 LocaleManager 强引用而无法 GC。
+    /// </summary>
+    public void Release()
+    {
+        _locale.LanguageChanged -= OnLanguageChanged;
+    }
+
     /// <summary>应用宝宝基本信息（从 RefreshAsync 快照调用）。</summary>
     public void ApplyBabyInfo(Baby baby, string growthStage)
     {

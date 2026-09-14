@@ -19,7 +19,7 @@ public sealed class SyncConfigRepository : BaseRepository
     private const string SelectSql =
         "SELECT id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id, " +
         "current_family_id, last_bound_family_id, identity_fixup_done, " +
-        "last_sync_at, last_sync_status, last_sync_msg, device_id FROM sync_config WHERE id=1";
+        "last_sync_at, last_sync_status, last_sync_msg, device_id, backup_date FROM sync_config WHERE id=1";
 
     /// <summary>内存缓存：单行配置表极少变化，仅在写操作后失效。</summary>
     private SyncConfig? _cached;
@@ -74,8 +74,8 @@ public sealed class SyncConfigRepository : BaseRepository
             @"INSERT OR REPLACE INTO sync_config
               (id, enabled, server_url, cloud_user_id, local_user_id, last_cloud_user_id,
                current_family_id, last_bound_family_id, identity_fixup_done,
-               last_sync_at, last_sync_status, last_sync_msg, device_id)
-              VALUES (@id, @e, @u, @cuid, @luid, @lcuid, @cfid, @lbfid, @fx, @lsa, @lss, @lsm, @did)",
+               last_sync_at, last_sync_status, last_sync_msg, device_id, backup_date)
+              VALUES (@id, @e, @u, @cuid, @luid, @lcuid, @cfid, @lbfid, @fx, @lsa, @lss, @lsm, @did, @bd)",
             cmd =>
             {
                 cmd.Add("@id", 1)
@@ -90,8 +90,19 @@ public sealed class SyncConfigRepository : BaseRepository
                    .Add("@lsa", cfg.LastSyncAt is null ? DBNull.Value : (object)ToUtcO(cfg.LastSyncAt.Value))
                    .AddString("@lss", cfg.LastSyncStatus, emptyAsNull: true)
                    .AddString("@lsm", cfg.LastSyncMsg, emptyAsNull: true)
-                   .AddString("@did", cfg.DeviceId, emptyAsNull: true);
+                   .AddString("@did", cfg.DeviceId, emptyAsNull: true)
+                   // 备份日期按"本地日期"语义存储（yyyy-MM-dd），不做 UTC 转换（否则跨时区会差一天）
+                   .Add("@bd", cfg.BackupDate is null ? DBNull.Value : (object)cfg.BackupDate.Value.ToString("yyyy-MM-dd"));
             });
+        InvalidateCache();
+    }
+
+    /// <summary>更新上次备份日期（同步前备份成功后写入，用于备份降频判断）。</summary>
+    public void UpdateBackupDate(DateTime date)
+    {
+        ExecuteNonQuery(
+            "UPDATE sync_config SET backup_date=@d WHERE id=1",
+            cmd => cmd.Add("@d", date.ToString("yyyy-MM-dd")));
         InvalidateCache();
     }
 
@@ -455,5 +466,10 @@ WHERE id = 1;";
         LastSyncStatus = r.IsDBNull(10) ? null : r.GetString(10),
         LastSyncMsg = r.IsDBNull(11) ? null : r.GetString(11),
         DeviceId = r.IsDBNull(12) ? string.Empty : r.GetString(12),
+        // backup_date 为本地日期（yyyy-MM-dd）；解析失败（脏数据）按 null 处理，仅多备份一次
+        BackupDate = r.IsDBNull(13) ? null
+            : (DateTime.TryParseExact(r.GetString(13), "yyyy-MM-dd",
+                  System.Globalization.CultureInfo.InvariantCulture,
+                  System.Globalization.DateTimeStyles.None, out var bd) ? bd : null),
     };
 }

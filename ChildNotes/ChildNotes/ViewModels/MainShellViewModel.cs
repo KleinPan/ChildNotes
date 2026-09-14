@@ -448,6 +448,9 @@ public partial class MainShellViewModel : ViewModelBase
         // 切 Tab 时关闭功能面板（输入栏在非首页隐藏，面板也应关闭）
         if (QuickMenu.IsMenuOpen) QuickMenu.CloseMenuCommand.Execute(null);
         CloseAllOverlays();
+        // 切走 Home 时停止提示轮播 timer，避免后台空转；
+        // 切回 Home 时 Activate → RefreshAsync → RefreshAiStatus 会按需重启
+        if (tab != "home") Home.AiStatus.StopCarousel();
 
         IsHomeSelected = tab == "home";
         IsFeedingSelected = tab == "feeding";
@@ -793,6 +796,21 @@ public partial class MainShellViewModel : ViewModelBase
         CloseAllOverlays();
         // 释放可释放的懒加载 VM（如 SyncSettings 实现 IDisposable）
         (_syncSettings as IDisposable)?.Dispose();
+        // 释放子 VM 的 LocaleManager 订阅与轮播 timer：
+        // MainShellViewModel 登出/重进时被重建（App.OnLogout → EnterMainShell），
+        // 旧实例的子 VM 若不退订会被单例 LocaleManager（LanguageChanged 事件）
+        // 强引用而无法 GC（含 AiStatus 的 5 秒轮播 DispatcherTimer 空转）。
+        Home.Core.Release();
+        Home.AbnormalTracking.Release();
+        Home.AiStatus.Release();
+        _growth?.MilestoneEdit.Release();
+        _feeding?.Release();
+        _mine?.Release();
+        _babyManager?.Release();
+        _points?.Release();
+        _aiAnalysis?.Release();
+        _appSettings?.Release();
+        _help?.Release();
         // 取消订阅 SyncTrigger.SyncCompleted，避免实例被事件引用阻止 GC
         ServiceProvider.Instance.SyncTrigger.SyncCompleted -= OnSyncCompletedRefreshHome;
         LogoutRequested?.Invoke();

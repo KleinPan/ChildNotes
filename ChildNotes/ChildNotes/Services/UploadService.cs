@@ -175,17 +175,13 @@ public sealed class UploadService
         var cfg = _cfgRepo.Get();
         var serverUrl = string.IsNullOrWhiteSpace(cfg.ServerUrl) ? ServerEndpoints.Primary : cfg.ServerUrl;
 
-        // v5：从 SecureStorage 读取 AccessToken；缺失时尝试 Refresh 续期
-        var auth = Infrastructure.ServiceProvider.Instance.AuthService;
-        var token = await auth.GetAccessTokenAsync(ct);
-        if (string.IsNullOrWhiteSpace(token))
+        // v5：从 SecureStorage 读取 AccessToken；缺失/JWT 过期时尝试 Refresh 续期
+        //（复用 BaseApiClient 的共享实现，收口第三份手写 token 获取）
+        var token = await BaseApiClient.GetUsableAccessTokenAsync(ct);
+        if (string.IsNullOrEmpty(token))
         {
-            token = await auth.RefreshAccessTokenAsync(ct);
-            if (string.IsNullOrEmpty(token))
-            {
-                DevLogger.Log("Upload", "UploadToServer skip: token 缺失且 Refresh 失败");
-                return null;
-            }
+            DevLogger.Log("Upload", "UploadToServer skip: token 缺失且 Refresh 失败");
+            return null;
         }
 
         var url = serverUrl.TrimEnd('/') + "/api/upload";
@@ -213,6 +209,7 @@ public sealed class UploadService
             {
                 // 401：删除 AccessToken，尝试 Refresh。
                 // 不自动重试上传（StreamContent 已被消费，需调用方重新调用 UploadToServerAsync）。
+                var auth = Infrastructure.ServiceProvider.Instance.AuthService;
                 await auth.InvalidateAccessTokenAsync(ct);
                 _ = await auth.RefreshAccessTokenAsync(ct);
                 DevLogger.Log("Upload", "UploadToServer 401，已 Refresh token，请稍后重试上传");

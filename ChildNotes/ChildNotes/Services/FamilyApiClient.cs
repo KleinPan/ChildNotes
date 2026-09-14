@@ -94,16 +94,6 @@ public sealed class FamilyApiClient : BaseApiClient
         return result;
     }
 
-    /// <summary>通过宝宝 ID 加入家庭（后端会把当前用户加到该宝宝所属家庭的所有宝宝下）。</summary>
-    public async Task<FamilyMemberItem?> JoinFamilyAsync(string babyId, string roleCode, CancellationToken ct = default)
-    {
-        var body = Serialize(new { babyId, roleCode });
-        using var resp = await SendAsync(_cfgRepo, HttpMethod.Post, "/api/baby/family/join", body, ct);
-        var result = resp is null ? null : await ReadDataAsync<FamilyMemberItem>(resp, ct);
-        InvalidateFamiliesCache();
-        return result;
-    }
-
     /// <summary>owner 移除家庭成员。返回是否成功（HTTP 204）。</summary>
     public async Task<bool> RemoveMemberAsync(string babyId, string targetUserId, CancellationToken ct = default)
     {

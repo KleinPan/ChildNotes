@@ -79,6 +79,14 @@ public sealed class RecordRepository : BaseRepository
             cmd => cmd.AddUtc("@s", since), Map);
 
     /// <summary>
+    /// 分页变体（LIMIT/OFFSET）：Push 分批上送用，避免单次查询把数千条记录全部加载进内存。
+    /// 同步期间表无写入（MarkSynced 延迟到全部批次成功后），OFFSET 分页稳定。
+    /// </summary>
+    public List<ChildRecord> GetByUpdatedAt(DateTime since, int limit, int offset)
+        => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at LIMIT @l OFFSET @o",
+            cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset), Map);
+
+    /// <summary>
     /// 以 LWW（updated_at 比较）合并远端下发的记录。返回是否实际写入。
     /// 优化：原实现 SELECT + UPDATE/INSERT 两次往返，改用单条 INSERT ON CONFLICT 一次完成。
     /// </summary>
