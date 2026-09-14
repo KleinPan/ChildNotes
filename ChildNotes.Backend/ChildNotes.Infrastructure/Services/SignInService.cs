@@ -86,10 +86,14 @@ public class SignInService : ISignInService
         var nextReward = PointsConstants.CalculateSignInReward(nextCycleDay);
 
         var timeline = new List<SignInTimelineItemDto>();
+        // 一次取回 7 天时间轴区间的签到日期（消除逐日 AnyAsync 的 9 次查询），内存判断 signed
+        var signedDates = (await _db.SignInRecords
+            .Where(r => r.UserId == userId && r.SignDate >= today.AddDays(-3) && r.SignDate <= today.AddDays(3))
+            .Select(r => r.SignDate).ToListAsync(ct)).ToHashSet();
         for (int i = -3; i <= 3; i++)
         {
             var date = today.AddDays(i);
-            var signed = await _db.SignInRecords.AnyAsync(r => r.UserId == userId && r.SignDate == date, ct);
+            var signed = signedDates.Contains(date);
             var cd = signed && last is not null
                 ? ((Math.Max(1, last.ContinuousDays) - 1) % PointsConstants.SignInCycleDays) + 1 : cycleDay;
             var reward = signed ? PointsConstants.CalculateSignInReward(cd) : (i > 0 ? nextReward : 0);

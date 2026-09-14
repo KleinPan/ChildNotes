@@ -10,6 +10,7 @@ using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Data;
 using ChildNotes.Infrastructure.External;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ChildNotes.Infrastructure.Services;
 
@@ -30,9 +31,10 @@ public class AiAnalysisService : IAiAnalysisService
     private readonly PointsWalletService _wallet;
     private readonly AiCostOptions _cost;
     private readonly IMembershipService _membership;
+    private readonly ILogger<AiAnalysisService> _logger;
     private readonly string _skillPrompt;
 
-    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai, PointsWalletService wallet, AiCostOptions cost, IMembershipService membership)
+    public AiAnalysisService(ChildNotesDbContext db, ICurrentUserService current, IBabyAccessService babyAccess, DeepSeekClient ai, PointsWalletService wallet, AiCostOptions cost, IMembershipService membership, ILogger<AiAnalysisService> logger)
     {
         _db = db;
         _current = current;
@@ -41,6 +43,7 @@ public class AiAnalysisService : IAiAnalysisService
         _wallet = wallet;
         _cost = cost;
         _membership = membership;
+        _logger = logger;
         _skillPrompt = LoadSkillPrompt();
     }
 
@@ -55,26 +58,45 @@ public class AiAnalysisService : IAiAnalysisService
         var baby = await ResolveBabyAsync(uid, babyId, ct);
 
         var records = await _db.ChildRecords
+            .AsNoTracking()
             .Where(r => r.BabyId == baby.Id && r.RecordDate >= start && r.RecordDate <= end)
             .OrderBy(r => r.RecordDate).ThenBy(r => r.RecordTime).ThenBy(r => r.Id)
             .ToListAsync(ct);
 
         var sourceText = BuildSourceText(baby, start, end, records);
 
+        // 幂等检查：改投影只取幂等比对（SourceText）与 DTO 所需列，避免整行加载 SkillPrompt 大字段
+        // （纯 Select(SourceText) 会导致命中/更新路径二次整行加载，净收益为负，故投影列含 DTO 字段）。
+        // 投影构造的实体不进 ChangeTracker，后续更新路径再按需加载跟踪实体。
+        var existing = await _db.AiAnalysisRecords.AsNoTracking()
+            .Where(a => a.UserId == uid && a.BabyId == baby.Id
+                && a.RangeStartDate == start && a.RangeEndDate == end)
+            .Select(a => new AiAnalysisRecord
+            {
+                Id = a.Id,
+                BabyId = a.BabyId,
+                BabyName = a.BabyName,
+                RangeStartDate = a.RangeStartDate,
+                RangeEndDate = a.RangeEndDate,
+                SourceText = a.SourceText,
+                AnalysisText = a.AnalysisText,
+                Model = a.Model,
+                CreatedAt = a.CreatedAt,
+                UpdatedAt = a.UpdatedAt,
+            })
+            .FirstOrDefaultAsync(ct);
         // 幂等命中：同区间 + sourceText 相同 → 直接返回（不扣积分、不消耗次数）
-        var existing = await _db.AiAnalysisRecords.FirstOrDefaultAsync(
-            a => a.UserId == uid && a.BabyId == baby.Id
-                && a.RangeStartDate == start && a.RangeEndDate == end, ct);
         if (existing is not null && existing.SourceText == sourceText)
             return ToDto(existing);
 
         // 每周次数限制：原子地检查额度并递增（防止并发绕过限制）
-        var limit = await _membership.GetAiAnalysisWeeklyLimitAsync(uid, ct);
         var (ok, used) = await _membership.TryIncrementAiAnalysisUsageAsync(uid, ct);
         // 超限抵扣积分（0 = 非抵扣场景）。AI 调用失败退还时需与正常消耗一并退还。
         var overagePoints = 0;
         if (!ok)
         {
+            // limit 仅供超限提示文案使用，懒加载避免与 TryIncrement 内部查询重复（未超限路径不查）
+            var limit = await _membership.GetAiAnalysisWeeklyLimitAsync(uid, ct);
             if (!usePointsForOverage)
                 throw new BusinessException($"本周 AI 分析次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_LIMIT_EXCEEDED");
 
@@ -96,8 +118,18 @@ public class AiAnalysisService : IAiAnalysisService
         }
         catch (BusinessException) when (overagePoints > 0)
         {
-            try { await _wallet.ChangeAsync(uid, overagePoints, ct); } catch { }
-            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); } catch { }
+            // 正常消耗积分不足回滚：退还已扣的超限抵扣积分 + 回滚已强制递增的次数（best-effort，失败记 Error 不吞）
+            try { await _wallet.ChangeAsync(uid, overagePoints, ct); }
+            catch (Exception refundEx)
+            {
+                _logger.LogError(refundEx, "AI 分析积分不足回滚：退还超限抵扣积分失败 userId={Uid} points={Points}",
+                    uid, overagePoints);
+            }
+            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); }
+            catch (Exception decEx)
+            {
+                _logger.LogError(decEx, "AI 分析积分不足回滚：回滚已递增次数失败 userId={Uid}", uid);
+            }
             throw;
         }
 
@@ -118,21 +150,38 @@ public class AiAnalysisService : IAiAnalysisService
         catch
         {
             // AI 调用失败：退还超限抵扣积分 + 正常消耗积分（合并为一次原子加回）和已递增的次数
-            // （best-effort，失败仅记日志不阻塞异常传播）
-            try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost + overagePoints, ct); } catch { }
-            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); } catch { }
+            // （best-effort，失败记 Error 不阻塞异常传播）
+            try { await _wallet.ChangeAsync(uid, _cost.AnalysisCost + overagePoints, ct); }
+            catch (Exception refundEx)
+            {
+                _logger.LogError(refundEx, "AI 调用失败补偿退款失败 userId={Uid} points={Points}",
+                    uid, _cost.AnalysisCost + overagePoints);
+            }
+            try { await _membership.DecrementAiAnalysisUsageAsync(uid, ct); }
+            catch (Exception decEx)
+            {
+                _logger.LogError(decEx, "AI 调用失败回滚已递增次数失败 userId={Uid}", uid);
+            }
             throw;
         }
 
         if (existing is not null)
         {
-            existing.BabyName = baby.Name;
-            existing.SourceText = sourceText;
-            existing.SkillPrompt = _skillPrompt;
-            existing.AnalysisText = analysisText;
-            existing.Model = model;
-            await _db.SaveChangesAsync(ct);
-            return ToDto(existing);
+            // 幂等未命中但存在既有记录（数据变化）：投影实体未被跟踪，此处按需加载跟踪实体执行更新
+            var tracked = await _db.AiAnalysisRecords.FirstOrDefaultAsync(
+                a => a.UserId == uid && a.BabyId == baby.Id
+                    && a.RangeStartDate == start && a.RangeEndDate == end, ct);
+            if (tracked is not null)
+            {
+                tracked.BabyName = baby.Name;
+                tracked.SourceText = sourceText;
+                tracked.SkillPrompt = _skillPrompt;
+                tracked.AnalysisText = analysisText;
+                tracked.Model = model;
+                await _db.SaveChangesAsync(ct);
+                return ToDto(tracked);
+            }
+            // 并发下既有记录已被删除：继续走下方新增路径
         }
 
         var record = new AiAnalysisRecord
@@ -173,9 +222,26 @@ public class AiAnalysisService : IAiAnalysisService
     {
         var uid = _current.RequireUserId();
         var targetBabyId = await ResolveBabyIdForQueryAsync(uid, babyId, ct);
+        // 列表投影：只取 DTO 所需列，跳过 SkillPrompt（列表场景完全未使用）；
+        // SourceText 仅用于提取 DataQualityTip（提示行固定位于文本头部约前 400 字符内），
+        // 截取前 600 字符避免传输整段大字段（上限 60KB），提取逻辑见 ToDto。
         var list = await _db.AiAnalysisRecords
+            .AsNoTracking()
             .Where(a => a.UserId == uid && (targetBabyId == null || a.BabyId == targetBabyId))
             .OrderByDescending(a => a.RangeStartDate)
+            .Select(a => new AiAnalysisRecord
+            {
+                Id = a.Id,
+                BabyId = a.BabyId,
+                BabyName = a.BabyName,
+                RangeStartDate = a.RangeStartDate,
+                RangeEndDate = a.RangeEndDate,
+                SourceText = a.SourceText.Length < 600 ? a.SourceText : a.SourceText.Substring(0, 600),
+                AnalysisText = a.AnalysisText,
+                Model = a.Model,
+                CreatedAt = a.CreatedAt,
+                UpdatedAt = a.UpdatedAt,
+            })
             .ToListAsync(ct);
         return list.Select(ToDto).ToList();
     }

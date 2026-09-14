@@ -64,6 +64,7 @@ public class RecordService : IRecordService
         var targetBabyId = await ResolveBabyIdAsync(uid, babyId, ct);
         var dateOnly = date.Date;
         var records = await _db.ChildRecords
+            .AsNoTracking()
             .Where(r => r.UserId == uid && r.BabyId == targetBabyId && r.RecordDate == dateOnly)
             .OrderBy(r => r.RecordTime).ToListAsync(ct);
         return BuildDailyResponse(dateOnly, records);
@@ -77,13 +78,20 @@ public class RecordService : IRecordService
             .Where(r => r.UserId == uid && r.BabyId == targetBabyId)
             .Select(r => r.RecordDate).Distinct().OrderByDescending(d => d)
             .Take(limit).ToListAsync(ct);
+        if (dates.Count == 0) return new List<DailyRecordsResponse>();
+
+        // 一次取回全部目标日期的记录（WHERE RecordDate IN (...)），消除逐日查询的 N+1；
+        // 全局按 RecordTime 排序后分组，组内相对顺序即各日期内的 RecordTime 升序，排序语义与逐日查询一致
+        var records = await _db.ChildRecords
+            .AsNoTracking()
+            .Where(r => r.UserId == uid && r.BabyId == targetBabyId && dates.Contains(r.RecordDate))
+            .OrderBy(r => r.RecordTime).ToListAsync(ct);
+        var recordsByDate = records.GroupBy(r => r.RecordDate).ToDictionary(g => g.Key, g => g.ToList());
+
         var result = new List<DailyRecordsResponse>();
         foreach (var d in dates)
         {
-            var records = await _db.ChildRecords
-                .Where(r => r.UserId == uid && r.BabyId == targetBabyId && r.RecordDate == d)
-                .OrderBy(r => r.RecordTime).ToListAsync(ct);
-            result.Add(BuildDailyResponse(d, records));
+            result.Add(BuildDailyResponse(d, recordsByDate.GetValueOrDefault(d) ?? new List<ChildRecord>()));
         }
         return result;
     }
@@ -113,58 +121,76 @@ public class RecordService : IRecordService
         await _db.SaveChangesAsync(ct);
     }
 
-    private void FillSummaryFields(ChildRecord rec, string recordType, object dto)
+    private static void FillSummaryFields(ChildRecord rec, string recordType, object dto)
     {
-        var json = rec.PayloadJson;
+        // 直接从强类型 dto 取摘要字段，避免"序列化 PayloadJson 后又反序列化同一 JSON"的往返开销；
+        // 落库的 PayloadJson 仍由 AddRecordAsync 序列化 dto 生成，内容不变。
+        // 控制器 ParseDto 保证 recordType 与 dto 运行时类型一一对应，模式匹配失败仅静默跳过（防御）。
         switch (recordType)
         {
             case RecordType.Feed:
-                var f = JsonSerializer.Deserialize<FeedRecordDto>(json)!;
-                rec.RecordSubType = f.Type;
-                if (f.Type == FeedType.Breast)
+                if (dto is FeedRecordDto f)
                 {
-                    rec.LeftDurationSec = f.LeftDurationSec ?? (f.LeftDuration ?? 0) * 60;
-                    rec.RightDurationSec = f.RightDurationSec ?? (f.RightDuration ?? 0) * 60;
-                    rec.DurationSec = (rec.LeftDurationSec ?? 0) + (rec.RightDurationSec ?? 0);
-                }
-                else
-                {
-                    rec.AmountMl = f.Amount;
+                    rec.RecordSubType = f.Type;
+                    if (f.Type == FeedType.Breast)
+                    {
+                        rec.LeftDurationSec = f.LeftDurationSec ?? (f.LeftDuration ?? 0) * 60;
+                        rec.RightDurationSec = f.RightDurationSec ?? (f.RightDuration ?? 0) * 60;
+                        rec.DurationSec = (rec.LeftDurationSec ?? 0) + (rec.RightDurationSec ?? 0);
+                    }
+                    else
+                    {
+                        rec.AmountMl = f.Amount;
+                    }
                 }
                 break;
             case RecordType.Diaper:
-                var d = JsonSerializer.Deserialize<DiaperRecordDto>(json)!;
-                rec.RecordSubType = d.Type;
-                rec.AbnormalFlag = d.Abnormal;
+                if (dto is DiaperRecordDto d)
+                {
+                    rec.RecordSubType = d.Type;
+                    rec.AbnormalFlag = d.Abnormal;
+                }
                 break;
             case RecordType.Sleep:
-                var s = JsonSerializer.Deserialize<SleepRecordDto>(json)!;
-                rec.DurationSec = (s.Duration ?? 0) * 60;
+                if (dto is SleepRecordDto s)
+                {
+                    rec.DurationSec = (s.Duration ?? 0) * 60;
+                }
                 break;
             case RecordType.Temperature:
-                var t = JsonSerializer.Deserialize<TemperatureRecordDto>(json)!;
-                rec.TemperatureValue = t.Temperature;
-                rec.AbnormalFlag = t.IsAbnormal || t.Temperature >= HealthConstants.FeverThreshold;
+                if (dto is TemperatureRecordDto t)
+                {
+                    rec.TemperatureValue = t.Temperature;
+                    rec.AbnormalFlag = t.IsAbnormal || t.Temperature >= HealthConstants.FeverThreshold;
+                }
                 break;
             case RecordType.Growth:
-                var g = JsonSerializer.Deserialize<GrowthRecordDto>(json)!;
-                rec.HeightCm = g.Height;
-                rec.WeightKg = g.Weight;
+                if (dto is GrowthRecordDto g)
+                {
+                    rec.HeightCm = g.Height;
+                    rec.WeightKg = g.Weight;
+                }
                 break;
             case RecordType.Abnormal:
-                var a = JsonSerializer.Deserialize<AbnormalRecordDto>(json)!;
-                rec.TemperatureValue = a.Temperature;
-                rec.AbnormalFlag = true;
+                if (dto is AbnormalRecordDto a)
+                {
+                    rec.TemperatureValue = a.Temperature;
+                    rec.AbnormalFlag = true;
+                }
                 break;
             case RecordType.Pump:
-                var p = JsonSerializer.Deserialize<PumpRecordDto>(json)!;
-                rec.AmountMl = p.TotalAmount;
-                rec.LeftDurationSec = p.LeftDuration;
-                rec.RightDurationSec = p.RightDuration;
+                if (dto is PumpRecordDto p)
+                {
+                    rec.AmountMl = p.TotalAmount;
+                    rec.LeftDurationSec = p.LeftDuration;
+                    rec.RightDurationSec = p.RightDuration;
+                }
                 break;
             case RecordType.Complementary:
-                var c = JsonSerializer.Deserialize<ComplementaryRecordDto>(json)!;
-                rec.AbnormalFlag = c.Abnormal;
+                if (dto is ComplementaryRecordDto c)
+                {
+                    rec.AbnormalFlag = c.Abnormal;
+                }
                 break;
         }
     }

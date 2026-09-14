@@ -56,6 +56,10 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => x.ReferrerUserId);
             e.HasIndex(x => x.MembershipExpireAt);
+            // email 唯一索引：生产库已由 scripts/email-auth-phase2.sql 手工创建（回填后 NOT NULL + 唯一），
+            // 此处在模型上补齐对齐；PostgreSQL 唯一索引默认 NULLS DISTINCT，与既有库行为一致。
+            // 索引名称与手工脚本不一致没关系，migration 阶段统一处理对齐。
+            e.HasIndex(x => x.Email).IsUnique();
         });
 
         modelBuilder.Entity<Family>(e =>
@@ -198,6 +202,8 @@ public class ChildNotesDbContext : DbContext
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
             e.HasIndex(x => new { x.TaskType, x.RelatedUserId }).IsUnique();
+            // 日常任务幂等/状态查询：UserId + TaskType + TaskKey + CreatedAt（当日/本周范围）覆盖索引
+            e.HasIndex(x => new { x.UserId, x.TaskType, x.TaskKey, x.CreatedAt });
         });
 
         modelBuilder.Entity<LotteryActivity>(e =>

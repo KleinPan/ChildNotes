@@ -76,7 +76,8 @@ public class SyncService : ISyncService
 
         // 加入申请同步：申请人自己提交的 + owner 名下宝宝相关的
         // owner 端用于感知有新申请待审；申请人端用于感知审批结果
-        var myOwnedBabyIds = await _db.Babies.Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
+        // IgnoreQueryFilters：与上方 babyIds 保持一致，需包含软删 baby（软删 baby 的 join request 也要同步给 owner）
+        var myOwnedBabyIds = await _db.Babies.IgnoreQueryFilters().Where(b => b.UserId == uid).Select(b => b.Id).ToListAsync(ct);
         Expression<Func<FamilyJoinRequest, bool>> jrCursor = hasCursor
             ? r => (r.ApplicantUserId == uid || myOwnedBabyIds.Contains(r.BabyId))
                 && r.UpdatedAt > sinceUtc
@@ -207,6 +208,15 @@ public class SyncService : ISyncService
     // 下次同步因 synced_at IS NOT NULL + updated_at < LastSyncAt 永远推不上去。
     // 新顺序：Babies → SaveChanges → 重新查 babyIds（含刚写入的 baby_id）→ Records/Milestones/SignIns。
     var babiesUpserted = 0;
+    // 批量预查本批 baby（WHERE Id IN (...) 一次取回转字典，消除循环内逐条 FirstOrDefaultAsync 的 N+1；
+    // 循环内无 SaveChanges，预查与逐条查库语义一致；InMemory provider 同样支持 Contains）
+    // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
+    var babyItemIds = (req.Babies ?? new()).Select(b => b.Id).ToList();
+    var existingBabies = babyItemIds.Count == 0
+        ? new Dictionary<string, Baby>()
+        : await _db.Babies.IgnoreQueryFilters()
+            .Where(b => babyItemIds.Contains(b.Id))
+            .ToDictionaryAsync(b => b.Id, ct);
     foreach (var item in req.Babies ?? new())
     {
         if (fid is null)
@@ -215,8 +225,7 @@ public class SyncService : ISyncService
             continue;
         }
 
-        // IgnoreQueryFilters：需能查到已软删的 baby 以便更新其字段
-        var existing = await _db.Babies.IgnoreQueryFilters().FirstOrDefaultAsync(b => b.Id == item.Id, ct);
+        existingBabies.TryGetValue(item.Id, out var existing);
         // cross-family skip（terminal）：曾同步到其他家庭的 baby，换绑后不可覆盖原家庭云端数据
         if (existing is not null && existing.FamilyId != fid)
         {
@@ -260,6 +269,7 @@ public class SyncService : ISyncService
 
     // 先持久化 Babies，让家庭 baby 集合能查到刚写入的 baby_id。
     // EF Core 查询只读 DB（不读 ChangeTracker 的 Added 项），必须 SaveChanges 后才能在权限集合中体现。
+    // 有意分两次提交（死锁规避），依赖客户端重试幂等，见上方"修复死锁"注释块。
     if (babiesUpserted > 0)
     {
         await _db.SaveChangesAsync(ct);
@@ -270,6 +280,13 @@ public class SyncService : ISyncService
         await _db.Babies.IgnoreQueryFilters().Where(b => b.FamilyId == fid).Select(b => b.Id).ToListAsync(ct);
 
     var recordsUpserted = 0;
+    // 批量预查本批 record（消除 N+1，语义说明同 babies 预查）
+    var recordItemIds = (req.Records ?? new()).Select(r => r.Id).ToList();
+    var existingRecords = recordItemIds.Count == 0
+        ? new Dictionary<string, ChildRecord>()
+        : await _db.ChildRecords.IgnoreQueryFilters()
+            .Where(r => recordItemIds.Contains(r.Id))
+            .ToDictionaryAsync(r => r.Id, ct);
     foreach (var item in req.Records ?? new())
     {
         if (fid is null)
@@ -286,7 +303,7 @@ public class SyncService : ISyncService
             continue;
         }
 
-        var existing = await _db.ChildRecords.IgnoreQueryFilters().FirstOrDefaultAsync(r => r.Id == item.Id, ct);
+        existingRecords.TryGetValue(item.Id, out var existing);
         // cross-family skip（terminal）：防止换绑后 LWW 覆盖原家庭云端数据
         if (existing is not null && existing.FamilyId != fid)
         {
@@ -322,6 +339,13 @@ public class SyncService : ISyncService
     }
 
     var milestonesUpserted = 0;
+    // 批量预查本批 milestone（消除 N+1，语义说明同 babies 预查）
+    var milestoneItemIds = (req.Milestones ?? new()).Select(m => m.Id).ToList();
+    var existingMilestones = milestoneItemIds.Count == 0
+        ? new Dictionary<string, Milestone>()
+        : await _db.Milestones.IgnoreQueryFilters()
+            .Where(m => milestoneItemIds.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, ct);
     foreach (var item in req.Milestones ?? new())
     {
         if (fid is null)
@@ -337,7 +361,7 @@ public class SyncService : ISyncService
             continue;
         }
 
-        var existing = await _db.Milestones.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == item.Id, ct);
+        existingMilestones.TryGetValue(item.Id, out var existing);
         if (existing is not null && existing.FamilyId != fid)
         {
             _logger.LogWarning("cross-family milestone skipped (terminal): id={Id}, existingFamily={ExistingFamily}, jwt.family={Fid}",
@@ -375,6 +399,13 @@ public class SyncService : ISyncService
     // 不重复发积分——积分发放以服务端签到 API 为准，这里只同步记录本身。
     // 个人数据（per-User）：UserId 必须是当前用户，不随家庭切换。
     var signInsUpserted = 0;
+    // 批量预查本批 signIn（消除 N+1，语义说明同 babies 预查；SignInRecord 无软删过滤器）
+    var signInItemIds = (req.SignIns ?? new()).Select(s => s.Id).ToList();
+    var existingSignIns = signInItemIds.Count == 0
+        ? new Dictionary<string, SignInRecord>()
+        : await _db.SignInRecords
+            .Where(s => signInItemIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, ct);
     foreach (var item in req.SignIns ?? new())
     {
         if (item.UserId != uid)
@@ -384,7 +415,7 @@ public class SyncService : ISyncService
             continue;
         }
 
-        var existing = await _db.SignInRecords.FirstOrDefaultAsync(s => s.Id == item.Id, ct);
+        existingSignIns.TryGetValue(item.Id, out var existing);
         if (existing is null)
         {
             _db.SignInRecords.Add(new SignInRecord
@@ -401,6 +432,8 @@ public class SyncService : ISyncService
         // 签到记录不可变（无 UpdatedAt），已存在则跳过
     }
 
+    // 有意分两次提交（死锁规避）：此处为第二提交单元（records/milestones/signIns），
+    // 依赖客户端重试幂等，见上方"修复死锁"注释块。
     await _db.SaveChangesAsync(ct);
     return new SyncBatchResponse
     {

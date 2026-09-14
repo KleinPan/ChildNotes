@@ -36,6 +36,15 @@ public class MailKitEmailSender : IEmailSender
         await client.SendAsync(message, ct);
         await client.DisconnectAsync(true, ct);
 
-        _logger.LogInformation("验证码邮件已发送至 {Email}", to);
+        _logger.LogInformation("验证码邮件已发送至 {Email}", MaskEmail(to));
+    }
+
+    /// <summary>邮箱脱敏：保留本地部分前 2 字符 + *** + @域名，PII 明文不落日志。</summary>
+    private static string MaskEmail(string email)
+    {
+        var at = email.LastIndexOf('@');
+        if (at <= 0) return "***"; // 非法格式兜底：完全不泄露
+        var keep = Math.Min(2, at); // 本地部分不足 2 字符时保留全部
+        return string.Concat(email.AsSpan(0, keep), "***", email.AsSpan(at));
     }
 }

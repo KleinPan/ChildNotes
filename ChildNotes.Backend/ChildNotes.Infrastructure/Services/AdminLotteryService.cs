@@ -87,10 +87,11 @@ public class AdminLotteryService : IAdminLotteryService
             UpdatedBy = adminId,
         };
         _db.AdminLotteryActivities.Add(activity);
-        await _db.SaveChangesAsync(ct);
-        // activity 与 prizes 必须原子：失败会留下无奖品的活动。
+        // activity 与 prizes 同一事务原子写入：若 activity 先落库而 prizes 失败，
+        // 会留下无奖品的活动（此前 activity 在事务外 SaveChanges，注释声称的原子性未被覆盖）。
         await _db.ExecuteInTransactionAsync(async () =>
         {
+            await _db.SaveChangesAsync(ct); // activity 落库
             await ReplacePrizesAsync(activity.Id, req.Prizes, now, ct);
         }, ct);
         return (await GetLotteryAsync(activity.Id, ct))!;

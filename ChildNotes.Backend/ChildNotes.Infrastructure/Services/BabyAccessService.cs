@@ -27,9 +27,16 @@ public class BabyAccessService : IBabyAccessService
 
     public async Task<bool> HasAccessAsync(string userId, string babyId, CancellationToken ct = default)
     {
-        // 用户是宝宝创建者，或为该宝宝 active 成员
-        return await _db.Babies.AnyAsync(b => b.Id == babyId && b.UserId == userId, ct)
-            || await _db.BabyMembers.AnyAsync(m => m.BabyId == babyId && m.UserId == userId && m.Status == StatusConstants.BabyMember.Active, ct);
+        // 用户是宝宝创建者，或为该宝宝 active 成员。
+        // 两表条件无法写成单一 OR，用 Concat（UNION ALL）合并投影后一次 AnyAsync，
+        // 将原来的两次数据库往返合并为一次（InMemory 同样支持 Concat）。
+        var ownerHit = _db.Babies
+            .Where(b => b.Id == babyId && b.UserId == userId)
+            .Select(b => 1);
+        var memberHit = _db.BabyMembers
+            .Where(m => m.BabyId == babyId && m.UserId == userId && m.Status == StatusConstants.BabyMember.Active)
+            .Select(m => 1);
+        return await ownerHit.Concat(memberHit).AnyAsync(ct);
     }
 
     public async Task EnsureAccessAsync(string userId, string babyId, CancellationToken ct = default)

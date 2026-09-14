@@ -87,9 +87,11 @@ public class AdminDashboardService : IAdminDashboardService
             .GroupBy(m => m.BabyId)
             .Select(g => new { BabyId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.BabyId, x => x.Count, ct);
+        // 只投影 Id/NickName（避免为取昵称加载 AppUser 整行），列表展示仅用到这两个字段
         var owners = await _db.AppUsers
             .Where(u => ownerIds.Contains(u.Id))
-            .ToDictionaryAsync(u => u.Id, ct);
+            .Select(u => new { u.Id, u.NickName })
+            .ToDictionaryAsync(u => u.Id, u => u.NickName, ct);
 
         return new AdminPageResponse<AdminBabyListItemDto>
         {
@@ -105,7 +107,7 @@ public class AdminDashboardService : IAdminDashboardService
                 BirthDate = b.BirthDate,
                 AgeDays = BabyUtil.GetAgeInDays(b.BirthDate),
                 OwnerUserId = b.UserId,
-                OwnerNickName = owners.GetValueOrDefault(b.UserId)?.NickName ?? "",
+                OwnerNickName = owners.GetValueOrDefault(b.UserId) ?? "",
                 MemberCount = members.GetValueOrDefault(b.Id, 0),
                 CreatedAt = DateTimeFormatter.FormatDateTime(b.CreatedAt),
             }).ToList(),

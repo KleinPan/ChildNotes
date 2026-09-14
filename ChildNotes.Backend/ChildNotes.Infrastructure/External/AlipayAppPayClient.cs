@@ -13,6 +13,11 @@ namespace ChildNotes.Infrastructure.External;
 /// </summary>
 public static class AlipaySignature
 {
+    // RSA 密钥参数缓存：解析 PEM（ImportFromPem + Base64 解码）每次调用重复执行开销不小，
+    // 密钥配置不变可安全缓存。RSA 实例本身非线程安全，故缓存 RSAParameters，
+    // 每次签名/验签时 RSA.Create()+ImportParameters（微秒级）。
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, RSAParameters> _keyCache = new();
+
     /// <summary>
     /// 对待签名内容进行 RSA2 签名。
     /// </summary>
@@ -21,7 +26,7 @@ public static class AlipaySignature
     /// <returns>Base64 编码的签名值。</returns>
     public static string Sign(string data, string privateKeyPem)
     {
-        var rsa = LoadPrivateKey(privateKeyPem);
+        using var rsa = CreateWithKey(privateKeyPem, isPrivate: true);
         var dataBytes = Encoding.UTF8.GetBytes(data);
         var signatureBytes = rsa.SignData(dataBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         return Convert.ToBase64String(signatureBytes);
@@ -37,7 +42,7 @@ public static class AlipaySignature
     {
         try
         {
-            var rsa = LoadPublicKey(alipayPublicKeyPem);
+            using var rsa = CreateWithKey(alipayPublicKeyPem, isPrivate: false);
             var dataBytes = Encoding.UTF8.GetBytes(data);
             var signBytes = Convert.FromBase64String(sign);
             return rsa.VerifyData(dataBytes, signBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -47,6 +52,18 @@ public static class AlipaySignature
             return false;
         }
     }
+
+    /// <summary>从缓存取密钥参数并创建独立 RSA 实例（首次解析 PEM 后缓存）。</summary>
+    private static RSA CreateWithKey(string pem, bool isPrivate)
+    {
+        var parameters = _keyCache.GetOrAdd(pem, static (key, priv) =>
+            priv ? LoadPrivateKey(key).ExportParameters(true) : LoadPublicKey(key).ExportParameters(false),
+            isPrivate);
+        var rsa = RSA.Create();
+        rsa.ImportParameters(parameters);
+        return rsa;
+    }
+
 
     /// <summary>
     /// 将参数字典按 key 字典序升序拼接为 key1=value1&amp;key2=value2 格式。

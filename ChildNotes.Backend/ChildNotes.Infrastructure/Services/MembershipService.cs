@@ -19,12 +19,15 @@ public class MembershipService : IMembershipService
     private readonly ChildNotesDbContext _db;
     private readonly ICurrentUserService _current;
     private readonly MembershipOptions _opt;
+    private readonly AlipayAppPayClient _alipay;
 
-    public MembershipService(ChildNotesDbContext db, ICurrentUserService current, IOptions<MembershipOptions> opt)
+    public MembershipService(ChildNotesDbContext db, ICurrentUserService current,
+        IOptions<MembershipOptions> opt, AlipayAppPayClient alipay)
     {
         _db = db;
         _current = current;
         _opt = opt.Value;
+        _alipay = alipay;
     }
 
     public Task<List<MembershipPlanDto>> GetPlansAsync(CancellationToken ct = default)
@@ -103,10 +106,9 @@ public class MembershipService : IMembershipService
         var payParams = string.Empty;
         if (channel == MembershipConstants.ChannelAlipay && !_opt.EnableMockPayment)
         {
-            var client = new AlipayAppPayClient(_opt.Alipay);
             var totalAmount = (plan.PriceCents / 100m).ToString("0.00");
             var subject = $"ChildNotes会员-{plan.Name}";
-            payParams = client.BuildOrderInfo(orderNo, totalAmount, subject);
+            payParams = _alipay.BuildOrderInfo(orderNo, totalAmount, subject);
         }
         // Mock 模式：直接返回空串，前端收到空串后模拟支付成功
 
@@ -149,8 +151,7 @@ public class MembershipService : IMembershipService
 
         // 验签
         var sign = dict.GetValueOrDefault("sign") ?? string.Empty;
-        var client = new AlipayAppPayClient(_opt.Alipay);
-        if (!client.VerifyNotifySign(dict, sign))
+        if (!_alipay.VerifyNotifySign(dict, sign))
         {
             // 验签失败，不处理
             return "fail";

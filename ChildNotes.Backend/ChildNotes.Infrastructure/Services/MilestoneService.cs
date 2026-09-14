@@ -4,14 +4,14 @@ using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Data;
 using ChildNotes.Shared.Dtos;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChildNotes.Infrastructure.Services;
 
 /// <summary>
 /// 成长时刻（里程碑）服务实现。
-/// 权限：仅当前用户自己创建的里程碑可读写；babyId 从请求头 X-Baby-Id 解析（对齐小程序契约），
+/// 权限：仅当前用户自己创建的里程碑可读写；babyId 从请求头 X-Baby-Id / 查询参数解析（对齐小程序契约），
+///      统一经 ICurrentUserService.GetBabyIdOrDefault() 读取（与 AppBaseController 逻辑一致），
 ///      若提供则必须在该用户可访问宝宝集合内。
 /// 删除采用软删（Deleted=true），同步通道通过 Deleted 字段传递。
 /// </summary>
@@ -21,16 +21,14 @@ public class MilestoneService : IMilestoneService
     private readonly ICurrentUserService _current;
     private readonly IBabyAccessService _babyAccess;
     private readonly IFamilyService _familyService;
-    private readonly IHttpContextAccessor _httpCtx;
 
     public MilestoneService(ChildNotesDbContext db, ICurrentUserService current,
-        IBabyAccessService babyAccess, IFamilyService familyService, IHttpContextAccessor httpCtx)
+        IBabyAccessService babyAccess, IFamilyService familyService)
     {
         _db = db;
         _current = current;
         _babyAccess = babyAccess;
         _familyService = familyService;
-        _httpCtx = httpCtx;
     }
 
     public async Task<List<MilestoneRecordDto>> ListAsync(string? babyId, CancellationToken ct = default)
@@ -49,7 +47,7 @@ public class MilestoneService : IMilestoneService
     public async Task<string> AddAsync(MilestoneRecordDto dto, CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
-        var babyId = ResolveBabyId();
+        var babyId = _current.GetBabyIdOrDefault();
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new BusinessException("标题不能为空");
         if (!string.IsNullOrEmpty(babyId))
@@ -92,7 +90,7 @@ public class MilestoneService : IMilestoneService
         if (existing is null) return false;
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new BusinessException("标题不能为空");
-        var babyId = ResolveBabyId();
+        var babyId = _current.GetBabyIdOrDefault();
         if (!string.IsNullOrEmpty(babyId))
             await _babyAccess.EnsureAccessAsync(uid, babyId, ct);
 
@@ -121,16 +119,6 @@ public class MilestoneService : IMilestoneService
         existing.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         return true;
-    }
-
-    /// <summary>从请求头 X-Baby-Id 或查询参数 babyId 解析宝宝 ID。</summary>
-    private string? ResolveBabyId()
-    {
-        var ctx = _httpCtx.HttpContext;
-        if (ctx is null) return null;
-        if (ctx.Request.Headers.TryGetValue("X-Baby-Id", out var h) && !string.IsNullOrEmpty(h)) return h.ToString();
-        var q = ctx.Request.Query["babyId"].ToString();
-        return string.IsNullOrEmpty(q) ? null : q;
     }
 
     private static MilestoneRecordDto ToDto(Milestone m) => new()

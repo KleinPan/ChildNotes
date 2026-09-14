@@ -164,10 +164,48 @@ public class PointsService : IPointsService
         var babyIds = await _babyAccess.GetAccessibleBabyIdsAsync(userId, ct);
         var hasBabies = babyIds.Count > 0;
 
+        // claimed 状态合并查询：一次取回本周内（含当日）全部 daily_task 领取记录，内存匹配各 key。
+        // 当日 3 个 key（daily_record/daily_feed/daily_diaper）按 [今日0点, 明日0点) 判断，
+        // weekly_growth 按本周区间判断，与原逐 key 查询语义一致。
+        var weekStart = today.Date.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
+        if (today.DayOfWeek == DayOfWeek.Sunday) weekStart = weekStart.AddDays(-7);
+        var weekStartUtc = weekStart.ToUniversalTime();
+        var weekEndUtc = weekStartUtc.AddDays(7);
+        var todayStartUtc = today.ToUniversalTime();
+        var todayEndUtc = todayStartUtc.AddDays(1);
+        var weekClaimed = await _db.TaskRecords.AsNoTracking()
+            .Where(t => t.UserId == userId && t.TaskType == "daily_task"
+                && t.CreatedAt >= weekStartUtc && t.CreatedAt < weekEndUtc)
+            .Select(t => new { t.TaskKey, t.CreatedAt }).ToListAsync(ct);
+        var todayClaimedKeys = weekClaimed
+            .Where(t => t.CreatedAt >= todayStartUtc && t.CreatedAt < todayEndUtc)
+            .Select(t => t.TaskKey).ToHashSet();
+        var weekClaimedKeys = weekClaimed.Select(t => t.TaskKey).ToHashSet();
+
+        // completed 状态合并查询：一次取回当日 distinct 记录类型，内存判断当日 3 个 key
+        // （daily_record 为当日任意记录的超集条件，daily_feed/daily_diaper 按类型判断）；
+        // weekly_growth 保持独立 7 天范围查询（区间不同，不合并）。
+        var todayRecordTypes = hasBabies
+            ? (await _db.ChildRecords.AsNoTracking()
+                .Where(r => babyIds.Contains(r.BabyId!) && r.RecordDate == today && !r.Deleted)
+                .Select(r => r.RecordType).Distinct().ToListAsync(ct)).ToHashSet()
+            : new HashSet<string>();
+
         foreach (var (key, reward) in PointsConstants.DailyTaskRewards)
         {
-            var isCompleted = hasBabies && await IsDailyTaskCompletedAsync(userId, key, today, ct, babyIds);
-            var isClaimed = await IsDailyTaskClaimedAsync(userId, key, today, ct);
+            var isCompleted = hasBabies && (key switch
+            {
+                "daily_record" => todayRecordTypes.Count > 0,
+                "daily_feed" => todayRecordTypes.Contains(RecordType.Feed),
+                "daily_diaper" => todayRecordTypes.Contains(RecordType.Diaper),
+                "weekly_growth" => await _db.ChildRecords.AnyAsync(
+                    r => babyIds.Contains(r.BabyId!) && r.RecordType == RecordType.Growth
+                        && r.RecordDate >= today.AddDays(-6) && !r.Deleted, ct),
+                _ => false,
+            });
+            var isClaimed = key == "weekly_growth"
+                ? weekClaimedKeys.Contains(key)
+                : todayClaimedKeys.Contains(key);
             tasks.Add(new TaskTemplateDto
             {
                 TaskKey = key,
@@ -203,22 +241,6 @@ public class PointsService : IPointsService
                     && r.RecordDate >= today.AddDays(-6) && !r.Deleted, ct),
             _ => false,
         };
-    }
-
-    /// <summary>判断日常任务是否已领取（今日，weekly_growth 为本周）。</summary>
-    private async Task<bool> IsDailyTaskClaimedAsync(string userId, string taskKey, DateTime today, CancellationToken ct)
-    {
-        if (taskKey == "weekly_growth")
-        {
-            var weekStart = today.Date.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
-            if (today.DayOfWeek == DayOfWeek.Sunday) weekStart = weekStart.AddDays(-7);
-            var weekStartUtc = weekStart.ToUniversalTime();
-            var weekEndUtc = weekStartUtc.AddDays(7);
-            return await IsDailyTaskClaimedInternalAsync(userId, taskKey, weekStartUtc, weekEndUtc, ct);
-        }
-        var todayStartUtc = today.ToUniversalTime();
-        var todayEndUtc = todayStartUtc.AddDays(1);
-        return await IsDailyTaskClaimedInternalAsync(userId, taskKey, todayStartUtc, todayEndUtc, ct);
     }
 
     /// <summary>统一的领取记录查询：判断 [startUtc, endUtc) 区间内是否已有领取记录。</summary>

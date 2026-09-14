@@ -172,18 +172,19 @@ public partial class AiNoteService : IAiNoteService
         if (text.Length > 500)
             throw new BusinessException("记录文本过长（最多 500 字）", 400);
 
-        // [AI-LOG] 用户输入完整记录：时间戳 + 输入类型 + 具体内容，便于问题分析与行为追踪
+        // [AI-LOG] 用户输入记录：时间戳 + 输入类型 + 截断后的文本（PII 控制：仅入口保留一次，截断到 60 字）
         _logger.LogInformation("[AI-LOG] 用户输入 | 时间={Time} 类型=NoteParse ParseMode={ParseMode} ForceAi={ForceAi} 文本={Text}",
-            ChinaTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ParseMode ?? "(null)", req.ForceAi, text);
+            ChinaTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"), req.ParseMode ?? "(null)", req.ForceAi, TruncateForLog(text, 60));
 
         // 每日次数限制：原子地检查额度并递增（防止并发绕过限制）
         var uid = _current.RequireUserId();
-        var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
         var (ok, used) = await _membership.TryIncrementAiNoteUsageAsync(uid, ct);
         // 本次调用是否通过积分抵扣放行（用于强制走 AI + AI 失败时退还）
         var paidOverage = false;
         if (!ok)
         {
+            // limit 仅供超限提示文案使用，懒加载避免与 TryIncrement 内部查询重复（未超限路径不查）
+            var limit = await _membership.GetAiNoteDailyLimitAsync(uid, ct);
             if (!usePointsForOverage)
                 throw new BusinessException($"今日 AI 记次数已用完（{used}/{limit}），升级会员可获得更多次数", 400, "AI_NOTE_LIMIT_EXCEEDED");
 
@@ -223,19 +224,20 @@ public partial class AiNoteService : IAiNoteService
         {
             // 快速路径：规则置信度足够高且非复杂文本，直接返回，不调 AI
             // （积分抵扣放行的调用不走此路径：用户花了积分，必须给出 AI 结果）
-            _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf} Text={Text}",
-                ruleItems.Count, ruleItems.Min(it => it.Confidence), text);
+            _logger.LogInformation("[AI-LOG] 规则快速命中 跳过AI Items={Count} MinConf={MinConf}",
+                ruleItems.Count, ruleItems.Min(it => it.Confidence));
             items = ruleItems;
         }
         else
         {
             // 慢速路径：规则置信度不足、复杂文本、积分抵扣放行、或精准模式/强制 AI，调 AI 解析
+            // （分支日志只保留决策要素，不重复记录用户原文，PII 控制见入口日志）
             if (preferAi)
-                _logger.LogInformation("[AI-LOG] 精准模式/强制AI跳过规则快速路径 ParseMode={ParseMode} ForceAi={ForceAi} Text={Text}", parseMode, req.ForceAi, text);
+                _logger.LogInformation("[AI-LOG] 精准模式/强制AI跳过规则快速路径 ParseMode={ParseMode} ForceAi={ForceAi}", parseMode, req.ForceAi);
             else if (paidOverage)
-                _logger.LogInformation("[AI-LOG] 积分抵扣放行强制AI跳过规则快速路径 Text={Text}", text);
+                _logger.LogInformation("[AI-LOG] 积分抵扣放行强制AI跳过规则快速路径");
             else if (shouldForceAi)
-                _logger.LogInformation("[AI-LOG] 复杂文本强制AI跳过规则快速路径 Text={Text}", text);
+                _logger.LogInformation("[AI-LOG] 复杂文本强制AI跳过规则快速路径");
             try
             {
                 items = await ParseByAiAsync(text, ct);
@@ -243,7 +245,7 @@ public partial class AiNoteService : IAiNoteService
             catch (Exception ex)
             {
                 // AI 失败：用规则结果兜底，置信度下调
-                _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底。Text={Text}", text);
+                _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底");
                 if (paidOverage)
                 {
                     // 积分抵扣放行后 AI 调用失败：退还抵扣积分 + 回滚已强制递增的次数（best-effort），
@@ -288,12 +290,11 @@ public partial class AiNoteService : IAiNoteService
             }
         }
 
-        _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Source={Source} Text={Text}",
+        _logger.LogInformation("[AI-LOG] 解析完成 Items={Count} FirstType={FirstType} FirstSubType={FirstSubType} Source={Source}",
             items.Count,
             items.FirstOrDefault()?.RecordType ?? "-",
             items.FirstOrDefault()?.RecordSubType ?? "-",
-            items.FirstOrDefault()?.Source ?? "-",
-            text);
+            items.FirstOrDefault()?.Source ?? "-");
 
         // 次数已在解析前原子递增，无需再单独计数
 
@@ -379,4 +380,11 @@ public partial class AiNoteService : IAiNoteService
     /// <summary>基于正则的降级解析：委托给共享层 AiNoteRuleParser。公开以便单元测试访问。</summary>
     public AiNoteParseItem ParseByRules(string text, DateTime? now = null)
         => AiNoteRuleParser.Parse(text, now);
+
+    /// <summary>日志文本截断（参考 DeepSeekClient.TruncateForLog 做法）：PII 控制，超长截断加省略号。</summary>
+    private static string TruncateForLog(string? s, int max)
+    {
+        if (string.IsNullOrEmpty(s)) return "(空)";
+        return s.Length > max ? s[..max] + "…" : s;
+    }
 }
