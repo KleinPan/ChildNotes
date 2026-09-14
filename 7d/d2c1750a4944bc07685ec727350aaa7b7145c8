@@ -1,0 +1,35 @@
+ChildNotes.Backend/ChildNotes.Infrastructure/Services/AuthService.cs
+  s_32a73a9f59ca8b::t_2baff9cef114a1 305-367,369
+ChildNotes.Backend/ChildNotes.Tests/ApiFlowTests.cs
+  s_32a73a9f59ca8b::t_2de213db11864f 244,259-262,264
+  s_32a73a9f59ca8b::t_003cc4c815b175 161-165,167,173-209,215-220,224-243,245-258,263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.2",
+  "base_commit_sha": "7dd2c1750a4944bc07685ec727350aaa7b7145c8",
+  "prompts": {},
+  "sessions": {
+    "s_32a73a9f59ca8b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a8ac68caff87f96f66599be",
+        "model": "glm-5.3__max"
+      },
+      "human_author": "KleinPan <964012840@qq.com>",
+      "custom_attributes": {
+        "tool_use_id": "6aa77177e674ff34cb527e4a",
+        "session_id": "6a8ac68caff87f96f66599be",
+        "client_type": "ide",
+        "dedupe_key": "6a8ac68caff87f96f66599be:6aa77177e674ff34cb527e4a:afterEdit:49aaf4a5",
+        "tool_type": "agent",
+        "runtime_client": "trae-tob-git-ai",
+        "source_scene": "unknown",
+        "edit_kind": "file_edit",
+        "tool_id": "Edit",
+        "external_session_id": "6a8ac68caff87f96f66599be",
+        "operation_id": "6aa77177e674ff34cb527e4a"
+      }
+    }
+  }
+}
