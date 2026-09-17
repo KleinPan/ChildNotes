@@ -63,9 +63,6 @@ public class DeepSeekClient
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeoutCts.CancelAfter(_endpointTimeout);
         var requestCt = timeoutCts.Token;
-        // 每次调用前重置 HttpClient 的 BaseAddress/Authorization（主备端点切换关键）
-        _http.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         var body = new
         {
@@ -92,10 +89,16 @@ public class DeepSeekClient
         string? errBody = null;
         try
         {
-            // 注意：请求路径不能以 "/" 开头，否则会替换 BaseAddress 的路径段
-            // （如 BaseAddress=https://api.1xm.ai/v1/ + "/chat/completions" 会变成 https://api.1xm.ai/chat/completions）
-            // 使用相对路径 "chat/completions" 才能正确拼接为 .../v1/chat/completions
-            resp = await _http.PostAsJsonAsync("chat/completions", body, requestCt);
+            // 每次请求构造独立的 HttpRequestMessage + 绝对 URI（主备端点切换关键）：
+            // HttpClient 的 BaseAddress 在发出首个请求后不可再修改（抛 InvalidOperationException），
+            // 动态设置 BaseAddress 会导致主用失败后降级备用端点时直接崩溃，备用从未真正生效。
+            // 绝对 URI 需拼接 "chat/completions" 相对段，得到 .../v1/chat/completions
+            using var req = new HttpRequestMessage(HttpMethod.Post, new Uri(new Uri(baseUrl.TrimEnd('/') + "/"), "chat/completions"))
+            {
+                Content = JsonContent.Create(body),
+            };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            resp = await _http.SendAsync(req, requestCt);
             if (!resp.IsSuccessStatusCode)
             {
                 errBody = await resp.Content.ReadAsStringAsync(requestCt);
