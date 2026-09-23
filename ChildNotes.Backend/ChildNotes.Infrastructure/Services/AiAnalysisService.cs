@@ -4,6 +4,7 @@ using ChildNotes.Core.Config;
 using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Shared.Constants;
+using ChildNotes.Shared.Services;
 using ChildNotes.Core.Entities;
 using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
@@ -255,10 +256,11 @@ public class AiAnalysisService : IAiAnalysisService
 
     private (DateTime start, DateTime end) ResolveAnalysisRange(GenerateAiAnalysisRequest req)
     {
-        // 用 UTC 日期避免 Npgsql 写 timestamptz 时报
-        // "Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone'"
-        // 与 RecordService/SyncService 中 SpecifyKind(UTC) 保持一致。
-        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Utc);
+        // 业务日 = 北京时间自然日（#11）：今天按北京墙钟日期取，Kind=Utc 满足
+        // Npgsql 写 timestamptz 的要求（避免
+        // "Cannot write DateTime with Kind=Unspecified to PostgreSQL type 'timestamp with time zone'"），
+        // 与 RecordDate（RecordService 写入用 ChinaTime 墙钟）口径一致。
+        var today = DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc);
         if (string.IsNullOrEmpty(req.StartDate) && string.IsNullOrEmpty(req.EndDate))
         {
             var end = today;

@@ -4,6 +4,7 @@ using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Data;
 using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChildNotes.Infrastructure.Services;
@@ -132,9 +133,11 @@ public class MilestoneService : IMilestoneService
 
     private static DateTime ParseDate(string date)
     {
+        // 解析失败回退到"业务今天"（北京时间自然日，#11），与用户传入日期的
+        // 墙钟日期口径一致；Kind=Utc 满足 timestamptz 参数要求
         return DateTime.TryParse(date, out var d)
             ? DateTime.SpecifyKind(d.Date, DateTimeKind.Utc)
-            : DateTime.UtcNow.Date;
+            : DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc);
     }
 
     private static string SerializePhotos(List<string> photos)

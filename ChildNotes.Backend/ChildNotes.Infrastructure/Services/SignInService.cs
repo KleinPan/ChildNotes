@@ -5,6 +5,7 @@ using ChildNotes.Core.Exceptions;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Auth;
 using ChildNotes.Infrastructure.Data;
+using ChildNotes.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChildNotes.Infrastructure.Services;
@@ -34,7 +35,9 @@ public class SignInService : ISignInService
     public async Task SignInAsync(CancellationToken ct = default)
     {
         var uid = _current.RequireUserId();
-        var today = DateTime.Today;
+        // 业务日 = 北京时间自然日（#11）。SignDate 列为 timestamptz，按项目惯例
+        // 以 Kind=Utc 的"北京墙钟日期"存储/比较（与 RecordDate 口径一致）。
+        var today = DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc);
 
         var alreadySigned = await _db.SignInRecords.AnyAsync(r => r.UserId == uid && r.SignDate == today, ct);
         if (alreadySigned) throw new BusinessException("今日已签到", 400, "ALREADY_SIGNED_IN");
@@ -71,7 +74,7 @@ public class SignInService : ISignInService
 
     private async Task<SignInSummaryDto> BuildSignInSummaryAsync(string userId, CancellationToken ct)
     {
-        var today = DateTime.Today;
+        var today = DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc);
         var todayRec = await _db.SignInRecords.FirstOrDefaultAsync(r => r.UserId == userId && r.SignDate == today, ct);
         var last = todayRec ?? await _db.SignInRecords
             .Where(r => r.UserId == userId && r.SignDate < today)

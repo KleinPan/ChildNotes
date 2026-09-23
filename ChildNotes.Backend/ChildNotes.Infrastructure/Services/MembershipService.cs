@@ -6,6 +6,7 @@ using ChildNotes.Infrastructure.Data;
 using ChildNotes.Infrastructure.External;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
+using ChildNotes.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -268,23 +269,23 @@ public class MembershipService : IMembershipService
     }
 
     public Task<int> IncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
-        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, ChinaToday, ct);
 
     public async Task<(bool ok, int used)> TryIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
     {
         var limit = await GetAiNoteDailyLimitAsync(userId, ct);
-        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, limit, ct);
+        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, ChinaToday, limit, ct);
     }
 
     /// <summary>强制递增（允许超限），供积分抵扣放行场景使用。</summary>
     public Task<int> ForceIncrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
-        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, ChinaToday, ct);
 
     public Task<int> GetAiNoteUsedTodayAsync(string userId, CancellationToken ct = default)
-        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiNote, ChinaToday, ct);
 
     public Task DecrementAiNoteUsageAsync(string userId, CancellationToken ct = default)
-        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, DateTime.UtcNow.Date, ct);
+        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiNote, ChinaToday, ct);
 
     public async Task<int> GetAiAnalysisWeeklyLimitAsync(string userId, CancellationToken ct = default)
     {
@@ -296,23 +297,23 @@ public class MembershipService : IMembershipService
     }
 
     public Task<int> IncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
-        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(ChinaToday), ct);
 
     public async Task<(bool ok, int used)> TryIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
     {
         var limit = await GetAiAnalysisWeeklyLimitAsync(userId, ct);
-        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), limit, ct);
+        return await TryIncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(ChinaToday), limit, ct);
     }
 
     /// <summary>强制递增（允许超限），供积分抵扣放行场景使用。</summary>
     public Task<int> ForceIncrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
-        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+        => IncrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(ChinaToday), ct);
 
     public Task DecrementAiAnalysisUsageAsync(string userId, CancellationToken ct = default)
-        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+        => DecrementUsageAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(ChinaToday), ct);
 
     public Task<int> GetAiAnalysisUsedThisWeekAsync(string userId, CancellationToken ct = default)
-        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(DateTime.UtcNow), ct);
+        => GetUsedAsync(userId, MembershipConstants.UsageTypeAiAnalysis, GetWeekStartUtc(ChinaToday), ct);
 
     public async Task<decimal> GetLotteryDiscountAsync(string userId, CancellationToken ct = default)
     {
@@ -529,7 +530,15 @@ public class MembershipService : IMembershipService
     }
 
     /// <summary>
+    /// 北京时间的"业务今天"（#11）：AI 日配额按北京时间自然日重置。
+    /// 返回 Kind=Utc 的北京墙钟日期（如北京时间 9-23 存为 2026-09-23T00:00Z），
+    /// 满足 Npgsql 写 timestamptz 的 Kind 要求，且与 RecordDate 存储口径一致。
+    /// </summary>
+    private static DateTime ChinaToday => DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc);
+
+    /// <summary>
     /// 获取本周一的 UTC 0 点（按自然周计算，周一为一周起始）。
+    /// 入参为 Kind=Utc 的北京墙钟日期，返回值保持 Kind=Utc（周起点同样按北京日切分）。
     /// </summary>
     private static DateTime GetWeekStartUtc(DateTime dt)
     {

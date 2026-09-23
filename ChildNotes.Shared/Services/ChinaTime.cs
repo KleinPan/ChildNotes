@@ -31,4 +31,14 @@ public static class ChinaTime
 
     /// <summary>北京时间的今天零点。</summary>
     public static DateTime Today => Now.Date;
+
+    /// <summary>
+    /// 北京时间今天零点对应的真实 UTC 时刻（Kind=Utc）。
+    /// 用于与 UTC 存储的真实时间戳（如 CreatedAt）做"今日"范围比较；
+    /// 与 Today（墙钟日期）不同，本属性是可比较的绝对时刻。
+    /// </summary>
+    public static DateTime TodayStartUtc =>
+        Zone is not null
+            ? TimeZoneInfo.ConvertTimeToUtc(Today, Zone)
+            : DateTime.SpecifyKind(Today, DateTimeKind.Utc).AddHours(-8);
 }

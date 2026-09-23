@@ -3,6 +3,7 @@ using ChildNotes.Core.Constants;
 using ChildNotes.Core.Dtos;
 using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Data;
+using ChildNotes.Shared.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChildNotes.Infrastructure.Services;
@@ -14,8 +15,10 @@ public class AdminDashboardService : IAdminDashboardService
 
     public async Task<AdminOverviewResponse> GetOverviewAsync(CancellationToken ct = default)
     {
-        var todayStart = DateTime.Today;
-        var todayStartUtc = todayStart.ToUniversalTime();
+        // "今日"统计口径 = 北京时间自然日（#11）：取北京今天零点对应的真实 UTC 时刻，
+        // 与 CreatedAt（UTC 真实时间戳）比较。原实现 DateTime.Today 依赖服务器本地时区
+        // （生产为 UTC），UTC 服务器上"今日"比北京时间早 8 小时切换。
+        var todayStartUtc = ChinaTime.TodayStartUtc;
 
         return new AdminOverviewResponse
         {

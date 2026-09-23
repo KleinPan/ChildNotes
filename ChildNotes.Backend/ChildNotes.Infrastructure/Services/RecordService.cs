@@ -56,7 +56,9 @@ public class RecordService : IRecordService
     }
 
     public async Task<DailyRecordsResponse> GetTodayRecordsAsync(string? babyId, CancellationToken ct = default)
-        => await GetRecordsByDateAsync(DateTime.Today, babyId, ct);
+        // 业务日 = 北京时间自然日（#11）：RecordDate 以北京墙钟日期存储（见 AddRecordAsync），
+        // "今日记录"查询也须按北京今天取，Kind=Utc 满足 timestamptz 参数要求
+        => await GetRecordsByDateAsync(DateTime.SpecifyKind(ChinaTime.Today, DateTimeKind.Utc), babyId, ct);
 
     public async Task<DailyRecordsResponse> GetRecordsByDateAsync(DateTime date, string? babyId, CancellationToken ct = default)
     {
