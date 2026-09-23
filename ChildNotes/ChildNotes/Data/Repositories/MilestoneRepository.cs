@@ -84,10 +84,32 @@ public sealed class MilestoneRepository : BaseRepository
         => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
             cmd => cmd.AddUtc("@s", since), Map);
 
-    /// <summary>分页变体（LIMIT/OFFSET）：Push 分批上送用（同步期间表无写入，OFFSET 稳定）。</summary>
+    /// <summary>分页变体（LIMIT/OFFSET）：Push 分批上送用。</summary>
     public List<Milestone> GetByUpdatedAt(DateTime since, int limit, int offset)
         => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at LIMIT @l OFFSET @o",
             cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset), Map);
+
+    /// <summary>
+    /// 待推送里程碑的 id 快照（仅 id，轻量）。Push 前一次性取回，之后按 id 分块取整行，
+    /// 消除 OFFSET 分页在同步期间写入时的错位跳读（详见 RecordRepository.GetPendingIds）。
+    /// </summary>
+    public List<string> GetPendingIds(DateTime since)
+        => Query("SELECT id FROM milestone WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
+            cmd => cmd.AddUtc("@s", since), r => r.GetString(0));
+
+    /// <summary>按 id 集合取整行（Push 分块上送用，调用方保证每块 ≤ 500 个 id）。</summary>
+    public List<Milestone> GetByIds(IReadOnlyCollection<string> ids)
+    {
+        if (ids.Count == 0) return new();
+        var paramNames = Enumerable.Range(0, ids.Count).Select(k => "@id" + k).ToList();
+        return Query(SelectBase + $" WHERE id IN ({string.Join(",", paramNames)}) ORDER BY updated_at",
+            cmd =>
+            {
+                var k = 0;
+                foreach (var id in ids)
+                    cmd.Parameters.AddWithValue(paramNames[k++], id);
+            }, Map);
+    }
 
     /// <summary>以 LWW（updated_at 比较）合并远端下发的里程碑。返回是否实际写入。</summary>
     public bool UpsertFromSync(Milestone item)
@@ -128,24 +150,36 @@ public sealed class MilestoneRepository : BaseRepository
         return cmd.ExecuteNonQuery() > 0;
     }
 
-    /// <summary>批量标记里程碑为"已上送"（更新 synced_at）。</summary>
-    public void MarkSynced(IEnumerable<string> ids, DateTime syncedAt)
+    /// <summary>
+    /// 批量标记里程碑为"已上送"（更新 synced_at）。
+    /// 版本条件（防误标，详见 RecordRepository.MarkSynced）：推送快照后 updated_at 变化的行
+    /// 清 synced_at=NULL 以便下次重推。单条 CASE 语句批量（400 行 = 802 参数 < 999）。
+    /// </summary>
+    public void MarkSynced(IEnumerable<(string Id, DateTime UpdatedAt)> items, DateTime syncedAt)
     {
-        var idList = ids.ToList();
-        if (idList.Count == 0) return;
+        var list = items.ToList();
+        if (list.Count == 0) return;
         using var conn = OpenConnection();
         using var tx = conn.BeginTransaction();
-        const int BatchSize = 500;
-        for (var i = 0; i < idList.Count; i += BatchSize)
+        const int BatchSize = 400;
+        for (var i = 0; i < list.Count; i += BatchSize)
         {
-            var batch = idList.Skip(i).Take(BatchSize).ToList();
-            var paramNames = Enumerable.Range(0, batch.Count).Select(k => "@id" + k).ToList();
+            var batch = list.Skip(i).Take(BatchSize).ToList();
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = $"UPDATE milestone SET synced_at=@t WHERE id IN ({string.Join(",", paramNames)})";
-            cmd.AddUtc("@t", syncedAt);
+            var caseParts = new List<string>(batch.Count);
+            var inParts = new List<string>(batch.Count);
             for (var j = 0; j < batch.Count; j++)
-                cmd.Parameters.AddWithValue(paramNames[j], batch[j]);
+            {
+                caseParts.Add($"WHEN @id{j} THEN CASE WHEN updated_at=@v{j} THEN @t ELSE NULL END");
+                inParts.Add($"@id{j}");
+                cmd.Parameters.AddWithValue($"@id{j}", batch[j].Id);
+                cmd.AddUtc($"@v{j}", batch[j].UpdatedAt);
+            }
+            cmd.AddUtc("@t", syncedAt);
+            cmd.CommandText =
+                $"UPDATE milestone SET synced_at = CASE id {string.Join(" ", caseParts)} END " +
+                $"WHERE id IN ({string.Join(",", inParts)})";
             cmd.ExecuteNonQuery();
         }
         tx.Commit();

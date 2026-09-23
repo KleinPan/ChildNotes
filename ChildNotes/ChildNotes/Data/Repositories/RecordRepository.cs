@@ -80,11 +80,33 @@ public sealed class RecordRepository : BaseRepository
 
     /// <summary>
     /// 分页变体（LIMIT/OFFSET）：Push 分批上送用，避免单次查询把数千条记录全部加载进内存。
-    /// 同步期间表无写入（MarkSynced 延迟到全部批次成功后），OFFSET 分页稳定。
     /// </summary>
     public List<ChildRecord> GetByUpdatedAt(DateTime since, int limit, int offset)
         => Query(SelectBase + " WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at LIMIT @l OFFSET @o",
             cmd => cmd.AddUtc("@s", since).Add("@l", limit).Add("@o", offset), Map);
+
+    /// <summary>
+    /// 待推送记录的 id 快照（仅 id，轻量）。Push 前一次性取回，之后按 id 分块取整行上送。
+    /// 修复 OFFSET 错位：LIMIT/OFFSET 分页在同步期间有写入时会插页导致跳过/重复读；
+    /// id 快照固定遍历集合，同步期间的写入由 MarkSynced 的版本条件兜底（编辑行清 synced_at 重推）。
+    /// </summary>
+    public List<string> GetPendingIds(DateTime since)
+        => Query("SELECT id FROM child_record WHERE updated_at > @s OR synced_at IS NULL ORDER BY updated_at",
+            cmd => cmd.AddUtc("@s", since), r => r.GetString(0));
+
+    /// <summary>按 id 集合取整行（Push 分块上送用，调用方保证每块 ≤ 500 个 id）。</summary>
+    public List<ChildRecord> GetByIds(IReadOnlyCollection<string> ids)
+    {
+        if (ids.Count == 0) return new();
+        var paramNames = Enumerable.Range(0, ids.Count).Select(k => "@id" + k).ToList();
+        return Query(SelectBase + $" WHERE id IN ({string.Join(",", paramNames)}) ORDER BY updated_at",
+            cmd =>
+            {
+                var k = 0;
+                foreach (var id in ids)
+                    cmd.Parameters.AddWithValue(paramNames[k++], id);
+            }, Map);
+    }
 
     /// <summary>
     /// 以 LWW（updated_at 比较）合并远端下发的记录。返回是否实际写入。
@@ -239,25 +261,37 @@ public sealed class RecordRepository : BaseRepository
 
     /// <summary>
     /// 批量标记记录为"已上送"（更新 synced_at）。Push 成功后调用，防止崩溃导致重推。
-    /// 优化：原实现逐条 UPDATE，500 条 = 500 次往返。改为按 500 个 id 一批的 IN 子句批量 UPDATE。
+    /// 版本条件（防误标，毒丸修复 #2）：同步期间用户可能编辑了某条记录（updated_at 推进），
+    /// 若无条件 MarkSynced 会把编辑后的记录也标为已同步 → 下次增量过滤掉 → 编辑永久不上送。
+    /// 因此按推送时的 updated_at 版本判断：版本未变 → 设 synced_at；版本已变 → 清 synced_at=NULL，
+    /// 让 GetByUpdatedAt 的 synced_at IS NULL 分支在下次同步重新纳入推送。
+    /// 实现：单条 CASE 语句批量（每行 2 参数，400 行 = 802 参数，低于 SQLite 999 上限）。
     /// </summary>
-    public void MarkSynced(IEnumerable<string> ids, DateTime syncedAt)
+    public void MarkSynced(IEnumerable<(string Id, DateTime UpdatedAt)> items, DateTime syncedAt)
     {
-        var idList = ids.ToList();
-        if (idList.Count == 0) return;
+        var list = items.ToList();
+        if (list.Count == 0) return;
         using var conn = OpenConnection();
         using var tx = conn.BeginTransaction();
-        const int BatchSize = 500;
-        for (var i = 0; i < idList.Count; i += BatchSize)
+        const int BatchSize = 400; // 400×2+2=802 参数，低于 999
+        for (var i = 0; i < list.Count; i += BatchSize)
         {
-            var batch = idList.Skip(i).Take(BatchSize).ToList();
-            var paramNames = Enumerable.Range(0, batch.Count).Select(k => "@id" + k).ToList();
+            var batch = list.Skip(i).Take(BatchSize).ToList();
             using var cmd = conn.CreateCommand();
             cmd.Transaction = tx;
-            cmd.CommandText = $"UPDATE child_record SET synced_at=@t WHERE id IN ({string.Join(",", paramNames)})";
-            cmd.AddUtc("@t", syncedAt);
+            var caseParts = new List<string>(batch.Count);
+            var inParts = new List<string>(batch.Count);
             for (var j = 0; j < batch.Count; j++)
-                cmd.Parameters.AddWithValue(paramNames[j], batch[j]);
+            {
+                caseParts.Add($"WHEN @id{j} THEN CASE WHEN updated_at=@v{j} THEN @t ELSE NULL END");
+                inParts.Add($"@id{j}");
+                cmd.Parameters.AddWithValue($"@id{j}", batch[j].Id);
+                cmd.AddUtc($"@v{j}", batch[j].UpdatedAt);
+            }
+            cmd.AddUtc("@t", syncedAt);
+            cmd.CommandText =
+                $"UPDATE child_record SET synced_at = CASE id {string.Join(" ", caseParts)} END " +
+                $"WHERE id IN ({string.Join(",", inParts)})";
             cmd.ExecuteNonQuery();
         }
         tx.Commit();

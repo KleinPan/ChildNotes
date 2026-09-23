@@ -36,6 +36,14 @@ public sealed class ApiSyncService : BaseApiClient
     /// <summary>本次同步中收集的 join_request 状态变化（事务提交后用于生成通知）。</summary>
     private readonly List<(SyncFamilyJoinRequestItem item, string? oldStatus)> _pendingJoinNotifications = new();
 
+    /// <summary>
+    /// 本次同步中是否发生过"申请通过 → ResetLastSyncAt"事件（毒丸修复 #6）。
+    /// ResetLastSyncAt 在 Pull 后立即置 DB 的 last_sync_at=NULL，但 Push 成功后第 5 步
+    /// Save(cfg) 会用同步开始时的内存快照（LastSyncAt=pushServerTime）把 NULL 覆盖回去，
+    /// 全量拉取失效、新成员漏拉加入前历史。因此记录标记，第 5 步 Save 之后再断言一次 NULL。
+    /// </summary>
+    private bool _joinApprovedFullPullReset;
+
     /// <summary>同步过程依赖的网络监测器（可选，由 ServiceProvider 注入）。</summary>
     public NetworkMonitor? NetworkMonitor { get; set; }
 
@@ -105,6 +113,7 @@ public sealed class ApiSyncService : BaseApiClient
             return new SyncResult { Success = false, Message = "当前无网络连接，已自动切换至离线模式", ErrorKind = SyncErrorKind.Network };
 
         IsRunning = true;
+        _joinApprovedFullPullReset = false; // 每轮同步重置，防上一轮异常残留导致多余全量拉取
         try
         {
             // 0. 同步前数据库快照备份（防极端损坏，如 Pull 把数据洗坏时可回滚）
@@ -246,25 +255,31 @@ public sealed class ApiSyncService : BaseApiClient
             var cloudUid = cfg.CloudUserId;
             var familyId = cfg.CurrentFamilyId;
             const int pushBatchSize = 500;
-            DateTime pushServerTime = DateTime.UtcNow;
+            // 以 Pull 阶段最后一页的 ServerTime 为基准（服务器时钟），而非本地 DateTime.UtcNow：
+            // 四类均无增量时若落本地时钟，本机时钟偏快（Android 离线自动对时漂移常见）会使
+            // LastSyncAt 超前服务器，下次 Pull 的 since 跳过时间差内他机变更（漏拉）。
+            // 有推送时会被各批次的 resp.ServerTime 覆盖，行为不变。
+            DateTime pushServerTime = pullServerTime;
 
             // 各类累计统计（跨批次累加，语义与原单批版一致）
-            var babyIds = new List<string>();
-            var recordIds = new List<string>();
-            var milestoneIds = new List<string>();
             int totalBabies = 0, totalRecords = 0, totalMilestones = 0, totalSignIns = 0;
             int pushedBabies = 0, pushedRecords = 0, pushedMilestones = 0, pushedSignIns = 0;
             var foreignBabyIds = new List<string>();
             var foreignRecordIds = new List<string>();
             var foreignMilestoneIds = new List<string>();
 
-            // babies：先推（服务端先落库 baby 权限集合，后续 records/milestones 才能通过归属校验）
-            for (int offset = 0; ; offset += pushBatchSize)
+            // Push 遍历基于"待推送 id 快照"：一次性取回 id 列表后按块取整行上送。
+            // 原 LIMIT/OFFSET 分页在同步期间有本地写入（UI 编辑）时会插页错位，跳过/重复读行。
+            // 快照固定遍历集合；同步期间的编辑由 MarkSynced 的版本条件兜底（变更行清 synced_at 重推）。
+            // babies 先推（服务端先落库 baby 权限集合，后续 records/milestones 才能通过归属校验）
+            var babyIds = _babyRepo.GetPendingIds(pushSince);
+            var babyVersions = new List<(string Id, DateTime UpdatedAt)>(babyIds.Count);
+            for (int offset = 0; offset < babyIds.Count; offset += pushBatchSize)
             {
-                var page = _babyRepo.GetByUpdatedAt(pushSince, pushBatchSize, offset);
+                var page = _babyRepo.GetByIds(babyIds.Skip(offset).Take(pushBatchSize).ToList());
                 if (page.Count == 0) break;
                 totalBabies += page.Count;
-                babyIds.AddRange(page.Select(b => b.Id));
+                babyVersions.AddRange(page.Select(b => (b.Id, b.UpdatedAt)));
                 var req = new SyncBatchRequest
                 {
                     Babies = page.Select(b => SyncMappers.MapToBabyItem(b, cloudUid, familyId)).ToList(),
@@ -275,16 +290,17 @@ public sealed class ApiSyncService : BaseApiClient
                 pushedBabies += resp.BabiesUpserted;
                 foreignBabyIds.AddRange(resp.SkippedForeignBabyIds);
                 pushServerTime = resp.ServerTime;
-                if (page.Count < pushBatchSize) break;
             }
 
             // records
-            for (int offset = 0; ; offset += pushBatchSize)
+            var recordIds = _recordRepo.GetPendingIds(pushSince);
+            var recordVersions = new List<(string Id, DateTime UpdatedAt)>(recordIds.Count);
+            for (int offset = 0; offset < recordIds.Count; offset += pushBatchSize)
             {
-                var page = _recordRepo.GetByUpdatedAt(pushSince, pushBatchSize, offset);
+                var page = _recordRepo.GetByIds(recordIds.Skip(offset).Take(pushBatchSize).ToList());
                 if (page.Count == 0) break;
                 totalRecords += page.Count;
-                recordIds.AddRange(page.Select(r => r.Id));
+                recordVersions.AddRange(page.Select(r => (r.Id, r.UpdatedAt)));
                 var req = new SyncBatchRequest
                 {
                     Records = page.Select(r => SyncMappers.MapToRecordItem(r, cloudUid, familyId)).ToList(),
@@ -295,16 +311,17 @@ public sealed class ApiSyncService : BaseApiClient
                 pushedRecords += resp.RecordsUpserted;
                 foreignRecordIds.AddRange(resp.SkippedForeignRecordIds);
                 pushServerTime = resp.ServerTime;
-                if (page.Count < pushBatchSize) break;
             }
 
             // milestones
-            for (int offset = 0; ; offset += pushBatchSize)
+            var milestoneIds = _milestoneRepo.GetPendingIds(pushSince);
+            var milestoneVersions = new List<(string Id, DateTime UpdatedAt)>(milestoneIds.Count);
+            for (int offset = 0; offset < milestoneIds.Count; offset += pushBatchSize)
             {
-                var page = _milestoneRepo.GetByUpdatedAt(pushSince, pushBatchSize, offset);
+                var page = _milestoneRepo.GetByIds(milestoneIds.Skip(offset).Take(pushBatchSize).ToList());
                 if (page.Count == 0) break;
                 totalMilestones += page.Count;
-                milestoneIds.AddRange(page.Select(m => m.Id));
+                milestoneVersions.AddRange(page.Select(m => (m.Id, m.UpdatedAt)));
                 var req = new SyncBatchRequest
                 {
                     Milestones = page.Select(m => SyncMappers.MapToMilestoneItem(m, cloudUid, familyId)).ToList(),
@@ -315,7 +332,6 @@ public sealed class ApiSyncService : BaseApiClient
                 pushedMilestones += resp.MilestonesUpserted;
                 foreignMilestoneIds.AddRange(resp.SkippedForeignMilestoneIds);
                 pushServerTime = resp.ServerTime;
-                if (page.Count < pushBatchSize) break;
             }
 
             // signIns（个人数据，按 CreatedAt 增量）
@@ -344,6 +360,8 @@ public sealed class ApiSyncService : BaseApiClient
             //    skippedForeign（跨家庭 terminal skip）视为终态：曾同步到其他家庭的数据永久留本机，
             //    记冲突日志后随全批 MarkSynced，防止无限重推（见设计文档 6.3）。
             //    整体仍视为成功（更新 LastSyncAt），但 LastSyncMsg 加"部分丢弃"提示（排除 foreign 行）。
+            //    MarkSynced 带 updated_at 版本条件：同步期间被编辑的行（版本已变）会被清 synced_at=NULL，
+            //    下次同步经 synced_at IS NULL 分支重新推送，不会误标导致编辑永久丢失。
             var babyForeign = foreignBabyIds.Count;
             var recordForeign = foreignRecordIds.Count;
             var milestoneForeign = foreignMilestoneIds.Count;
@@ -360,12 +378,12 @@ public sealed class ApiSyncService : BaseApiClient
             }
             try
             {
-                if (!babyDropped && babyIds.Count > 0)
-                    _babyRepo.MarkSynced(babyIds, pushServerTime);
-                if (!recordDropped && recordIds.Count > 0)
-                    _recordRepo.MarkSynced(recordIds, pushServerTime);
-                if (!milestoneDropped && milestoneIds.Count > 0)
-                    _milestoneRepo.MarkSynced(milestoneIds, pushServerTime);
+                if (!babyDropped && babyVersions.Count > 0)
+                    _babyRepo.MarkSynced(babyVersions, pushServerTime);
+                if (!recordDropped && recordVersions.Count > 0)
+                    _recordRepo.MarkSynced(recordVersions, pushServerTime);
+                if (!milestoneDropped && milestoneVersions.Count > 0)
+                    _milestoneRepo.MarkSynced(milestoneVersions, pushServerTime);
             }
             catch (Exception ex)
             {
@@ -382,6 +400,17 @@ public sealed class ApiSyncService : BaseApiClient
                 ? $"，另有 {babyForeign + recordForeign + milestoneForeign} 条其他家庭的历史数据已保留在本机" : "";
             cfg.LastSyncMsg = $"拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到；推送 {pushedBabies}宝/{pushedRecords}条/{pushedMilestones}里程碑/{pushedSignIns}签到{foreignHint}{partialHint}";
             _cfgRepo.Save(cfg);
+
+            // 5.1 毒丸修复 #6：本次同步若发生过"申请通过 → ResetLastSyncAt"（2.1 步），
+            // 上面的 Save(cfg) 已用同步开始时的内存快照把 last_sync_at=NULL 覆盖回去。
+            // 这里重新断言 NULL，保证下次同步做全量 Pull，新成员能拉到加入前的历史数据。
+            // 顺序保证崩溃安全：任何一步之后崩溃，DB 里 last_sync_at 至少有一个状态可回退；
+            // 最坏情况（Save 后断言前崩溃）= 回到旧行为（增量拉取），不比修复前差。
+            if (_joinApprovedFullPullReset)
+            {
+                _cfgRepo.ResetLastSyncAt();
+                DevLogger.Log("Sync", "JoinRequest approved this sync, re-assert LastSyncAt=NULL after cfg save (full pull next)");
+            }
 
             // 6. 通知网络监测器本次成功，加速从 OfflineServer 恢复
             NetworkMonitor?.ProbeNow();
@@ -485,7 +514,10 @@ public sealed class ApiSyncService : BaseApiClient
                 // 增量同步的 since > updated_at 过滤条件会把历史数据全过滤掉。
                 else if (oldStatus == "pending" && newStatus == "approved" && isApplicant)
                 {
+                    // 立即重置 + 记标记：Push 成功后的 Save(cfg) 会用同步开始时的内存快照把
+                    // last_sync_at 覆盖回去（毒丸修复 #6），第 5 步 Save 后再断言一次 NULL。
                     _cfgRepo.ResetLastSyncAt();
+                    _joinApprovedFullPullReset = true;
                     DevLogger.Log("Sync", $"JoinRequest approved, reset LastSyncAt for full pull (baby={babyIdShort})");
                     _inAppMessageService.Insert(new InAppMessage
                     {
