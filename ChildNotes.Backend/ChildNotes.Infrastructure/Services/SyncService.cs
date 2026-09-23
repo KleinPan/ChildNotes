@@ -400,13 +400,32 @@ public class SyncService : ISyncService
     // 个人数据（per-User）：UserId 必须是当前用户，不随家庭切换。
     var signInsUpserted = 0;
     // 批量预查本批 signIn（消除 N+1，语义说明同 babies 预查；SignInRecord 无软删过滤器）
-    var signInItemIds = (req.SignIns ?? new()).Select(s => s.Id).ToList();
+    var signInItems = req.SignIns ?? new();
+    var signInItemIds = signInItems.Select(s => s.Id).ToList();
     var existingSignIns = signInItemIds.Count == 0
         ? new Dictionary<string, SignInRecord>()
         : await _db.SignInRecords
             .Where(s => signInItemIds.Contains(s.Id))
             .ToDictionaryAsync(s => s.Id, ct);
-    foreach (var item in req.SignIns ?? new())
+
+    // 毒丸批修复：SignInRecord 有 (UserId, SignDate) 唯一索引。离线签到（客户端自生成 Id）与
+    // 服务端 REST 签到同日各一条时，Add 路径会在 SaveChanges 抛 DbUpdateException → 整批
+    // records/milestones/signIns 全部回滚并 500，客户端无限重试永不成功。预查本批涉及日期的
+    // 已有签到，命中即按"该日已签到"幂等成功处理（upserted++，与 baby 时间戳相等的幂等重推
+    // 语义一致），客户端游标增量推送且签到无 MarkSynced 依赖，不会产生重复推送循环。
+    // 剩余竞态：同用户双设备并发 push 同日签到同时通过预查（毫秒级窗口，概率极低；后到者
+    // 重试时走本幂等路径成功）；同批内两条同日 signIn 由 takenSignDates.Add 拦截。
+    var newSignInDates = signInItems
+        .Where(s => !existingSignIns.ContainsKey(s.Id))
+        .Select(s => DateTime.SpecifyKind(s.SignDate, DateTimeKind.Utc))
+        .Distinct().ToList();
+    var takenSignDates = newSignInDates.Count == 0
+        ? new HashSet<DateTime>()
+        : (await _db.SignInRecords
+            .Where(r => r.UserId == uid && newSignInDates.Contains(r.SignDate))
+            .Select(r => r.SignDate).ToListAsync(ct)).ToHashSet();
+
+    foreach (var item in signInItems)
     {
         if (item.UserId != uid)
         {
@@ -418,11 +437,19 @@ public class SyncService : ISyncService
         existingSignIns.TryGetValue(item.Id, out var existing);
         if (existing is null)
         {
+            var signDate = DateTime.SpecifyKind(item.SignDate, DateTimeKind.Utc);
+            if (!takenSignDates.Add(signDate))
+            {
+                _logger.LogInformation("signIn duplicate day skipped (idempotent): id={Id}, signDate={SignDate}, jwt.uid={Uid}",
+                    item.Id, item.SignDate, uid);
+                signInsUpserted++;
+                continue;
+            }
             _db.SignInRecords.Add(new SignInRecord
             {
                 Id = item.Id,
                 UserId = item.UserId,
-                SignDate = DateTime.SpecifyKind(item.SignDate, DateTimeKind.Utc),
+                SignDate = signDate,
                 ContinuousDays = item.ContinuousDays,
                 RewardPoints = item.Reward,
                 CreatedAt = DateTime.SpecifyKind(item.CreatedAt, DateTimeKind.Utc),

@@ -532,4 +532,109 @@ public class SyncFlowTests
         var ms = pullBody.GetProperty("data").GetProperty("milestones")[0];
         Assert.Equal("v2-newer", ms.GetProperty("content").GetString());
     }
+
+    /// <summary>
+    /// 毒丸批修复：离线签到（客户端自生成 Id）与服务端 REST 签到同日各一条时，
+    /// SignInRecord 的 (UserId, SignDate) 唯一索引曾使 Add 抛 DbUpdateException →
+    /// 整批（含批内 records）回滚 500，客户端无限重试永不成功。
+    /// 修复后：同日重复按幂等成功处理，批内其他数据正常落库。
+    /// </summary>
+    [Fact]
+    public async Task Push_SignInDuplicateDay_IdempotentSuccess_BatchNotPoisoned()
+    {
+        using var factory = NewFactory();
+        var client = await NewAuthClientAsync(factory, "sync_dupsign_" + Guid.NewGuid().ToString("N")[..6]);
+        var babyId = await CreateBabyAsync(client);
+        var me = await client.GetFromJsonAsync<JsonElement>("/api/auth/me");
+        var uid = me.GetProperty("data").GetProperty("id").GetString()!;
+
+        // 服务端 REST 签到：落库一条今日签到（服务端生成 Id）
+        var signResp = await client.PostAsJsonAsync("/api/points/sign-in", new { });
+        var signBody = await signResp.Content.ReadAsStringAsync();
+        Assert.True(signResp.IsSuccessStatusCode, signBody);
+
+        // push 一批：1 条记录 + 1 条同日不同 Id 的离线签到（模拟离线签到后与服务端签到撞日）
+        var now = DateTime.UtcNow;
+        var resp = await client.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
+        {
+            Records = new()
+            {
+                new SyncRecordItem
+                {
+                    Id = Guid.NewGuid().ToString("N"), UserId = uid, BabyId = babyId,
+                    RecordType = "feed", RecordDate = DateTime.Today, RecordTime = now,
+                    AmountMl = 90, PayloadJson = "{}", CreatedAt = now, UpdatedAt = now,
+                }
+            },
+            SignIns = new()
+            {
+                new SyncSignInItem
+                {
+                    Id = Guid.NewGuid().ToString("N"), UserId = uid,
+                    SignDate = DateTime.Today, ContinuousDays = 1, Reward = 5, CreatedAt = now,
+                }
+            },
+        });
+        var respBody = await resp.Content.ReadAsStringAsync();
+        Assert.True(resp.IsSuccessStatusCode, $"push 应成功而非 500: {respBody}");
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        var data = body.GetProperty("data");
+        Assert.Equal(1, data.GetProperty("recordsUpserted").GetInt32());
+        // 同日重复签到按幂等成功计数（语义 = 该日已签到）
+        Assert.Equal(1, data.GetProperty("signInsUpserted").GetInt32());
+
+        // DB 校验：该用户仍只有服务端那 1 条签到（无重复行），批内 record 正常落库
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            var signInCount = await db.SignInRecords.CountAsync(r => r.UserId == uid);
+            Assert.Equal(1, signInCount);
+            var recordCount = await db.ChildRecords.IgnoreQueryFilters().CountAsync(r => r.UserId == uid);
+            Assert.Equal(1, recordCount);
+        }
+
+        // pull 正常返回（同步链路整体无异常）
+        var resp2 = await client.GetAsync("/api/sync/pull");
+        Assert.True(resp2.IsSuccessStatusCode);
+    }
+
+    /// <summary>
+    /// 同批内两条同日签到（不同 Id）：第二条应幂等跳过，不落库不 500。
+    /// </summary>
+    [Fact]
+    public async Task Push_TwoSignInsSameDayInOneBatch_SecondIdempotentSkipped()
+    {
+        using var factory = NewFactory();
+        var client = await NewAuthClientAsync(factory, "sync_twosign_" + Guid.NewGuid().ToString("N")[..6]);
+        var me = await client.GetFromJsonAsync<JsonElement>("/api/auth/me");
+        var uid = me.GetProperty("data").GetProperty("id").GetString()!;
+
+        var now = DateTime.UtcNow;
+        var resp = await client.PostAsJsonAsync("/api/sync/push", new SyncBatchRequest
+        {
+            SignIns = new()
+            {
+                new SyncSignInItem
+                {
+                    Id = Guid.NewGuid().ToString("N"), UserId = uid,
+                    SignDate = DateTime.Today, ContinuousDays = 1, Reward = 5, CreatedAt = now,
+                },
+                new SyncSignInItem
+                {
+                    Id = Guid.NewGuid().ToString("N"), UserId = uid,
+                    SignDate = DateTime.Today, ContinuousDays = 1, Reward = 5, CreatedAt = now.AddSeconds(1),
+                },
+            },
+        });
+        var respBody = await resp.Content.ReadAsStringAsync();
+        Assert.True(resp.IsSuccessStatusCode, respBody);
+        var body = await resp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(2, body.GetProperty("data").GetProperty("signInsUpserted").GetInt32());
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            Assert.Equal(1, await db.SignInRecords.CountAsync(r => r.UserId == uid));
+        }
+    }
 }
