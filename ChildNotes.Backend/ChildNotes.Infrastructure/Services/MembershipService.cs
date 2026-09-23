@@ -71,8 +71,10 @@ public class MembershipService : IMembershipService
         if (channel == MembershipConstants.ChannelMock && !_opt.EnableMockPayment)
             throw new BusinessException("Mock 支付未启用", 400, "MOCK_DISABLED");
 
-        // 支付宝支付必须配置凭证
-        if (channel == MembershipConstants.ChannelAlipay && !_opt.EnableMockPayment)
+        // 支付宝支付必须配置凭证。
+        // 注意：判断只看渠道本身，不叠加 EnableMockPayment——否则 mock 开关一开，
+        // alipay 真实订单会静默降级为"无凭证 + 空 PayParams"的断裂路径（缺陷 B 修复）。
+        if (channel == MembershipConstants.ChannelAlipay)
         {
             if (string.IsNullOrEmpty(_opt.Alipay.AppId) || string.IsNullOrEmpty(_opt.Alipay.PrivateKey))
                 throw new BusinessException("支付宝未配置", 500, "ALIPAY_NOT_CONFIGURED");
@@ -106,15 +108,28 @@ public class MembershipService : IMembershipService
             SortOrder = plan.SortOrder,
         };
 
-        // 生成支付参数
+        // 生成支付参数（渠道判断只看渠道本身，与 EnableMockPayment 解耦）
         var payParams = string.Empty;
-        if (channel == MembershipConstants.ChannelAlipay && !_opt.EnableMockPayment)
+        if (channel == MembershipConstants.ChannelAlipay)
         {
             var totalAmount = (plan.PriceCents / 100m).ToString("0.00");
             var subject = $"ChildNotes会员-{plan.Name}";
             payParams = _alipay.BuildOrderInfo(orderNo, totalAmount, subject);
         }
-        // Mock 模式：直接返回空串，前端收到空串后模拟支付成功
+        else if (channel == MembershipConstants.ChannelMock)
+        {
+            // Mock 闭环（缺陷 A 修复）：开发环境直接标记订单已支付并激活会员。
+            // 前端契约：收到空 PayParams 后轮询订单状态，此处保证轮询即见 paid。
+            // 生产环境 EnableMockPayment=false，mock 渠道在上方已被 400 拒绝，无资损面。
+            order.Status = MembershipConstants.OrderStatusPaid;
+            order.TradeNo = $"mock-{orderNo}";
+            order.PaidAt = DateTime.UtcNow;
+            order.CallbackPayload = System.Text.Json.JsonSerializer.Serialize(
+                new Dictionary<string, string> { ["mock"] = "true" });
+            order.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            await ActivateMembershipAsync(uid, order.DurationDays, ct);
+        }
 
         return new CreateOrderResponse
         {
