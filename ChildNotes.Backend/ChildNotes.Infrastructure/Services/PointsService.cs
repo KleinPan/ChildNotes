@@ -89,16 +89,22 @@ public class PointsService : IPointsService
         }
 
         // weekly_growth 额外校验：本周内是否已领取过
+        DateTime periodDate;
         if (normalizedKey == "weekly_growth")
         {
             var weekStart = today.Date.AddDays(-(int)today.DayOfWeek + (int)DayOfWeek.Monday);
             if (today.DayOfWeek == DayOfWeek.Sunday) weekStart = weekStart.AddDays(-7);
+            periodDate = weekStart;
             var weekStartUtc = weekStart.ToUniversalTime();
             var weekEndUtc = weekStartUtc.AddDays(7);
             if (await IsDailyTaskClaimedInternalAsync(uid, normalizedKey, weekStartUtc, weekEndUtc, ct))
             {
                 throw new BusinessException("本周已领取该任务奖励", 400, "TASK_ALREADY_CLAIMED");
             }
+        }
+        else
+        {
+            periodDate = today.Date;
         }
 
         // 判断任务是否完成
@@ -109,6 +115,10 @@ public class PointsService : IPointsService
         }
 
         var now = DateTime.UtcNow;
+        // payload_json 承载领取周期标识（防重唯一索引的组成部分）：
+        // daily 任务 = 当日；weekly_growth = 本周一日期。同周期内容相同 → 唯一索引挡并发双领。
+        var payloadJson = System.Text.Json.JsonSerializer.Serialize(
+            new { date = periodDate.ToString("yyyy-MM-dd") });
         _db.TaskRecords.Add(new TaskRecord
         {
             Id = Guid.NewGuid().ToString("N"),
@@ -118,16 +128,26 @@ public class PointsService : IPointsService
             RelatedUserId = null,
             Points = reward,
             Status = StatusConstants.TaskRecord.Completed,
-            PayloadJson = $"{{\"date\":\"{today:yyyy-MM-dd}\"}}",
+            PayloadJson = payloadJson,
             CreatedAt = now,
             UpdatedAt = now,
         });
 
-        await _db.ExecuteInTransactionAsync(async () =>
+        try
         {
-            await _wallet.ChangeAsync(uid, reward, ct);
-            await _db.SaveChangesAsync(ct);
-        }, ct);
+            await _db.ExecuteInTransactionAsync(async () =>
+            {
+                await _wallet.ChangeAsync(uid, reward, ct);
+                await _db.SaveChangesAsync(ct);
+            }, ct);
+        }
+        catch (DbUpdateException)
+        {
+            // 并发双领防线：两个请求同时通过 IsClaimed 检查（check-then-insert 竞态），
+            // (user, key, period) 唯一索引让后提交者冲突——积分入账（ChangeAsync 立即落库）
+            // 与记录写入同事务整体回滚，转为业务异常提示"已领取"，无积分损失。
+            throw new BusinessException("今日已领取该任务奖励", 400, "TASK_ALREADY_CLAIMED");
+        }
 
         var points = await _wallet.EnsureAsync(uid, ct);
         return new ClaimTaskResponse

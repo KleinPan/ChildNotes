@@ -204,6 +204,14 @@ public class ChildNotesDbContext : DbContext
             e.HasIndex(x => new { x.TaskType, x.RelatedUserId }).IsUnique();
             // 日常任务幂等/状态查询：UserId + TaskType + TaskKey + CreatedAt（当日/本周范围）覆盖索引
             e.HasIndex(x => new { x.UserId, x.TaskType, x.TaskKey, x.CreatedAt });
+            // 领取防重唯一索引（并发双领防线）：daily_task 的幂等维度 = (user, key, 领取周期标识)。
+            // payload_json 由 ClaimTaskAsync 统一写入 {"date":"yyyy-MM-dd"}（daily=当日，
+            // weekly_growth=本周一日期），同周期同 key 内容相同 → 唯一约束挡住并发重复领取，
+            // 服务捕获 DbUpdateException 转业务异常。invite_register 类型被 WHERE 过滤不受影响。
+            e.HasIndex(x => new { x.UserId, x.TaskKey, x.PayloadJson })
+                .IsUnique()
+                .HasFilter("task_type = 'daily_task'")
+                .HasDatabaseName("ux_task_record_daily_claim");
         });
 
         modelBuilder.Entity<LotteryActivity>(e =>
