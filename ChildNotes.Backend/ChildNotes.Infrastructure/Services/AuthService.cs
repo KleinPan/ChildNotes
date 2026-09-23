@@ -481,8 +481,10 @@ public class AuthService : IAuthService
             User = ToLoginUserDto(user),
             NewUser = newUser,
             Families = families,
-            // 与 FamilyService.GetUserFamiliesAsync 同序（CreatedAt 升序），MVP 取首个为当前家庭
-            CurrentFamilyId = families.FirstOrDefault()?.Id,
+            // 当前家庭与同步分区同源（FamilyService.GetCurrentFamilyIdAsync：最近加入优先），
+            // 保证 AuthResponse 告知客户端的绑定家庭与服务端 push/pull 分区解析一致。
+            // Families 列表仅作展示，仍按家庭创建时间升序，不再从中取首个。
+            CurrentFamilyId = await _familyService.GetCurrentFamilyIdAsync(user.Id, ct),
         };
     }
 

@@ -276,6 +276,27 @@ public class BabyService : IBabyService
         // 软删除：Status=removed，UpdatedAt 推进以便同步到其他设备
         member.Status = StatusConstants.BabyMember.Removed;
         member.UpdatedAt = DateTime.UtcNow;
+
+        // FamilyMember 收敛：审批加入 = 家庭级成员（BabyMember 授予 owner 名下全部宝宝）。
+        // 若被移除者在本家庭所有宝宝（含软删）中已无 active 成员记录，同步删除其 FamilyMember 行，
+        // 其"当前家庭"解析随之回落到自建家庭——否则被移除者仍以本家庭为同步分区，可继续拉取家庭数据。
+        // 注意：member 的软删尚未落库，DB 查询须排除该行（按 Id）再判断是否还有剩余成员关系。
+        if (!string.IsNullOrEmpty(baby.FamilyId))
+        {
+            var familyBabyIds = await _db.Babies.IgnoreQueryFilters()
+                .Where(b => b.FamilyId == baby.FamilyId).Select(b => b.Id).ToListAsync(ct);
+            var hasRemaining = await _db.BabyMembers
+                .AnyAsync(m => m.UserId == req.TargetUserId && m.Id != member.Id
+                    && familyBabyIds.Contains(m.BabyId)
+                    && m.Status == StatusConstants.BabyMember.Active, ct);
+            if (!hasRemaining)
+            {
+                var fm = await _db.FamilyMembers.FirstOrDefaultAsync(
+                    x => x.FamilyId == baby.FamilyId && x.UserId == req.TargetUserId, ct);
+                if (fm is not null) _db.FamilyMembers.Remove(fm);
+            }
+        }
+
         await _db.SaveChangesAsync(ct);
     }
 
@@ -399,6 +420,29 @@ public class BabyService : IBabyService
                 }
                 // 推进 baby.UpdatedAt 让新成员下次同步能拉到 baby 本身
                 b.UpdatedAt = now;
+            }
+
+            // Family-centric：审批通过 = 加入 owner 家庭（BabyMember 授予宝宝级 REST 访问，
+            // FamilyMember 授予家庭分区——同步 push/pull 与权限过滤均以"当前家庭"（FamilyMember
+            // 解析）为分区键，缺此行则成员永远无法拉到/推送家庭数据，家庭共享主链路断裂。
+            // 见 docs/development/family-identity-architecture.md）。
+            // 幂等：已是该家庭成员（如曾加入同家庭其他宝宝）直接跳过，(FamilyId, UserId) 唯一索引兜底。
+            if (!string.IsNullOrEmpty(baby.FamilyId))
+            {
+                var fmExists = await _db.FamilyMembers.AnyAsync(
+                    fm => fm.FamilyId == baby.FamilyId && fm.UserId == request.ApplicantUserId, ct);
+                if (!fmExists)
+                {
+                    _db.FamilyMembers.Add(new FamilyMember
+                    {
+                        Id = Guid.NewGuid().ToString("N"),
+                        FamilyId = baby.FamilyId,
+                        UserId = request.ApplicantUserId,
+                        Role = StatusConstants.FamilyMemberRole.Member,
+                        CreatedAt = now,
+                        UpdatedAt = now,
+                    });
+                }
             }
         }
         else
