@@ -7,6 +7,7 @@ using ChildNotes.Infrastructure.External;
 using ChildNotes.Shared.Constants;
 using ChildNotes.Shared.Dtos;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Infrastructure.Services;
@@ -20,14 +21,17 @@ public class MembershipService : IMembershipService
     private readonly ICurrentUserService _current;
     private readonly MembershipOptions _opt;
     private readonly AlipayAppPayClient _alipay;
+    private readonly Microsoft.Extensions.Logging.ILogger<MembershipService> _logger;
 
     public MembershipService(ChildNotesDbContext db, ICurrentUserService current,
-        IOptions<MembershipOptions> opt, AlipayAppPayClient alipay)
+        IOptions<MembershipOptions> opt, AlipayAppPayClient alipay,
+        ILogger<MembershipService> logger)
     {
         _db = db;
         _current = current;
         _opt = opt.Value;
         _alipay = alipay;
+        _logger = logger;
     }
 
     public Task<List<MembershipPlanDto>> GetPlansAsync(CancellationToken ct = default)
@@ -176,26 +180,67 @@ public class MembershipService : IMembershipService
         if (tradeStatus != "TRADE_SUCCESS" && tradeStatus != "TRADE_FINISHED")
             return "success";
 
-        // 事务：更新订单 + 延长会员
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
-        try
+        // 金额校验（资损防线）：回调金额必须与下单快照一致，防止低价成交/篡改开通。
+        // 不一致返回 "fail" 让支付宝重发通知（便于人工对账），订单保持 pending 不激活。
+        // app_id 校验：回调必须属于本应用的订单（seller_id 未配置，暂不校验）。
+        if (!decimal.TryParse(dict.GetValueOrDefault("total_amount"),
+                System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var totalAmount))
         {
-            order.Status = MembershipConstants.OrderStatusPaid;
-            order.TradeNo = tradeNo;
-            order.PaidAt = DateTime.UtcNow;
-            order.CallbackPayload = System.Text.Json.JsonSerializer.Serialize(dict);
-            order.UpdatedAt = DateTime.UtcNow;
+            _logger.LogWarning("alipay notify: invalid/missing total_amount, order={OrderNo}", outTradeNo);
+            return "fail";
+        }
+        if ((int)decimal.Round(totalAmount * 100, MidpointRounding.ToEven) != order.PriceCents)
+        {
+            _logger.LogWarning(
+                "alipay notify: amount mismatch, order={OrderNo}, expect={ExpectCents}cents, notify={NotifyAmount}yuan — kept pending for reconciliation",
+                outTradeNo, order.PriceCents, totalAmount);
+            return "fail";
+        }
+        var notifyAppId = dict.GetValueOrDefault("app_id");
+        if (!string.IsNullOrEmpty(notifyAppId) && !string.IsNullOrEmpty(_opt.Alipay.AppId) && notifyAppId != _opt.Alipay.AppId)
+        {
+            _logger.LogWarning("alipay notify: app_id mismatch, order={OrderNo}, notify={NotifyAppId}", outTradeNo, notifyAppId);
+            return "fail";
+        }
+
+        // 事务：原子抢占订单（WHERE status=pending）+ 延长会员。
+        // 幂等修复：原实现"先读 Status 再事务内全量赋值"，支付宝并发重发通知时两个事务
+        // 都能读到 pending，各自延长一次会员（时长翻倍）；且两笔不同订单并发激活会
+        // last-write-wins 丢一笔延期。现改为条件更新抢占：只有 pending → paid 的更新
+        // 影响行数 > 0 才执行激活，并发重发时后到者 rows==0 直接幂等返回 success。
+        // ExecuteInTransactionAsync：InMemory（测试环境）自动降级为无事务执行。
+        await _db.ExecuteInTransactionAsync(async () =>
+        {
+            // InMemory 不支持 ExecuteUpdateAsync，降级为 EF 跟踪 + 状态复查（测试环境无并发）
+            if (_db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+            {
+                if (order.Status != MembershipConstants.OrderStatusPending)
+                    return; // 并发已处理，幂等
+                order.Status = MembershipConstants.OrderStatusPaid;
+                order.TradeNo = tradeNo;
+                order.PaidAt = DateTime.UtcNow;
+                order.CallbackPayload = System.Text.Json.JsonSerializer.Serialize(dict);
+                order.UpdatedAt = DateTime.UtcNow;
+                await ActivateMembershipAsync(order.UserId, order.DurationDays, ct);
+                return;
+            }
+
+            var now = DateTime.UtcNow;
+            var claimed = await _db.MembershipOrders
+                .Where(o => o.Id == order.Id && o.Status == MembershipConstants.OrderStatusPending)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.Status, MembershipConstants.OrderStatusPaid)
+                    .SetProperty(x => x.TradeNo, tradeNo)
+                    .SetProperty(x => x.PaidAt, now)
+                    .SetProperty(x => x.CallbackPayload, System.Text.Json.JsonSerializer.Serialize(dict))
+                    .SetProperty(x => x.UpdatedAt, now), ct);
+            if (claimed == 0)
+                return; // 另一并发通知已处理该订单：幂等成功，不重复激活
 
             await ActivateMembershipAsync(order.UserId, order.DurationDays, ct);
-            await _db.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-            return "success";
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+        }, ct);
+        // 幂等语义：无论本请求是否执行激活（含并发已处理 rows==0），对支付宝都返回 success 停止重发
+        return "success";
     }
 
     public async Task<int> GetAiNoteDailyLimitAsync(string userId, CancellationToken ct = default)

@@ -377,6 +377,106 @@ public class ApiFlowTests
         Assert.Equal(2, families.GetArrayLength());
     }
 
+    /// <summary>
+    /// 审批通过必须补写 FamilyMember（家庭分区）：否则申请人"当前家庭"仍是自建家庭，
+    /// 同步 push/pull 按 FamilyId 分区永远拉不到/推不了共享家庭数据（家庭共享主链路断裂）。
+    /// 验证：① DB 有 FamilyMember 行；② 服务端当前家庭解析切到共享家庭；
+    /// ③ 申请人 /api/baby/current（按家庭过滤）能返回 owner 的宝宝。
+    /// </summary>
+    [Fact]
+    public async Task JoinApproval_WritesFamilyMember_SyncPartitionSwitchesToSharedFamily()
+    {
+        using var factory = NewFactory();
+        var ownerA = await NewAuthClientAsync(factory, "fOwnA_" + Guid.NewGuid().ToString("N")[..6]);
+        var babyResp = await ownerA.PostAsJsonAsync("/api/baby/add", new CreateBabyRequest { Name = "大宝" });
+        var babyId = (await babyResp.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").GetProperty("id").GetString()!;
+
+        var userBName = "fJoinB_" + Guid.NewGuid().ToString("N")[..6];
+        var userB = await NewAuthClientAsync(factory, userBName);
+        await JoinViaApprovalFlowAsync(userB, ownerA, babyId, "mother");
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            // email 落库时已 ToLowerInvariant 规范化，查询须用小写
+            var bUser = await db.AppUsers.FirstAsync(u => u.Email == $"{userBName}@test.local".ToLowerInvariant());
+            var baby = await db.Babies.FirstAsync(b => b.Id == babyId);
+
+            // ① FamilyMember 行已补写（Role=member）
+            var fm = await db.FamilyMembers.FirstOrDefaultAsync(
+                x => x.FamilyId == baby.FamilyId && x.UserId == bUser.Id);
+            Assert.NotNull(fm);
+            Assert.Equal(StatusConstants.FamilyMemberRole.Member, fm!.Role);
+
+            // ② 服务端"当前家庭"解析已切换到共享家庭（同步分区键）
+            var familyService = scope.ServiceProvider.GetRequiredService<IFamilyService>();
+            var currentFid = await familyService.GetCurrentFamilyIdAsync(bUser.Id);
+            Assert.Equal(baby.FamilyId, currentFid);
+        }
+
+        // ③ 家庭过滤的默认宝宝接口返回 owner 的宝宝（分区切换的端到端表现）
+        var curResp = await userB.GetAsync("/api/baby/current");
+        var curBody = await curResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("000000", curBody.GetProperty("state").GetString());
+        Assert.Equal("大宝", curBody.GetProperty("data").GetProperty("name").GetString());
+    }
+
+    /// <summary>
+    /// 被移除者在本家庭已无 active BabyMember 时，FamilyMember 行须一并删除：
+    /// 否则其"当前家庭"仍解析为共享家庭，可继续以该分区拉取家庭数据（隐私泄漏）。
+    /// </summary>
+    [Fact]
+    public async Task RemoveMember_LastBabyRemoved_DeletesFamilyMemberPartition()
+    {
+        using var factory = NewFactory();
+        var ownerA = await NewAuthClientAsync(factory, "rmOwnA_" + Guid.NewGuid().ToString("N")[..6]);
+        var babyResp = await ownerA.PostAsJsonAsync("/api/baby/add", new CreateBabyRequest { Name = "大宝" });
+        var babyRespBody = await babyResp.Content.ReadAsStringAsync();
+        Assert.True(babyResp.IsSuccessStatusCode, babyRespBody);
+        var babyId = (await babyResp.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("data").GetProperty("id").GetString()!;
+
+        var userBName = "rmJoinB_" + Guid.NewGuid().ToString("N")[..6];
+        var userB = await NewAuthClientAsync(factory, userBName);
+        await JoinViaApprovalFlowAsync(userB, ownerA, babyId, "father");
+
+        // owner 移除 B（DELETE 带 body）
+        string targetUserId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            targetUserId = (await db.AppUsers.FirstAsync(u => u.Email == $"{userBName}@test.local".ToLowerInvariant())).Id;
+        }
+        var removeReq = new HttpRequestMessage(HttpMethod.Delete, "/api/baby/family/member")
+        {
+            Content = JsonContent.Create(new RemoveMemberRequest { BabyId = babyId, TargetUserId = targetUserId }),
+        };
+        var removeResp = await ownerA.SendAsync(removeReq);
+        var removeBody = await removeResp.Content.ReadAsStringAsync();
+        Assert.True(removeResp.IsSuccessStatusCode, removeBody);
+
+        // FamilyMember 行已删除：B 的当前家庭回落到自建家庭
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            var baby = await db.Babies.FirstAsync(b => b.Id == babyId);
+            var fm = await db.FamilyMembers.FirstOrDefaultAsync(
+                x => x.FamilyId == baby.FamilyId && x.UserId == targetUserId);
+            Assert.Null(fm);
+
+            var familyService = scope.ServiceProvider.GetRequiredService<IFamilyService>();
+            var currentFid = await familyService.GetCurrentFamilyIdAsync(targetUserId);
+            Assert.NotEqual(baby.FamilyId, currentFid);
+        }
+
+        // 家庭过滤的默认宝宝接口不再返回 owner 的宝宝
+        var curResp = await userB.GetAsync("/api/baby/current");
+        var curBody = await curResp.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("000000", curBody.GetProperty("state").GetString());
+        Assert.Equal(JsonValueKind.Null, curBody.GetProperty("data").ValueKind);
+    }
+
     [Fact]
     public async Task UpdateMyRole_OnlyAffectsSelf()
     {
@@ -490,6 +590,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>获取指定邮箱最后一次发送的验证码明文（仅测试 stub 场景）。</summary>
     public string? GetLastCode(string email) => _emailSender.GetLastCode(email);
 
+    /// <summary>可选：支付宝回调测试用，自定义 MembershipOptions（如注入测试用支付宝公钥）。</summary>
+    public Action<Core.Config.MembershipOptions>? ConfigureMembershipOptions { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -500,6 +603,9 @@ public class ApiFactory : WebApplicationFactory<Program>
             {
                 opt.InitPassword = TestAdminPassword;
             });
+            // 支付宝回调测试：注入测试密钥等自定义配置
+            if (ConfigureMembershipOptions is not null)
+                services.PostConfigure(ConfigureMembershipOptions);
             // 测试环境覆盖 EmailAuth：缩短重发间隔，避免 60s 限流影响测试
             services.PostConfigure<Core.Config.EmailAuthOptions>(opt =>
             {
