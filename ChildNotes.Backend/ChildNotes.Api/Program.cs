@@ -221,13 +221,27 @@ app.UseCors();
 // 已知代理仅本机回环（ForwardedHeadersOptions 默认 KnownNetworks 含 127.0.0.0/8 与 ::1/128），
 // 客户端伪造的 XFF 首段会被正确跳过——限流中间件据此取 IP，堵住"伪造 XFF 绕过限流"的路径。
 // 仅当 RateLimit:TrustProxyHeaders=true（部署在反向代理之后）时启用。
+// #20：KnownProxies 可配置（RateLimit:KnownProxies 数组，IP 或 IP:port）——反向代理不在本机
+// （独立 Caddy 服务器 / 容器网络）时，默认回环白名单不信任该代理，所有用户都会显示为代理 IP，
+// 限流把全体用户算同一 IP（一个高频用户触发 429 全站遭殃）、黑名单误封代理 IP = 封禁全站。
+// 生产部署在反向代理之后时，必须把代理服务器 IP 加入 RateLimit:KnownProxies。
 var rateLimitOpt = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<ChildNotes.Core.Config.RateLimitOptions>>().Value;
 if (rateLimitOpt.TrustProxyHeaders)
 {
-    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    var fwdOpts = new ForwardedHeadersOptions
     {
         ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
-    });
+    };
+    // ForwardedHeadersOptions 默认 KnownNetworks 含回环网段，KnownProxies 为空——保留默认网络信任，
+    // 仅追加配置的代理 IP（清空默认会导致本机代理也不被信任，破坏现有部署）
+    foreach (var proxy in rateLimitOpt.KnownProxies)
+    {
+        if (System.Net.IPAddress.TryParse(proxy, out var ip))
+            fwdOpts.KnownProxies.Add(ip);
+        else
+            Console.WriteLine($"[WARN] RateLimit:KnownProxies 中的值无法解析为 IP 地址: {proxy}");
+    }
+    app.UseForwardedHeaders(fwdOpts);
 }
 
 // 全局异常处理：将未捕获异常统一包装为 ApiResponse，避免泄漏堆栈

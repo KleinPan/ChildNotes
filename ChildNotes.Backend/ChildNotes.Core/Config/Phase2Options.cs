@@ -56,6 +56,15 @@ public class RateLimitOptions
     public int MaxRequestsPerSecond { get; set; } = 5;
     public int BlacklistRequestsPerSecond { get; set; } = 10;
     public bool TrustProxyHeaders { get; set; } = true;
+
+    /// <summary>
+    /// 可信反向代理 IP 列表（#20）。TrustProxyHeaders=true 时追加到 ForwardedHeaders.KnownProxies。
+    /// 反向代理不在本机（独立 Caddy 服务器 / 容器网络）时必须配置代理 IP，否则所有用户的
+    /// 请求都会显示为代理 IP：限流把全体用户算同一 IP（一个高频用户触发 429 全站遭殃）、
+    /// 黑名单误封代理 IP = 封禁全站。本机回环代理（默认 KnownNetworks）无需配置。
+    /// 配置示例（appsettings.json）："KnownProxies": ["10.0.0.8", "172.17.0.5"]
+    /// </summary>
+    public List<string> KnownProxies { get; set; } = new();
 }
 
 public class UploadOptions
