@@ -21,6 +21,7 @@ public class DeepSeekClient
     private readonly DeepSeekOptions _opt;
     private readonly ILogger<DeepSeekClient> _logger;
     private readonly TimeSpan _endpointTimeout;
+    private readonly TimeSpan _totalTimeout;
 
     public DeepSeekClient(HttpClient http, IOptions<DeepSeekOptions> opt, ILogger<DeepSeekClient> logger)
     {
@@ -30,9 +31,14 @@ public class DeepSeekClient
         // HttpClient 的 BaseAddress/Authorization 在每次调用前动态设置（支持主备双端点），
         // 不在构造函数写死，避免切换备用端点时残留主用配置。
         _http.Timeout = TimeSpan.FromSeconds(120);
-        // 单端点超时：必须小于 App 端 30 秒 HTTP 超时，主用超时后还能降级备用端点并在 30 秒内返回。
+        // 单端点超时：主备共享总预算（_totalTimeout），端点超时视为端点故障以触发降级。
         var seconds = _opt.EndpointTimeoutSeconds > 0 ? _opt.EndpointTimeoutSeconds : 20;
         _endpointTimeout = TimeSpan.FromSeconds(seconds);
+        // 总时间预算（#15）：必须小于 App 端 30 秒 HTTP 超时。主备共享同一 deadline，
+        // 防止"主用耗满 20s + 备用再耗 20s = 40s"超出 App 等待窗口，导致 App 已超时
+        // 报错而服务端备用调用照跑（LLM 费用照付、结果被丢弃）。
+        var totalSeconds = _opt.TotalTimeoutSeconds > 0 ? _opt.TotalTimeoutSeconds : 28;
+        _totalTimeout = TimeSpan.FromSeconds(totalSeconds);
     }
 
     public virtual async Task<(string text, string model)> ChatAsync(string systemPrompt, string userMessage, CancellationToken ct = default)
@@ -40,17 +46,25 @@ public class DeepSeekClient
         if (string.IsNullOrEmpty(_opt.ApiKey))
             throw new InvalidOperationException("DeepSeek API key is not configured");
 
+        // 总预算 CTS（#15）：主备共享 deadline，同时受用户取消（ct）约束。
+        // 主用失败降级备用时传入同一 requestCt，备用只能使用剩余预算；
+        // 预算耗尽时 catch 的 filter（!requestCt.IsCancellationRequested）不再放行降级，直接抛出。
+        using var totalCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        totalCts.CancelAfter(_totalTimeout);
+        var requestCt = totalCts.Token;
+        var startedAt = DateTime.UtcNow;
+
         // 主用端点
         try
         {
-            return await CallEndpointAsync(_opt.BaseUrl, _opt.ApiKey, _opt.Model, systemPrompt, userMessage, ct);
+            return await CallEndpointAsync(_opt.BaseUrl, _opt.ApiKey, _opt.Model, systemPrompt, userMessage, requestCt);
         }
-        catch (Exception ex) when (_opt.Fallback is { } fb && !string.IsNullOrEmpty(fb.ApiKey) && !ct.IsCancellationRequested)
+        catch (Exception ex) when (_opt.Fallback is { } fb && !string.IsNullOrEmpty(fb.ApiKey) && !requestCt.IsCancellationRequested)
         {
-            // 主用失败且配置了备用端点：降级重试。取消异常不降级（用户主动取消）。
-            _logger.LogWarning("[AI-LOG] 主用 LLM 调用失败，降级到备用端点 model={Model} err={Err}",
-                fb.Model, TruncateForLog(ex.Message, 200));
-            return await CallEndpointAsync(fb.BaseUrl, fb.ApiKey, fb.Model, systemPrompt, userMessage, ct);
+            // 主用失败且配置了备用端点：降级重试。取消/总预算耗尽不降级（用户主动取消或预算已尽）。
+            _logger.LogWarning("[AI-LOG] 主用 LLM 调用失败，降级到备用端点（剩余预算 {Remaining:F1}s）model={Model} err={Err}",
+                Math.Max(0, (_totalTimeout - (DateTime.UtcNow - startedAt)).TotalSeconds), fb.Model, TruncateForLog(ex.Message, 200));
+            return await CallEndpointAsync(fb.BaseUrl, fb.ApiKey, fb.Model, systemPrompt, userMessage, requestCt);
         }
     }
 

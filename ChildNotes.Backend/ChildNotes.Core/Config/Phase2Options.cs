@@ -12,10 +12,19 @@ public class DeepSeekOptions
 
     /// <summary>
     /// 单端点调用超时（秒），主用/备用端点共用。
-    /// 必须小于 App 端 HTTP 30 秒超时：主用超时后降级备用端点，保证总耗时仍在 30 秒内返回。
-    /// 端点超时视为端点故障（非用户取消），会触发 Fallback 降级。&lt;=0 时使用默认 20 秒。
+    /// 必须小于 App 端 HTTP 30 秒超时。端点超时视为端点故障（非用户取消），会触发 Fallback 降级。&lt;=0 时使用默认 20 秒。
     /// </summary>
     public int EndpointTimeoutSeconds { get; set; } = 20;
+
+    /// <summary>
+    /// 主备两端点的总时间预算（秒，#15）。必须小于 App 端 HTTP 30 秒超时。
+    /// 原实现主备各自 20 秒独立计时，主用耗满 20s 失败后备用还有完整 20s，
+    /// 总耗时可达 40s——App 端 30s 已超时报错，服务端备用调用照跑（LLM 费用照付），
+    /// 结果被丢弃；若积分在调用前已扣，用户看到失败但积分被扣。
+    /// 主备共享同一 deadline：主用失败后备用只能使用剩余预算，预算耗尽直接失败不再降级。
+    /// &lt;=0 时使用默认 28 秒。
+    /// </summary>
+    public int TotalTimeoutSeconds { get; set; } = 28;
 
     /// <summary>
     /// 备用 LLM 配置（可选）。主用调用失败（网络异常/非 2xx/超时）时自动降级到此项。
