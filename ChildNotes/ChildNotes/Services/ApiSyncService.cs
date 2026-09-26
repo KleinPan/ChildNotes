@@ -162,7 +162,8 @@ public sealed class ApiSyncService : BaseApiClient
             DateTime pullServerTime = DateTime.UtcNow; // 最后一页的 ServerTime，用于 Full Pull Only 的 LastSyncAt 基准
             SyncCursor? cursor = null; // null 表示第一页，用 since 过滤
             const int pageSize = 500;
-            const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
+            const int maxPages = 100; // 安全上限：100 页 * 500 = 50000 条（#10：提升降低截断概率）
+            var pullTruncated = false; // #10：达到页数上限仍未拉完（防漏拉：不得推进水位）
             using (var pullConn = _dbFactory.Create())
             {
                 while (pullPages < maxPages)
@@ -214,6 +215,12 @@ public sealed class ApiSyncService : BaseApiClient
                     cursor = pageResp.NextCursor;
                     if (cursor is null) break; // 无游标但 HasMore=true 的防御性退出
                 }
+                // #10 漏拉防护：循环退出后若服务器仍有数据（HasMore 未清），说明达到
+                // maxPages 上限被截断。此时推进水位（LastSyncAt=ServerTime）会让
+                // 未拉取的数据永久漏拉（下次 Pull 的 since 直接跳过它们）。
+                // 标记截断，两处水位更新点（首次登录 / 正常同步）据此保持旧水位，
+                // 下次同步从旧 since 重拉——已拉取部分由 upsert 幂等吸收，仅重复劳动无丢数据。
+                pullTruncated = pullPages >= maxPages && cursor is not null;
             }
 
             // 2.1 处理 join_request 状态变化，生成本地 InAppMessage 通知
@@ -225,6 +232,23 @@ public sealed class ApiSyncService : BaseApiClient
             //   LastSyncAt 用 Pull 最后一页的 ServerTime 作为基准，后续正常同步走 Pull→Merge→Push。
             if (isFirstLogin)
             {
+                // #10：首次同步被页数上限截断时保持 LastSyncAt=null，
+                // 下次同步继续做全量 Pull（幂等），直至拉完才建立水位基准。
+                if (pullTruncated)
+                {
+                    DevLogger.Log("Sync", $"First login full pull TRUNCATED at {pullPages} pages, keep LastSyncAt=null (retry next sync)");
+                    _cfgRepo.Save(cfg); // 不推进水位，仅记录本次拉取量
+                    NetworkMonitor?.ProbeNow();
+                    return new SyncResult
+                    {
+                        Success = true,
+                        Message = $"本次已拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到，数据量较大未拉完，请再次同步继续",
+                        PulledBabies = pulledBabies,
+                        PulledRecords = pulledRecords,
+                        PulledMilestones = pulledMilestones,
+                        PulledSignIns = pulledSignIns,
+                    };
+                }
                 cfg.LastSyncAt = pullServerTime;
                 cfg.LastSyncStatus = "ok";
                 cfg.LastSyncMsg = $"首次同步：拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到（Full Pull Only）";
@@ -398,6 +422,23 @@ public sealed class ApiSyncService : BaseApiClient
             }
 
             // 5. 更新本地同步时间戳
+            // #10：Pull 被页数上限截断时不推进水位（保持旧 since），下次同步重拉
+            // 未完成的增量——推进会让截断点之后的数据永久漏拉。
+            if (pullTruncated)
+            {
+                DevLogger.Log("Sync", $"Pull TRUNCATED at {pullPages} pages, keep LastSyncAt={since:O} (re-pull next sync)");
+                _cfgRepo.Save(cfg); // 不推进 LastSyncAt
+                NetworkMonitor?.ProbeNow();
+                return new SyncResult
+                {
+                    Success = true,
+                    Message = $"已拉取 {pulledBabies}宝/{pulledRecords}条/{pulledMilestones}里程碑/{pulledSignIns}签到，增量较大未拉完（推送已跳过），请再次同步继续",
+                    PulledBabies = pulledBabies,
+                    PulledRecords = pulledRecords,
+                    PulledMilestones = pulledMilestones,
+                    PulledSignIns = pulledSignIns,
+                };
+            }
             cfg.LastSyncAt = pushServerTime;
             cfg.LastSyncStatus = "ok";
             var partialHint = (babyDropped || recordDropped || milestoneDropped) ? "（部分丢弃，下次重试）" : "";
