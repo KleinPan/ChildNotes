@@ -9,6 +9,7 @@ using ChildNotes.Core.Services;
 using ChildNotes.Infrastructure.Auth;
 using ChildNotes.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace ChildNotes.Infrastructure.Services;
@@ -22,6 +23,7 @@ public class AuthService : IAuthService
     private readonly EmailAuthOptions _opt;
     private readonly PointsWalletService _wallet;
     private readonly IFamilyService _familyService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         ChildNotesDbContext db,
@@ -30,7 +32,8 @@ public class AuthService : IAuthService
         IEmailSender emailSender,
         IOptions<EmailAuthOptions> opt,
         PointsWalletService wallet,
-        IFamilyService familyService)
+        IFamilyService familyService,
+        ILogger<AuthService> logger)
     {
         _db = db;
         _jwt = jwt;
@@ -39,6 +42,7 @@ public class AuthService : IAuthService
         _opt = opt.Value;
         _wallet = wallet;
         _familyService = familyService;
+        _logger = logger;
     }
 
     public async Task<SendCodeResponse> SendCodeAsync(SendCodeRequest req, CancellationToken ct = default)
@@ -359,6 +363,25 @@ public class AuthService : IAuthService
 
                 if (successor is not null)
                 {
+                    // #18 reuse detection 加固：短时间内第二次链恢复 = 重放攻击强信号。
+                    // 正常故障（rotation 响应丢失）只发生一次；若同用户最近 5 分钟内已发生过
+                    // 一次恢复（存在刚签发即被撤销的 token 对），本次重放大概率是被盗 token
+                    // 持有者与合法用户在互相抢链——撤销该用户全部活跃 refresh token，
+                    // 强制所有设备重新登录，被盗 token 彻底失效。
+                    var recentRecoveryWindow = now.AddMinutes(-5);
+                    var recentRecoveryCount = await _db.RefreshTokens
+                        .Where(t => t.UserId == predecessor.UserId && t.RevokedAt != null
+                            && t.CreatedAt >= recentRecoveryWindow && t.CreatedAt <= revokedAt.AddSeconds(10))
+                        .CountAsync(ct);
+                    if (recentRecoveryCount > 0)
+                    {
+                        _logger.LogWarning(
+                            "refresh token reuse detected (2nd chain recovery within 5min), revoking ALL active tokens: userId={UserId}, replayedTokenCreatedAt~{RevokedAt}",
+                            predecessor.UserId, revokedAt);
+                        await RevokeAllActiveTokensAsync(predecessor.UserId, ct);
+                        throw new BusinessException("检测到异常登录活动，请重新登录", 401, "REFRESH_TOKEN_REUSE_DETECTED");
+                    }
+
                     try
                     {
                         await _db.ExecuteInTransactionAsync(async () =>
@@ -396,7 +419,7 @@ public class AuthService : IAuthService
             return await BuildAuthResponseAsync(graceUser, false, ct);
         }
 
-        // 并发安全：原子 CAS 撤销旧 Token
+        // 并发安全：原子 CAS 撤销旧 Token（#18：CAS 失败即 401，不再双签）
         // EF Core tracked entity + [ConcurrencyCheck] on RevokedAt
         // SaveChanges 会生成 UPDATE ... WHERE Id = @p0 AND RevokedAt IS NULL
         // 并发请求中只有一个能成功，其他会抛 DbUpdateConcurrencyException
@@ -423,12 +446,13 @@ public class AuthService : IAuthService
         }
         catch (DbUpdateConcurrencyException)
         {
-            // 并发请求携带同一 token 抢先撤销（毫秒级竞争，必然在宽限期内）：
-            // 视为合法重试再签发新 token，避免 401 导致客户端误软登出掉线
-            // （实测案例：两设备/进程 4 秒内先后 refresh 同一 token，后到者曾因此 401 掉线）。
-            var user = await _db.AppUsers.FirstOrDefaultAsync(u => u.Id == matchedToken.UserId, ct)
-                ?? throw new UnauthorizedException();
-            userHolder.Add(user);
+            // #18 并发双签封堵：CAS 失败 = 同一 token 在同一毫秒窗口被另一请求抢先撤销并
+            // 即将签发新 token 对（该请求会收到新 token）。本请求若也再签发，会产生两个
+            // 并存的新 token 对——被盗 token 一次刷新换两对，放大泄露面。
+            // 改为 401：真实场景是同一设备的网络层重试，客户端收到本 401 后会用
+            // 刚收到的新 token 重试（新 token 正常）；宽限期分支（391 行）仍覆盖
+            // "新 token 未送达"的重放场景，可用性不受影响。
+            throw new BusinessException("RefreshToken 已被并发使用，请用最新 Token 重试", 401, "REFRESH_TOKEN_CONCURRENT");
         }
 
         // 事务外：生成新 Token 对（BuildAuthResponseAsync 会开自己的事务）
@@ -453,6 +477,30 @@ public class AuthService : IAuthService
         if (req.Gender is not null) user.Gender = req.Gender.Value;
         await _db.SaveChangesAsync(ct);
         return ToLoginUserDto(user);
+    }
+
+    /// <summary>
+    /// #18 reuse detection：撤销该用户全部活跃 refresh token（家族撤销）。
+    /// 触发场景：短时间内第二次链恢复（重放攻击强信号）。所有设备（含合法用户）
+    /// 的 refresh token 全部失效，强制重新走邮箱验证码登录。
+    /// </summary>
+    private async Task RevokeAllActiveTokensAsync(string userId, CancellationToken ct)
+    {
+        // InMemory 不支持 ExecuteUpdateAsync，降级为 tracked entity（测试环境无并发）
+        if (_db.Database.ProviderName == "Microsoft.EntityFrameworkCore.InMemory")
+        {
+            var actives = await _db.RefreshTokens
+                .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+                .ToListAsync(ct);
+            foreach (var t in actives)
+                t.RevokedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+            return;
+        }
+
+        await _db.RefreshTokens
+            .Where(t => t.UserId == userId && t.RevokedAt == null && t.ExpiresAt > DateTime.UtcNow)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevokedAt, DateTime.UtcNow), ct);
     }
 
     private async Task<AuthResponse> BuildAuthResponseAsync(AppUser user, bool newUser, CancellationToken ct)

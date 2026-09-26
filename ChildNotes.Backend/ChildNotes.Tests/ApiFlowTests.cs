@@ -301,6 +301,67 @@ public class ApiFlowTests
         Assert.True(meResp.IsSuccessStatusCode, await meResp.Content.ReadAsStringAsync());
     }
 
+    /// <summary>
+    /// #18 reuse detection：5 分钟内第二次链恢复 = 重放攻击强信号，
+    /// 应撤销该用户全部活跃 refresh token 并 401（家族撤销，强制重新登录）。
+    /// 场景：被盗旧 token 持有者与合法用户互相抢链——正常故障只恢复一次。
+    /// </summary>
+    [Fact]
+    public async Task Refresh_SecondChainRecoveryWithin5Min_RevokesAllTokens()
+    {
+        using var factory = NewFactory();
+        var (client, t0) = await NewAuthClientWithRefreshTokenAsync(
+            factory, "rf7_" + Guid.NewGuid().ToString("N")[..6]);
+
+        // 第一次 refresh：T0 撤销 → S1 活跃（模拟 rotation 响应丢失）
+        var (a1, s1) = await RefreshTokensAsync(client, t0);
+
+        // 整体回拨 1 小时：出宽限期，保持链结构
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.ToList())
+            {
+                t.CreatedAt = t.CreatedAt.AddHours(-1);
+                if (t.RevokedAt != null) t.RevokedAt = t.RevokedAt.Value.AddHours(-1);
+                t.ExpiresAt = t.ExpiresAt.AddHours(-1);
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // 第一次链恢复（宽限期外重放 T0，孤儿 S1 活跃）：应成功
+        var (a2, s2) = await RefreshTokensAsync(client, t0);
+        Assert.False(string.IsNullOrEmpty(a2));
+
+        // 构造第二次链恢复：先正常 rotation 前进（S2 → S3），再回拨制造第二个
+        // "宽限期外重放 + 活跃孤儿继任者"场景
+        var (a3, s3) = await RefreshTokensAsync(client, s2);
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            foreach (var t in db.RefreshTokens.ToList())
+            {
+                if (t.CreatedAt > DateTime.UtcNow.AddMinutes(-1)) // 只回拨新产生的 token
+                {
+                    t.CreatedAt = t.CreatedAt.AddHours(-1);
+                    if (t.RevokedAt != null) t.RevokedAt = t.RevokedAt.Value.AddHours(-1);
+                    t.ExpiresAt = t.ExpiresAt.AddHours(-1);
+                }
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // 第二次链恢复（重放 S2，孤儿 S3 活跃）：5 分钟内第二次恢复 → 家族撤销 + 401
+        var resp = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshRequest { RefreshToken = s2 });
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, resp.StatusCode);
+
+        // 家族撤销后：该用户所有活跃 token（含刚才收到的 a3 对应的 S3）全部失效
+        var respS3 = await client.PostAsJsonAsync("/api/auth/refresh",
+            new RefreshRequest { RefreshToken = s3 });
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, respS3.StatusCode);
+    }
+
     [Fact]
     public async Task CreateBaby_AutoCreatesOwnerMember()
     {
