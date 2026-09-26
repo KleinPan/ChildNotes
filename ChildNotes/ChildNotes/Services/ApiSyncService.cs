@@ -144,7 +144,12 @@ public sealed class ApiSyncService : BaseApiClient
 
             // 2. Pull：以 last_sync_at 为起点分页拉取远端增量（带重试与切备用地址）
             //    大数据量首次同步时通过分页避免单次响应过大、避免中途失败丢失全部进度。
-            //    所有页的 upsert 共享同一 SqliteConnection + Transaction，单次提交，避免每行开连。
+            //    逐页小事务（#9）：每页 upsert 后立即提交。原实现单一事务包住整个分页循环，
+            //    SQLite 写锁要横跨所有页的网络往返（弱网首次同步可持锁数分钟），期间用户
+            //    任何本地写操作都会被 busy 阻塞；且中途失败回滚丢弃已拉取的全部页。
+            //    正确性依据：upsert 幂等（LWW + 固定 Id），中途失败已提交页无害；
+            //    LastSyncAt 仅在整体成功后推进（见 Finish 调用点），失败时下次从旧水位
+            //    重拉，重复数据由 upsert 幂等吸收。
             var since = cfg.LastSyncAt ?? DateTime.UnixEpoch;
             var isFirstLogin = cfg.LastSyncAt is null; // v5 规则(6)：首次登录以云端为准，只 Full Pull 不 Push
             DevLogger.Log("Sync", $"Pull since={since:O} (LastSyncAt={(cfg.LastSyncAt?.ToString("O") ?? "null")}, isFirstLogin={isFirstLogin})");
@@ -159,42 +164,44 @@ public sealed class ApiSyncService : BaseApiClient
             const int pageSize = 500;
             const int maxPages = 50; // 安全上限：50 页 * 500 = 25000 条，足够覆盖首次同步
             using (var pullConn = _dbFactory.Create())
-            using (var pullTx = pullConn.BeginTransaction())
             {
                 while (pullPages < maxPages)
                 {
                     var pageResp = await PullWithRetryAsync(serverUrl, token, since, pageSize, cursor, ct);
                     if (pageResp is null)
-                    {
-                        pullTx.Rollback();
                         return Finish(false, "拉取失败，已自动重试，请稍后再试", cfg, SyncErrorKind.Network);
-                    }
 
-                    foreach (var b in pageResp.Babies)
-                        if (_babyRepo.UpsertFromSync(SyncMappers.MapToBaby(b, pullLocalId), pullConn, pullTx)) pulledBabies++;
-                    foreach (var r in pageResp.Records)
-                        if (_recordRepo.UpsertFromSync(SyncMappers.MapToRecord(r, pullLocalId), pullConn, pullTx)) pulledRecords++;
-                    foreach (var m in pageResp.Milestones)
-                        if (_milestoneRepo.UpsertFromSync(SyncMappers.MapToMilestone(m, pullLocalId), pullConn, pullTx)) pulledMilestones++;
-                    foreach (var s in pageResp.SignIns)
-                        if (_pointsRepo.UpsertSignInFromSync(SyncMappers.MapToSignIn(s, pullCloudId), pullConn, pullTx)) pulledSignIns++;
-                    foreach (var bm in pageResp.BabyMembers)
-                        _babyRepo.UpsertMemberFromSync(bm, pullConn, pullTx);
-
-                    // 加入申请：写入前先记录旧状态（用于状态变化生成通知），再 LWW 合并
-                    if (_joinRequestRepo is not null && pageResp.FamilyJoinRequests.Count > 0)
+                    // 本页小事务：网络请求在事务外（锁不跨网络），upsert 完立即提交
+                    using (var pullTx = pullConn.BeginTransaction())
                     {
-                        foreach (var jr in pageResp.FamilyJoinRequests)
-                        {
-                            string? oldStatus = _joinRequestRepo.FindById(jr.Id)?.Status;
-                            _joinRequestRepo.UpsertFromSync(jr, pullConn, pullTx);
-                            _pendingJoinNotifications.Add((jr, oldStatus));
-                        }
-                    }
+                        foreach (var b in pageResp.Babies)
+                            if (_babyRepo.UpsertFromSync(SyncMappers.MapToBaby(b, pullLocalId), pullConn, pullTx)) pulledBabies++;
+                        foreach (var r in pageResp.Records)
+                            if (_recordRepo.UpsertFromSync(SyncMappers.MapToRecord(r, pullLocalId), pullConn, pullTx)) pulledRecords++;
+                        foreach (var m in pageResp.Milestones)
+                            if (_milestoneRepo.UpsertFromSync(SyncMappers.MapToMilestone(m, pullLocalId), pullConn, pullTx)) pulledMilestones++;
+                        foreach (var s in pageResp.SignIns)
+                            if (_pointsRepo.UpsertSignInFromSync(SyncMappers.MapToSignIn(s, pullCloudId), pullConn, pullTx)) pulledSignIns++;
+                        foreach (var bm in pageResp.BabyMembers)
+                            _babyRepo.UpsertMemberFromSync(bm, pullConn, pullTx);
 
-                    // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
-                    if (pageResp.UserPoints is not null)
-                        _pointsRepo.UpsertUserPointsFromSync(SyncMappers.MapToUserPoints(pageResp.UserPoints, pullCloudId), pullConn, pullTx);
+                        // 加入申请：写入前先记录旧状态（用于状态变化生成通知），再 LWW 合并
+                        if (_joinRequestRepo is not null && pageResp.FamilyJoinRequests.Count > 0)
+                        {
+                            foreach (var jr in pageResp.FamilyJoinRequests)
+                            {
+                                string? oldStatus = _joinRequestRepo.FindById(jr.Id)?.Status;
+                                _joinRequestRepo.UpsertFromSync(jr, pullConn, pullTx);
+                                _pendingJoinNotifications.Add((jr, oldStatus));
+                            }
+                        }
+
+                        // 积分余额：每页都带，以最后一页为准（已存在则 LWW 覆盖）
+                        if (pageResp.UserPoints is not null)
+                            _pointsRepo.UpsertUserPointsFromSync(SyncMappers.MapToUserPoints(pageResp.UserPoints, pullCloudId), pullConn, pullTx);
+
+                        pullTx.Commit();
+                    }
 
                     pullServerTime = pageResp.ServerTime; // 每页都更新，最终为最后一页的 ServerTime
                     pullPages++;
@@ -207,7 +214,6 @@ public sealed class ApiSyncService : BaseApiClient
                     cursor = pageResp.NextCursor;
                     if (cursor is null) break; // 无游标但 HasMore=true 的防御性退出
                 }
-                pullTx.Commit();
             }
 
             // 2.1 处理 join_request 状态变化，生成本地 InAppMessage 通知
