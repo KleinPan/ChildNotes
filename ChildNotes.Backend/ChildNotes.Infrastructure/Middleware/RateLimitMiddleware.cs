@@ -16,8 +16,9 @@ namespace ChildNotes.Infrastructure.Middleware;
 /// 限流中间件：内存滑动窗口，按 IP + METHOD + 路由模板 维度。
 /// 超过 MaxRequestsPerSecond 返回 429，超过 BlacklistRequestsPerSecond 加入内存黑名单返回 403。
 /// 覆盖 /api/** 与 /admin/api/**（Admin 体系含登录接口，同样需要防爆破）。
-/// 注意：黑名单仅存在于当前进程内存（_blacklist 字段），进程重启或多实例部署时不共享、不持久化，
-/// 语义上并非真正"永久"，响应文案中的"永久限制"指当前进程生命周期内生效。
+///
+/// 黑名单持久化（#19）：写库（ip_blacklist 表）+ 内存缓存双写。启动时构造器从表全量加载，
+/// 运行期每 5 分钟惰性重载（首个触发检查的请求拉起），进程重启后黑名单不丢、多实例一致。
 ///
 /// 客户端 IP 解析：直接使用 ctx.Connection.RemoteIpAddress——可信代理场景由 ForwardedHeadersMiddleware
 /// （Program.cs 注册，KnownProxies 仅含本机回环）在管道更早处把 X-Forwarded-For 处理后回填到
@@ -28,6 +29,7 @@ public class RateLimitMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly RateLimitOptions _opt;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     // key = ip|endpoint, value = 滑动窗口时间戳队列
     private readonly ConcurrentDictionary<string, ConcurrentQueue<long>> _counters = new();
@@ -35,10 +37,18 @@ public class RateLimitMiddleware
     private long _lastCleanup = Environment.TickCount64;
     private readonly TimeSpan _cleanupInterval = TimeSpan.FromSeconds(60);
 
-    public RateLimitMiddleware(RequestDelegate next, IOptions<RateLimitOptions> opt)
+    // #19 黑名单重载状态：首次请求时构造器无法异步查库，改为惰性加载；
+    // 之后每 5 分钟重载一次（DB 有管理端手动加黑等场景，重载保证最终一致）
+    private long _lastBlacklistLoad = 0; // 0 = 尚未加载过
+    private static readonly long BlacklistReloadIntervalMs = (long)TimeSpan.FromMinutes(5).TotalMilliseconds;
+    private int _blacklistLoading = 0;
+
+    public RateLimitMiddleware(RequestDelegate next, IOptions<RateLimitOptions> opt,
+        IServiceScopeFactory scopeFactory)
     {
         _next = next;
         _opt = opt.Value;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task InvokeAsync(HttpContext ctx)
@@ -53,6 +63,10 @@ public class RateLimitMiddleware
         }
 
         var ip = ResolveClientIp(ctx);
+
+        // #19 黑名单惰性加载/定期重载：首次请求或距上次加载超过 5 分钟时从库刷新。
+        // 失败不阻塞请求（降级为仅用内存黑名单）。
+        await TryReloadBlacklistAsync();
 
         // 黑名单检查
         if (_blacklist.ContainsKey(ip))
@@ -126,6 +140,31 @@ public class RateLimitMiddleware
 
     private static string ResolveClientIp(HttpContext ctx)
         => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    /// <summary>
+    /// #19：从 ip_blacklist 表惰性加载/定期重载内存黑名单。
+    /// Interlocked 保证只有一个请求真正执行查库，其余请求直接放行（用当前内存集合）；
+    /// 查库失败静默降级（内存黑名单仍有效），不影响正常请求。
+    /// </summary>
+    private async Task TryReloadBlacklistAsync()
+    {
+        var nowMs = Environment.TickCount64;
+        var last = Interlocked.Read(ref _lastBlacklistLoad);
+        if (last != 0 && nowMs - last < BlacklistReloadIntervalMs) return;
+        if (Interlocked.CompareExchange(ref _lastBlacklistLoad, nowMs, last) != last) return;
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ChildNotesDbContext>();
+            var ips = await db.IpBlacklist.Select(b => b.IpAddress).ToListAsync();
+            foreach (var ip in ips) _blacklist.TryAdd(ip, 0);
+        }
+        catch
+        {
+            // 查库失败：保留现有内存黑名单，下个重载周期再试
+        }
+    }
 
     private void TryCleanup(long nowMs)
     {
