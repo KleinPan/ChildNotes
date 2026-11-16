@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ChildNotes Feeding",
+        "description": "Connect to the aiji backend and poll today's feeding records. The API key is configured in Ha:ApiKeys inside /opt/childnotes/shared/appsettings.Production.json on the server.",
+        "data": {
+          "url": "Backend URL (e.g. https://childnotes.hacloud.asia)",
+          "api_key": "API key (X-Api-Key)",
+          "scan_interval_minutes": "Polling interval (minutes, default 10)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the backend. Check the URL and network.",
+      "invalid_auth": "Invalid API key",
+      "unknown": "Unexpected error. Check the logs."
+    },
+    "abort": {
+      "already_configured": "This backend URL is already configured"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "feed_count": {
+        "name": "Feeds today"
+      },
+      "feed_amount": {
+        "name": "Feed volume today"
+      },
+      "last_feed": {
+        "name": "Last feed"
+      },
+      "next_feed": {
+        "name": "Next feed (estimated)"
+      },
+      "feed_records": {
+        "name": "Feeding records"
+      }
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "ChildNotes 喂养记录",
+        "description": "连接 aiji 后台，定时拉取当日喂养记录。API 密钥在后台服务器 /opt/childnotes/shared/appsettings.Production.json 的 Ha:ApiKeys 中配置。",
+        "data": {
+          "url": "后台接口地址（如 https://childnotes.hacloud.asia）",
+          "api_key": "API 密钥（X-Api-Key）",
+          "scan_interval_minutes": "拉取间隔（分钟，默认 10）"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接到后台接口，请检查地址与网络",
+      "invalid_auth": "API 密钥无效",
+      "unknown": "发生未知错误，请查看日志"
+    },
+    "abort": {
+      "already_configured": "该后台地址已配置过"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "feed_count": {
+        "name": "今日喂养次数"
+      },
+      "feed_amount": {
+        "name": "今日喂养总量"
+      },
+      "last_feed": {
+        "name": "最近喂养时间"
+      },
+      "next_feed": {
+        "name": "预计下次喂养"
+      },
+      "feed_records": {
+        "name": "喂养记录明细"
+      }
+    }
+  }
+}
