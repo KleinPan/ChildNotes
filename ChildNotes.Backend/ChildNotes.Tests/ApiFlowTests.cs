@@ -654,6 +654,9 @@ public class ApiFactory : WebApplicationFactory<Program>
     /// <summary>可选：支付宝回调测试用，自定义 MembershipOptions（如注入测试用支付宝公钥）。</summary>
     public Action<Core.Config.MembershipOptions>? ConfigureMembershipOptions { get; init; }
 
+    /// <summary>可选：HA 集成接口测试用，注入 Ha:ApiKeys（key→邮箱映射）。</summary>
+    public Action<Core.Config.HaOptions>? ConfigureHaOptions { get; init; }
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
@@ -667,6 +670,9 @@ public class ApiFactory : WebApplicationFactory<Program>
             // 支付宝回调测试：注入测试密钥等自定义配置
             if (ConfigureMembershipOptions is not null)
                 services.PostConfigure(ConfigureMembershipOptions);
+            // HA 接口测试：注入 Ha:ApiKeys（key→邮箱映射）
+            if (ConfigureHaOptions is not null)
+                services.PostConfigure(ConfigureHaOptions);
             // 测试环境覆盖 EmailAuth：缩短重发间隔，避免 60s 限流影响测试
             services.PostConfigure<Core.Config.EmailAuthOptions>(opt =>
             {

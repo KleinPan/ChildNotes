@@ -84,6 +84,9 @@ if [[ ! -f "${PROD_CFG}" ]]; then
     "InitPassword": "${ADMIN_PASSWORD}",
     "InitDisplayName": "Administrator",
     "TokenExpireHours": 12
+  },
+  "Ha": {
+    "ApiKeys": {}
   }
 }
 JSONEOF

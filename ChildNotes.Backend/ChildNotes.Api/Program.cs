@@ -121,6 +121,9 @@ builder.Services.AddScoped<IFamilyService, FamilyService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBabyService, BabyService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
+// HA 集成：API Key 鉴权（Ha:ApiKeys，key→邮箱映射）+ 喂养记录拉取接口 /api/ha/feeding
+builder.Services.Configure<ChildNotes.Core.Config.HaOptions>(builder.Configuration.GetSection("Ha"));
+builder.Services.AddScoped<IHaFeedService, HaFeedService>();
 builder.Services.AddScoped<IPointsService, PointsService>();
 builder.Services.AddScoped<PointsWalletService>();
 builder.Services.AddScoped<ISignInService, SignInService>();
