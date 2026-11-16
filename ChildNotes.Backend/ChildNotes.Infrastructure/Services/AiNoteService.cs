@@ -220,6 +220,8 @@ public partial class AiNoteService : IAiNoteService
         var shouldForceAi = AiNoteRuleParser.ShouldForceAi(text);
 
         List<AiNoteParseItem> items;
+        // AI 失败降级原因：仅在"尝试调 AI 但失败"时赋值，供前端 Toast 提示与日志定位
+        string? fallbackReason = null;
         if (!preferAi && !paidOverage && !shouldForceAi && ruleHighConfidence)
         {
             // 快速路径：规则置信度足够高且非复杂文本，直接返回，不调 AI
@@ -245,7 +247,8 @@ public partial class AiNoteService : IAiNoteService
             catch (Exception ex)
             {
                 // AI 失败：用规则结果兜底，置信度下调
-                _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底");
+                fallbackReason = DescribeAiFailure(ex);
+                _logger.LogWarning(ex, "[AI-LOG] AI 解析失败，降级到规则兜底 Reason={Reason}", fallbackReason);
                 if (paidOverage)
                 {
                     // 积分抵扣放行后 AI 调用失败：退还抵扣积分 + 回滚已强制递增的次数（best-effort），
@@ -298,7 +301,32 @@ public partial class AiNoteService : IAiNoteService
 
         // 次数已在解析前原子递增，无需再单独计数
 
-        return new AiNoteParseBatchResponse { Items = items };
+        return new AiNoteParseBatchResponse
+        {
+            Items = items,
+            AiFallback = fallbackReason is not null,
+            FallbackReason = fallbackReason,
+        };
+    }
+
+    /// <summary>
+    /// 把 AI 调用异常转换为面向用户的简短降级原因。
+    /// 不返回上游原始报文（可能含 request id / 渠道信息），详情仅保留在服务端日志。
+    /// </summary>
+    private static string DescribeAiFailure(Exception ex)
+    {
+        var msg = ex.Message ?? string.Empty;
+        if (msg.Contains("InternalServerError") || msg.Contains("BadGateway") || msg.Contains("ServiceUnavailable"))
+            return "AI 服务暂时不可用";
+        if (msg.Contains("Unauthorized") || msg.Contains("Forbidden"))
+            return "AI 服务鉴权失败";
+        if (msg.Contains("TooManyRequests"))
+            return "AI 服务调用过于频繁";
+        if (ex is TaskCanceledException || ex is TimeoutException)
+            return "AI 服务响应超时";
+        if (ex is HttpRequestException)
+            return "AI 服务网络异常";
+        return "AI 解析失败";
     }
 
     /// <summary>

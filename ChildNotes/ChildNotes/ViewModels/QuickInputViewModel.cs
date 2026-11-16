@@ -118,11 +118,16 @@ public partial class QuickInputViewModel : ViewModelBase
             // 解析 + 保存全部移到后台线程，避免 HTTP POST / SQLite 写入阻塞 UI 线程。
             // Android 上 HttpClient.SendAsync 的部分操作（DNS/SSL 握手）可能在调用线程
             // 同步执行，即使 await 也无法避免。SaveLocally 的同步 SQLite 写同理。
-            var (summary, toastDuration, savedCount) = await Task.Run(async () =>
+            var (summary, toastDuration, savedCount, fallbackReason) = await Task.Run(async () =>
             {
-                var items = await _parseService.ParseAsync(text, null, usePointsForOverage);
+                var outcome = await _parseService.ParseAsync(text, null, usePointsForOverage);
+                var items = outcome.Items;
                 if (items is null || items.Count == 0)
-                    return ((string?)null, 0, 0);
+                    return ((string?)null, 0, 0, outcome.FallbackReason);
+
+                // AI 未生效（失败/未配置）时记录客户端日志，并在 Toast 中明确告知用户
+                if (outcome.FallbackReason is not null)
+                    DevLogger.Log("QuickInput", "[AI-LOG] AI 未生效，已降级规则识别：" + outcome.FallbackReason, DevLogger.Level.Warn);
 
                 int saved = 0;
                 int idx = 0;
@@ -151,7 +156,7 @@ public partial class QuickInputViewModel : ViewModelBase
                 }
                 DevLogger.Log("QuickInput", $"[AI-LOG] 全部写入结束 items={items.Count} saved={saved}");
                 if (saved == 0)
-                    return ((string?)null, 0, 0);
+                    return ((string?)null, 0, 0, outcome.FallbackReason);
 
                 var source = items[0].Source == ParseSource.Ai ? "AI" : "规则";
                 var header = $"[{source}] 已记录 {saved} 条";
@@ -159,14 +164,19 @@ public partial class QuickInputViewModel : ViewModelBase
                     .Where(i => !string.IsNullOrEmpty(i.RecordType))
                     .Select(AiNoteParseService.FormatForToast);
                 var s = header + "\n" + string.Join("\n", lines);
-                var d = Math.Min(6000, 1500 + saved * 700);
-                return (s, d, saved);
+                if (outcome.FallbackReason is not null)
+                {
+                    // 明确告知用户：本次不是 AI 识别，而是规则兜底（避免误以为 AI 已生效）
+                    s += $"\n⚠️ AI 未生效：{outcome.FallbackReason}，本次由规则识别";
+                }
+                var d = Math.Min(8000, 1500 + saved * 700 + (outcome.FallbackReason is not null ? 1200 : 0));
+                return (s, d, saved, outcome.FallbackReason);
             });
 
             if (savedCount == 0)
             {
                 DevLogger.Log("QuickInput", "[AI-LOG] saved=0，提示解析失败", DevLogger.Level.Warn);
-                DisplayToast("解析失败，请稍后重试");
+                DisplayToast(fallbackReason is null ? "解析失败，请稍后重试" : $"解析失败（{fallbackReason}），请稍后重试");
                 return;
             }
 

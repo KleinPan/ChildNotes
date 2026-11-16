@@ -9,6 +9,16 @@ using ChildNotes.Shared.Services;
 namespace ChildNotes.Services;
 
 /// <summary>
+/// AI 记解析结果：记录列表 + AI 降级原因。
+/// <see cref="FallbackReason"/> 非空表示本次 AI 未生效、结果由规则兜底，调用方应提示用户并记录日志。
+/// </summary>
+public sealed record AiNoteParseOutcome(List<AiNoteParseItem> Items, string? FallbackReason)
+{
+    /// <summary>本次是否发生 AI 降级（AI 失败/未启用，改用规则识别）。</summary>
+    public bool AiFallback => FallbackReason is not null;
+}
+
+/// <summary>
 /// AI 智能记解析服务：封装"自然语言文本 → 结构化记录"的降级解析逻辑。
 /// 抽取自原 AiNote 模态的解析逻辑，供首页快捷输入框共用。
 ///
@@ -122,7 +132,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 
     /// <summary>
     /// 按 NoteSource 配置选择解析路径并执行三级降级。
-    /// 返回多条解析结果列表（至少 1 条；解析完全失败时返回空列表）。
+    /// 返回解析结果（记录列表 + AI 降级信息）；解析完全失败时列表为空。
     /// </summary>
     /// <param name="overrideParseMode">
     /// 可选解析模式覆盖：传入非空值时强制使用该模式（不读 LlmConfig.ParseMode）。
@@ -132,7 +142,7 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// 免费次数用尽后用户选择积分抵扣时传 true，透传给后端携带 UsePointsForOverage=true；
     /// 该模式下后端返回 INSUFFICIENT_POINTS 时向上抛出（不降级），由 ViewModel 引导用户去积分任务页。
     /// </param>
-    public async Task<List<AiNoteParseItem>> ParseAsync(string text, string? overrideParseMode = null, bool usePointsForOverage = false)
+    public async Task<AiNoteParseOutcome> ParseAsync(string text, string? overrideParseMode = null, bool usePointsForOverage = false)
     {
         var config = _aiService.GetLlmConfig();
         var preferServer = config.NoteSource == "server";
@@ -145,15 +155,16 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
 
         DevLogger.Log("AiNote", $"[AI-LOG] 解析路径选择：NoteSource={config.NoteSource ?? "(null)"}, ParseMode={parseMode}, Enabled={config.Enabled}, preferServer={preferServer}");
 
-        // 1) 按用户选择的路径调用 AI
+        // 1) 按用户选择的路径调用 AI；fallbackReason 非空表示 AI 未生效（供上层 Toast 提示）
         List<AiNoteParseItem>? aiItems = null;
+        string? fallbackReason = null;
         if (preferServer)
         {
-            aiItems = await TryServerAsync(text, parseMode, usePointsForOverage);
+            (aiItems, fallbackReason) = await TryServerAsync(text, parseMode, usePointsForOverage);
         }
         else
         {
-            aiItems = await TryLocalLlmAsync(text, config);
+            (aiItems, fallbackReason) = await TryLocalLlmAsync(text, config);
         }
 
         if (aiItems is { Count: > 0 })
@@ -161,15 +172,21 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             // [AI-LOG] 解析结果摘要：记录每条记录的类型/子类型/摘要/来源，便于后续核对
             var summary = string.Join(" | ", aiItems.Select(i => $"{i.RecordType}/{i.RecordSubType ?? "-"}:{i.Summary ?? "(空)"}[src={i.Source}]"));
             DevLogger.Log("AiNote", $"[AI-LOG] 解析成功 {aiItems.Count} 条 | {summary}");
-            return aiItems;
+            if (fallbackReason is not null)
+            {
+                // 后端 AI 失败但返回了规则结果：走这里（结果非空 + 带降级原因）
+                DevLogger.Log("AiNote", $"[AI-LOG] AI 未生效，已降级规则识别：{fallbackReason}", DevLogger.Level.Warn);
+            }
+            return new AiNoteParseOutcome(aiItems, fallbackReason);
         }
 
         // 2) AI 失败则规则降级（调用共享层 AiNoteRuleParser）
-        DevLogger.Log("AiNote", "[AI-LOG] AI 解析未返回结果，降级到规则解析", DevLogger.Level.Warn);
+        fallbackReason ??= preferServer ? "AI 解析失败" : "本地 AI 解析失败";
+        DevLogger.Log("AiNote", $"[AI-LOG] AI 解析未返回结果，降级到规则解析：{fallbackReason}", DevLogger.Level.Warn);
         var ruleItems = AiNoteRuleParser.ParseMulti(text);
         var ruleSummary = string.Join(" | ", ruleItems.Select(i => $"{i.RecordType}/{i.RecordSubType ?? "-"}:{i.Summary ?? "(空)"}[src={i.Source}]"));
         DevLogger.Log("AiNote", $"[AI-LOG] 规则降级解析 {ruleItems.Count} 条 | {ruleSummary}");
-        return ruleItems;
+        return new AiNoteParseOutcome(ruleItems, fallbackReason);
     }
 
     /// <summary>
@@ -180,21 +197,27 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
     /// 由 ViewModel 引导用户去积分任务页（签到获取积分）。
     /// <param name="parseMode">解析模式，见 <see cref="ParseMode"/>；透传给后端决定是否跳过规则快速路径。</param>
     /// <param name="usePointsForOverage">免费次数用尽后用户选择积分抵扣时传 true，透传给后端。</param>
+    /// <returns>解析结果与降级原因；<c>Items</c> 为 null 表示 AI 未生效，失败原因写在 <c>FallbackReason</c>。</returns>
     /// </summary>
-    private async Task<List<AiNoteParseItem>?> TryServerAsync(string text, string parseMode, bool usePointsForOverage)
+    private async Task<(List<AiNoteParseItem>? Items, string? FallbackReason)> TryServerAsync(string text, string parseMode, bool usePointsForOverage)
     {
         var serverUrl = ServiceProvider.Instance.SyncConfigRepository.Get().ServerUrl;
         if (string.IsNullOrEmpty(serverUrl))
         {
             DevLogger.Log("AiNote", "[AI-LOG] 后端解析跳过：ServerUrl 未配置", DevLogger.Level.Warn);
-            return null;
+            return (null, "未配置同步服务器地址");
         }
         DevLogger.Log("AiNote", $"[AI-LOG] 调用后端解析：{serverUrl}/api/smart-analysis/parse-note ParseMode={parseMode}");
         try
         {
             var batch = await _apiClient.ParseWithErrorsAsync(text, parseMode, usePointsForOverage);
-            DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{batch.Items.Count} 条");
-            return batch.Items;
+            DevLogger.Log("AiNote", $"[AI-LOG] 后端解析返回：{batch.Items.Count} 条 AiFallback={batch.AiFallback}");
+            // 后端明确告知"AI 失败降级"时，把原因带回给上层做 Toast 提示；
+            // 规则快速路径（AiFallback=false）属于正常快速命中，不提示
+            var reason = batch.AiFallback
+                ? (string.IsNullOrEmpty(batch.FallbackReason) ? "AI 服务暂时不可用" : batch.FallbackReason)
+                : null;
+            return (batch.Items, reason);
         }
         catch (AiNoteApiException ex)
         {
@@ -213,20 +236,20 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
             }
             // 其他业务错误（如文本为空等）：降级到本地
             DevLogger.Log("AiNote", "[AI-LOG] 后端解析业务失败：" + ex.Message, DevLogger.Level.Warn);
-            return null;
+            return (null, "AI 解析请求失败");
         }
         catch (Exception ex)
         {
             DevLogger.Log("AiNote", "[AI-LOG] 后端解析失败：" + ex.Message, DevLogger.Level.Error);
-            return null;
+            return (null, "后端 AI 服务不可达");
         }
     }
 
-    /// <summary>尝试调用用户配置的本地 LLM；未配置/未启用/失败时返回 null。</summary>
-    private async Task<List<AiNoteParseItem>?> TryLocalLlmAsync(string text, LlmConfig config)
+    /// <summary>尝试调用用户配置的本地 LLM；未配置/未启用/失败时 Items 为 null，原因写入 FallbackReason。</summary>
+    private async Task<(List<AiNoteParseItem>? Items, string? FallbackReason)> TryLocalLlmAsync(string text, LlmConfig config)
     {
         if (config is null || !config.Enabled)
-            return null;
+            return (null, "本地 AI 未启用");
         try
         {
             var raw = await _llmClient.ChatAsync(config, LocalSystemPrompt.Replace("{NowText}", DateTime.Now.ToString("yyyy-MM-dd HH:mm")), text);
@@ -238,12 +261,12 @@ note 字段使用规则（重要，避免备注与结构化字段重复）：
                 AiNoteRuleParser.NormalizeTimeFields(parsed, text);
             }
             DevLogger.Log("AiNote", $"[AI-LOG] 本地 LLM 解析返回：{(parsed is null ? "null" : $"{parsed.Count} 条")}");
-            return parsed;
+            return (parsed, parsed is null ? "本地 AI 返回格式异常" : null);
         }
         catch (Exception ex)
         {
             DevLogger.Log("AiNote", "[AI-LOG] 本地 LLM 解析失败：" + ex.Message, DevLogger.Level.Error);
-            return null;
+            return (null, "本地 AI 调用失败");
         }
     }
 

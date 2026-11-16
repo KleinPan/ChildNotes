@@ -80,4 +80,13 @@ public class AiNoteParseBatchResponse
 {
     /// <summary>解析出的记录列表。空列表表示解析失败（调用方应提示用户）。</summary>
     public List<AiNoteParseItem> Items { get; set; } = new();
+
+    /// <summary>
+    /// 本次是否尝试调用 AI 但失败、结果由规则兜底。
+    /// 仅"AI 失败降级"时为 true；规则快速路径（fast 模式高置信度直接命中）不算降级，为 false。
+    /// </summary>
+    public bool AiFallback { get; set; }
+
+    /// <summary>降级原因（面向用户的简短文案，如"AI 服务暂时不可用"），供前端 Toast/日志提示。</summary>
+    public string? FallbackReason { get; set; }
 }
